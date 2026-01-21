@@ -2,95 +2,124 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+@import "@fontsource/plus-jakarta-sans/400.css";
+@import "@fontsource/plus-jakarta-sans/500.css";
+@import "@fontsource/plus-jakarta-sans/600.css";
+@import "@fontsource/plus-jakarta-sans/700.css";
+@import "@fontsource/plus-jakarta-sans/800.css";
+
+/* Ex-Lib Design System - Traditional Library meets Modern Minimalist */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Core backgrounds */
+    --background: 40 33% 96%;
+    --foreground: 25 10% 15%;
 
+    /* Card surfaces */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 25 10% 15%;
 
+    /* Popover/Modal surfaces */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 25 10% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - Warm Wood Brown */
+    --primary: 25 65% 35%;
+    --primary-foreground: 40 33% 96%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary - Cream */
+    --secondary: 40 40% 92%;
+    --secondary-foreground: 25 10% 20%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted - Soft Beige */
+    --muted: 35 25% 88%;
+    --muted-foreground: 25 10% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent - Warm Amber */
+    --accent: 35 80% 50%;
+    --accent-foreground: 25 10% 15%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Destructive */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Border & Input */
+    --border: 35 20% 82%;
+    --input: 35 20% 85%;
+    --ring: 25 65% 35%;
 
-    --radius: 0.5rem;
+    --radius: 1rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Custom Wood Palette */
+    --wood-light: 33 45% 65%;
+    --wood-medium: 28 55% 45%;
+    --wood-dark: 25 60% 30%;
+    --wood-grain: 30 50% 40%;
+    --shelf-shadow: 25 40% 20%;
+    
+    /* Book Colors */
+    --book-spine-1: 0 65% 45%;
+    --book-spine-2: 210 55% 40%;
+    --book-spine-3: 150 45% 35%;
+    --book-spine-4: 35 70% 50%;
+    --book-spine-5: 280 40% 45%;
+    --book-spine-6: 195 60% 40%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar defaults */
+    --sidebar-background: 40 33% 96%;
+    --sidebar-foreground: 25 10% 20%;
+    --sidebar-primary: 25 65% 35%;
+    --sidebar-primary-foreground: 40 33% 96%;
+    --sidebar-accent: 35 40% 90%;
+    --sidebar-accent-foreground: 25 10% 20%;
+    --sidebar-border: 35 20% 82%;
+    --sidebar-ring: 25 65% 35%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 25 15% 10%;
+    --foreground: 40 20% 90%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 25 20% 14%;
+    --card-foreground: 40 20% 90%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 25 20% 14%;
+    --popover-foreground: 40 20% 90%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 35 60% 55%;
+    --primary-foreground: 25 15% 10%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 25 20% 20%;
+    --secondary-foreground: 40 20% 90%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 25 15% 22%;
+    --muted-foreground: 35 15% 60%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 35 70% 50%;
+    --accent-foreground: 25 15% 10%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 25 15% 25%;
+    --input: 25 15% 25%;
+    --ring: 35 60% 55%;
+
+    --wood-light: 30 35% 35%;
+    --wood-medium: 28 40% 25%;
+    --wood-dark: 25 45% 18%;
+    --wood-grain: 28 35% 22%;
+    --shelf-shadow: 25 30% 8%;
+
+    --sidebar-background: 25 15% 12%;
+    --sidebar-foreground: 40 20% 90%;
+    --sidebar-primary: 35 60% 55%;
+    --sidebar-primary-foreground: 25 15% 10%;
+    --sidebar-accent: 25 20% 20%;
+    --sidebar-accent-foreground: 40 20% 90%;
+    --sidebar-border: 25 15% 25%;
+    --sidebar-ring: 35 60% 55%;
   }
 }
 
@@ -100,6 +129,134 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  /* Wooden Shelf Texture */
+  .wood-texture {
+    background: 
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 2px,
+        hsl(var(--wood-grain) / 0.1) 2px,
+        hsl(var(--wood-grain) / 0.1) 4px
+      ),
+      linear-gradient(
+        180deg,
+        hsl(var(--wood-light)) 0%,
+        hsl(var(--wood-medium)) 50%,
+        hsl(var(--wood-dark)) 100%
+      );
+  }
+
+  .shelf-plank {
+    background: 
+      repeating-linear-gradient(
+        85deg,
+        transparent,
+        transparent 3px,
+        hsl(var(--wood-grain) / 0.15) 3px,
+        hsl(var(--wood-grain) / 0.15) 6px
+      ),
+      linear-gradient(
+        90deg,
+        hsl(var(--wood-dark)) 0%,
+        hsl(var(--wood-medium)) 5%,
+        hsl(var(--wood-light)) 50%,
+        hsl(var(--wood-medium)) 95%,
+        hsl(var(--wood-dark)) 100%
+      );
+    box-shadow: 
+      inset 0 2px 4px hsl(var(--wood-light) / 0.5),
+      inset 0 -3px 6px hsl(var(--shelf-shadow) / 0.4),
+      0 8px 16px -4px hsl(var(--shelf-shadow) / 0.5);
+  }
+
+  .shelf-side {
+    background: 
+      repeating-linear-gradient(
+        180deg,
+        transparent,
+        transparent 4px,
+        hsl(var(--wood-grain) / 0.12) 4px,
+        hsl(var(--wood-grain) / 0.12) 8px
+      ),
+      linear-gradient(
+        90deg,
+        hsl(var(--wood-dark)) 0%,
+        hsl(var(--wood-medium)) 50%,
+        hsl(var(--wood-dark)) 100%
+      );
+  }
+
+  /* Book Spine Styles */
+  .book-spine {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    box-shadow: 
+      inset -2px 0 4px rgba(0,0,0,0.2),
+      inset 2px 0 4px rgba(255,255,255,0.1),
+      2px 0 8px rgba(0,0,0,0.15);
+  }
+
+  /* Modern Hip Button */
+  .btn-hip {
+    @apply px-6 py-3 rounded-2xl font-semibold text-sm tracking-wide;
+    @apply bg-primary text-primary-foreground;
+    @apply shadow-lg shadow-primary/20;
+    @apply transition-all duration-300 ease-out;
+    @apply hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/30;
+    @apply active:scale-[0.98];
+  }
+
+  .btn-hip-outline {
+    @apply px-6 py-3 rounded-2xl font-semibold text-sm tracking-wide;
+    @apply bg-transparent border-2 border-primary text-primary;
+    @apply transition-all duration-300 ease-out;
+    @apply hover:bg-primary hover:text-primary-foreground;
+    @apply active:scale-[0.98];
+  }
+
+  /* Glass Card */
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-xl rounded-3xl;
+    @apply border border-border/50;
+    @apply shadow-xl shadow-black/5;
+  }
+
+  /* Navigation Bar */
+  .nav-bar {
+    @apply bg-card/95 backdrop-blur-xl;
+    @apply border-t border-border/50;
+    @apply shadow-[0_-4px_24px_-4px] shadow-black/10;
+  }
+
+  .nav-item {
+    @apply flex flex-col items-center gap-1 px-4 py-2;
+    @apply text-muted-foreground transition-all duration-200;
+    @apply hover:text-primary;
+  }
+
+  .nav-item.active {
+    @apply text-primary;
+  }
+
+  /* View Toggle */
+  .view-toggle {
+    @apply inline-flex p-1 rounded-full bg-muted;
+  }
+
+  .view-toggle-btn {
+    @apply px-4 py-2 rounded-full text-sm font-medium;
+    @apply text-muted-foreground transition-all duration-200;
+  }
+
+  .view-toggle-btn.active {
+    @apply bg-card text-foreground shadow-md;
   }
 }
