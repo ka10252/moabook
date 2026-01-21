@@ -5,6 +5,7 @@ import { BottomNav } from '@/components/BottomNav';
 import { PlaceholderTab } from '@/components/PlaceholderTab';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { UploadPage } from '@/components/upload/UploadPage';
+import { CommunityPage } from '@/components/community/CommunityPage';
 import { useAuth } from '@/hooks/useAuth';
 import { Heart, Upload, Library, User, LogIn, LogOut, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -62,17 +63,11 @@ const Index = () => {
             <PlaceholderTab
               icon={User}
               title="Sign In Required"
-              description="Please sign in to access your profile and chat with book owners."
+              description="Please sign in to access communities and your profile."
             />
           );
         }
-        return (
-          <PlaceholderTab
-            icon={User}
-            title="Profile & Chat"
-            description="Manage your communities, chat with book owners, and update your profile."
-          />
-        );
+        return <CommunityPage />;
       default:
         return <Bookshelf />;
     }
