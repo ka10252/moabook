@@ -4,6 +4,7 @@ import { Bookshelf } from '@/components/Bookshelf';
 import { BottomNav } from '@/components/BottomNav';
 import { PlaceholderTab } from '@/components/PlaceholderTab';
 import { AuthModal } from '@/components/auth/AuthModal';
+import { UploadPage } from '@/components/upload/UploadPage';
 import { useAuth } from '@/hooks/useAuth';
 import { Heart, Upload, Library, User, LogIn, LogOut, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -37,13 +38,7 @@ const Index = () => {
             />
           );
         }
-        return (
-          <PlaceholderTab
-            icon={Upload}
-            title="Upload a Book"
-            description="Share your books with fellow exchange students. Search by title to auto-fill details."
-          />
-        );
+        return <UploadPage />;
       case 'library':
         if (!user) {
           return (
