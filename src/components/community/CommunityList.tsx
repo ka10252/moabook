@@ -8,6 +8,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface Community {
   id: string;
@@ -27,6 +37,7 @@ export const CommunityList = ({ onSelectCommunity, onCreateNew }: CommunityListP
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [leavingId, setLeavingId] = useState<string | null>(null);
+  const [confirmLeave, setConfirmLeave] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     fetchCommunities();
@@ -65,30 +76,36 @@ export const CommunityList = ({ onSelectCommunity, onCreateNew }: CommunityListP
     }
   };
 
-  const handleLeaveCommunity = async (communityId: string, communityName: string) => {
-    if (!user) return;
+  const handleLeaveClick = (communityId: string, communityName: string) => {
+    setConfirmLeave({ id: communityId, name: communityName });
+  };
 
-    setLeavingId(communityId);
+  const handleConfirmLeave = async () => {
+    if (!user || !confirmLeave) return;
+
+    setLeavingId(confirmLeave.id);
+    setConfirmLeave(null);
+    
     try {
       const { error } = await supabase
         .from('community_members')
         .delete()
-        .eq('community_id', communityId)
+        .eq('community_id', confirmLeave.id)
         .eq('user_id', user.id);
 
       if (error) throw error;
 
       setMyCommunityIds((prev) => {
         const next = new Set(prev);
-        next.delete(communityId);
+        next.delete(confirmLeave.id);
         return next;
       });
 
-      toast.success(`Left "${communityName}"`);
+      toast.success(`"${confirmLeave.name}" 커뮤니티를 탈퇴했습니다`);
       fetchCommunities(); // Refresh member counts
     } catch (error) {
       console.error('Leave community error:', error);
-      toast.error('Failed to leave community');
+      toast.error('커뮤니티 탈퇴에 실패했습니다');
     } finally {
       setLeavingId(null);
     }
@@ -168,7 +185,7 @@ export const CommunityList = ({ onSelectCommunity, onCreateNew }: CommunityListP
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleLeaveCommunity(community.id, community.name)}
+                        onClick={() => handleLeaveClick(community.id, community.name)}
                         disabled={leavingId === community.id}
                         className="text-muted-foreground hover:text-destructive"
                       >
@@ -231,6 +248,27 @@ export const CommunityList = ({ onSelectCommunity, onCreateNew }: CommunityListP
           )}
         </div>
       </ScrollArea>
+
+      {/* Leave Confirmation Dialog */}
+      <AlertDialog open={!!confirmLeave} onOpenChange={() => setConfirmLeave(null)}>
+        <AlertDialogContent className="rounded-2xl max-w-sm mx-4">
+          <AlertDialogHeader>
+            <AlertDialogTitle>커뮤니티를 탈퇴하시겠습니까?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{confirmLeave?.name}" 커뮤니티에서 탈퇴합니다. 나중에 다시 가입할 수 있습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmLeave}
+              className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              탈퇴
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
