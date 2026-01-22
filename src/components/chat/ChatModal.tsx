@@ -1,0 +1,104 @@
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X } from 'lucide-react';
+import { useChat, Conversation } from '@/hooks/useChat';
+import { ConversationList } from './ConversationList';
+import { ChatView } from './ChatView';
+
+interface ChatModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  initialUserId?: string | null;
+  initialBookId?: string | null;
+}
+
+export const ChatModal = ({ isOpen, onClose, initialUserId, initialBookId }: ChatModalProps) => {
+  const { conversations, loading, startConversation, refresh } = useChat();
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+
+  // Auto-start conversation if initialUserId is provided
+  useEffect(() => {
+    if (isOpen && initialUserId) {
+      startConversation(initialUserId, initialBookId || undefined).then(({ conversation }) => {
+        if (conversation) {
+          refresh().then(() => {
+            const found = conversations.find(c => c.id === conversation.id);
+            if (found) setSelectedConversation(found);
+          });
+        }
+      });
+    }
+  }, [isOpen, initialUserId, initialBookId]);
+
+  // Find and select conversation after refresh
+  useEffect(() => {
+    if (initialUserId && conversations.length > 0 && !selectedConversation) {
+      const found = conversations.find(c => 
+        c.participant_1 === initialUserId || c.participant_2 === initialUserId
+      );
+      if (found) setSelectedConversation(found);
+    }
+  }, [conversations, initialUserId, selectedConversation]);
+
+  const handleBack = () => {
+    setSelectedConversation(null);
+    refresh();
+  };
+
+  const handleClose = () => {
+    setSelectedConversation(null);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={handleClose}
+      />
+      
+      <motion.div
+        className="fixed inset-x-4 top-[5%] bottom-[10%] md:inset-x-auto md:left-1/2 md:w-full md:max-w-md md:-translate-x-1/2 z-50"
+        initial={{ opacity: 0, y: 50, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 50, scale: 0.95 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="bg-card rounded-2xl h-full overflow-hidden flex flex-col shadow-xl">
+          {selectedConversation ? (
+            <ChatView conversation={selectedConversation} onBack={handleBack} />
+          ) : (
+            <>
+              {/* Header */}
+              <header className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+                <h2 className="text-lg font-bold text-foreground">Messages</h2>
+                <button
+                  onClick={handleClose}
+                  className="p-2 rounded-xl hover:bg-muted transition-colors"
+                >
+                  <X className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </header>
+
+              {/* Conversations */}
+              <div className="flex-1 overflow-y-auto">
+                <ConversationList
+                  conversations={conversations}
+                  loading={loading}
+                  selectedId={null}
+                  onSelect={setSelectedConversation}
+                />
+              </div>
+            </>
+          )}
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};

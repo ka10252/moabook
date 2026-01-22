@@ -7,8 +7,10 @@ import { AuthModal } from '@/components/auth/AuthModal';
 import { UploadPage } from '@/components/upload/UploadPage';
 import { CommunityPage } from '@/components/community/CommunityPage';
 import { WishlistPage } from '@/components/wishlist/WishlistPage';
+import { LibraryPage } from '@/components/library/LibraryPage';
+import { ChatModal } from '@/components/chat/ChatModal';
 import { useAuth } from '@/hooks/useAuth';
-import { Upload, Library, User, LogIn, LogOut, Loader2 } from 'lucide-react';
+import { Upload, Library, User, LogIn, LogOut, Loader2, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 type NavItem = 'shelf' | 'wishlist' | 'upload' | 'library' | 'profile';
@@ -16,12 +18,31 @@ type NavItem = 'shelf' | 'wishlist' | 'upload' | 'library' | 'profile';
 const Index = () => {
   const [activeTab, setActiveTab] = useState<NavItem>('shelf');
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [chatInitialUserId, setChatInitialUserId] = useState<string | null>(null);
+  const [chatInitialBookId, setChatInitialBookId] = useState<string | null>(null);
   const { user, loading, signOut } = useAuth();
+
+  const handleOpenChat = (userId: string, bookId: string) => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+    setChatInitialUserId(userId);
+    setChatInitialBookId(bookId);
+    setShowChatModal(true);
+  };
+
+  const handleCloseChat = () => {
+    setShowChatModal(false);
+    setChatInitialUserId(null);
+    setChatInitialBookId(null);
+  };
 
   const renderContent = () => {
     switch (activeTab) {
       case 'shelf':
-        return <Bookshelf />;
+        return <Bookshelf onOpenChat={handleOpenChat} />;
       case 'wishlist':
         return <WishlistPage />;
       case 'upload':
@@ -45,13 +66,7 @@ const Index = () => {
             />
           );
         }
-        return (
-          <PlaceholderTab
-            icon={Library}
-            title="My Library"
-            description="Your uploaded books and borrowed items will be organized here."
-          />
-        );
+        return <LibraryPage onOpenChat={handleOpenChat} />;
       case 'profile':
         if (!user) {
           return (
@@ -64,7 +79,7 @@ const Index = () => {
         }
         return <CommunityPage />;
       default:
-        return <Bookshelf />;
+        return <Bookshelf onOpenChat={handleOpenChat} />;
     }
   };
 
@@ -77,29 +92,42 @@ const Index = () => {
             Ex-Lib 📚
           </h1>
           
-          {loading ? (
-            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-          ) : user ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => signOut()}
-              className="gap-2"
-            >
-              <LogOut className="w-4 h-4" />
-              Sign Out
-            </Button>
-          ) : (
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => setShowAuthModal(true)}
-              className="gap-2"
-            >
-              <LogIn className="w-4 h-4" />
-              Sign In
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {user && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowChatModal(true)}
+                className="relative"
+              >
+                <MessageCircle className="w-5 h-5" />
+              </Button>
+            )}
+            
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            ) : user ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => signOut()}
+                className="gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </Button>
+            ) : (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => setShowAuthModal(true)}
+                className="gap-2"
+              >
+                <LogIn className="w-4 h-4" />
+                Sign In
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -124,6 +152,14 @@ const Index = () => {
 
       {/* Auth Modal */}
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+
+      {/* Chat Modal */}
+      <ChatModal 
+        isOpen={showChatModal} 
+        onClose={handleCloseChat}
+        initialUserId={chatInitialUserId}
+        initialBookId={chatInitialBookId}
+      />
     </div>
   );
 };

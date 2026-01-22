@@ -1,14 +1,18 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, MessageCircle, Heart, Share2 } from 'lucide-react';
-import { Book } from '@/data/books';
+import { Book } from '@/types/book';
 
 interface BookDetailProps {
   book: Book | null;
   onClose: () => void;
+  onChat: (ownerId: string, bookId: string) => void;
+  currentUserId?: string;
 }
 
-export const BookDetail = ({ book, onClose }: BookDetailProps) => {
+export const BookDetail = ({ book, onClose, onChat, currentUserId }: BookDetailProps) => {
   if (!book) return null;
+
+  const isOwner = currentUserId === book.owner_id;
 
   return (
     <AnimatePresence>
@@ -75,25 +79,42 @@ export const BookDetail = ({ book, onClose }: BookDetailProps) => {
                 <h2 className="text-2xl font-bold text-foreground mb-1">{book.title}</h2>
                 <p className="text-muted-foreground mb-4">by {book.author}</p>
                 
-                <p className="text-foreground/80 leading-relaxed mb-6">
-                  {book.description}
-                </p>
+                {book.description && (
+                  <p className="text-foreground/80 leading-relaxed mb-6">
+                    {book.description}
+                  </p>
+                )}
                 
                 {/* Owner info */}
                 <div className="bg-muted/50 rounded-2xl p-4 mb-6">
                   <p className="text-sm text-muted-foreground mb-1">Listed by</p>
-                  <p className="font-semibold text-foreground">{book.owner.nickname}</p>
-                  <p className="text-sm text-primary">{book.owner.community}</p>
+                  <p className="font-semibold text-foreground">{book.owner?.nickname || 'Unknown'}</p>
+                  {book.community && (
+                    <p className="text-sm text-primary">{book.community.name}</p>
+                  )}
+                  {book.is_public && !book.community && (
+                    <p className="text-sm text-muted-foreground">Public listing</p>
+                  )}
                 </div>
               </div>
               
               {/* Actions */}
               <div className="flex-shrink-0 p-4 border-t border-border bg-card/50">
                 <div className="flex gap-3">
-                  <button className="btn-hip flex-1 flex items-center justify-center gap-2">
-                    <MessageCircle className="w-4 h-4" />
-                    Chat with Owner
-                  </button>
+                  {!isOwner && (
+                    <button 
+                      className="btn-hip flex-1 flex items-center justify-center gap-2"
+                      onClick={() => onChat(book.owner_id, book.id)}
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      Chat with Owner
+                    </button>
+                  )}
+                  {isOwner && (
+                    <div className="flex-1 text-center text-sm text-muted-foreground py-3">
+                      This is your book
+                    </div>
+                  )}
                   <button className="p-3 rounded-2xl bg-muted text-muted-foreground hover:text-primary transition-colors">
                     <Heart className="w-5 h-5" />
                   </button>
