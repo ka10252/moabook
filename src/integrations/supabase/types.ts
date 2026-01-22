@@ -82,24 +82,30 @@ export type Database = {
       }
       communities: {
         Row: {
+          cover_url: string | null
           created_at: string
           created_by: string | null
+          description: string | null
           id: string
           member_count: number | null
           name: string
           pin_hash: string
         }
         Insert: {
+          cover_url?: string | null
           created_at?: string
           created_by?: string | null
+          description?: string | null
           id?: string
           member_count?: number | null
           name: string
           pin_hash: string
         }
         Update: {
+          cover_url?: string | null
           created_at?: string
           created_by?: string | null
+          description?: string | null
           id?: string
           member_count?: number | null
           name?: string
@@ -247,22 +253,37 @@ export type Database = {
       }
       profiles: {
         Row: {
+          age: number | null
+          age_public: boolean | null
           avatar_url: string | null
+          bio: string | null
           created_at: string
+          gender: string | null
+          gender_public: boolean | null
           id: string
           nickname: string
           updated_at: string
         }
         Insert: {
+          age?: number | null
+          age_public?: boolean | null
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
+          gender?: string | null
+          gender_public?: boolean | null
           id: string
           nickname: string
           updated_at?: string
         }
         Update: {
+          age?: number | null
+          age_public?: boolean | null
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
+          gender?: string | null
+          gender_public?: boolean | null
           id?: string
           nickname?: string
           updated_at?: string

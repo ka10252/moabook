@@ -6,13 +6,14 @@ import { PlaceholderTab } from '@/components/PlaceholderTab';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { UploadPage } from '@/components/upload/UploadPage';
 import { CommunityPage } from '@/components/community/CommunityPage';
+import { ProfilePage } from '@/components/profile/ProfilePage';
 import { WishlistPage } from '@/components/wishlist/WishlistPage';
 import { ChatModal } from '@/components/chat/ChatModal';
 import { useAuth } from '@/hooks/useAuth';
-import { Upload, User, LogIn, Loader2, MessageCircle } from 'lucide-react';
+import { Upload, User, Users, LogIn, Loader2, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type NavItem = 'shelf' | 'wishlist' | 'upload' | 'profile';
+type NavItem = 'shelf' | 'wishlist' | 'upload' | 'community' | 'profile';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<NavItem>('shelf');
@@ -55,17 +56,28 @@ const Index = () => {
           );
         }
         return <UploadPage />;
+      case 'community':
+        if (!user) {
+          return (
+            <PlaceholderTab
+              icon={Users}
+              title="Sign In Required"
+              description="Please sign in to join and create communities."
+            />
+          );
+        }
+        return <CommunityPage />;
       case 'profile':
         if (!user) {
           return (
             <PlaceholderTab
               icon={User}
               title="Sign In Required"
-              description="Please sign in to access communities and your profile."
+              description="Please sign in to access your profile settings."
             />
           );
         }
-        return <CommunityPage onSignOut={signOut} />;
+        return <ProfilePage onSignOut={signOut} />;
       default:
         return <Bookshelf onOpenChat={handleOpenChat} />;
     }
