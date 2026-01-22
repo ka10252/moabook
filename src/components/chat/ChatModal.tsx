@@ -10,15 +10,24 @@ interface ChatModalProps {
   onClose: () => void;
   initialUserId?: string | null;
   initialBookId?: string | null;
+  initialConversationId?: string | null;
 }
 
-export const ChatModal = ({ isOpen, onClose, initialUserId, initialBookId }: ChatModalProps) => {
+export const ChatModal = ({ isOpen, onClose, initialUserId, initialBookId, initialConversationId }: ChatModalProps) => {
   const { conversations, loading, startConversation, refresh } = useChat();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
 
+  // Auto-select conversation if initialConversationId is provided
+  useEffect(() => {
+    if (isOpen && initialConversationId && conversations.length > 0) {
+      const found = conversations.find(c => c.id === initialConversationId);
+      if (found) setSelectedConversation(found);
+    }
+  }, [isOpen, initialConversationId, conversations]);
+
   // Auto-start conversation if initialUserId is provided
   useEffect(() => {
-    if (isOpen && initialUserId) {
+    if (isOpen && initialUserId && !initialConversationId) {
       startConversation(initialUserId, initialBookId || undefined).then(({ conversation }) => {
         if (conversation) {
           refresh().then(() => {
@@ -28,17 +37,17 @@ export const ChatModal = ({ isOpen, onClose, initialUserId, initialBookId }: Cha
         }
       });
     }
-  }, [isOpen, initialUserId, initialBookId]);
+  }, [isOpen, initialUserId, initialBookId, initialConversationId]);
 
   // Find and select conversation after refresh
   useEffect(() => {
-    if (initialUserId && conversations.length > 0 && !selectedConversation) {
+    if (initialUserId && !initialConversationId && conversations.length > 0 && !selectedConversation) {
       const found = conversations.find(c => 
         c.participant_1 === initialUserId || c.participant_2 === initialUserId
       );
       if (found) setSelectedConversation(found);
     }
-  }, [conversations, initialUserId, selectedConversation]);
+  }, [conversations, initialUserId, initialConversationId, selectedConversation]);
 
   const handleBack = () => {
     setSelectedConversation(null);

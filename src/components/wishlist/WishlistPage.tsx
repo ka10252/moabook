@@ -5,15 +5,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useAuth } from '@/hooks/useAuth';
+import { useChat } from '@/hooks/useChat';
 import { AddWishlistForm } from './AddWishlistForm';
 import { WishlistCard } from './WishlistCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ChatModal } from '@/components/chat/ChatModal';
 
 export const WishlistPage = () => {
   const { user } = useAuth();
   const { items, myItems, loading, addItem, removeItem, markFulfilled } = useWishlist();
+  const { startConversation } = useChat();
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [chatOpen, setChatOpen] = useState(false);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
 
   const filteredItems = items.filter(item =>
     item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -21,6 +26,16 @@ export const WishlistPage = () => {
   );
 
   const othersItems = filteredItems.filter(item => item.user_id !== user?.id);
+
+  const handleMessage = async (userId: string) => {
+    if (!user) return;
+    
+    const { conversation } = await startConversation(userId);
+    if (conversation) {
+      setActiveConversationId(conversation.id);
+      setChatOpen(true);
+    }
+  };
 
   if (loading) {
     return (
@@ -113,6 +128,7 @@ export const WishlistPage = () => {
                         key={item.id}
                         item={item}
                         isOwner={false}
+                        onMessage={() => handleMessage(item.user_id)}
                       />
                     ))}
                   </div>
@@ -148,6 +164,16 @@ export const WishlistPage = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Chat Modal */}
+      <ChatModal
+        isOpen={chatOpen}
+        onClose={() => {
+          setChatOpen(false);
+          setActiveConversationId(null);
+        }}
+        initialConversationId={activeConversationId}
+      />
     </div>
   );
 };
