@@ -1,6 +1,6 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Book } from '@/types/book';
-import { Bookmark } from 'lucide-react';
 
 interface BookSpineProps {
   book: Book;
@@ -28,7 +28,16 @@ export const BookSpine = ({
   isBorrowed = false,
   lenderNickname,
 }: BookSpineProps) => {
+  const [isBookmarkHovered, setIsBookmarkHovered] = useState(false);
   const colorClass = spineColors[(book.spineColor - 1) % spineColors.length];
+  
+  // Calculate dynamic bookmark width based on nickname length
+  const getBookmarkWidth = (name: string) => {
+    const baseWidth = 28;
+    const charWidth = 5;
+    const padding = 16;
+    return Math.min(Math.max(baseWidth, name.length * charWidth + padding), 80);
+  };
   
   return (
     <motion.div
@@ -57,23 +66,59 @@ export const BookSpine = ({
         </div>
       )}
       
-      {/* Borrowed bookmark overlay */}
+      {/* Borrowed bookmark overlay - tactile ribbon design with dynamic width */}
       {isBorrowed && lenderNickname && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center">
-          <Bookmark className="w-6 h-8 text-primary fill-primary" />
-          <span className="absolute top-1.5 text-[6px] font-bold text-primary-foreground leading-tight text-center px-0.5 max-w-[24px] truncate">
-            {lenderNickname}
-          </span>
-        </div>
+        <motion.div 
+          className="absolute -top-2 left-1/2 z-20 flex flex-col items-center cursor-pointer"
+          style={{ 
+            x: '-50%',
+            width: getBookmarkWidth(lenderNickname),
+          }}
+          onMouseEnter={() => setIsBookmarkHovered(true)}
+          onMouseLeave={() => setIsBookmarkHovered(false)}
+          animate={{
+            opacity: isBookmarkHovered ? 0.3 : 1,
+            y: isBookmarkHovered ? -4 : 0,
+          }}
+          transition={{ duration: 0.2 }}
+        >
+          {/* Ribbon bookmark shape */}
+          <div 
+            className="relative bg-gradient-to-b from-primary via-primary to-primary/90 shadow-lg"
+            style={{
+              width: '100%',
+              minHeight: '36px',
+              clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
+            }}
+          >
+            {/* Texture overlay */}
+            <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-black/10" />
+            
+            {/* Fold effect */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-b from-white/20 to-transparent" />
+            
+            {/* Nickname text */}
+            <span 
+              className="absolute inset-x-0 top-1 text-[7px] font-bold text-primary-foreground text-center leading-tight px-1 truncate"
+            >
+              {lenderNickname}
+            </span>
+          </div>
+        </motion.div>
       )}
       
       {/* Spine texture overlay */}
       <div className="absolute inset-0 opacity-20 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
       
-      {/* Book title */}
-      <span className="text-white font-semibold text-xs tracking-wide truncate text-shadow-sm">
+      {/* Book title - fades in when bookmark is hovered */}
+      <motion.span 
+        className="text-white font-semibold text-xs tracking-wide truncate text-shadow-sm"
+        animate={{
+          opacity: isBorrowed && lenderNickname ? (isBookmarkHovered ? 1 : 0.7) : 1,
+        }}
+      >
         {book.title}
-      </span>
+      </motion.span>
       
       {/* Edge highlight */}
       <div className="absolute right-0 top-0 bottom-0 w-[2px] bg-white/20" />

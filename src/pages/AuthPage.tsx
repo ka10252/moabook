@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, forwardRef } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Lock, User, Loader2, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,10 @@ const signInSchema = z.object({
   password: z.string().min(1, { message: "Password is required" }).max(100),
 });
 
-export function AuthPage() {
+// Mock nicknames for demo
+const MOCK_NICKNAMES = ['BookLover', 'ReadingBee', 'PageTurner', 'StorySeeker', 'NovelFan'];
+
+export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -80,10 +83,51 @@ export function AuthPage() {
         },
       });
       if (error) {
-        toast.error(error.message);
+        // If Google OAuth is not enabled, show helpful message
+        if (error.message.includes('provider is not enabled')) {
+          toast.error('Google sign-in is not configured. Use email/password or the Demo button below.');
+        } else {
+          toast.error(error.message);
+        }
       }
     } catch (err) {
       toast.error('Failed to sign in with Google');
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
+  // Mock Google login for prototype - creates a demo account
+  const handleMockGoogleLogin = async () => {
+    setIsGoogleLoading(true);
+    try {
+      // Generate a unique mock email and random nickname
+      const timestamp = Date.now();
+      const mockEmail = `demo_${timestamp}@moa-demo.com`;
+      const mockPassword = `demo_password_${timestamp}`;
+      const mockNickname = MOCK_NICKNAMES[Math.floor(Math.random() * MOCK_NICKNAMES.length)] + '_' + timestamp.toString().slice(-4);
+
+      // First try to sign up
+      const { error: signUpError } = await signUp(mockEmail, mockPassword, mockNickname);
+      
+      if (signUpError) {
+        // If signup fails (maybe account exists), try signing in with existing demo
+        const { error: signInError } = await signIn('demo@moa-demo.com', 'demo_password_123');
+        if (signInError) {
+          // Create a fresh demo account
+          const { error } = await signUp('demo@moa-demo.com', 'demo_password_123', 'DemoUser');
+          if (error && !error.message.includes('already registered')) {
+            throw error;
+          }
+          // Try signing in again
+          await signIn('demo@moa-demo.com', 'demo_password_123');
+        }
+      }
+      
+      toast.success(`Welcome, ${mockNickname}! 📚`);
+    } catch (err) {
+      console.error('Mock login error:', err);
+      toast.error('Failed to create demo account');
     } finally {
       setIsGoogleLoading(false);
     }
@@ -167,6 +211,24 @@ export function AuthPage() {
             )}
           </Button>
 
+          {/* Mock Google Login for Demo */}
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full h-12 rounded-xl text-base font-medium gap-3 mt-3"
+            onClick={handleMockGoogleLogin}
+            disabled={isGoogleLoading}
+          >
+            {isGoogleLoading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <>
+                <User className="w-5 h-5" />
+                🎭 Demo Login (No Account Needed)
+              </>
+            )}
+          </Button>
+
           <div className="relative my-6">
             <Separator />
             <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-3 text-xs text-muted-foreground">
@@ -245,4 +307,6 @@ export function AuthPage() {
       </motion.div>
     </div>
   );
-}
+});
+
+AuthPage.displayName = 'AuthPage';
