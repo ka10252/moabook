@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { dummyWishlists } from '@/data/dummyWishlists';
 
 export interface WishlistItem {
   id: string;
@@ -39,14 +40,20 @@ export const useWishlist = () => {
 
       if (fetchError) throw fetchError;
 
-      const allItems = (data || []).map(item => ({
+      const realItems: WishlistItem[] = (data || []).map(item => ({
         ...item,
         profile: item.profile as { nickname: string } | undefined
       }));
 
+      // Merge with dummy data for demonstration
+      const allItems = [...realItems, ...dummyWishlists];
+
       setItems(allItems);
-      setMyItems(allItems.filter(item => item.user_id === user?.id));
+      setMyItems(realItems.filter(item => item.user_id === user?.id));
     } catch (err) {
+      // Even if there's an error, show dummy data
+      setItems(dummyWishlists);
+      setMyItems([]);
       setError(err instanceof Error ? err.message : 'Failed to load wishlists');
     } finally {
       setLoading(false);

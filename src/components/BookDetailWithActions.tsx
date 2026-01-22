@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MessageCircle, Heart, Share2, Edit2, Trash2 } from 'lucide-react';
+import { X, MessageCircle, Heart, Edit2, Trash2, Loader2 } from 'lucide-react';
 import { Book } from '@/types/book';
+import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,8 +20,15 @@ interface BookDetailWithActionsProps {
   onChat: (ownerId: string, bookId: string) => void;
   onEdit?: (book: Book) => void;
   onDelete?: (bookId: string) => Promise<void>;
+  onAddToInterested?: (book: Book) => Promise<void>;
   currentUserId?: string;
 }
+
+// Truncate description to max 4 lines (roughly 200 chars)
+const truncateDescription = (text: string, maxLength: number = 200): string => {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength).trim() + '...';
+};
 
 export const BookDetailWithActions = ({ 
   book, 
@@ -28,10 +36,13 @@ export const BookDetailWithActions = ({
   onChat, 
   onEdit,
   onDelete,
+  onAddToInterested,
   currentUserId 
 }: BookDetailWithActionsProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeLoading, setLikeLoading] = useState(false);
 
   if (!book) return null;
 
@@ -44,6 +55,21 @@ export const BookDetailWithActions = ({
     setDeleting(false);
     setShowDeleteConfirm(false);
     onClose();
+  };
+
+  const handleLike = async () => {
+    setLikeLoading(true);
+    try {
+      if (onAddToInterested) {
+        await onAddToInterested(book);
+      }
+      setIsLiked(!isLiked);
+      toast.success(isLiked ? 'Removed from Interested Books' : 'Added to Interested Books');
+    } catch (err) {
+      toast.error('Failed to update');
+    } finally {
+      setLikeLoading(false);
+    }
   };
 
   return (
@@ -59,17 +85,18 @@ export const BookDetailWithActions = ({
             onClick={onClose}
           />
           
-          {/* Modal */}
+          {/* Modal - improved responsive sizing */}
           <motion.div
-            className="fixed inset-x-4 top-[10%] bottom-[15%] md:inset-x-auto md:left-1/2 md:w-full md:max-w-lg md:-translate-x-1/2 z-50"
+            className="fixed inset-x-4 top-[5%] md:inset-x-auto md:left-1/2 md:w-full md:max-w-lg md:-translate-x-1/2 z-50"
+            style={{ maxHeight: '90vh' }}
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           >
-            <div className="glass-card h-full overflow-hidden flex flex-col">
-              {/* Header */}
-              <div className="relative h-64 flex-shrink-0">
+            <div className="glass-card h-full max-h-[90vh] overflow-hidden flex flex-col">
+              {/* Header - fixed height */}
+              <div className="relative h-56 flex-shrink-0">
                 <img
                   src={book.cover}
                   alt={book.title}
@@ -106,19 +133,20 @@ export const BookDetailWithActions = ({
                 </div>
               </div>
               
-              {/* Content */}
-              <div className="flex-1 overflow-y-auto p-6">
+              {/* Content - scrollable */}
+              <div className="flex-1 overflow-y-auto p-6 min-h-0">
                 <h2 className="text-2xl font-bold text-foreground mb-1">{book.title}</h2>
                 <p className="text-muted-foreground mb-4">by {book.author}</p>
                 
+                {/* Description - max 4 lines with truncation */}
                 {book.description && (
-                  <p className="text-foreground/80 leading-relaxed mb-6">
-                    {book.description}
+                  <p className="text-foreground/80 leading-relaxed mb-6 line-clamp-4">
+                    {truncateDescription(book.description)}
                   </p>
                 )}
                 
                 {/* Owner info */}
-                <div className="bg-muted/50 rounded-2xl p-4 mb-6">
+                <div className="bg-muted/50 rounded-2xl p-4 mb-4">
                   <p className="text-sm text-muted-foreground mb-1">Listed by</p>
                   <p className="font-semibold text-foreground">{book.owner?.nickname || 'Unknown'}</p>
                   {book.community && (
@@ -130,7 +158,7 @@ export const BookDetailWithActions = ({
                 </div>
               </div>
               
-              {/* Actions */}
+              {/* Actions - removed Share button */}
               <div className="flex-shrink-0 p-4 border-t border-border bg-card/50">
                 <div className="flex gap-3">
                   {isOwner ? (
@@ -163,11 +191,21 @@ export const BookDetailWithActions = ({
                       </button>
                     </>
                   )}
-                  <button className="p-3 rounded-2xl bg-muted text-muted-foreground hover:text-primary transition-colors">
-                    <Heart className="w-5 h-5" />
-                  </button>
-                  <button className="p-3 rounded-2xl bg-muted text-muted-foreground hover:text-primary transition-colors">
-                    <Share2 className="w-5 h-5" />
+                  {/* Heart button - adds to Interested Books */}
+                  <button 
+                    className={`p-3 rounded-2xl transition-colors ${
+                      isLiked 
+                        ? 'bg-primary/20 text-primary' 
+                        : 'bg-muted text-muted-foreground hover:text-primary'
+                    }`}
+                    onClick={handleLike}
+                    disabled={likeLoading}
+                  >
+                    {likeLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+                    )}
                   </button>
                 </div>
               </div>
@@ -176,7 +214,7 @@ export const BookDetailWithActions = ({
 
           {/* Delete Confirmation Dialog */}
           <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-            <AlertDialogContent className="rounded-2xl">
+            <AlertDialogContent className="rounded-2xl max-w-[90vw] md:max-w-md">
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete this book?</AlertDialogTitle>
                 <AlertDialogDescription>
