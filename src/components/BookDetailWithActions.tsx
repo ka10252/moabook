@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, MessageCircle, Heart, Edit2, Trash2, Loader2 } from 'lucide-react';
 import { Book } from '@/types/book';
 import { toast } from 'sonner';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { MemberProfileModal } from '@/components/profile/MemberProfileModal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,6 +46,7 @@ export const BookDetailWithActions = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
+  const [showOwnerProfile, setShowOwnerProfile] = useState(false);
 
   if (!book) return null;
 
@@ -144,16 +147,28 @@ export const BookDetailWithActions = ({
                   </p>
                 )}
                 
-                {/* Owner info */}
-                <div className="bg-muted/50 rounded-2xl p-4 mb-4">
-                  <p className="text-sm text-muted-foreground mb-1">등록자</p>
-                  <p className="font-semibold text-foreground">{book.owner?.nickname || '알 수 없음'}</p>
-                  {book.community && (
-                    <p className="text-sm text-primary">{book.community.name}</p>
-                  )}
-                  {book.is_public && !book.community && (
-                    <p className="text-sm text-muted-foreground">공개 도서</p>
-                  )}
+                {/* Owner info - clickable */}
+                <div 
+                  className="bg-muted/50 rounded-2xl p-4 mb-4 cursor-pointer hover:bg-muted/70 transition-colors"
+                  onClick={() => setShowOwnerProfile(true)}
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={book.owner?.avatar_url || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {book.owner?.nickname?.charAt(0) || '?'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <p className="font-semibold text-foreground">{book.owner?.nickname || '알 수 없음'}</p>
+                      {book.community && (
+                        <p className="text-sm text-primary">{book.community.name}</p>
+                      )}
+                      {book.is_public && !book.community && (
+                        <p className="text-sm text-muted-foreground">공개 도서</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
               
@@ -234,6 +249,13 @@ export const BookDetailWithActions = ({
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+
+          {/* Owner Profile Modal */}
+          <MemberProfileModal
+            isOpen={showOwnerProfile}
+            onClose={() => setShowOwnerProfile(false)}
+            userId={book.owner_id}
+          />
         </>
       )}
     </AnimatePresence>

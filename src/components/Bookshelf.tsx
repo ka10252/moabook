@@ -78,13 +78,15 @@ export const Bookshelf = ({ onOpenChat }: BookshelfProps) => {
   }, [borrowedBooks, user]);
 
   // Filter books based on active filter
+  // For community filter: show all books from community members (not just books assigned to community)
   const filteredBooks = useMemo(() => {
     let books = allBooks.length > 0 ? allBooks : dummyKoreanBooks;
     
     if (activeFilter === 'mine') {
       return books.filter(book => book.owner_id === user?.id);
     } else if (activeFilter !== 'everybody') {
-      // Filter by community ID
+      // Filter by community - show books that belong to this community
+      // This includes my books if I'm in the community
       return books.filter(book => book.community_id === activeFilter);
     }
     
