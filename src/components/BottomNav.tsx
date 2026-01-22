@@ -1,7 +1,7 @@
-import { BookOpen, Heart, Upload, User } from 'lucide-react';
+import { BookOpen, Heart, Upload, Users, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-type NavItem = 'shelf' | 'wishlist' | 'upload' | 'profile';
+type NavItem = 'shelf' | 'wishlist' | 'upload' | 'community' | 'profile';
 
 interface BottomNavProps {
   activeTab: NavItem;
@@ -12,13 +12,14 @@ const navItems = [
   { id: 'shelf' as NavItem, icon: BookOpen, label: 'Bookshelf' },
   { id: 'wishlist' as NavItem, icon: Heart, label: 'Wishlist' },
   { id: 'upload' as NavItem, icon: Upload, label: 'Upload' },
+  { id: 'community' as NavItem, icon: Users, label: 'Community' },
   { id: 'profile' as NavItem, icon: User, label: 'Profile' },
 ];
 
 export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
   return (
     <nav className="nav-bar fixed bottom-0 left-0 right-0 z-40">
-      <div className="flex items-center justify-around py-2 px-4 max-w-lg mx-auto">
+      <div className="flex items-center justify-around py-2 px-2 max-w-lg mx-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -37,7 +38,7 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
                 />
               )}
               <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <span className="text-[9px] font-medium">{item.label}</span>
             </button>
           );
         })}
