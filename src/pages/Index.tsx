@@ -33,6 +33,11 @@ const Index = () => {
     setChatInitialBookId(null);
   };
 
+  const handleResetChatInitialValues = () => {
+    setChatInitialUserId(null);
+    setChatInitialBookId(null);
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'shelf':
@@ -109,6 +114,7 @@ const Index = () => {
         onClose={handleCloseChat}
         initialUserId={chatInitialUserId}
         initialBookId={chatInitialBookId}
+        onResetInitialValues={handleResetChatInitialValues}
       />
     </div>
   );

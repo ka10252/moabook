@@ -11,23 +11,37 @@ interface ChatModalProps {
   initialUserId?: string | null;
   initialBookId?: string | null;
   initialConversationId?: string | null;
+  onResetInitialValues?: () => void;
 }
 
-export const ChatModal = ({ isOpen, onClose, initialUserId, initialBookId, initialConversationId }: ChatModalProps) => {
+export const ChatModal = ({ isOpen, onClose, initialUserId, initialBookId, initialConversationId, onResetInitialValues }: ChatModalProps) => {
   const { conversations, loading, startConversation, refresh } = useChat();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [hasAutoStarted, setHasAutoStarted] = useState(false);
+
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedConversation(null);
+      setHasAutoStarted(false);
+    }
+  }, [isOpen]);
 
   // Auto-select conversation if initialConversationId is provided
   useEffect(() => {
-    if (isOpen && initialConversationId && conversations.length > 0) {
+    if (isOpen && initialConversationId && conversations.length > 0 && !hasAutoStarted) {
       const found = conversations.find(c => c.id === initialConversationId);
-      if (found) setSelectedConversation(found);
+      if (found) {
+        setSelectedConversation(found);
+        setHasAutoStarted(true);
+      }
     }
-  }, [isOpen, initialConversationId, conversations]);
+  }, [isOpen, initialConversationId, conversations, hasAutoStarted]);
 
   // Auto-start conversation if initialUserId is provided
   useEffect(() => {
-    if (isOpen && initialUserId && !initialConversationId) {
+    if (isOpen && initialUserId && !initialConversationId && !hasAutoStarted) {
+      setHasAutoStarted(true);
       startConversation(initialUserId, initialBookId || undefined).then(({ conversation }) => {
         if (conversation) {
           refresh().then(() => {
@@ -37,20 +51,22 @@ export const ChatModal = ({ isOpen, onClose, initialUserId, initialBookId, initi
         }
       });
     }
-  }, [isOpen, initialUserId, initialBookId, initialConversationId]);
+  }, [isOpen, initialUserId, initialBookId, initialConversationId, hasAutoStarted]);
 
-  // Find and select conversation after refresh
+  // Find and select conversation after refresh (only once)
   useEffect(() => {
-    if (initialUserId && !initialConversationId && conversations.length > 0 && !selectedConversation) {
+    if (initialUserId && !initialConversationId && conversations.length > 0 && !selectedConversation && hasAutoStarted) {
       const found = conversations.find(c => 
         c.participant_1 === initialUserId || c.participant_2 === initialUserId
       );
       if (found) setSelectedConversation(found);
     }
-  }, [conversations, initialUserId, initialConversationId, selectedConversation]);
+  }, [conversations, initialUserId, initialConversationId, selectedConversation, hasAutoStarted]);
 
   const handleBack = () => {
     setSelectedConversation(null);
+    setHasAutoStarted(false);
+    onResetInitialValues?.();
     refresh();
   };
 

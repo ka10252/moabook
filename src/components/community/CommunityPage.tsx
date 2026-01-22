@@ -43,18 +43,17 @@ export const CommunityPage = () => {
       // Fetch all communities from DB
       const { data: dbCommunities, error: commError } = await supabase
         .from('communities')
-        .select('id, name, member_count')
+        .select('id, name, member_count, description, cover_url')
         .order('name');
 
       if (commError) throw commError;
 
-      // Cast and add description/cover_url as optional
       const dbData = (dbCommunities || []).map(c => ({
         id: c.id,
         name: c.name,
         member_count: c.member_count,
-        description: null as string | null,
-        cover_url: null as string | null,
+        description: c.description as string | null,
+        cover_url: c.cover_url as string | null,
       }));
 
       // Merge with dummy data for demo (filter out duplicates)

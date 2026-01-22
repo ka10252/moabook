@@ -20,7 +20,8 @@ interface BookDetailWithActionsProps {
   onChat: (ownerId: string, bookId: string) => void;
   onEdit?: (book: Book) => void;
   onDelete?: (bookId: string) => Promise<void>;
-  onAddToInterested?: (book: Book) => Promise<void>;
+  isLiked?: boolean;
+  onToggleLike?: (book: Book) => Promise<void>;
   currentUserId?: string;
 }
 
@@ -36,12 +37,12 @@ export const BookDetailWithActions = ({
   onChat, 
   onEdit,
   onDelete,
-  onAddToInterested,
+  isLiked = false,
+  onToggleLike,
   currentUserId 
 }: BookDetailWithActionsProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
 
   if (!book) return null;
@@ -58,12 +59,10 @@ export const BookDetailWithActions = ({
   };
 
   const handleLike = async () => {
+    if (!onToggleLike) return;
     setLikeLoading(true);
     try {
-      if (onAddToInterested) {
-        await onAddToInterested(book);
-      }
-      setIsLiked(!isLiked);
+      await onToggleLike(book);
       toast.success(isLiked ? '관심 도서에서 제거했습니다' : '관심 도서에 추가했습니다');
     } catch (err) {
       toast.error('업데이트에 실패했습니다');
