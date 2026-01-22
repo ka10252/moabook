@@ -111,10 +111,10 @@ export const Bookshelf = ({ onOpenChat }: BookshelfProps) => {
   const emptyShelvesNeeded = Math.max(0, minShelves - shelves.length);
 
   const getFilterLabel = () => {
-    if (activeFilter === 'everybody') return "Everybody's";
-    if (activeFilter === 'mine') return 'My Books';
+    if (activeFilter === 'everybody') return '모두의 책장';
+    if (activeFilter === 'mine') return '내 책장';
     const community = myCommunities.find(c => c.id === activeFilter);
-    return community?.name || 'Community';
+    return community?.name || '커뮤니티';
   };
 
   return (
@@ -122,7 +122,7 @@ export const Bookshelf = ({ onOpenChat }: BookshelfProps) => {
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-4 bg-card/80 backdrop-blur-sm sticky top-0 z-30">
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-bold text-foreground">Bookshelf</h1>
+          <h1 className="text-xl font-bold text-foreground">책장</h1>
         </div>
         <div className="flex items-center gap-3">
           <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
@@ -137,21 +137,21 @@ export const Bookshelf = ({ onOpenChat }: BookshelfProps) => {
                 onClick={() => setActiveFilter('everybody')}
                 className={activeFilter === 'everybody' ? 'bg-accent' : ''}
               >
-                Everybody's
+                모두의 책장
               </DropdownMenuItem>
               {user && (
                 <DropdownMenuItem 
                   onClick={() => setActiveFilter('mine')}
                   className={activeFilter === 'mine' ? 'bg-accent' : ''}
                 >
-                  My Books
+                  내 책장
                 </DropdownMenuItem>
               )}
               {myCommunities.length > 0 && (
                 <>
                   <DropdownMenuSeparator />
                   <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                    My Communities
+                    내 커뮤니티
                   </div>
                   {myCommunities.map(community => (
                     <DropdownMenuItem 
@@ -228,11 +228,11 @@ export const Bookshelf = ({ onOpenChat }: BookshelfProps) => {
                 {organizedBooks.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-20 text-center">
                     <BookOpen className="w-16 h-16 text-muted-foreground/30 mb-4" />
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No books yet</h3>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">아직 책이 없습니다</h3>
                     <p className="text-muted-foreground text-sm max-w-xs">
                       {activeFilter === 'mine' 
-                        ? 'You haven\'t uploaded any books yet.'
-                        : 'The shelf is empty. Upload a book to get started!'}
+                        ? '아직 등록한 책이 없습니다.'
+                        : '책장이 비어있습니다. 책을 등록해보세요!'}
                     </p>
                   </div>
                 ) : (
@@ -270,9 +270,9 @@ export const Bookshelf = ({ onOpenChat }: BookshelfProps) => {
         onDelete={async (bookId) => {
           const { error } = await deleteBook(bookId);
           if (error) {
-            toast.error('Failed to delete book');
+            toast.error('책 삭제에 실패했습니다');
           } else {
-            toast.success('Book removed from shelf');
+            toast.success('책이 삭제되었습니다');
           }
         }}
         currentUserId={user?.id}

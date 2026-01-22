@@ -16,9 +16,9 @@ export const UploadPage = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-2xl mb-4">
             <BookOpen className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Upload a Book</h1>
+          <h1 className="text-2xl font-bold text-foreground">책 등록하기</h1>
           <p className="text-muted-foreground mt-1">
-            Share your book with the community
+            커뮤니티와 책을 나눠보세요
           </p>
         </motion.div>
 

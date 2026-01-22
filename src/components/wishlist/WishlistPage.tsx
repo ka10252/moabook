@@ -14,7 +14,7 @@ import { ChatModal } from '@/components/chat/ChatModal';
 export const WishlistPage = () => {
   const { user } = useAuth();
   const { items, myItems, loading, addItem, removeItem, markFulfilled } = useWishlist();
-  const { startConversation } = useChat();
+  const { startConversation, sendMessage } = useChat();
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
@@ -27,11 +27,15 @@ export const WishlistPage = () => {
 
   const othersItems = filteredItems.filter(item => item.user_id !== user?.id);
 
-  const handleMessage = async (userId: string) => {
+  const handleMessage = async (userId: string, bookTitle: string) => {
     if (!user) return;
     
-    const { conversation } = await startConversation(userId);
-    if (conversation) {
+    const { conversation, error } = await startConversation(userId);
+    if (conversation && !error) {
+      // Send initial context message about the wishlist item
+      const contextMessage = `안녕하세요! 위시리스트에 있는 "${bookTitle}" 책에 대해 문의드립니다.`;
+      await sendMessage(conversation.id, contextMessage);
+      
       setActiveConversationId(conversation.id);
       setChatOpen(true);
     }
@@ -50,7 +54,7 @@ export const WishlistPage = () => {
       {/* Header */}
       <header className="px-4 py-4 bg-card/80 backdrop-blur-sm sticky top-0 z-30 space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-foreground">Wishlist</h1>
+          <h1 className="text-xl font-bold text-foreground">위시리스트</h1>
           {user && (
             <Button
               size="sm"
@@ -58,7 +62,7 @@ export const WishlistPage = () => {
               className="gap-2"
             >
               <Plus className="w-4 h-4" />
-              Add Book
+              책 추가
             </Button>
           )}
         </div>
@@ -67,7 +71,7 @@ export const WishlistPage = () => {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search wishlists..."
+            placeholder="위시리스트 검색..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 bg-muted border-0"
@@ -90,9 +94,9 @@ export const WishlistPage = () => {
         {/* Tabs */}
         <Tabs defaultValue="all" className="w-full">
           <TabsList className="w-full grid grid-cols-2 bg-muted">
-            <TabsTrigger value="all">All Wishlists</TabsTrigger>
+            <TabsTrigger value="all">모든 위시리스트</TabsTrigger>
             <TabsTrigger value="mine" disabled={!user}>
-              My Wishlist {user && myItems.length > 0 && `(${myItems.length})`}
+              내 위시리스트 {user && myItems.length > 0 && `(${myItems.length})`}
             </TabsTrigger>
           </TabsList>
 
@@ -104,7 +108,7 @@ export const WishlistPage = () => {
                 {/* My items first */}
                 {myItems.length > 0 && (
                   <div className="space-y-3">
-                    <p className="text-sm font-medium text-muted-foreground">Your requests</p>
+                    <p className="text-sm font-medium text-muted-foreground">내 요청</p>
                     {myItems.map(item => (
                       <WishlistCard
                         key={item.id}
@@ -121,14 +125,14 @@ export const WishlistPage = () => {
                 {othersItems.length > 0 && (
                   <div className="space-y-3">
                     {myItems.length > 0 && (
-                      <p className="text-sm font-medium text-muted-foreground pt-2">Community requests</p>
+                      <p className="text-sm font-medium text-muted-foreground pt-2">커뮤니티 요청</p>
                     )}
                     {othersItems.map(item => (
                       <WishlistCard
                         key={item.id}
                         item={item}
                         isOwner={false}
-                        onMessage={() => handleMessage(item.user_id)}
+                        onMessage={() => handleMessage(item.user_id, item.title)}
                       />
                     ))}
                   </div>
@@ -141,13 +145,13 @@ export const WishlistPage = () => {
             {myItems.length === 0 ? (
               <div className="text-center py-12">
                 <Heart className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-                <p className="text-muted-foreground">You haven't added any books yet</p>
+                <p className="text-muted-foreground">아직 추가한 책이 없습니다</p>
                 <Button
                   variant="link"
                   onClick={() => setShowAddForm(true)}
                   className="mt-2"
                 >
-                  Add your first book
+                  첫 번째 책 추가하기
                 </Button>
               </div>
             ) : (
@@ -185,9 +189,9 @@ const EmptyState = () => (
     className="text-center py-12"
   >
     <Heart className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
-    <h3 className="text-lg font-semibold text-foreground mb-2">No wishlists yet</h3>
+    <h3 className="text-lg font-semibold text-foreground mb-2">아직 위시리스트가 없습니다</h3>
     <p className="text-muted-foreground text-sm max-w-xs mx-auto">
-      Be the first to add a book you're looking for! The community might have it.
+      찾고 있는 책을 추가해보세요! 커뮤니티에서 찾을 수 있을지도 몰라요.
     </p>
   </motion.div>
 );

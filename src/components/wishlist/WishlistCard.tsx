@@ -107,18 +107,18 @@ export const WishlistCard = ({ item, isOwner, onDelete, onMarkFulfilled, onMessa
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent className="rounded-2xl max-w-sm mx-4">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this request?</AlertDialogTitle>
+            <AlertDialogTitle>이 요청을 삭제하시겠습니까?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this wishlist request? This action cannot be undone.
+              위시리스트 요청을 삭제합니다. 이 작업은 취소할 수 없습니다.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-xl">취소</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              삭제
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

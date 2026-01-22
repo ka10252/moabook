@@ -72,21 +72,21 @@ export const ChatModal = ({ isOpen, onClose, initialUserId, initialBookId, initi
       />
       
       <motion.div
-        className="fixed inset-x-4 top-[5%] bottom-[10%] md:inset-x-auto md:left-1/2 md:w-full md:max-w-md md:-translate-x-1/2 z-50"
+        className="fixed inset-x-4 top-[5%] bottom-[10%] md:inset-x-auto md:left-1/2 md:w-full md:max-w-md md:-translate-x-1/2 z-50 max-h-[85vh]"
         initial={{ opacity: 0, y: 50, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 50, scale: 0.95 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="bg-card rounded-2xl h-full overflow-hidden flex flex-col shadow-xl">
+        <div className="bg-card rounded-2xl h-full max-h-[85vh] overflow-hidden flex flex-col shadow-xl">
           {selectedConversation ? (
             <ChatView conversation={selectedConversation} onBack={handleBack} />
           ) : (
             <>
               {/* Header */}
               <header className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-                <h2 className="text-lg font-bold text-foreground">Messages</h2>
+                <h2 className="text-lg font-bold text-foreground">메시지</h2>
                 <button
                   onClick={handleClose}
                   className="p-2 rounded-xl hover:bg-muted transition-colors"

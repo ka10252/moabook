@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useMessages, Conversation } from '@/hooks/useChat';
 import { useAuth } from '@/hooks/useAuth';
 import { format, isToday, isYesterday } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
 interface ChatViewProps {
   conversation: Conversation;
@@ -34,18 +35,20 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     setSending(false);
   };
 
-  const formatMessageDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    if (isToday(date)) return format(date, 'h:mm a');
-    if (isYesterday(date)) return `Yesterday ${format(date, 'h:mm a')}`;
-    return format(date, 'MMM d, h:mm a');
+  const handleBack = () => {
+    onBack();
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full max-h-[85vh]">
       {/* Header */}
       <header className="flex items-center gap-3 px-4 py-3 bg-card border-b border-border shrink-0">
-        <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={handleBack} 
+          className="shrink-0"
+        >
           <ArrowLeft className="w-5 h-5" />
         </Button>
         
@@ -55,7 +58,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
           </h2>
           {conversation.book && (
             <p className="text-xs text-muted-foreground truncate">
-              About: {conversation.book.title}
+              관련 책: {conversation.book.title}
             </p>
           )}
         </div>
@@ -69,8 +72,8 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
           </div>
         ) : messages.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-muted-foreground text-sm">No messages yet</p>
-            <p className="text-muted-foreground/70 text-xs mt-1">Say hello! 👋</p>
+            <p className="text-muted-foreground text-sm">아직 메시지가 없습니다</p>
+            <p className="text-muted-foreground/70 text-xs mt-1">인사를 건네보세요! 👋</p>
           </div>
         ) : (
           messages.map((msg, index) => {
@@ -85,10 +88,10 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
                   <div className="text-center my-4">
                     <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">
                       {isToday(new Date(msg.created_at)) 
-                        ? 'Today' 
+                        ? '오늘' 
                         : isYesterday(new Date(msg.created_at))
-                        ? 'Yesterday'
-                        : format(new Date(msg.created_at), 'MMMM d, yyyy')}
+                        ? '어제'
+                        : format(new Date(msg.created_at), 'yyyy년 M월 d일', { locale: ko })}
                     </span>
                   </div>
                 )}
@@ -107,7 +110,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
                   >
                     <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
                     <p className={`text-xs mt-1 ${isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                      {format(new Date(msg.created_at), 'h:mm a')}
+                      {format(new Date(msg.created_at), 'a h:mm', { locale: ko })}
                     </p>
                   </div>
                 </motion.div>
@@ -124,7 +127,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
           <Input
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type a message..."
+            placeholder="메시지를 입력하세요..."
             className="flex-1 bg-muted border-0"
             maxLength={1000}
             disabled={sending}

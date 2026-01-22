@@ -9,11 +9,11 @@ interface BottomNavProps {
 }
 
 const navItems = [
-  { id: 'shelf' as NavItem, icon: BookOpen, label: 'Bookshelf' },
-  { id: 'wishlist' as NavItem, icon: Heart, label: 'Wishlist' },
-  { id: 'upload' as NavItem, icon: Upload, label: 'Upload' },
-  { id: 'community' as NavItem, icon: Users, label: 'Community' },
-  { id: 'profile' as NavItem, icon: User, label: 'Profile' },
+  { id: 'shelf' as NavItem, icon: BookOpen, label: '책장' },
+  { id: 'wishlist' as NavItem, icon: Heart, label: '위시리스트' },
+  { id: 'upload' as NavItem, icon: Upload, label: '등록' },
+  { id: 'community' as NavItem, icon: Users, label: '커뮤니티' },
+  { id: 'profile' as NavItem, icon: User, label: '프로필' },
 ];
 
 export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
