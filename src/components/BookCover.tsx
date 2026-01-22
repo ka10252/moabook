@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Book } from '@/data/books';
+import { Book } from '@/types/book';
 
 interface BookCoverProps {
   book: Book;
