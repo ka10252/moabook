@@ -85,7 +85,7 @@ export const CommunityPage = () => {
       }
     } catch (error) {
       console.error('Fetch communities error:', error);
-      toast.error('Failed to load communities');
+      toast.error('커뮤니티를 불러오는데 실패했습니다');
     } finally {
       setIsLoading(false);
     }
@@ -96,7 +96,7 @@ export const CommunityPage = () => {
 
     // Can't leave dummy communities
     if (communityId.startsWith('dummy-')) {
-      toast.error("Demo community - can't leave");
+      toast.error("데모 커뮤니티에서는 탈퇴할 수 없습니다");
       return;
     }
 
@@ -116,11 +116,11 @@ export const CommunityPage = () => {
         return next;
       });
 
-      toast.success(`Left "${communityName}"`);
+      toast.success(`"${communityName}"에서 탈퇴했습니다`);
       fetchCommunities();
     } catch (error) {
       console.error('Leave community error:', error);
-      toast.error('Failed to leave community');
+      toast.error('커뮤니티 탈퇴에 실패했습니다');
     } finally {
       setLeavingId(null);
     }
@@ -129,7 +129,7 @@ export const CommunityPage = () => {
   const handleJoinCommunity = (community: Community) => {
     // Dummy communities can't be joined
     if (community.id.startsWith('dummy-')) {
-      toast.info('This is a demo community. Create your own to get started!');
+      toast.info('데모 커뮤니티입니다. 직접 커뮤니티를 만들어보세요!');
       return;
     }
     setSelectedCommunity(community);
@@ -162,9 +162,9 @@ export const CommunityPage = () => {
         <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-2xl mb-4">
           <Users className="w-8 h-8 text-primary" />
         </div>
-        <h1 className="text-2xl font-bold text-foreground">Communities</h1>
+        <h1 className="text-2xl font-bold text-foreground">커뮤니티</h1>
         <p className="text-muted-foreground mt-1">
-          Join private groups to share books
+          비공개 그룹에서 책을 나눠보세요
         </p>
       </motion.div>
 
@@ -182,7 +182,7 @@ export const CommunityPage = () => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Search communities..."
+                placeholder="커뮤니티 검색..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 h-12 bg-secondary border-border rounded-xl"

@@ -97,7 +97,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
       }
     } catch (error) {
       console.error('Fetch profile error:', error);
-      toast.error('Failed to load profile');
+      toast.error('프로필 불러오기에 실패했습니다');
     } finally {
       setIsLoading(false);
     }
@@ -107,7 +107,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
     if (!user) return;
     
     if (!nickname.trim()) {
-      toast.error('Nickname is required');
+      toast.error('닉네임은 필수입니다');
       return;
     }
 
@@ -127,10 +127,10 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
 
       if (error) throw error;
 
-      toast.success('Profile saved!');
+      toast.success('프로필이 저장되었습니다!');
     } catch (error) {
       console.error('Save profile error:', error);
-      toast.error('Failed to save profile');
+      toast.error('프로필 저장에 실패했습니다');
     } finally {
       setIsSaving(false);
     }
@@ -144,19 +144,19 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
     const reader = new FileReader();
     reader.onloadend = () => {
       setAvatarUrl(reader.result as string);
-      toast.info('Avatar preview updated. Storage integration coming soon!');
+      toast.info('프로필 사진 미리보기가 업데이트되었습니다. 스토리지 연동 예정!');
     };
     reader.readAsDataURL(file);
   };
 
   const handleChangePassword = async () => {
     if (newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
+      toast.error('비밀번호는 6자 이상이어야 합니다');
       return;
     }
     
     if (newPassword !== confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error('비밀번호가 일치하지 않습니다');
       return;
     }
 
@@ -168,13 +168,13 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
 
       if (error) throw error;
 
-      toast.success('Password changed successfully!');
+      toast.success('비밀번호가 변경되었습니다!');
       setShowPasswordDialog(false);
       setNewPassword('');
       setConfirmPassword('');
     } catch (error) {
       console.error('Change password error:', error);
-      toast.error('Failed to change password');
+      toast.error('비밀번호 변경에 실패했습니다');
     } finally {
       setIsChangingPassword(false);
     }
@@ -223,8 +223,8 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
             />
           </label>
         </div>
-        <h1 className="text-2xl font-bold text-foreground mt-4">Profile</h1>
-        <p className="text-muted-foreground">Manage your account settings</p>
+        <h1 className="text-2xl font-bold text-foreground mt-4">프로필</h1>
+        <p className="text-muted-foreground">계정 설정을 관리하세요</p>
       </motion.div>
 
       {/* Form */}
@@ -236,24 +236,24 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
       >
         {/* Nickname */}
         <div className="space-y-2">
-          <Label htmlFor="nickname">Nickname *</Label>
+          <Label htmlFor="nickname">닉네임 *</Label>
           <Input
             id="nickname"
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
-            placeholder="Your display name"
+            placeholder="표시될 이름"
             className="h-12 bg-secondary border-border rounded-xl"
           />
         </div>
 
         {/* Bio */}
         <div className="space-y-2">
-          <Label htmlFor="bio">One-line Bio</Label>
+          <Label htmlFor="bio">한 줄 소개</Label>
           <Textarea
             id="bio"
             value={bio}
             onChange={(e) => setBio(e.target.value)}
-            placeholder="Tell us about yourself..."
+            placeholder="자신을 소개해주세요..."
             maxLength={100}
             className="bg-secondary border-border rounded-xl resize-none"
             rows={2}
@@ -266,7 +266,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
         {/* Gender */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="gender">Gender</Label>
+            <Label htmlFor="gender">성별</Label>
             <div className="flex items-center gap-2">
               {genderPublic ? (
                 <Eye className="w-4 h-4 text-primary" />
@@ -278,19 +278,19 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                 onCheckedChange={setGenderPublic}
               />
               <span className="text-xs text-muted-foreground">
-                {genderPublic ? 'Public' : 'Private'}
+                {genderPublic ? '공개' : '비공개'}
               </span>
             </div>
           </div>
           <Select value={gender} onValueChange={setGender}>
             <SelectTrigger className="h-12 bg-secondary border-border rounded-xl">
-              <SelectValue placeholder="Select gender" />
+              <SelectValue placeholder="성별 선택" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="male">Male</SelectItem>
-              <SelectItem value="female">Female</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-              <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+              <SelectItem value="male">남성</SelectItem>
+              <SelectItem value="female">여성</SelectItem>
+              <SelectItem value="other">기타</SelectItem>
+              <SelectItem value="prefer-not-to-say">밝히지 않음</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -298,7 +298,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
         {/* Age */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="age">Age</Label>
+            <Label htmlFor="age">나이</Label>
             <div className="flex items-center gap-2">
               {agePublic ? (
                 <Eye className="w-4 h-4 text-primary" />
@@ -310,7 +310,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                 onCheckedChange={setAgePublic}
               />
               <span className="text-xs text-muted-foreground">
-                {agePublic ? 'Public' : 'Private'}
+                {agePublic ? '공개' : '비공개'}
               </span>
             </div>
           </div>
@@ -319,7 +319,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
             type="number"
             value={age}
             onChange={(e) => setAge(e.target.value)}
-            placeholder="Your age"
+            placeholder="나이를 입력하세요"
             min={13}
             max={120}
             className="h-12 bg-secondary border-border rounded-xl"
@@ -337,7 +337,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
           ) : (
             <>
               <Save className="w-4 h-4 mr-2" />
-              Save Profile
+              프로필 저장
             </>
           )}
         </Button>
@@ -349,7 +349,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-background px-2 text-muted-foreground">
-              Account Settings
+              계정 설정
             </span>
           </div>
         </div>
@@ -361,7 +361,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
           className="w-full h-12 rounded-xl justify-start gap-2"
         >
           <Lock className="w-4 h-4" />
-          Change Password
+          비밀번호 변경
         </Button>
 
         {/* Sign Out */}
@@ -371,7 +371,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
           className="w-full h-12 rounded-xl justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
         >
           <LogOut className="w-4 h-4" />
-          Sign Out
+          로그아웃
         </Button>
       </motion.div>
 
@@ -379,15 +379,15 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
       <AlertDialog open={showSignOutDialog} onOpenChange={setShowSignOutDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Sign out?</AlertDialogTitle>
+            <AlertDialogTitle>로그아웃하시겠습니까?</AlertDialogTitle>
             <AlertDialogDescription>
-              You'll need to sign in again to access your books and communities.
+              책장과 커뮤니티에 접근하려면 다시 로그인해야 합니다.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>취소</AlertDialogCancel>
             <AlertDialogAction onClick={handleSignOut}>
-              Sign Out
+              로그아웃
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -397,37 +397,37 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
       <AlertDialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Change Password</AlertDialogTitle>
+            <AlertDialogTitle>비밀번호 변경</AlertDialogTitle>
             <AlertDialogDescription>
-              Enter your new password below.
+              새 비밀번호를 입력해주세요.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="new-password">New Password</Label>
+              <Label htmlFor="new-password">새 비밀번호</Label>
               <Input
                 id="new-password"
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Enter new password"
+                placeholder="새 비밀번호 입력"
                 className="h-12"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirm Password</Label>
+              <Label htmlFor="confirm-password">비밀번호 확인</Label>
               <Input
                 id="confirm-password"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm new password"
+                placeholder="새 비밀번호 확인"
                 className="h-12"
               />
             </div>
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>취소</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleChangePassword}
               disabled={isChangingPassword}
@@ -435,7 +435,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
               {isChangingPassword ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                'Change Password'
+                '비밀번호 변경'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

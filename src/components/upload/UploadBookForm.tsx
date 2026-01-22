@@ -300,10 +300,10 @@ export const UploadBookForm = () => {
               ) : (
                 <Camera className="w-4 h-4" />
               )}
-              Upload Cover Photo
+              표지 사진 업로드
             </Button>
             <p className="text-xs text-muted-foreground">
-              No cover found? Upload your own image
+              표지를 찾을 수 없나요? 직접 업로드하세요
             </p>
           </motion.div>
         )}
@@ -312,31 +312,31 @@ export const UploadBookForm = () => {
       {/* Manual Entry Fields */}
       <div className="space-y-4">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Title</label>
+          <label className="text-sm font-medium text-foreground">제목</label>
           <Input
             value={formData.title}
             onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
-            placeholder="Book title"
+            placeholder="책 제목"
             className="h-12 bg-secondary border-border rounded-xl"
           />
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Author</label>
+          <label className="text-sm font-medium text-foreground">저자</label>
           <Input
             value={formData.author}
             onChange={(e) => setFormData((prev) => ({ ...prev, author: e.target.value }))}
-            placeholder="Author name"
+            placeholder="저자 이름"
             className="h-12 bg-secondary border-border rounded-xl"
           />
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Description (optional)</label>
+          <label className="text-sm font-medium text-foreground">설명 (선택사항)</label>
           <Textarea
             value={formData.description}
             onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-            placeholder="Brief description of the book..."
+            placeholder="책에 대한 간단한 설명..."
             rows={3}
             className="bg-secondary border-border rounded-xl resize-none"
           />
@@ -364,14 +364,14 @@ export const UploadBookForm = () => {
             exit={{ opacity: 0, height: 0 }}
             className="space-y-2"
           >
-            <label className="text-sm font-medium text-foreground">Price (€)</label>
+            <label className="text-sm font-medium text-foreground">가격 (₩)</label>
             <Input
               type="number"
               min="0"
-              step="0.01"
+              step="100"
               value={formData.price}
               onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
-              placeholder="0.00"
+              placeholder="0"
               className="h-12 bg-secondary border-border rounded-xl"
             />
           </motion.div>
@@ -395,12 +395,12 @@ export const UploadBookForm = () => {
         {isSubmitting ? (
           <>
             <Loader2 className="w-5 h-5 animate-spin mr-2" />
-            Uploading...
+            등록 중...
           </>
         ) : (
           <>
             <Upload className="w-5 h-5 mr-2" />
-            Upload Book
+            책 등록하기
           </>
         )}
       </Button>

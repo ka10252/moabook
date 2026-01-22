@@ -11,7 +11,7 @@ interface ModeToggleProps {
 export const ModeToggle = ({ value, onChange }: ModeToggleProps) => {
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-foreground">Transaction Type</label>
+      <label className="text-sm font-medium text-foreground">거래 유형</label>
       <div className="relative flex p-1 bg-muted rounded-xl">
         <motion.div
           className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-card rounded-lg shadow-sm"
@@ -27,7 +27,7 @@ export const ModeToggle = ({ value, onChange }: ModeToggleProps) => {
             value === 'rent' ? "text-foreground" : "text-muted-foreground"
           )}
         >
-          📖 Rent
+          📖 대여
         </button>
         
         <button
@@ -38,7 +38,7 @@ export const ModeToggle = ({ value, onChange }: ModeToggleProps) => {
             value === 'sell' ? "text-foreground" : "text-muted-foreground"
           )}
         >
-          💰 Sell
+          💰 판매
         </button>
       </div>
     </div>

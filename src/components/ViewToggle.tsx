@@ -16,14 +16,14 @@ export const ViewToggle = ({ viewMode, onViewModeChange }: ViewToggleProps) => {
         onClick={() => onViewModeChange('spine')}
       >
         <AlignJustify className="w-4 h-4" />
-        Spine
+        책등
       </button>
       <button
         className={`view-toggle-btn flex items-center gap-2 ${viewMode === 'cover' ? 'active' : ''}`}
         onClick={() => onViewModeChange('cover')}
       >
         <Grid3X3 className="w-4 h-4" />
-        Cover
+        북커버
       </button>
     </div>
   );

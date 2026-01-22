@@ -34,7 +34,7 @@ export const CommunitySelector = ({
 
   return (
     <div className="space-y-3">
-      <label className="text-sm font-medium text-foreground">Visibility</label>
+      <label className="text-sm font-medium text-foreground">공개 범위</label>
       
       <div className="relative flex p-1 bg-muted rounded-xl">
         <motion.div
@@ -52,7 +52,7 @@ export const CommunitySelector = ({
           )}
         >
           <Globe className="w-4 h-4" />
-          Public
+          전체 공개
         </button>
         
         <button
@@ -64,7 +64,7 @@ export const CommunitySelector = ({
           )}
         >
           <Users className="w-4 h-4" />
-          Community
+          커뮤니티
         </button>
       </div>
 
@@ -82,10 +82,10 @@ export const CommunitySelector = ({
           ) : myCommunities.length === 0 ? (
             <div className="p-4 bg-secondary rounded-xl text-center">
               <p className="text-sm text-muted-foreground">
-                You haven't joined any communities yet.
+                아직 가입한 커뮤니티가 없습니다.
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Join a community first to post private books.
+                비공개 책을 등록하려면 먼저 커뮤니티에 가입하세요.
               </p>
             </div>
           ) : (
@@ -94,7 +94,7 @@ export const CommunitySelector = ({
               onValueChange={(value) => onCommunityChange(value || null)}
             >
               <SelectTrigger className="h-12 bg-secondary border-border rounded-xl">
-                <SelectValue placeholder="Select a community" />
+                <SelectValue placeholder="커뮤니티 선택" />
               </SelectTrigger>
               <SelectContent>
                 {myCommunities.map((community: Community) => (
@@ -103,7 +103,7 @@ export const CommunitySelector = ({
                       <Users className="w-4 h-4 text-muted-foreground" />
                       <span>{community.name}</span>
                       <span className="text-xs text-muted-foreground">
-                        ({community.memberCount} members)
+                        ({community.memberCount}명)
                       </span>
                     </div>
                   </SelectItem>
