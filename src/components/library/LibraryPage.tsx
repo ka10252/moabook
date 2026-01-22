@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useBooks, useBorrowedBooks } from '@/hooks/useBooks';
 import { MyBooksTab } from './MyBooksTab';
 import { BorrowedBooksTab } from './BorrowedBooksTab';
+import { EditBookModal } from './EditBookModal';
 import { Book } from '@/types/book';
 
 interface LibraryPageProps {
@@ -10,12 +11,13 @@ interface LibraryPageProps {
 }
 
 export const LibraryPage = ({ onOpenChat }: LibraryPageProps) => {
-  const { books: myBooks, loading: loadingMyBooks, deleteBook, refresh } = useBooks({ onlyMine: true });
+  const { books: myBooks, loading: loadingMyBooks, deleteBook, updateBook, refresh } = useBooks({ onlyMine: true });
   const { borrowedBooks, loading: loadingBorrowed } = useBorrowedBooks();
+  const [editingBook, setEditingBook] = useState<Book | null>(null);
 
-  const handleEdit = (book: Book) => {
-    // TODO: Open edit modal
-    console.log('Edit book:', book.id);
+  const handleSaveBook = async (bookId: string, updates: Partial<Book>) => {
+    const result = await updateBook(bookId, updates);
+    return result;
   };
 
   return (
@@ -42,7 +44,7 @@ export const LibraryPage = ({ onOpenChat }: LibraryPageProps) => {
               books={myBooks}
               loading={loadingMyBooks}
               onDelete={deleteBook}
-              onEdit={handleEdit}
+              onEdit={setEditingBook}
             />
           </TabsContent>
 
@@ -55,6 +57,13 @@ export const LibraryPage = ({ onOpenChat }: LibraryPageProps) => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Edit Modal */}
+      <EditBookModal
+        book={editingBook}
+        onClose={() => setEditingBook(null)}
+        onSave={handleSaveBook}
+      />
     </div>
   );
 };
