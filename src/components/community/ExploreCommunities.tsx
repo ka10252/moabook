@@ -58,10 +58,10 @@ export const ExploreCommunities = ({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
-            className="relative overflow-hidden rounded-2xl border border-border bg-card hover:border-primary/30 transition-all"
+            className="relative overflow-hidden rounded-2xl group"
           >
-            {/* Cover */}
-            <div className="relative h-20 bg-gradient-to-br from-primary/20 to-primary/5">
+            {/* Full Background Image */}
+            <div className="absolute inset-0">
               {community.cover_url ? (
                 <img
                   src={community.cover_url}
@@ -69,36 +69,36 @@ export const ExploreCommunities = ({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Users className="w-8 h-8 text-primary/30" />
-                </div>
+                <div className="w-full h-full bg-gradient-to-br from-wood-medium to-wood-dark" />
               )}
-              <div className="absolute top-2 left-2">
-                <div className="flex items-center gap-1 text-xs bg-background/80 backdrop-blur-sm px-2 py-1 rounded-full text-muted-foreground">
-                  <Lock className="w-3 h-3" />
-                  비공개
-                </div>
-              </div>
+              {/* Dark Overlay */}
+              <div className="absolute inset-0 bg-black/50 group-hover:bg-black/40 transition-colors" />
             </div>
 
             {/* Content */}
-            <div className="p-4">
-              <h3 className="font-semibold text-foreground truncate">
+            <div className="relative z-10 p-4">
+              {/* Privacy Badge */}
+              <div className="flex items-center gap-1 text-xs bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full text-white/90 w-fit mb-3">
+                <Lock className="w-3 h-3" />
+                비공개
+              </div>
+
+              <h3 className="font-semibold text-white truncate drop-shadow-md">
                 {community.name}
               </h3>
               {community.description && (
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                <p className="text-xs text-white/80 mt-1 line-clamp-2">
                   {community.description}
                 </p>
               )}
               <div className="flex items-center justify-between mt-3">
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-white/70">
                   {community.member_count || 0}명
                 </span>
                 <Button
                   size="sm"
                   onClick={() => onJoin(community)}
-                  className="h-8"
+                  className="h-8 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0"
                 >
                   가입
                 </Button>
