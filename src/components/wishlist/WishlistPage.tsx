@@ -14,11 +14,11 @@ import { ChatModal } from '@/components/chat/ChatModal';
 export const WishlistPage = () => {
   const { user } = useAuth();
   const { items, myItems, loading, addItem, removeItem, markFulfilled } = useWishlist();
-  const { startConversation, sendMessage } = useChat();
+  const { startConversation, sendMessage, refresh: refreshChat } = useChat();
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [chatUserId, setChatUserId] = useState<string | null>(null);
 
   const filteredItems = items.filter(item =>
     item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -30,15 +30,27 @@ export const WishlistPage = () => {
   const handleMessage = async (userId: string, bookTitle: string) => {
     if (!user) return;
     
+    // Start conversation first
     const { conversation, error } = await startConversation(userId);
     if (conversation && !error) {
       // Send initial context message about the wishlist item
       const contextMessage = `안녕하세요! 위시리스트에 있는 "${bookTitle}" 책에 대해 문의드립니다.`;
       await sendMessage(conversation.id, contextMessage);
       
-      setActiveConversationId(conversation.id);
+      // Refresh to update list then open chat with the user
+      await refreshChat();
+      setChatUserId(userId);
       setChatOpen(true);
     }
+  };
+
+  const handleCloseChat = () => {
+    setChatOpen(false);
+    setChatUserId(null);
+  };
+
+  const handleResetChatValues = () => {
+    setChatUserId(null);
   };
 
   if (loading) {
@@ -172,11 +184,9 @@ export const WishlistPage = () => {
       {/* Chat Modal */}
       <ChatModal
         isOpen={chatOpen}
-        onClose={() => {
-          setChatOpen(false);
-          setActiveConversationId(null);
-        }}
-        initialConversationId={activeConversationId}
+        onClose={handleCloseChat}
+        initialUserId={chatUserId}
+        onResetInitialValues={handleResetChatValues}
       />
     </div>
   );
