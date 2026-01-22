@@ -16,7 +16,8 @@ export interface DummyWishlist {
 export const dummyWishlists: DummyWishlist[] = [
   {
     id: 'wish-1',
-    user_id: 'user-wish-1',
+    // Must be a valid UUID because chat/conversations expect UUID participant ids
+    user_id: '11111111-1111-1111-1111-111111111111',
     title: '작별인사',
     author: '김영하',
     notes: '김영하 작가님의 최신작을 찾고 있어요. 어디서든 구하기 힘들더라고요.',
@@ -26,7 +27,7 @@ export const dummyWishlists: DummyWishlist[] = [
   },
   {
     id: 'wish-2',
-    user_id: 'user-wish-2',
+    user_id: '22222222-2222-2222-2222-222222222222',
     title: '아몬드',
     author: '손원평',
     notes: '감정을 못 느끼는 소년 이야기인데 꼭 읽어보고 싶습니다!',
@@ -36,7 +37,7 @@ export const dummyWishlists: DummyWishlist[] = [
   },
   {
     id: 'wish-3',
-    user_id: 'user-wish-3',
+    user_id: '33333333-3333-3333-3333-333333333333',
     title: '불편한 편의점',
     author: '김호연',
     notes: '베스트셀러라고 해서 빌려보고 싶어요.',
@@ -46,7 +47,7 @@ export const dummyWishlists: DummyWishlist[] = [
   },
   {
     id: 'wish-4',
-    user_id: 'user-wish-4',
+    user_id: '44444444-4444-4444-4444-444444444444',
     title: '세이노의 가르침',
     author: '세이노',
     notes: null,
@@ -56,7 +57,7 @@ export const dummyWishlists: DummyWishlist[] = [
   },
   {
     id: 'wish-5',
-    user_id: 'user-wish-5',
+    user_id: '55555555-5555-5555-5555-555555555555',
     title: '역행자',
     author: '자청',
     notes: '자기계발서 중에 제일 좋다고 해서 찾고 있습니다.',
