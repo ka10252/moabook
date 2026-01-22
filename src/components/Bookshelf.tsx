@@ -5,12 +5,14 @@ import { BookSpine } from './BookSpine';
 import { BookCover } from './BookCover';
 import { BookDetailWithActions } from './BookDetailWithActions';
 import { EditBookModal } from './library/EditBookModal';
+import { LikedBooksPopup } from './LikedBooksPopup';
 import { ViewToggle, ViewMode } from './ViewToggle';
 import { Book } from '@/types/book';
 import { useBooks, useBorrowedBooks } from '@/hooks/useBooks';
 import { useCommunities } from '@/hooks/useCommunities';
+import { useLikedBooks } from '@/hooks/useLikedBooks';
 import { useAuth } from '@/hooks/useAuth';
-import { ChevronDown, Loader2, BookOpen } from 'lucide-react';
+import { ChevronDown, Loader2, BookOpen, Heart } from 'lucide-react';
 import { dummyKoreanBooks } from '@/data/dummyBooks';
 import { getLentBookIds, getBorrowedBooksInfo, DEMO_USER_ID } from '@/data/dummyTransactions';
 import { toast } from 'sonner';
@@ -35,10 +37,12 @@ export const Bookshelf = ({ onOpenChat }: BookshelfProps) => {
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [previewBook, setPreviewBook] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>('everybody');
+  const [showLikedBooks, setShowLikedBooks] = useState(false);
 
   const { myCommunities } = useCommunities();
   const { books: allBooks, loading, deleteBook, updateBook, refresh } = useBooks({});
   const { borrowedBooks } = useBorrowedBooks();
+  const { isLiked, toggleLike, likedBooks } = useLikedBooks();
 
   // For demo purposes, use dummy transactions if user is logged in
   // In production, this would come from real transactions
@@ -118,11 +122,11 @@ export const Bookshelf = ({ onOpenChat }: BookshelfProps) => {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-4 bg-card/80 backdrop-blur-sm sticky top-0 z-30">
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-bold text-foreground">책장</h1>
+          {/* Removed 책장 text as requested */}
         </div>
         <div className="flex items-center gap-3">
           <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
@@ -258,6 +262,31 @@ export const Bookshelf = ({ onOpenChat }: BookshelfProps) => {
         )}
       </div>
 
+      {/* Heart FAB - shows liked books count */}
+      <motion.button
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="fixed bottom-24 right-4 z-40 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors"
+        onClick={() => setShowLikedBooks(true)}
+      >
+        <Heart className="w-6 h-6" />
+        {likedBooks.length > 0 && (
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs font-bold rounded-full flex items-center justify-center">
+            {likedBooks.length}
+          </span>
+        )}
+      </motion.button>
+
+      {/* Liked Books Popup */}
+      <LikedBooksPopup
+        isOpen={showLikedBooks}
+        onClose={() => setShowLikedBooks(false)}
+        onBookClick={(book) => {
+          setShowLikedBooks(false);
+          setSelectedBook(book);
+        }}
+      />
+
       {/* Book Detail Modal with Edit/Delete */}
       <BookDetailWithActions 
         book={selectedBook} 
@@ -273,6 +302,13 @@ export const Bookshelf = ({ onOpenChat }: BookshelfProps) => {
             toast.error('책 삭제에 실패했습니다');
           } else {
             toast.success('책이 삭제되었습니다');
+          }
+        }}
+        isLiked={selectedBook ? isLiked(selectedBook.id) : false}
+        onToggleLike={async (book) => {
+          const { error } = await toggleLike(book.id);
+          if (error) {
+            toast.error('업데이트에 실패했습니다');
           }
         }}
         currentUserId={user?.id}
