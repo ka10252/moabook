@@ -1,7 +1,7 @@
-import { BookOpen, Heart, Upload, Library, User } from 'lucide-react';
+import { BookOpen, Heart, Upload, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-type NavItem = 'shelf' | 'wishlist' | 'upload' | 'library' | 'profile';
+type NavItem = 'shelf' | 'wishlist' | 'upload' | 'profile';
 
 interface BottomNavProps {
   activeTab: NavItem;
@@ -9,10 +9,9 @@ interface BottomNavProps {
 }
 
 const navItems = [
-  { id: 'shelf' as NavItem, icon: BookOpen, label: "Everybody's" },
+  { id: 'shelf' as NavItem, icon: BookOpen, label: 'Bookshelf' },
   { id: 'wishlist' as NavItem, icon: Heart, label: 'Wishlist' },
   { id: 'upload' as NavItem, icon: Upload, label: 'Upload' },
-  { id: 'library' as NavItem, icon: Library, label: 'My Library' },
   { id: 'profile' as NavItem, icon: User, label: 'Profile' },
 ];
 

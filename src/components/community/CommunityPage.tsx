@@ -1,9 +1,20 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users } from 'lucide-react';
+import { Users, LogOut, Settings } from 'lucide-react';
 import { CommunityList } from './CommunityList';
 import { CreateCommunityForm } from './CreateCommunityForm';
 import { JoinCommunityForm } from './JoinCommunityForm';
+import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 type View = 'list' | 'create' | 'join';
 
@@ -13,9 +24,14 @@ interface Community {
   member_count: number | null;
 }
 
-export const CommunityPage = () => {
+interface CommunityPageProps {
+  onSignOut?: () => void;
+}
+
+export const CommunityPage = ({ onSignOut }: CommunityPageProps) => {
   const [view, setView] = useState<View>('list');
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
+  const [showSignOutDialog, setShowSignOutDialog] = useState(false);
 
   const handleSelectCommunity = (community: Community) => {
     setSelectedCommunity(community);
@@ -25,6 +41,11 @@ export const CommunityPage = () => {
   const handleBackToList = () => {
     setView('list');
     setSelectedCommunity(null);
+  };
+
+  const handleSignOut = () => {
+    setShowSignOutDialog(false);
+    onSignOut?.();
   };
 
   return (
@@ -89,6 +110,50 @@ export const CommunityPage = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Settings Section */}
+      {onSignOut && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed bottom-24 left-0 right-0 px-4"
+        >
+          <div className="max-w-md mx-auto">
+            <div className="glass-card p-4 rounded-xl">
+              <div className="flex items-center gap-3 mb-3">
+                <Settings className="w-5 h-5 text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground">Settings</span>
+              </div>
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => setShowSignOutDialog(true)}
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Sign Out Confirmation */}
+      <AlertDialog open={showSignOutDialog} onOpenChange={setShowSignOutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sign out?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You'll need to sign in again to access your books and communities.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSignOut}>
+              Sign Out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
