@@ -72,6 +72,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "books_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "books_owner_id_fkey"
             columns: ["owner_id"]
             isOneToOne: false
@@ -149,6 +156,13 @@ export type Database = {
             columns: ["community_id"]
             isOneToOne: false
             referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_members_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities_public"
             referencedColumns: ["id"]
           },
           {
@@ -468,7 +482,44 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      communities_public: {
+        Row: {
+          cover_url: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string | null
+          member_count: number | null
+          name: string | null
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string | null
+          member_count?: number | null
+          name?: string | null
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string | null
+          member_count?: number | null
+          name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communities_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_role: {

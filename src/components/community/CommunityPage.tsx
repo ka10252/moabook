@@ -43,18 +43,18 @@ export const CommunityPage = () => {
   const fetchCommunities = async () => {
     setIsLoading(true);
     try {
-      // Fetch all communities from DB
+      // Fetch all communities from the public view (excludes pin_hash)
       const { data: dbCommunities, error: commError } = await supabase
-        .from('communities')
+        .from('communities_public' as any)
         .select('id, name, member_count, description, cover_url, created_by')
         .order('name');
 
       if (commError) throw commError;
 
-      const dbData = (dbCommunities || []).map(c => ({
-        id: c.id,
-        name: c.name,
-        member_count: c.member_count,
+      const dbData = ((dbCommunities || []) as any[]).map((c: any) => ({
+        id: c.id as string,
+        name: c.name as string,
+        member_count: c.member_count as number | null,
         description: c.description as string | null,
         cover_url: c.cover_url as string | null,
         created_by: c.created_by as string | null,
