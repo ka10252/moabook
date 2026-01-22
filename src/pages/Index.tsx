@@ -7,13 +7,12 @@ import { AuthModal } from '@/components/auth/AuthModal';
 import { UploadPage } from '@/components/upload/UploadPage';
 import { CommunityPage } from '@/components/community/CommunityPage';
 import { WishlistPage } from '@/components/wishlist/WishlistPage';
-import { LibraryPage } from '@/components/library/LibraryPage';
 import { ChatModal } from '@/components/chat/ChatModal';
 import { useAuth } from '@/hooks/useAuth';
-import { Upload, Library, User, LogIn, LogOut, Loader2, MessageCircle } from 'lucide-react';
+import { Upload, User, LogIn, Loader2, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type NavItem = 'shelf' | 'wishlist' | 'upload' | 'library' | 'profile';
+type NavItem = 'shelf' | 'wishlist' | 'upload' | 'profile';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<NavItem>('shelf');
@@ -56,17 +55,6 @@ const Index = () => {
           );
         }
         return <UploadPage />;
-      case 'library':
-        if (!user) {
-          return (
-            <PlaceholderTab
-              icon={Library}
-              title="Sign In Required"
-              description="Please sign in to view your library and borrowed books."
-            />
-          );
-        }
-        return <LibraryPage onOpenChat={handleOpenChat} />;
       case 'profile':
         if (!user) {
           return (
@@ -77,7 +65,7 @@ const Index = () => {
             />
           );
         }
-        return <CommunityPage />;
+        return <CommunityPage onSignOut={signOut} />;
       default:
         return <Bookshelf onOpenChat={handleOpenChat} />;
     }
@@ -89,7 +77,7 @@ const Index = () => {
       <header className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between px-4 h-14">
           <h1 className="text-xl font-bold text-foreground tracking-tight">
-            Ex-Lib 📚
+            Moa 📚
           </h1>
           
           <div className="flex items-center gap-2">
@@ -106,17 +94,7 @@ const Index = () => {
             
             {loading ? (
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-            ) : user ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => signOut()}
-                className="gap-2"
-              >
-                <LogOut className="w-4 h-4" />
-                Sign Out
-              </Button>
-            ) : (
+            ) : !user && (
               <Button
                 variant="default"
                 size="sm"

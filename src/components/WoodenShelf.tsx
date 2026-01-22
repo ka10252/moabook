@@ -2,9 +2,10 @@ import { ReactNode } from 'react';
 
 interface WoodenShelfProps {
   children: ReactNode;
+  isEmpty?: boolean;
 }
 
-export const WoodenShelf = ({ children }: WoodenShelfProps) => {
+export const WoodenShelf = ({ children, isEmpty = false }: WoodenShelfProps) => {
   return (
     <div className="relative">
       {/* Shelf side panels */}
@@ -12,13 +13,19 @@ export const WoodenShelf = ({ children }: WoodenShelfProps) => {
       <div className="absolute -right-4 top-0 bottom-0 w-4 shelf-side rounded-r-sm z-10" />
       
       {/* Main shelf area with books */}
-      <div className="relative bg-wood-dark/20 min-h-[180px] rounded-sm p-4 pb-0">
+      <div className="relative bg-wood-dark/20 min-h-[160px] rounded-sm p-4 pb-0">
         {/* Back panel shadow */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-transparent rounded-sm" />
         
         {/* Books container */}
-        <div className="relative z-10">
-          {children}
+        <div className="relative z-10 h-[140px] flex items-end">
+          {isEmpty ? (
+            <div className="w-full flex items-center justify-center text-muted-foreground/40 text-sm italic">
+              Empty shelf
+            </div>
+          ) : (
+            children
+          )}
         </div>
       </div>
       
