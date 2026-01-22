@@ -1,7 +1,10 @@
 import { Book } from '@/types/book';
+import { DEMO_USER_ID } from './dummyTransactions';
 
 // Dummy Korean books for initial display
+// Some books are owned by the demo user to show Edit/Delete, Lent status
 export const dummyKoreanBooks: Book[] = [
+  // User's own books (first row)
   {
     id: 'dummy-1',
     title: '82년생 김지영',
@@ -11,13 +14,14 @@ export const dummyKoreanBooks: Book[] = [
     condition: 'A',
     mode: 'rent',
     price: null,
-    status: 'available',
+    status: 'rented', // Currently lent out
     is_public: true,
     community_id: null,
-    owner_id: 'dummy-owner',
+    owner_id: DEMO_USER_ID, // User owns this - LENT
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     spineColor: 1,
+    owner: { nickname: 'You' },
   },
   {
     id: 'dummy-2',
@@ -31,10 +35,11 @@ export const dummyKoreanBooks: Book[] = [
     status: 'available',
     is_public: true,
     community_id: null,
-    owner_id: 'dummy-owner',
+    owner_id: DEMO_USER_ID, // User owns this
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     spineColor: 2,
+    owner: { nickname: 'You' },
   },
   {
     id: 'dummy-3',
@@ -48,10 +53,11 @@ export const dummyKoreanBooks: Book[] = [
     status: 'available',
     is_public: true,
     community_id: null,
-    owner_id: 'dummy-owner',
+    owner_id: DEMO_USER_ID, // User owns this
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     spineColor: 3,
+    owner: { nickname: 'You' },
   },
   {
     id: 'dummy-4',
@@ -62,14 +68,16 @@ export const dummyKoreanBooks: Book[] = [
     condition: 'A',
     mode: 'rent',
     price: null,
-    status: 'available',
+    status: 'rented', // Currently lent out
     is_public: true,
     community_id: null,
-    owner_id: 'dummy-owner',
+    owner_id: DEMO_USER_ID, // User owns this - LENT
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     spineColor: 4,
+    owner: { nickname: 'You' },
   },
+  // Others' books
   {
     id: 'dummy-5',
     title: '파친코',
@@ -79,13 +87,14 @@ export const dummyKoreanBooks: Book[] = [
     condition: 'S',
     mode: 'rent',
     price: null,
-    status: 'available',
+    status: 'rented', // User BORROWED this
     is_public: true,
     community_id: null,
     owner_id: 'dummy-owner',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     spineColor: 5,
+    owner: { nickname: '문학소녀' },
   },
   {
     id: 'dummy-6',
@@ -103,6 +112,7 @@ export const dummyKoreanBooks: Book[] = [
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     spineColor: 6,
+    owner: { nickname: '책벌레민수' },
   },
   {
     id: 'dummy-7',
@@ -113,13 +123,14 @@ export const dummyKoreanBooks: Book[] = [
     condition: 'S',
     mode: 'rent',
     price: null,
-    status: 'available',
+    status: 'rented', // User BORROWED this
     is_public: true,
     community_id: null,
     owner_id: 'dummy-owner',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     spineColor: 1,
+    owner: { nickname: '한강팬' },
   },
   {
     id: 'dummy-8',
@@ -137,5 +148,6 @@ export const dummyKoreanBooks: Book[] = [
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     spineColor: 2,
+    owner: { nickname: '독서왕지현' },
   },
 ];

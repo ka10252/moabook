@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { WoodenShelf } from './WoodenShelf';
 import { BookSpine } from './BookSpine';
 import { BookCover } from './BookCover';
-import { BookDetail } from './BookDetail';
+import { BookDetailWithActions } from './BookDetailWithActions';
+import { EditBookModal } from './library/EditBookModal';
 import { ViewToggle, ViewMode } from './ViewToggle';
 import { Book } from '@/types/book';
 import { useBooks, useBorrowedBooks } from '@/hooks/useBooks';
@@ -11,6 +12,8 @@ import { useCommunities } from '@/hooks/useCommunities';
 import { useAuth } from '@/hooks/useAuth';
 import { ChevronDown, Loader2, BookOpen } from 'lucide-react';
 import { dummyKoreanBooks } from '@/data/dummyBooks';
+import { getLentBookIds, getBorrowedBooksInfo, DEMO_USER_ID } from '@/data/dummyTransactions';
+import { toast } from 'sonner';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,27 +32,46 @@ export const Bookshelf = ({ onOpenChat }: BookshelfProps) => {
   const { user } = useAuth();
   const [viewMode, setViewMode] = useState<ViewMode>('spine');
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [previewBook, setPreviewBook] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>('everybody');
 
   const { myCommunities } = useCommunities();
-  const { books: allBooks, loading } = useBooks({});
+  const { books: allBooks, loading, deleteBook, updateBook, refresh } = useBooks({});
   const { borrowedBooks } = useBorrowedBooks();
 
-  // Get lent books (books I own that are currently rented/borrowed by others)
+  // For demo purposes, use dummy transactions if user is logged in
+  // In production, this would come from real transactions
   const lentBookIds = useMemo(() => {
-    // This would come from transactions where I'm the owner
+    if (user) {
+      // Check for real lent transactions here
+      // For demo, use dummy data
+      return getLentBookIds(DEMO_USER_ID);
+    }
     return new Set<string>();
-  }, []);
+  }, [user]);
 
   // Get borrowed books info (books I borrowed from others)
   const borrowedBooksInfo = useMemo(() => {
-    return new Map(
+    // First check real borrowed books
+    const realBorrowed = new Map(
       borrowedBooks
         .filter(t => t.book)
         .map(t => [t.book.id, t.book.owner?.nickname || 'Someone'])
     );
-  }, [borrowedBooks]);
+    
+    // For demo, merge with dummy data
+    if (user) {
+      const dummyBorrowed = getBorrowedBooksInfo(DEMO_USER_ID);
+      dummyBorrowed.forEach((nickname, bookId) => {
+        if (!realBorrowed.has(bookId)) {
+          realBorrowed.set(bookId, nickname);
+        }
+      });
+    }
+    
+    return realBorrowed;
+  }, [borrowedBooks, user]);
 
   // Filter books based on active filter
   const filteredBooks = useMemo(() => {
@@ -236,12 +258,34 @@ export const Bookshelf = ({ onOpenChat }: BookshelfProps) => {
         )}
       </div>
 
-      {/* Book Detail Modal */}
-      <BookDetail 
+      {/* Book Detail Modal with Edit/Delete */}
+      <BookDetailWithActions 
         book={selectedBook} 
         onClose={() => setSelectedBook(null)} 
         onChat={onOpenChat}
+        onEdit={(book) => {
+          setSelectedBook(null);
+          setEditingBook(book);
+        }}
+        onDelete={async (bookId) => {
+          const { error } = await deleteBook(bookId);
+          if (error) {
+            toast.error('Failed to delete book');
+          } else {
+            toast.success('Book removed from shelf');
+          }
+        }}
         currentUserId={user?.id}
+      />
+
+      {/* Edit Modal */}
+      <EditBookModal
+        book={editingBook}
+        onClose={() => setEditingBook(null)}
+        onSave={async (bookId, updates) => {
+          const result = await updateBook(bookId, updates);
+          return result;
+        }}
       />
     </div>
   );
