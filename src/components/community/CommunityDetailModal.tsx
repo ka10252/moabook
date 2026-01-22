@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Users, Crown, Trash2, UserMinus, Loader2, Settings } from 'lucide-react';
+import { X, Users, Crown, Trash2, UserMinus, Loader2, Settings, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { MemberProfileModal } from '@/components/profile/MemberProfileModal';
+import { EditCommunityModal } from './EditCommunityModal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +36,7 @@ interface Community {
   id: string;
   name: string;
   description?: string | null;
+  cover_url?: string | null;
   created_by?: string | null;
   member_count: number | null;
 }
@@ -43,6 +46,7 @@ interface CommunityDetailModalProps {
   onClose: () => void;
   community: Community | null;
   onCommunityDeleted?: () => void;
+  onCommunityUpdated?: () => void;
 }
 
 export const CommunityDetailModal = ({
@@ -50,6 +54,7 @@ export const CommunityDetailModal = ({
   onClose,
   community,
   onCommunityDeleted,
+  onCommunityUpdated,
 }: CommunityDetailModalProps) => {
   const { user } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
@@ -58,6 +63,8 @@ export const CommunityDetailModal = ({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState<Member | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const isOwner = community?.created_by === user?.id;
 
@@ -201,15 +208,26 @@ export const CommunityDetailModal = ({
                   멤버 ({members.length})
                 </span>
                 {isOwner && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setConfirmDelete(true)}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    삭제
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setShowEditModal(true)}
+                      className="text-primary hover:text-primary hover:bg-primary/10 gap-1"
+                    >
+                      <Pencil className="w-4 h-4" />
+                      수정
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setConfirmDelete(true)}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      삭제
+                    </Button>
+                  </div>
                 )}
               </div>
 
@@ -232,7 +250,8 @@ export const CommunityDetailModal = ({
                       return (
                         <div
                           key={member.id}
-                          className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors"
+                          className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
+                          onClick={() => setSelectedMemberId(member.user_id)}
                         >
                           <div className="flex items-center gap-3">
                             <Avatar className="w-10 h-10">
@@ -264,7 +283,10 @@ export const CommunityDetailModal = ({
                             <Button
                               size="icon"
                               variant="ghost"
-                              onClick={() => setConfirmRemove(member)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfirmRemove(member);
+                              }}
                               disabled={removingId === member.user_id}
                               className="h-8 w-8 text-muted-foreground hover:text-destructive"
                             >
@@ -326,6 +348,24 @@ export const CommunityDetailModal = ({
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+
+          {/* Member Profile Modal */}
+          <MemberProfileModal
+            isOpen={!!selectedMemberId}
+            onClose={() => setSelectedMemberId(null)}
+            userId={selectedMemberId}
+          />
+
+          {/* Edit Community Modal */}
+          <EditCommunityModal
+            isOpen={showEditModal}
+            onClose={() => setShowEditModal(false)}
+            community={community}
+            onUpdated={() => {
+              onCommunityUpdated?.();
+              fetchMembers();
+            }}
+          />
         </>
       )}
     </AnimatePresence>

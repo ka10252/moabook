@@ -16,6 +16,7 @@ export interface Book {
   updated_at: string;
   owner?: {
     nickname: string;
+    avatar_url?: string | null;
   };
   community?: {
     name: string;
@@ -39,7 +40,7 @@ export const transformDbBook = (row: any): Book => ({
   owner_id: row.owner_id,
   created_at: row.created_at,
   updated_at: row.updated_at,
-  owner: row.profile ? { nickname: row.profile.nickname } : undefined,
+  owner: row.profile ? { nickname: row.profile.nickname, avatar_url: row.profile.avatar_url } : undefined,
   community: row.community ? { name: row.community.name } : null,
   spineColor: Math.floor(Math.random() * 6) + 1, // Random spine color for now
 });

@@ -24,7 +24,7 @@ export const useBooks = (options: UseBooksOptions = {}) => {
         .from('books')
         .select(`
           *,
-          profile:profiles!books_owner_id_fkey(nickname),
+          profile:profiles!books_owner_id_fkey(nickname, avatar_url),
           community:communities(name)
         `)
         .order('created_at', { ascending: false });

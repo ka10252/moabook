@@ -277,6 +277,7 @@ export const CommunityPage = () => {
         onClose={() => setDetailCommunity(null)}
         community={detailCommunity}
         onCommunityDeleted={fetchCommunities}
+        onCommunityUpdated={fetchCommunities}
       />
     </div>
   );
