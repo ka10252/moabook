@@ -6,8 +6,9 @@ import { PlaceholderTab } from '@/components/PlaceholderTab';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { UploadPage } from '@/components/upload/UploadPage';
 import { CommunityPage } from '@/components/community/CommunityPage';
+import { WishlistPage } from '@/components/wishlist/WishlistPage';
 import { useAuth } from '@/hooks/useAuth';
-import { Heart, Upload, Library, User, LogIn, LogOut, Loader2 } from 'lucide-react';
+import { Upload, Library, User, LogIn, LogOut, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 type NavItem = 'shelf' | 'wishlist' | 'upload' | 'library' | 'profile';
@@ -22,13 +23,7 @@ const Index = () => {
       case 'shelf':
         return <Bookshelf />;
       case 'wishlist':
-        return (
-          <PlaceholderTab
-            icon={Heart}
-            title="Wishlist"
-            description="Books you're looking for will appear here. Post what you need and let the community help!"
-          />
-        );
+        return <WishlistPage />;
       case 'upload':
         if (!user) {
           return (
