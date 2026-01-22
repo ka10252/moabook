@@ -7,9 +7,11 @@ import { CommunityPage } from '@/components/community/CommunityPage';
 import { ProfilePage } from '@/components/profile/ProfilePage';
 import { WishlistPage } from '@/components/wishlist/WishlistPage';
 import { ChatModal } from '@/components/chat/ChatModal';
+import { NotificationPopup } from '@/components/notifications/NotificationPopup';
 import { AuthPage } from '@/pages/AuthPage';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, MessageCircle } from 'lucide-react';
+import { useNotifications } from '@/hooks/useNotifications';
+import { Loader2, MessageCircle, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 type NavItem = 'shelf' | 'wishlist' | 'upload' | 'community' | 'profile';
@@ -19,7 +21,9 @@ const Index = () => {
   const [showChatModal, setShowChatModal] = useState(false);
   const [chatInitialUserId, setChatInitialUserId] = useState<string | null>(null);
   const [chatInitialBookId, setChatInitialBookId] = useState<string | null>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
   const { user, loading, signOut } = useAuth();
+  const { unreadCount } = useNotifications();
 
   const handleOpenChat = (userId: string, bookId: string) => {
     setChatInitialUserId(userId);
@@ -78,14 +82,32 @@ const Index = () => {
             Moa 📚
           </h1>
           
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowChatModal(true)}
-            className="relative"
-          >
-            <MessageCircle className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-1">
+            {/* Notification Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowNotifications(true)}
+              className="relative"
+            >
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs font-bold rounded-full flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </Button>
+
+            {/* Chat Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowChatModal(true)}
+              className="relative"
+            >
+              <MessageCircle className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -115,6 +137,12 @@ const Index = () => {
         initialUserId={chatInitialUserId}
         initialBookId={chatInitialBookId}
         onResetInitialValues={handleResetChatInitialValues}
+      />
+
+      {/* Notification Popup */}
+      <NotificationPopup
+        isOpen={showNotifications}
+        onClose={() => setShowNotifications(false)}
       />
     </div>
   );
