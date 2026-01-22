@@ -10,6 +10,7 @@ import { AddWishlistForm } from './AddWishlistForm';
 import { WishlistCard } from './WishlistCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChatModal } from '@/components/chat/ChatModal';
+import { toast } from 'sonner';
 
 export const WishlistPage = () => {
   const { user } = useAuth();
@@ -32,7 +33,12 @@ export const WishlistPage = () => {
     
     // Start conversation first
     const { conversation, error } = await startConversation(userId);
-    if (conversation && !error) {
+    if (error || !conversation) {
+      toast.error('채팅을 시작할 수 없습니다');
+      return;
+    }
+
+    if (conversation) {
       // Send initial context message about the wishlist item
       const contextMessage = `안녕하세요! 위시리스트에 있는 "${bookTitle}" 책에 대해 문의드립니다.`;
       await sendMessage(conversation.id, contextMessage);
