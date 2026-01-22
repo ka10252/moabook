@@ -64,9 +64,9 @@ export const BookDetailWithActions = ({
         await onAddToInterested(book);
       }
       setIsLiked(!isLiked);
-      toast.success(isLiked ? 'Removed from Interested Books' : 'Added to Interested Books');
+      toast.success(isLiked ? '관심 도서에서 제거했습니다' : '관심 도서에 추가했습니다');
     } catch (err) {
-      toast.error('Failed to update');
+      toast.error('업데이트에 실패했습니다');
     } finally {
       setLikeLoading(false);
     }
@@ -121,14 +121,14 @@ export const BookDetailWithActions = ({
                       ? 'bg-secondary text-secondary-foreground'
                       : 'bg-muted text-muted-foreground'
                   }`}>
-                    {book.condition === 'S' ? 'Like New' : book.condition === 'A' ? 'Good' : 'Used'}
+                    {book.condition === 'S' ? '새 책' : book.condition === 'A' ? '양호' : '보통'}
                   </span>
                   <span className={`px-3 py-1 rounded-full text-sm font-bold ${
                     book.mode === 'rent' 
                       ? 'bg-primary text-primary-foreground' 
                       : 'bg-accent text-accent-foreground'
                   }`}>
-                    {book.mode === 'rent' ? 'For Rent' : `₩${book.price?.toLocaleString()}`}
+                    {book.mode === 'rent' ? '대여' : `₩${book.price?.toLocaleString()}`}
                   </span>
                 </div>
               </div>
@@ -147,13 +147,13 @@ export const BookDetailWithActions = ({
                 
                 {/* Owner info */}
                 <div className="bg-muted/50 rounded-2xl p-4 mb-4">
-                  <p className="text-sm text-muted-foreground mb-1">Listed by</p>
-                  <p className="font-semibold text-foreground">{book.owner?.nickname || 'Unknown'}</p>
+                  <p className="text-sm text-muted-foreground mb-1">등록자</p>
+                  <p className="font-semibold text-foreground">{book.owner?.nickname || '알 수 없음'}</p>
                   {book.community && (
                     <p className="text-sm text-primary">{book.community.name}</p>
                   )}
                   {book.is_public && !book.community && (
-                    <p className="text-sm text-muted-foreground">Public listing</p>
+                    <p className="text-sm text-muted-foreground">공개 도서</p>
                   )}
                 </div>
               </div>
@@ -169,14 +169,14 @@ export const BookDetailWithActions = ({
                         onClick={() => onEdit?.(book)}
                       >
                         <Edit2 className="w-4 h-4" />
-                        Edit
+                        수정
                       </button>
                       <button 
                         className="flex-1 py-3 px-4 rounded-2xl bg-destructive/10 text-destructive font-semibold flex items-center justify-center gap-2 hover:bg-destructive/20 transition-colors"
                         onClick={() => setShowDeleteConfirm(true)}
                       >
                         <Trash2 className="w-4 h-4" />
-                        Delete
+                        삭제
                       </button>
                     </>
                   ) : (
@@ -187,7 +187,7 @@ export const BookDetailWithActions = ({
                         onClick={() => onChat(book.owner_id, book.id)}
                       >
                         <MessageCircle className="w-4 h-4" />
-                        Chat with Owner
+                        채팅하기
                       </button>
                     </>
                   )}
@@ -216,21 +216,21 @@ export const BookDetailWithActions = ({
           <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
             <AlertDialogContent className="rounded-2xl max-w-[90vw] md:max-w-md">
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete this book?</AlertDialogTitle>
+                <AlertDialogTitle>이 책을 삭제하시겠습니까?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will permanently remove "{book.title}" from your shelf. This action cannot be undone.
+                  "{book.title}"을(를) 책장에서 영구적으로 삭제합니다. 이 작업은 취소할 수 없습니다.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel disabled={deleting} className="rounded-xl">
-                  Cancel
+                  취소
                 </AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleDelete}
                   disabled={deleting}
                   className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
-                  {deleting ? 'Deleting...' : 'Delete'}
+                  {deleting ? '삭제 중...' : '삭제'}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

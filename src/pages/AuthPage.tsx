@@ -7,21 +7,20 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { Separator } from '@/components/ui/separator';
-import { supabase } from '@/integrations/supabase/client';
 
 const signUpSchema = z.object({
-  email: z.string().trim().email({ message: "Invalid email address" }).max(255),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }).max(100),
-  nickname: z.string().trim().min(2, { message: "Nickname must be at least 2 characters" }).max(30),
+  email: z.string().trim().email({ message: "올바른 이메일 주소를 입력해주세요" }).max(255),
+  password: z.string().min(6, { message: "비밀번호는 6자 이상이어야 합니다" }).max(100),
+  nickname: z.string().trim().min(2, { message: "닉네임은 2자 이상이어야 합니다" }).max(30),
 });
 
 const signInSchema = z.object({
-  email: z.string().trim().email({ message: "Invalid email address" }).max(255),
-  password: z.string().min(1, { message: "Password is required" }).max(100),
+  email: z.string().trim().email({ message: "올바른 이메일 주소를 입력해주세요" }).max(255),
+  password: z.string().min(1, { message: "비밀번호를 입력해주세요" }).max(100),
 });
 
 // Mock nicknames for demo
-const MOCK_NICKNAMES = ['BookLover', 'ReadingBee', 'PageTurner', 'StorySeeker', 'NovelFan'];
+const MOCK_NICKNAMES = ['책벌레', '독서광', '책덕후', '페이지터너', '소설팬'];
 
 export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
@@ -29,7 +28,7 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
   const [password, setPassword] = useState('');
   const [nickname, setNickname] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
   const { signUp, signIn } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,7 +48,7 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
         if (error) {
           toast.error(error.message);
         } else {
-          toast.success('Welcome to Moa! 📚');
+          toast.success('Moa에 오신 것을 환영합니다! 📚');
           resetForm();
         }
       } else {
@@ -64,7 +63,7 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
         if (error) {
           toast.error(error.message);
         } else {
-          toast.success('Welcome back! 📖');
+          toast.success('다시 오신 것을 환영합니다! 📖');
           resetForm();
         }
       }
@@ -73,33 +72,9 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setIsGoogleLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin,
-        },
-      });
-      if (error) {
-        // If Google OAuth is not enabled, show helpful message
-        if (error.message.includes('provider is not enabled')) {
-          toast.error('Google sign-in is not configured. Use email/password or the Demo button below.');
-        } else {
-          toast.error(error.message);
-        }
-      }
-    } catch (err) {
-      toast.error('Failed to sign in with Google');
-    } finally {
-      setIsGoogleLoading(false);
-    }
-  };
-
-  // Mock Google login for prototype - creates a demo account
-  const handleMockGoogleLogin = async () => {
-    setIsGoogleLoading(true);
+  // Mock login for prototype - creates a demo account
+  const handleDemoLogin = async () => {
+    setIsDemoLoading(true);
     try {
       // Generate a unique mock email and random nickname
       const timestamp = Date.now();
@@ -115,7 +90,7 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
         const { error: signInError } = await signIn('demo@moa-demo.com', 'demo_password_123');
         if (signInError) {
           // Create a fresh demo account
-          const { error } = await signUp('demo@moa-demo.com', 'demo_password_123', 'DemoUser');
+          const { error } = await signUp('demo@moa-demo.com', 'demo_password_123', '체험용계정');
           if (error && !error.message.includes('already registered')) {
             throw error;
           }
@@ -124,12 +99,12 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
         }
       }
       
-      toast.success(`Welcome, ${mockNickname}! 📚`);
+      toast.success(`환영합니다, ${mockNickname}님! 📚`);
     } catch (err) {
-      console.error('Mock login error:', err);
-      toast.error('Failed to create demo account');
+      console.error('Demo login error:', err);
+      toast.error('체험 계정 생성에 실패했습니다');
     } finally {
-      setIsGoogleLoading(false);
+      setIsDemoLoading(false);
     }
   };
 
@@ -158,7 +133,7 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
           </motion.div>
           <h1 className="text-4xl font-bold text-foreground mb-2">Moa 📚</h1>
           <p className="text-muted-foreground">
-            Share books with your community
+            커뮤니티와 함께 책을 나누세요
           </p>
         </div>
 
@@ -167,64 +142,29 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
           {/* Header */}
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold text-foreground mb-1">
-              {mode === 'signin' ? 'Welcome Back' : 'Create Account'}
+              {mode === 'signin' ? '다시 오신 것을 환영합니다' : '계정 만들기'}
             </h2>
             <p className="text-sm text-muted-foreground">
               {mode === 'signin'
-                ? 'Sign in to access your library'
-                : 'Set up your profile to start sharing'}
+                ? '로그인하여 책장에 접속하세요'
+                : '프로필을 설정하고 책 나눔을 시작하세요'}
             </p>
           </div>
 
-          {/* Google Sign In */}
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full h-12 rounded-xl text-base font-medium gap-3"
-            onClick={handleGoogleSignIn}
-            disabled={isGoogleLoading}
-          >
-            {isGoogleLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <>
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path
-                    fill="currentColor"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  />
-                </svg>
-                Continue with Google
-              </>
-            )}
-          </Button>
-
-          {/* Mock Google Login for Demo */}
+          {/* Demo Login Button */}
           <Button
             type="button"
             variant="secondary"
-            className="w-full h-12 rounded-xl text-base font-medium gap-3 mt-3"
-            onClick={handleMockGoogleLogin}
-            disabled={isGoogleLoading}
+            className="w-full h-12 rounded-xl text-base font-medium gap-3"
+            onClick={handleDemoLogin}
+            disabled={isDemoLoading}
           >
-            {isGoogleLoading ? (
+            {isDemoLoading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <>
                 <User className="w-5 h-5" />
-                🎭 Demo Login (No Account Needed)
+                🎭 체험 로그인 (계정 불필요)
               </>
             )}
           </Button>
@@ -232,7 +172,7 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
           <div className="relative my-6">
             <Separator />
             <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-3 text-xs text-muted-foreground">
-              or
+              또는
             </span>
           </div>
 
@@ -243,7 +183,7 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   type="text"
-                  placeholder="Choose a nickname"
+                  placeholder="닉네임을 입력하세요"
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
                   className="pl-12 h-12 rounded-xl bg-muted/50 border-0 focus-visible:ring-2 focus-visible:ring-primary"
@@ -256,7 +196,7 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 type="email"
-                placeholder="Email address"
+                placeholder="이메일 주소"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-12 h-12 rounded-xl bg-muted/50 border-0 focus-visible:ring-2 focus-visible:ring-primary"
@@ -268,7 +208,7 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 type="password"
-                placeholder="Password"
+                placeholder="비밀번호"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="pl-12 h-12 rounded-xl bg-muted/50 border-0 focus-visible:ring-2 focus-visible:ring-primary"
@@ -284,9 +224,9 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : mode === 'signin' ? (
-                'Sign In'
+                '로그인'
               ) : (
-                'Create Account'
+                '회원가입'
               )}
             </Button>
           </form>
@@ -294,12 +234,12 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
           {/* Toggle mode */}
           <div className="mt-6 text-center">
             <p className="text-muted-foreground text-sm">
-              {mode === 'signin' ? "Don't have an account?" : 'Already have an account?'}
+              {mode === 'signin' ? '계정이 없으신가요?' : '이미 계정이 있으신가요?'}
               <button
                 onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
                 className="ml-2 text-primary font-semibold hover:underline"
               >
-                {mode === 'signin' ? 'Sign Up' : 'Sign In'}
+                {mode === 'signin' ? '회원가입' : '로그인'}
               </button>
             </p>
           </div>

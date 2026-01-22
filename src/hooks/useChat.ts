@@ -165,11 +165,34 @@ export const useChat = () => {
     return { conversation: data, error };
   };
 
+  const sendMessage = async (conversationId: string, content: string) => {
+    if (!user || !conversationId || !content.trim()) {
+      return { error: new Error('Invalid message') };
+    }
+
+    const { error } = await supabase.from('messages').insert({
+      conversation_id: conversationId,
+      sender_id: user.id,
+      content: content.trim(),
+    });
+
+    // Update conversation's last_message_at
+    if (!error) {
+      await supabase
+        .from('conversations')
+        .update({ last_message_at: new Date().toISOString() })
+        .eq('id', conversationId);
+    }
+
+    return { error };
+  };
+
   return {
     conversations,
     loading,
     refresh: fetchConversations,
     startConversation,
+    sendMessage,
   };
 };
 

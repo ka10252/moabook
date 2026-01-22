@@ -47,6 +47,32 @@ export const UploadBookForm = () => {
     communityId: null,
   });
 
+  // Summarize description using AI
+  const summarizeDescription = async (description: string): Promise<string> => {
+    if (!description || description.length <= 200) return description;
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/summarize-book`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ description, language: 'ko' }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.summary || description.slice(0, 200) + '...';
+      }
+    } catch (error) {
+      console.error('Summarization failed:', error);
+    }
+    
+    // Fallback: simple truncation
+    return description.slice(0, 200) + '...';
+  };
+
   useEffect(() => {
     const fillBookDetails = async () => {
       if (!selectedBook) return;
@@ -57,12 +83,17 @@ export const UploadBookForm = () => {
       // Fetch description
       const description = await fetchBookDetails(selectedBook.key);
       
+      // Summarize if too long
+      const summarizedDescription = description 
+        ? await summarizeDescription(description)
+        : '';
+      
       setFormData((prev) => ({
         ...prev,
         title: selectedBook.title,
         author: selectedBook.author,
         coverUrl: selectedBook.cover || '',
-        description: description || prev.description,
+        description: summarizedDescription,
       }));
       
       // Show manual cover option if no cover found
@@ -175,7 +206,7 @@ export const UploadBookForm = () => {
 
       if (error) throw error;
 
-      toast.success('Book uploaded successfully!');
+      toast.success('책이 등록되었습니다!');
       
       // Reset form
       setSelectedBook(null);
@@ -193,7 +224,7 @@ export const UploadBookForm = () => {
       });
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Failed to upload book. Please try again.');
+      toast.error('책 등록에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsSubmitting(false);
     }
@@ -203,8 +234,8 @@ export const UploadBookForm = () => {
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Book Search */}
       <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground">Find Your Book</label>
-        <p className="text-xs text-muted-foreground">Supports Korean and English titles</p>
+        <label className="text-sm font-medium text-foreground">책 검색</label>
+        <p className="text-xs text-muted-foreground">한국어와 영어 제목 모두 지원</p>
         <BookSearchInput
           selectedBook={selectedBook}
           onBookSelect={setSelectedBook}
@@ -213,7 +244,7 @@ export const UploadBookForm = () => {
         {isFetchingDetails && (
           <p className="text-xs text-muted-foreground flex items-center gap-1">
             <Loader2 className="w-3 h-3 animate-spin" />
-            Fetching book details...
+            책 정보를 가져오는 중...
           </p>
         )}
       </div>
