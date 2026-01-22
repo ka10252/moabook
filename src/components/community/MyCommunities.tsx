@@ -107,42 +107,52 @@ export const MyCommunities = ({
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  className="flex-shrink-0 w-48 bg-primary/5 border border-primary/20 rounded-xl p-4 cursor-pointer hover:bg-primary/10 transition-colors"
+                  className="relative flex-shrink-0 w-48 h-28 rounded-xl overflow-hidden cursor-pointer group"
                   onClick={() => onCommunityClick?.(community)}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-2">
-                        {community.cover_url ? (
-                          <img
-                            src={community.cover_url}
-                            alt={community.name}
-                            className="w-full h-full rounded-full object-cover"
-                          />
-                        ) : (
-                          <Users className="w-5 h-5 text-primary" />
-                        )}
+                  {/* Background Image or Default */}
+                  <div className="absolute inset-0">
+                    {community.cover_url ? (
+                      <img
+                        src={community.cover_url}
+                        alt={community.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-wood-medium to-wood-dark" />
+                    )}
+                    {/* Dark Overlay for Readability */}
+                    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors" />
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="relative z-10 h-full p-3 flex flex-col justify-between">
+                    <div className="flex items-start justify-between">
+                      <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                        <Users className="w-4 h-4 text-white" />
                       </div>
-                      <p className="font-medium text-foreground text-sm truncate">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={(e) => handleLeaveClick(e, community.id, community.name)}
+                        disabled={leavingId === community.id}
+                        className="h-7 w-7 text-white/70 hover:text-white hover:bg-white/20"
+                      >
+                        {leavingId === community.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <LogOut className="w-3.5 h-3.5" />
+                        )}
+                      </Button>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-white text-sm truncate drop-shadow-md">
                         {community.name}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-white/80">
                         {community.member_count || 0}명
                       </p>
                     </div>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={(e) => handleLeaveClick(e, community.id, community.name)}
-                      disabled={leavingId === community.id}
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive flex-shrink-0"
-                    >
-                      {leavingId === community.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <LogOut className="w-4 h-4" />
-                      )}
-                    </Button>
                   </div>
                 </motion.div>
               ))}
