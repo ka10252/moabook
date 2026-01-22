@@ -29,12 +29,12 @@ export const JoinCommunityForm = ({ community, onSuccess, onBack }: JoinCommunit
     e.preventDefault();
 
     if (!user) {
-      toast.error('Please sign in first');
+      toast.error('먼저 로그인해주세요');
       return;
     }
 
     if (pin.length !== 4) {
-      setError('Please enter a 4-digit PIN');
+      setError('4자리 PIN을 입력해주세요');
       return;
     }
 
@@ -54,7 +54,7 @@ export const JoinCommunityForm = ({ community, onSuccess, onBack }: JoinCommunit
       const enteredPinHash = btoa(pin);
       
       if (communityData.pin_hash !== enteredPinHash) {
-        setError('Incorrect PIN. Please try again.');
+        setError('잘못된 PIN입니다. 다시 시도해주세요.');
         setPin('');
         setIsSubmitting(false);
         return;
@@ -69,7 +69,7 @@ export const JoinCommunityForm = ({ community, onSuccess, onBack }: JoinCommunit
         .maybeSingle();
 
       if (existingMember) {
-        toast.info('You are already a member of this community');
+        toast.info('이미 이 커뮤니티의 멤버입니다');
         onSuccess();
         return;
       }
@@ -85,11 +85,11 @@ export const JoinCommunityForm = ({ community, onSuccess, onBack }: JoinCommunit
 
       if (joinError) throw joinError;
 
-      toast.success(`Joined "${community.name}"!`);
+      toast.success(`"${community.name}"에 가입했습니다!`);
       onSuccess();
     } catch (error) {
       console.error('Join community error:', error);
-      toast.error('Failed to join community');
+      toast.error('커뮤니티 가입에 실패했습니다');
     } finally {
       setIsSubmitting(false);
     }
@@ -109,28 +109,28 @@ export const JoinCommunityForm = ({ community, onSuccess, onBack }: JoinCommunit
         className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to list
+        목록으로 돌아가기
       </button>
 
       <div className="text-center mb-6">
         <div className="inline-flex items-center justify-center w-14 h-14 bg-primary/10 rounded-2xl mb-3">
           <Users className="w-7 h-7 text-primary" />
         </div>
-        <h2 className="text-xl font-bold text-foreground">Join Community</h2>
+        <h2 className="text-xl font-bold text-foreground">커뮤니티 가입</h2>
         <p className="text-sm text-muted-foreground mt-1">
           {community.name}
         </p>
         <p className="text-xs text-muted-foreground mt-1">
-          {community.member_count || 0} member{(community.member_count || 0) !== 1 ? 's' : ''}
+          {community.member_count || 0}명
         </p>
       </div>
 
       <div className="space-y-2">
         <label className="text-sm font-medium text-foreground text-center block">
-          Enter 4-Digit PIN
+          4자리 PIN 입력
         </label>
         <p className="text-xs text-muted-foreground text-center mb-4">
-          Ask the community admin for the PIN
+          커뮤니티 관리자에게 PIN을 문의하세요
         </p>
         <div className="flex justify-center">
           <InputOTP
@@ -168,7 +168,7 @@ export const JoinCommunityForm = ({ community, onSuccess, onBack }: JoinCommunit
         {isSubmitting ? (
           <Loader2 className="w-5 h-5 animate-spin" />
         ) : (
-          'Join Community'
+          '가입하기'
         )}
       </Button>
     </motion.form>

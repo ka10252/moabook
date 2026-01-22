@@ -9,15 +9,15 @@ interface ConditionSelectorProps {
 }
 
 const conditions: { value: Condition; label: string; description: string }[] = [
-  { value: 'S', label: 'S', description: 'Like New' },
-  { value: 'A', label: 'A', description: 'Good' },
-  { value: 'B', label: 'B', description: 'Used' },
+  { value: 'S', label: 'S', description: '새 책' },
+  { value: 'A', label: 'A', description: '양호' },
+  { value: 'B', label: 'B', description: '보통' },
 ];
 
 export const ConditionSelector = ({ value, onChange }: ConditionSelectorProps) => {
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-foreground">Condition</label>
+      <label className="text-sm font-medium text-foreground">책 상태</label>
       <div className="flex gap-2">
         {conditions.map((condition) => (
           <button

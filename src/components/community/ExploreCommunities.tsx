@@ -37,9 +37,9 @@ export const ExploreCommunities = ({
         className="text-center py-12"
       >
         <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-        <p className="text-muted-foreground">No communities to explore</p>
+        <p className="text-muted-foreground">탐색할 커뮤니티가 없습니다</p>
         <p className="text-sm text-muted-foreground mt-1">
-          Create your own community!
+          직접 커뮤니티를 만들어보세요!
         </p>
       </motion.div>
     );
@@ -48,7 +48,7 @@ export const ExploreCommunities = ({
   return (
     <div className="space-y-3">
       <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-        Explore Communities
+        커뮤니티 둘러보기
       </h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -76,7 +76,7 @@ export const ExploreCommunities = ({
               <div className="absolute top-2 left-2">
                 <div className="flex items-center gap-1 text-xs bg-background/80 backdrop-blur-sm px-2 py-1 rounded-full text-muted-foreground">
                   <Lock className="w-3 h-3" />
-                  Private
+                  비공개
                 </div>
               </div>
             </div>
@@ -93,14 +93,14 @@ export const ExploreCommunities = ({
               )}
               <div className="flex items-center justify-between mt-3">
                 <span className="text-xs text-muted-foreground">
-                  {community.member_count || 0} members
+                  {community.member_count || 0}명
                 </span>
                 <Button
                   size="sm"
                   onClick={() => onJoin(community)}
                   className="h-8"
                 >
-                  Join
+                  가입
                 </Button>
               </div>
             </div>

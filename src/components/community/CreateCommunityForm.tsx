@@ -41,23 +41,23 @@ export const CreateCommunityForm = ({ onSuccess, onCancel }: CreateCommunityForm
     e.preventDefault();
 
     if (!user) {
-      toast.error('Please sign in first');
+      toast.error('먼저 로그인해주세요');
       return;
     }
 
     if (!name.trim()) {
-      toast.error('Please enter a community name');
+      toast.error('커뮤니티 이름을 입력해주세요');
       return;
     }
 
     if (requiresPin) {
       if (pin.length !== 4) {
-        toast.error('Please enter a 4-digit PIN');
+        toast.error('4자리 PIN을 입력해주세요');
         return;
       }
 
       if (pin !== confirmPin) {
-        toast.error('PINs do not match');
+        toast.error('PIN이 일치하지 않습니다');
         return;
       }
     }
@@ -91,11 +91,11 @@ export const CreateCommunityForm = ({ onSuccess, onCancel }: CreateCommunityForm
 
       if (memberError) throw memberError;
 
-      toast.success(`Community "${name}" created!`);
+      toast.success(`"${name}" 커뮤니티가 생성되었습니다!`);
       onSuccess();
     } catch (error) {
       console.error('Create community error:', error);
-      toast.error('Failed to create community');
+      toast.error('커뮤니티 생성에 실패했습니다');
     } finally {
       setIsSubmitting(false);
     }
@@ -113,15 +113,15 @@ export const CreateCommunityForm = ({ onSuccess, onCancel }: CreateCommunityForm
         <div className="inline-flex items-center justify-center w-14 h-14 bg-primary/10 rounded-2xl mb-3">
           <Plus className="w-7 h-7 text-primary" />
         </div>
-        <h2 className="text-xl font-bold text-foreground">Create Community</h2>
+        <h2 className="text-xl font-bold text-foreground">커뮤니티 만들기</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Create a private space for your group
+          그룹을 위한 비공개 공간을 만드세요
         </p>
       </div>
 
       {/* Cover Image */}
       <div className="space-y-2">
-        <Label>Cover Image (optional)</Label>
+        <Label>커버 이미지 (선택사항)</Label>
         <div className="relative">
           {coverPreview ? (
             <div className="relative h-32 rounded-xl overflow-hidden">
@@ -141,7 +141,7 @@ export const CreateCommunityForm = ({ onSuccess, onCancel }: CreateCommunityForm
           ) : (
             <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/50 transition-colors">
               <ImageIcon className="w-8 h-8 text-muted-foreground mb-2" />
-              <span className="text-sm text-muted-foreground">Upload cover image</span>
+              <span className="text-sm text-muted-foreground">커버 이미지 업로드</span>
               <input
                 type="file"
                 accept="image/*"
@@ -155,24 +155,24 @@ export const CreateCommunityForm = ({ onSuccess, onCancel }: CreateCommunityForm
 
       {/* Name */}
       <div className="space-y-2">
-        <Label htmlFor="name">Community Name *</Label>
+        <Label htmlFor="name">커뮤니티 이름 *</Label>
         <Input
           id="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="e.g., SNU in Paris 2025"
+          placeholder="예: 서울대 파리 2025"
           className="h-12 bg-secondary border-border rounded-xl"
         />
       </div>
 
       {/* Description */}
       <div className="space-y-2">
-        <Label htmlFor="description">Brief Description</Label>
+        <Label htmlFor="description">간단한 설명</Label>
         <Textarea
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Describe your community..."
+          placeholder="커뮤니티를 소개해주세요..."
           className="bg-secondary border-border rounded-xl resize-none"
           rows={2}
           maxLength={150}
@@ -185,9 +185,9 @@ export const CreateCommunityForm = ({ onSuccess, onCancel }: CreateCommunityForm
       {/* PIN Toggle */}
       <div className="flex items-center justify-between p-4 bg-secondary rounded-xl">
         <div>
-          <p className="font-medium text-foreground">Require PIN to join</p>
+          <p className="font-medium text-foreground">가입시 PIN 필요</p>
           <p className="text-xs text-muted-foreground">
-            Members will need a 4-digit PIN
+            멤버는 4자리 PIN이 필요합니다
           </p>
         </div>
         <Switch
@@ -205,7 +205,7 @@ export const CreateCommunityForm = ({ onSuccess, onCancel }: CreateCommunityForm
           className="space-y-4"
         >
           <div className="space-y-2">
-            <Label>4-Digit PIN</Label>
+            <Label>4자리 PIN</Label>
             <div className="flex justify-center">
               <InputOTP
                 value={pin}
@@ -223,7 +223,7 @@ export const CreateCommunityForm = ({ onSuccess, onCancel }: CreateCommunityForm
           </div>
 
           <div className="space-y-2">
-            <Label>Confirm PIN</Label>
+            <Label>PIN 확인</Label>
             <div className="flex justify-center">
               <InputOTP
                 value={confirmPin}
@@ -250,7 +250,7 @@ export const CreateCommunityForm = ({ onSuccess, onCancel }: CreateCommunityForm
           onClick={onCancel}
           className="flex-1 h-12 rounded-xl"
         >
-          Cancel
+          취소
         </Button>
         <Button
           type="submit"
@@ -260,7 +260,7 @@ export const CreateCommunityForm = ({ onSuccess, onCancel }: CreateCommunityForm
           {isSubmitting ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
-            'Create'
+            '만들기'
           )}
         </Button>
       </div>

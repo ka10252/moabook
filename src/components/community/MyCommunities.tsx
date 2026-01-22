@@ -43,10 +43,10 @@ export const MyCommunities = ({
       >
         <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
         <p className="text-sm text-muted-foreground">
-          You haven't joined any communities yet.
+          아직 가입한 커뮤니티가 없습니다.
         </p>
         <p className="text-xs text-muted-foreground mt-1">
-          Explore and join communities below!
+          아래에서 커뮤니티를 찾아보세요!
         </p>
       </motion.div>
     );
@@ -56,14 +56,14 @@ export const MyCommunities = ({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-          My Communities
+          내 커뮤니티
         </h2>
         {communities.length > 3 && (
           <button
             onClick={onViewAll}
             className="text-xs text-primary flex items-center gap-1 hover:underline"
           >
-            View All
+            전체 보기
             <ChevronRight className="w-3 h-3" />
           </button>
         )}
@@ -97,7 +97,7 @@ export const MyCommunities = ({
                       {community.name}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {community.member_count || 0} members
+                      {community.member_count || 0}명
                     </p>
                   </div>
                   <Button
