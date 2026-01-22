@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Upload, Loader2, ImagePlus } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Upload, Loader2, ImagePlus, Camera, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,6 +31,9 @@ export const UploadBookForm = () => {
   const [selectedBook, setSelectedBook] = useState<BookSearchResult | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [showManualCover, setShowManualCover] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState<BookFormData>({
     title: '',
@@ -49,8 +52,9 @@ export const UploadBookForm = () => {
       if (!selectedBook) return;
       
       setIsFetchingDetails(true);
+      setShowManualCover(false);
       
-      // Fetch description from Open Library
+      // Fetch description
       const description = await fetchBookDetails(selectedBook.key);
       
       setFormData((prev) => ({
@@ -61,6 +65,11 @@ export const UploadBookForm = () => {
         description: description || prev.description,
       }));
       
+      // Show manual cover option if no cover found
+      if (!selectedBook.cover) {
+        setShowManualCover(true);
+      }
+      
       setIsFetchingDetails(false);
     };
 
@@ -69,6 +78,7 @@ export const UploadBookForm = () => {
 
   const handleClearBook = () => {
     setSelectedBook(null);
+    setShowManualCover(false);
     setFormData((prev) => ({
       ...prev,
       title: '',
@@ -76,6 +86,48 @@ export const UploadBookForm = () => {
       description: '',
       coverUrl: '',
     }));
+  };
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    setIsUploadingCover(true);
+
+    try {
+      // Convert to base64 for preview (temporary - would use storage bucket in production)
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, coverUrl: reader.result as string }));
+        setIsUploadingCover(false);
+        setShowManualCover(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload cover image');
+      setIsUploadingCover(false);
+    }
+  };
+
+  const handleRemoveCover = () => {
+    setFormData(prev => ({ ...prev, coverUrl: '' }));
+    setShowManualCover(true);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -104,11 +156,15 @@ export const UploadBookForm = () => {
     setIsSubmitting(true);
 
     try {
+      // For base64 covers, we'd normally upload to storage first
+      // For now, store as URL or null
+      const coverUrl = formData.coverUrl.startsWith('http') ? formData.coverUrl : null;
+
       const { error } = await supabase.from('books').insert({
         title: formData.title.trim(),
         author: formData.author.trim(),
         description: formData.description.trim() || null,
-        cover_url: formData.coverUrl || null,
+        cover_url: coverUrl,
         condition: formData.condition,
         mode: formData.mode,
         price: formData.mode === 'sell' ? parseFloat(formData.price) : null,
@@ -123,6 +179,7 @@ export const UploadBookForm = () => {
       
       // Reset form
       setSelectedBook(null);
+      setShowManualCover(false);
       setFormData({
         title: '',
         author: '',
@@ -147,6 +204,7 @@ export const UploadBookForm = () => {
       {/* Book Search */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-foreground">Find Your Book</label>
+        <p className="text-xs text-muted-foreground">Supports Korean and English titles</p>
         <BookSearchInput
           selectedBook={selectedBook}
           onBookSelect={setSelectedBook}
@@ -160,25 +218,65 @@ export const UploadBookForm = () => {
         )}
       </div>
 
-      {/* Cover Preview */}
-      {formData.coverUrl && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex justify-center"
-        >
-          <div className="relative">
-            <img
-              src={formData.coverUrl}
-              alt={formData.title}
-              className="w-32 h-44 object-cover rounded-lg shadow-lg"
-            />
-            <div className="absolute -bottom-2 -right-2 bg-primary text-primary-foreground p-1.5 rounded-full">
-              <ImagePlus className="w-4 h-4" />
+      {/* Cover Preview or Upload */}
+      <div className="space-y-3">
+        {formData.coverUrl ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex justify-center"
+          >
+            <div className="relative">
+              <img
+                src={formData.coverUrl}
+                alt={formData.title}
+                className="w-32 h-44 object-cover rounded-lg shadow-lg"
+              />
+              <button
+                type="button"
+                onClick={handleRemoveCover}
+                className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground p-1.5 rounded-full shadow-md hover:bg-destructive/90 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-          </div>
-        </motion.div>
-      )}
+          </motion.div>
+        ) : showManualCover || !selectedBook ? null : null}
+
+        {/* Manual Cover Upload Button */}
+        {(showManualCover || (formData.title && !formData.coverUrl)) && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center gap-2"
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleCoverUpload}
+              className="hidden"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingCover}
+              className="gap-2"
+            >
+              {isUploadingCover ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Camera className="w-4 h-4" />
+              )}
+              Upload Cover Photo
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              No cover found? Upload your own image
+            </p>
+          </motion.div>
+        )}
+      </div>
 
       {/* Manual Entry Fields */}
       <div className="space-y-4">
@@ -227,25 +325,27 @@ export const UploadBookForm = () => {
       />
 
       {/* Price (for sell mode) */}
-      {formData.mode === 'sell' && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          className="space-y-2"
-        >
-          <label className="text-sm font-medium text-foreground">Price (€)</label>
-          <Input
-            type="number"
-            min="0"
-            step="0.01"
-            value={formData.price}
-            onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
-            placeholder="0.00"
-            className="h-12 bg-secondary border-border rounded-xl"
-          />
-        </motion.div>
-      )}
+      <AnimatePresence>
+        {formData.mode === 'sell' && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="space-y-2"
+          >
+            <label className="text-sm font-medium text-foreground">Price (€)</label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              value={formData.price}
+              onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
+              placeholder="0.00"
+              className="h-12 bg-secondary border-border rounded-xl"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Community Selector */}
       <CommunitySelector

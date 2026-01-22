@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Trash2, Check, User, BookOpen } from 'lucide-react';
+import { Trash2, Check, User, BookOpen, MessageCircle } from 'lucide-react';
 import { WishlistItem } from '@/hooks/useWishlist';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -8,9 +8,10 @@ interface WishlistCardProps {
   isOwner: boolean;
   onDelete?: () => void;
   onMarkFulfilled?: () => void;
+  onMessage?: () => void;
 }
 
-export const WishlistCard = ({ item, isOwner, onDelete, onMarkFulfilled }: WishlistCardProps) => {
+export const WishlistCard = ({ item, isOwner, onDelete, onMarkFulfilled, onMessage }: WishlistCardProps) => {
   return (
     <motion.div
       layout
@@ -29,25 +30,6 @@ export const WishlistCard = ({ item, isOwner, onDelete, onMarkFulfilled }: Wishl
             <p className="text-sm text-muted-foreground mt-1">by {item.author}</p>
           )}
         </div>
-
-        {isOwner && (
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={onMarkFulfilled}
-              className="p-2 rounded-xl bg-muted text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-              title="Mark as found"
-            >
-              <Check className="w-4 h-4" />
-            </button>
-            <button
-              onClick={onDelete}
-              className="p-2 rounded-xl bg-muted text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-              title="Remove"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-        )}
       </div>
 
       {item.notes && (
@@ -56,12 +38,49 @@ export const WishlistCard = ({ item, isOwner, onDelete, onMarkFulfilled }: Wishl
         </p>
       )}
 
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <User className="w-3.5 h-3.5" />
           <span>{item.profile?.nickname || 'Anonymous'}</span>
+          <span className="mx-1">·</span>
+          <span>{formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}</span>
         </div>
-        <span>{formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}</span>
+
+        {/* Action Icons: Message | Check | Trash */}
+        <div className="flex items-center gap-1">
+          {/* Message - for non-owners to contact requester */}
+          {!isOwner && onMessage && (
+            <button
+              onClick={onMessage}
+              className="p-2 rounded-xl bg-muted text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+              title="Message requester"
+            >
+              <MessageCircle className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Check - owner marks as fulfilled */}
+          {isOwner && onMarkFulfilled && (
+            <button
+              onClick={onMarkFulfilled}
+              className="p-2 rounded-xl bg-muted text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+              title="Mark as found"
+            >
+              <Check className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Trash - owner deletes */}
+          {isOwner && onDelete && (
+            <button
+              onClick={onDelete}
+              className="p-2 rounded-xl bg-muted text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+              title="Remove"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
     </motion.div>
   );
