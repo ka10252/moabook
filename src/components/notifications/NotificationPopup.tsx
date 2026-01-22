@@ -1,0 +1,145 @@
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Bell, Check, Trash2, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useNotifications, Notification } from '@/hooks/useNotifications';
+import { formatDistanceToNow } from 'date-fns';
+import { ko } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+
+interface NotificationPopupProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const NotificationPopup = ({ isOpen, onClose }: NotificationPopupProps) => {
+  const { notifications, loading, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
+
+  const handleNotificationClick = async (notification: Notification) => {
+    if (!notification.is_read) {
+      await markAsRead(notification.id);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+          />
+
+          {/* Popup */}
+          <motion.div
+            className="fixed inset-x-4 top-16 md:inset-x-auto md:right-4 md:w-96 z-50 max-h-[70vh]"
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-card rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[70vh]">
+              {/* Header */}
+              <header className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+                <div className="flex items-center gap-2">
+                  <Bell className="w-5 h-5 text-primary" />
+                  <h3 className="font-bold text-foreground">알림</h3>
+                </div>
+                <div className="flex items-center gap-1">
+                  {notifications.some(n => !n.is_read) && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={markAllAsRead}
+                      className="text-xs text-primary"
+                    >
+                      모두 읽음
+                    </Button>
+                  )}
+                  <button
+                    onClick={onClose}
+                    className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                  >
+                    <X className="w-5 h-5 text-muted-foreground" />
+                  </button>
+                </div>
+              </header>
+
+              {/* Content */}
+              <ScrollArea className="flex-1 min-h-0">
+                {loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  </div>
+                ) : notifications.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                    <Bell className="w-12 h-12 text-muted-foreground/30 mb-3" />
+                    <p className="text-muted-foreground text-sm">
+                      알림이 없습니다
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-2 space-y-1">
+                    {notifications.map((notification) => (
+                      <motion.div
+                        key={notification.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className={cn(
+                          "relative p-3 rounded-xl cursor-pointer transition-colors group",
+                          notification.is_read
+                            ? "bg-transparent hover:bg-muted/50"
+                            : "bg-primary/5 hover:bg-primary/10"
+                        )}
+                        onClick={() => handleNotificationClick(notification)}
+                      >
+                        {/* Unread indicator */}
+                        {!notification.is_read && (
+                          <div className="absolute left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-primary rounded-full" />
+                        )}
+
+                        <div className="pl-3">
+                          <p className="font-medium text-foreground text-sm">
+                            {notification.title}
+                          </p>
+                          {notification.body && (
+                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                              {notification.body}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground/70 mt-1">
+                            {formatDistanceToNow(new Date(notification.created_at), {
+                              addSuffix: true,
+                              locale: ko,
+                            })}
+                          </p>
+                        </div>
+
+                        {/* Delete button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteNotification(notification.id);
+                          }}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 transition-all"
+                        >
+                          <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                        </button>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};

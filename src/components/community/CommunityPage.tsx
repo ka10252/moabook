@@ -8,6 +8,7 @@ import { MyCommunities } from './MyCommunities';
 import { ExploreCommunities } from './ExploreCommunities';
 import { CreateCommunityForm } from './CreateCommunityForm';
 import { JoinCommunityForm } from './JoinCommunityForm';
+import { CommunityDetailModal } from './CommunityDetailModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -21,6 +22,7 @@ interface Community {
   member_count: number | null;
   description?: string | null;
   cover_url?: string | null;
+  created_by?: string | null;
 }
 
 export const CommunityPage = () => {
@@ -32,6 +34,7 @@ export const CommunityPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [leavingId, setLeavingId] = useState<string | null>(null);
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
+  const [detailCommunity, setDetailCommunity] = useState<Community | null>(null);
 
   useEffect(() => {
     fetchCommunities();
@@ -43,7 +46,7 @@ export const CommunityPage = () => {
       // Fetch all communities from DB
       const { data: dbCommunities, error: commError } = await supabase
         .from('communities')
-        .select('id, name, member_count, description, cover_url')
+        .select('id, name, member_count, description, cover_url, created_by')
         .order('name');
 
       if (commError) throw commError;
@@ -54,6 +57,7 @@ export const CommunityPage = () => {
         member_count: c.member_count,
         description: c.description as string | null,
         cover_url: c.cover_url as string | null,
+        created_by: c.created_by as string | null,
       }));
 
       // Merge with dummy data for demo (filter out duplicates)
@@ -66,6 +70,7 @@ export const CommunityPage = () => {
           member_count: d.member_count,
           description: d.description,
           cover_url: d.cover_url,
+          created_by: null,
         }));
 
       setCommunities([...dbData, ...dummyToAdd]);
@@ -197,6 +202,7 @@ export const CommunityPage = () => {
                   leavingId={leavingId}
                   onLeave={handleLeaveCommunity}
                   onViewAll={() => {}}
+                  onCommunityClick={(community) => setDetailCommunity(community)}
                 />
 
                 {/* Explore Communities */}
@@ -254,6 +260,14 @@ export const CommunityPage = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Community Detail Modal */}
+      <CommunityDetailModal
+        isOpen={!!detailCommunity}
+        onClose={() => setDetailCommunity(null)}
+        community={detailCommunity}
+        onCommunityDeleted={fetchCommunities}
+      />
     </div>
   );
 };
