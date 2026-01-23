@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Image, Loader2, Check } from 'lucide-react';
+import { X, Image, Loader2, Check, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 interface Community {
@@ -28,9 +29,12 @@ export const EditCommunityModal = ({
   community,
   onUpdated,
 }: EditCommunityModalProps) => {
+  const { user } = useAuth();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [coverUrl, setCoverUrl] = useState('');
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -38,23 +42,62 @@ export const EditCommunityModal = ({
       setName(community.name);
       setDescription(community.description || '');
       setCoverUrl(community.cover_url || '');
+      setCoverPreview(community.cover_url || null);
+      setCoverFile(null);
     }
   }, [community]);
 
+  const handleCoverFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('이미지 크기는 5MB 이하여야 합니다');
+      return;
+    }
+
+    setCoverFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setCoverPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = async () => {
-    if (!community || !name.trim()) {
+    if (!community || !name.trim() || !user) {
       toast.error('커뮤니티 이름을 입력해주세요');
       return;
     }
 
     setSaving(true);
     try {
+      let finalCoverUrl = coverUrl.trim() || null;
+
+      // Upload new cover file if provided
+      if (coverFile) {
+        const fileExt = coverFile.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('community-covers')
+          .upload(fileName, coverFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from('community-covers')
+          .getPublicUrl(fileName);
+
+        finalCoverUrl = urlData.publicUrl;
+      }
+
       const { error } = await supabase
         .from('communities')
         .update({
           name: name.trim(),
           description: description.trim() || null,
-          cover_url: coverUrl.trim() || null,
+          cover_url: finalCoverUrl,
         })
         .eq('id', community.id);
 
@@ -108,20 +151,35 @@ export const EditCommunityModal = ({
 
               {/* Content */}
               <div className="p-4 space-y-4">
-                {/* Cover Preview */}
-                <div className="relative h-32 rounded-xl overflow-hidden bg-muted">
-                  {coverUrl ? (
-                    <img
-                      src={coverUrl}
-                      alt="Cover preview"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-wood-medium to-wood-dark flex items-center justify-center">
-                      <Image className="w-8 h-8 text-white/50" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-black/30" />
+                {/* Cover Preview with Upload */}
+                <div className="space-y-2">
+                  <Label>커버 이미지</Label>
+                  <div className="relative h-32 rounded-xl overflow-hidden bg-muted group">
+                    {coverPreview ? (
+                      <img
+                        src={coverPreview}
+                        alt="Cover preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-wood-medium to-wood-dark flex items-center justify-center">
+                        <Image className="w-8 h-8 text-white/50" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors" />
+                    <label className="absolute inset-0 flex items-center justify-center cursor-pointer">
+                      <div className="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Upload className="w-4 h-4" />
+                        <span className="text-sm">이미지 변경</span>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleCoverFileUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                 </div>
 
                 {/* Form */}
@@ -150,17 +208,18 @@ export const EditCommunityModal = ({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="coverUrl">커버 이미지 URL</Label>
+                    <Label htmlFor="coverUrl">또는 이미지 URL 직접 입력</Label>
                     <Input
                       id="coverUrl"
                       value={coverUrl}
-                      onChange={(e) => setCoverUrl(e.target.value)}
+                      onChange={(e) => {
+                        setCoverUrl(e.target.value);
+                        setCoverPreview(e.target.value || null);
+                        setCoverFile(null);
+                      }}
                       placeholder="https://example.com/image.jpg"
                       className="rounded-xl"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      이미지 URL을 입력하면 커뮤니티 카드 배경으로 표시됩니다
-                    </p>
                   </div>
                 </div>
               </div>

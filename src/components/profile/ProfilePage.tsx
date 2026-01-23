@@ -140,13 +140,47 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    // For now, show a preview using FileReader (storage bucket not set up)
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setAvatarUrl(reader.result as string);
-      toast.info('프로필 사진 미리보기가 업데이트되었습니다. 스토리지 연동 예정!');
-    };
-    reader.readAsDataURL(file);
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('이미지 크기는 5MB 이하여야 합니다');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/avatar.${fileExt}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+      // Update profile with new avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      setAvatarUrl(publicUrl);
+      toast.success('프로필 사진이 업데이트되었습니다!');
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      toast.error('프로필 사진 업로드에 실패했습니다');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleChangePassword = async () => {

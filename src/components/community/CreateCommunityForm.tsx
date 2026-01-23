@@ -26,10 +26,19 @@ export const CreateCommunityForm = ({ onSuccess, onCancel }: CreateCommunityForm
   const [confirmPin, setConfirmPin] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('이미지 크기는 5MB 이하여야 합니다');
+      return;
+    }
+
+    setCoverFile(file);
     const reader = new FileReader();
     reader.onloadend = () => {
       setCoverPreview(reader.result as string);
@@ -68,10 +77,31 @@ export const CreateCommunityForm = ({ onSuccess, onCancel }: CreateCommunityForm
       // Use a default PIN hash if not requiring PIN (still needed for DB)
       const pinHash = requiresPin ? btoa(pin) : btoa('0000');
 
+      // Upload cover image if provided
+      let coverUrl: string | null = null;
+      if (coverFile) {
+        const fileExt = coverFile.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('community-covers')
+          .upload(fileName, coverFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from('community-covers')
+          .getPublicUrl(fileName);
+
+        coverUrl = urlData.publicUrl;
+      }
+
       const { data: community, error: communityError } = await supabase
         .from('communities')
         .insert({
           name: name.trim(),
+          description: description.trim() || null,
+          cover_url: coverUrl,
           pin_hash: pinHash,
           created_by: user.id,
         })
