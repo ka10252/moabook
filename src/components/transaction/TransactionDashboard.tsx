@@ -54,14 +54,14 @@ export const TransactionDashboard = ({ isOpen, onClose }: TransactionDashboardPr
       />
       
       <motion.div
-        className="fixed inset-x-4 top-[5%] bottom-[10%] md:inset-x-auto md:left-1/2 md:w-full md:max-w-lg md:-translate-x-1/2 z-50 max-h-[85vh]"
+        className="fixed inset-x-4 top-1/2 -translate-y-1/2 md:inset-x-auto md:left-1/2 md:w-full md:max-w-lg md:-translate-x-1/2 z-50"
         initial={{ opacity: 0, y: 50, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 50, scale: 0.95 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="bg-card rounded-2xl h-full max-h-[85vh] overflow-hidden flex flex-col shadow-xl">
+        <div className="bg-card rounded-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-xl">
           {/* Header */}
           <header className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
             <h2 className="text-lg font-bold text-foreground">거래 현황</h2>

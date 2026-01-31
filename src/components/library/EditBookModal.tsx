@@ -8,7 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { ConditionSelector } from '@/components/upload/ConditionSelector';
 import { ModeToggle } from '@/components/upload/ModeToggle';
 import { CommunitySelector } from '@/components/upload/CommunitySelector';
+import { CoverUploader } from '@/components/upload/CoverUploader';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 interface EditBookModalProps {
   book: Book | null;
@@ -18,11 +20,13 @@ interface EditBookModalProps {
 
 export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     author: '',
     description: '',
+    coverUrl: '',
     condition: 'A' as 'S' | 'A' | 'B',
     mode: 'rent' as 'rent' | 'sell',
     price: '',
@@ -37,6 +41,7 @@ export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => 
         title: book.title,
         author: book.author,
         description: book.description || '',
+        coverUrl: book.cover || '',
         condition: book.condition,
         mode: book.mode,
         price: book.price?.toString() || '',
@@ -82,6 +87,7 @@ export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => 
       title: formData.title.trim(),
       author: formData.author.trim(),
       description: formData.description.trim() || null,
+      cover: formData.coverUrl || null,
       condition: formData.condition,
       mode: formData.mode,
       price: formData.mode === 'sell' ? parseFloat(formData.price) : null,
@@ -122,7 +128,7 @@ export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => 
 
           {/* Modal */}
           <motion.div
-            className="fixed inset-x-4 top-[5%] bottom-[5%] md:inset-x-auto md:left-1/2 md:w-full md:max-w-lg md:-translate-x-1/2 z-50"
+            className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-h-[90vh] md:inset-x-auto md:left-1/2 md:w-full md:max-w-lg md:-translate-x-1/2 z-50"
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.95 }}
@@ -131,7 +137,7 @@ export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => 
           >
             <form
               onSubmit={handleSubmit}
-              className="bg-card rounded-2xl h-full overflow-hidden flex flex-col shadow-xl"
+              className="bg-card rounded-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-xl"
             >
               {/* Header */}
               <header className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
@@ -147,20 +153,17 @@ export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => 
 
               {/* Content */}
               <div className="flex-1 overflow-y-auto p-4 space-y-5">
-                {/* Cover Preview */}
-                <div className="flex items-center gap-4">
-                  <div className="w-20 h-28 rounded-lg overflow-hidden shrink-0 bg-muted">
-                    <img
-                      src={book.cover}
-                      alt={book.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground mb-1">Cover image cannot be changed</p>
-                    <p className="text-sm text-foreground font-medium truncate">{book.title}</p>
-                  </div>
-                </div>
+                {/* Cover Uploader */}
+                {user && (
+                  <CoverUploader
+                    coverUrl={formData.coverUrl}
+                    title={formData.title}
+                    author={formData.author}
+                    userId={user.id}
+                    onCoverChange={(url) => setFormData(prev => ({ ...prev, coverUrl: url }))}
+                    disabled={saving}
+                  />
+                )}
 
                 {/* Title */}
                 <div className="space-y-2">

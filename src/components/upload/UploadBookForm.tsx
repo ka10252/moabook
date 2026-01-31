@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, Loader2, ImagePlus, Camera, X } from 'lucide-react';
+import { Upload, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,6 +8,7 @@ import { BookSearchInput } from './BookSearchInput';
 import { ConditionSelector } from './ConditionSelector';
 import { ModeToggle } from './ModeToggle';
 import { CommunitySelector } from './CommunitySelector';
+import { CoverUploader } from './CoverUploader';
 import { BookSearchResult, useBookSearch } from '@/hooks/useBookSearch';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -31,9 +32,6 @@ export const UploadBookForm = () => {
   const [selectedBook, setSelectedBook] = useState<BookSearchResult | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
-  const [isUploadingCover, setIsUploadingCover] = useState(false);
-  const [showManualCover, setShowManualCover] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState<BookFormData>({
     title: '',
@@ -78,7 +76,6 @@ export const UploadBookForm = () => {
       if (!selectedBook) return;
       
       setIsFetchingDetails(true);
-      setShowManualCover(false);
       
       // Fetch description
       const description = await fetchBookDetails(selectedBook.key);
@@ -88,18 +85,14 @@ export const UploadBookForm = () => {
         ? await summarizeDescription(description)
         : '';
       
+      // Don't use API cover - let user upload their own
       setFormData((prev) => ({
         ...prev,
         title: selectedBook.title,
         author: selectedBook.author,
-        coverUrl: selectedBook.cover || '',
+        coverUrl: '', // Clear cover - user will upload
         description: summarizedDescription,
       }));
-      
-      // Show manual cover option if no cover found
-      if (!selectedBook.cover) {
-        setShowManualCover(true);
-      }
       
       setIsFetchingDetails(false);
     };
@@ -109,7 +102,6 @@ export const UploadBookForm = () => {
 
   const handleClearBook = () => {
     setSelectedBook(null);
-    setShowManualCover(false);
     setFormData((prev) => ({
       ...prev,
       title: '',
@@ -119,89 +111,33 @@ export const UploadBookForm = () => {
     }));
   };
 
-  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('이미지 파일만 업로드 가능합니다');
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('이미지 크기는 5MB 이하여야 합니다');
-      return;
-    }
-
-    // Show alert about uploading real book photo
-    toast.info('책상태를 파악할 수 있게 실제 책사진을 업로드해주세요!', {
-      duration: 4000,
-    });
-
-    setIsUploadingCover(true);
-
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-
-      const { data, error: uploadError } = await supabase.storage
-        .from('book-covers')
-        .upload(fileName, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('book-covers')
-        .getPublicUrl(fileName);
-
-      setFormData(prev => ({ ...prev, coverUrl: publicUrl }));
-      setShowManualCover(false);
-      toast.success('표지가 업로드되었습니다');
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast.error('표지 업로드에 실패했습니다');
-    } finally {
-      setIsUploadingCover(false);
-    }
-  };
-
-  const handleRemoveCover = () => {
-    setFormData(prev => ({ ...prev, coverUrl: '' }));
-    setShowManualCover(true);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!user) {
-      toast.error('Please sign in to upload a book');
+      toast.error('로그인이 필요합니다');
       return;
     }
 
     if (!formData.title.trim() || !formData.author.trim()) {
-      toast.error('Please fill in the book title and author');
+      toast.error('책 제목과 저자를 입력해주세요');
       return;
     }
 
     if (formData.mode === 'sell' && (!formData.price || parseFloat(formData.price) <= 0)) {
-      toast.error('Please enter a valid price for selling');
+      toast.error('판매 가격을 입력해주세요');
       return;
     }
 
     if (!formData.isPublic && !formData.communityId) {
-      toast.error('Please select a community for private books');
+      toast.error('비공개 책은 커뮤니티를 선택해주세요');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Cover URL is now a proper URL from storage (not base64)
+      // Cover URL from storage
       const coverUrl = formData.coverUrl && formData.coverUrl.startsWith('http') 
         ? formData.coverUrl 
         : null;
@@ -225,7 +161,6 @@ export const UploadBookForm = () => {
       
       // Reset form
       setSelectedBook(null);
-      setShowManualCover(false);
       setFormData({
         title: '',
         author: '',
@@ -264,65 +199,17 @@ export const UploadBookForm = () => {
         )}
       </div>
 
-      {/* Cover Preview or Upload */}
-      <div className="space-y-3">
-        {formData.coverUrl && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex justify-center"
-          >
-            <div className="relative">
-              <img
-                src={formData.coverUrl}
-                alt={formData.title}
-                className="w-32 h-44 object-cover rounded-lg shadow-lg"
-              />
-              <button
-                type="button"
-                onClick={handleRemoveCover}
-                className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground p-1.5 rounded-full shadow-md hover:bg-destructive/90 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Always show upload button when title exists */}
-        {formData.title && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center gap-2"
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleCoverUpload}
-              className="hidden"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploadingCover}
-              className="gap-2"
-            >
-              {isUploadingCover ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Camera className="w-4 h-4" />
-              )}
-              {formData.coverUrl ? '다른 사진으로 변경' : '표지 사진 업로드'}
-            </Button>
-            <p className="text-xs text-muted-foreground text-center max-w-[250px]">
-              책상태를 파악할 수 있게 실제 책사진을 업로드해주세요
-            </p>
-          </motion.div>
-        )}
-      </div>
+      {/* Cover Uploader */}
+      {user && (
+        <CoverUploader
+          coverUrl={formData.coverUrl}
+          title={formData.title}
+          author={formData.author}
+          userId={user.id}
+          onCoverChange={(url) => setFormData((prev) => ({ ...prev, coverUrl: url }))}
+          disabled={isSubmitting}
+        />
+      )}
 
       {/* Manual Entry Fields */}
       <div className="space-y-4">
