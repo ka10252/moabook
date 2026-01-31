@@ -11,7 +11,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Transaction } from '@/hooks/useTransactions';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 interface TransactionEditModalProps {
@@ -29,10 +41,12 @@ export const TransactionEditModal = ({
   onClose,
   onSave,
 }: TransactionEditModalProps) => {
+  const { user } = useAuth();
   const [status, setStatus] = useState<'pending' | 'active' | 'completed'>('active');
   const [transactionType, setTransactionType] = useState<'rent' | 'purchase'>('rent');
   const [returnDate, setReturnDate] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showReturnConfirm, setShowReturnConfirm] = useState(false);
 
   useEffect(() => {
     if (transaction) {
@@ -64,18 +78,50 @@ export const TransactionEditModal = ({
     }
   };
 
+  const sendReturnCompleteMessage = async () => {
+    if (!user || !transaction.book_id) return;
+
+    // Find conversation for this book between owner and borrower
+    const { data: conversation } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('book_id', transaction.book_id)
+      .or(`and(participant_1.eq.${transaction.owner_id},participant_2.eq.${transaction.borrower_id}),and(participant_1.eq.${transaction.borrower_id},participant_2.eq.${transaction.owner_id})`)
+      .maybeSingle();
+
+    if (conversation) {
+      const returnMessage = `[반납 완료] "${transaction.book?.title}" 반납이 완료되었습니다.`;
+      await supabase.from('messages').insert({
+        conversation_id: conversation.id,
+        sender_id: user.id,
+        content: returnMessage,
+      });
+
+      // Update conversation's last_message_at
+      await supabase
+        .from('conversations')
+        .update({ last_message_at: new Date().toISOString() })
+        .eq('id', conversation.id);
+    }
+  };
+
   const handleComplete = async () => {
     setSaving(true);
     try {
       await onSave(transaction.id, {
         status: 'completed',
       });
+      
+      // Send return complete message to chat
+      await sendReturnCompleteMessage();
+      
       toast.success('반납이 완료되었습니다');
       onClose();
     } catch (error) {
       toast.error('업데이트에 실패했습니다');
     } finally {
       setSaving(false);
+      setShowReturnConfirm(false);
     }
   };
 
@@ -156,7 +202,7 @@ export const TransactionEditModal = ({
             {transactionType === 'rent' && status === 'active' && (
               <Button
                 variant="outline"
-                onClick={handleComplete}
+                onClick={() => setShowReturnConfirm(true)}
                 disabled={saving}
                 className="flex-1 h-12 rounded-xl"
               >
@@ -177,6 +223,38 @@ export const TransactionEditModal = ({
           </div>
         </div>
       </motion.div>
+
+      {/* Return Confirmation Dialog */}
+      <AlertDialog open={showReturnConfirm} onOpenChange={setShowReturnConfirm}>
+        <AlertDialogContent className="rounded-2xl max-w-[90vw] md:max-w-md z-[70]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>반납 처리 하시겠습니까?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{transaction.book?.title}"의 반납을 완료합니다.
+              {transaction.counterparty?.nickname}님에게 반납 완료 알림이 전송됩니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saving} className="rounded-xl">
+              취소
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleComplete}
+              disabled={saving}
+              className="rounded-xl"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  처리 중...
+                </>
+              ) : (
+                '반납 완료'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AnimatePresence>
   );
 };
