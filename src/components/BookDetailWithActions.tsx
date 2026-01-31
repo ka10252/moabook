@@ -205,13 +205,13 @@ export const BookDetailWithActions = ({
                     </>
                   ) : (
                     <>
-                      {/* Non-owner: Chat with owner */}
+                      {/* Non-owner: Request rent or purchase */}
                       <button 
                         className="btn-hip flex-1 flex items-center justify-center gap-2"
                         onClick={() => onChat(book.owner_id, book.id)}
                       >
                         <MessageCircle className="w-4 h-4" />
-                        채팅하기
+                        {book.mode === 'rent' ? '대여 요청' : '구매 요청'}
                       </button>
                     </>
                   )}
