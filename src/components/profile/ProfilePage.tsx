@@ -113,6 +113,20 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
 
     setIsSaving(true);
     try {
+      // Check if nickname is unique (case-insensitive, excluding current user)
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .ilike('nickname', nickname.trim())
+        .neq('id', user.id)
+        .maybeSingle();
+
+      if (existingProfile) {
+        toast.error('이미 존재하는 닉네임입니다.');
+        setIsSaving(false);
+        return;
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -125,7 +139,14 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
         })
         .eq('id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        // Check for unique constraint violation
+        if (error.code === '23505') {
+          toast.error('이미 존재하는 닉네임입니다.');
+          return;
+        }
+        throw error;
+      }
 
       toast.success('프로필이 저장되었습니다!');
     } catch (error) {

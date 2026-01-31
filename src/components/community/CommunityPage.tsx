@@ -25,7 +25,11 @@ interface Community {
   created_by?: string | null;
 }
 
-export const CommunityPage = () => {
+interface CommunityPageProps {
+  onNavigateToBookshelf?: (communityId: string) => void;
+}
+
+export const CommunityPage = ({ onNavigateToBookshelf }: CommunityPageProps = {}) => {
   const { user } = useAuth();
   const [view, setView] = useState<View>('list');
   const [searchQuery, setSearchQuery] = useState('');
@@ -278,6 +282,7 @@ export const CommunityPage = () => {
         community={detailCommunity}
         onCommunityDeleted={fetchCommunities}
         onCommunityUpdated={fetchCommunities}
+        onNavigateToBookshelf={onNavigateToBookshelf}
       />
     </div>
   );

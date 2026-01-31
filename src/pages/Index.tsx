@@ -23,6 +23,7 @@ const Index = () => {
   const [chatInitialBookId, setChatInitialBookId] = useState<string | null>(null);
   const [chatBookMode, setChatBookMode] = useState<'rent' | 'sell' | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
   const { user, loading, signOut } = useAuth();
   const { unreadCount } = useNotifications();
 
@@ -46,20 +47,37 @@ const Index = () => {
     setChatBookMode(null);
   };
 
+  const handleNavigateToBookshelf = (communityId: string) => {
+    setSelectedCommunityId(communityId);
+    setActiveTab('shelf');
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'shelf':
-        return <Bookshelf onOpenChat={handleOpenChat} />;
+        return (
+          <Bookshelf 
+            onOpenChat={handleOpenChat} 
+            initialCommunityId={selectedCommunityId}
+            onCommunityFilterClear={() => setSelectedCommunityId(null)}
+          />
+        );
       case 'wishlist':
         return <WishlistPage />;
       case 'upload':
         return <UploadPage />;
       case 'community':
-        return <CommunityPage />;
+        return <CommunityPage onNavigateToBookshelf={handleNavigateToBookshelf} />;
       case 'profile':
         return <ProfilePage onSignOut={signOut} />;
       default:
-        return <Bookshelf onOpenChat={handleOpenChat} />;
+        return (
+          <Bookshelf 
+            onOpenChat={handleOpenChat} 
+            initialCommunityId={selectedCommunityId}
+            onCommunityFilterClear={() => setSelectedCommunityId(null)}
+          />
+        );
     }
   };
 

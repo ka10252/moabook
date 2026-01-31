@@ -7,6 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -16,6 +23,8 @@ interface CreateCommunityFormProps {
   onCancel: () => void;
 }
 
+type MemberVisibility = 'public' | 'members_only' | 'private';
+
 export const CreateCommunityForm = ({ onSuccess, onCancel }: CreateCommunityFormProps) => {
   const { user } = useAuth();
   const [name, setName] = useState('');
@@ -24,6 +33,7 @@ export const CreateCommunityForm = ({ onSuccess, onCancel }: CreateCommunityForm
   const [requiresPin, setRequiresPin] = useState(true);
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
+  const [memberVisibility, setMemberVisibility] = useState<MemberVisibility>('members_only');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -104,7 +114,8 @@ export const CreateCommunityForm = ({ onSuccess, onCancel }: CreateCommunityForm
           cover_url: coverUrl,
           pin_hash: pinHash,
           created_by: user.id,
-        })
+          member_visibility: memberVisibility,
+        } as any)
         .select()
         .single();
 
@@ -209,6 +220,26 @@ export const CreateCommunityForm = ({ onSuccess, onCancel }: CreateCommunityForm
         />
         <p className="text-xs text-muted-foreground text-right">
           {description.length}/150
+        </p>
+      </div>
+
+      {/* Member Visibility */}
+      <div className="space-y-2">
+        <Label>멤버 공개 설정</Label>
+        <Select value={memberVisibility} onValueChange={(v) => setMemberVisibility(v as MemberVisibility)}>
+          <SelectTrigger className="h-12 bg-secondary border-border rounded-xl">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="public">전체 공개</SelectItem>
+            <SelectItem value="members_only">멤버에게만 공개</SelectItem>
+            <SelectItem value="private">비공개 (방장만)</SelectItem>
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">
+          {memberVisibility === 'public' && '모든 사람이 멤버 목록을 볼 수 있습니다'}
+          {memberVisibility === 'members_only' && '커뮤니티 멤버만 멤버 목록을 볼 수 있습니다'}
+          {memberVisibility === 'private' && '방장만 멤버 목록을 볼 수 있습니다'}
         </p>
       </div>
 

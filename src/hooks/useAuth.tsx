@@ -39,6 +39,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string, nickname: string) => {
+    // Check if nickname is unique (case-insensitive)
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .ilike('nickname', nickname.trim())
+      .maybeSingle();
+
+    if (existingProfile) {
+      return { error: new Error('이미 존재하는 닉네임입니다.') };
+    }
+
     const { error } = await supabase.auth.signUp({
       email,
       password,

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WoodenShelf } from './WoodenShelf';
 import { BookSpine } from './BookSpine';
@@ -27,19 +27,28 @@ import {
 
 interface BookshelfProps {
   onOpenChat: (userId: string, bookId: string, bookMode: 'rent' | 'sell') => void;
+  initialCommunityId?: string | null;
+  onCommunityFilterClear?: () => void;
 }
 
 type FilterType = 'everybody' | 'mine' | string; // string for community IDs
 
-export const Bookshelf = ({ onOpenChat }: BookshelfProps) => {
+export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterClear }: BookshelfProps) => {
   const { user } = useAuth();
   const [viewMode, setViewMode] = useState<ViewMode>('spine');
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [previewBook, setPreviewBook] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<FilterType>('everybody');
+  const [activeFilter, setActiveFilter] = useState<FilterType>(initialCommunityId || 'everybody');
   const [showLikedBooks, setShowLikedBooks] = useState(false);
   const [showTransactionDashboard, setShowTransactionDashboard] = useState(false);
+
+  // Update filter when initialCommunityId changes
+  useEffect(() => {
+    if (initialCommunityId) {
+      setActiveFilter(initialCommunityId);
+    }
+  }, [initialCommunityId]);
 
   const { myCommunities } = useCommunities();
   const { books: allBooks, loading, deleteBook, updateBook, refresh } = useBooks({});
