@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 interface BookshelfProps {
-  onOpenChat: (userId: string, bookId: string) => void;
+  onOpenChat: (userId: string, bookId: string, bookMode: 'rent' | 'sell') => void;
 }
 
 type FilterType = 'everybody' | 'mine' | string; // string for community IDs

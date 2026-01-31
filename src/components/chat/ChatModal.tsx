@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useChat, Conversation } from '@/hooks/useChat';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { ConversationList } from './ConversationList';
 import { ChatView } from './ChatView';
 
@@ -10,15 +12,25 @@ interface ChatModalProps {
   onClose: () => void;
   initialUserId?: string | null;
   initialBookId?: string | null;
+  initialBookMode?: 'rent' | 'sell' | null;
   initialConversationId?: string | null;
   onResetInitialValues?: () => void;
 }
 
-export const ChatModal = ({ isOpen, onClose, initialUserId, initialBookId, initialConversationId, onResetInitialValues }: ChatModalProps) => {
-  const { conversations, loading, startConversation, refresh } = useChat();
+export const ChatModal = ({ 
+  isOpen, 
+  onClose, 
+  initialUserId, 
+  initialBookId, 
+  initialBookMode,
+  initialConversationId, 
+  onResetInitialValues 
+}: ChatModalProps) => {
+  const { user } = useAuth();
+  const { conversations, loading, startConversationWithRequest, refresh } = useChat();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [hasAutoStarted, setHasAutoStarted] = useState(false);
-  const [showBookCard, setShowBookCard] = useState(false); // Show book card when starting new conversation
+  const [showBookCard, setShowBookCard] = useState(false);
 
   // Reset state when modal closes
   useEffect(() => {
@@ -40,31 +52,49 @@ export const ChatModal = ({ isOpen, onClose, initialUserId, initialBookId, initi
     }
   }, [isOpen, initialConversationId, conversations, hasAutoStarted]);
 
-  // Auto-start conversation if initialUserId is provided
+  // Auto-start conversation if initialUserId is provided (with request message)
   useEffect(() => {
-    if (isOpen && initialUserId && !initialConversationId && !hasAutoStarted) {
-      setHasAutoStarted(true);
-      setShowBookCard(!!initialBookId); // Show book card when starting chat from book
-      startConversation(initialUserId, initialBookId || undefined).then(({ conversation }) => {
+    const startChat = async () => {
+      if (isOpen && initialUserId && initialBookId && initialBookMode && !initialConversationId && !hasAutoStarted && user) {
+        setHasAutoStarted(true);
+        setShowBookCard(true);
+        
+        // Get requester's nickname from profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('nickname')
+          .eq('id', user.id)
+          .single();
+        
+        const requesterNickname = profile?.nickname || '사용자';
+        
+        // Start conversation with automatic request message
+        const { conversation } = await startConversationWithRequest(
+          initialUserId, 
+          initialBookId, 
+          initialBookMode === 'rent' ? 'rent' : 'purchase',
+          requesterNickname
+        );
+        
         if (conversation) {
-          refresh().then(() => {
-            const found = conversations.find(c => c.id === conversation.id);
-            if (found) setSelectedConversation(found);
-          });
+          await refresh();
         }
-      });
-    }
-  }, [isOpen, initialUserId, initialBookId, initialConversationId, hasAutoStarted]);
+      }
+    };
+    
+    startChat();
+  }, [isOpen, initialUserId, initialBookId, initialBookMode, initialConversationId, hasAutoStarted, user]);
 
-  // Find and select conversation after refresh (only once)
+  // Find and select conversation after refresh
   useEffect(() => {
     if (initialUserId && !initialConversationId && conversations.length > 0 && !selectedConversation && hasAutoStarted) {
       const found = conversations.find(c => 
-        c.participant_1 === initialUserId || c.participant_2 === initialUserId
+        (c.participant_1 === initialUserId || c.participant_2 === initialUserId) &&
+        c.book_id === initialBookId
       );
       if (found) setSelectedConversation(found);
     }
-  }, [conversations, initialUserId, initialConversationId, selectedConversation, hasAutoStarted]);
+  }, [conversations, initialUserId, initialBookId, initialConversationId, selectedConversation, hasAutoStarted]);
 
   const handleBack = () => {
     setSelectedConversation(null);
