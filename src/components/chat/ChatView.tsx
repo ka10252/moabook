@@ -60,22 +60,34 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
     onBack();
   };
 
-  // Parse rental confirmation message
-  const parseRentalConfirmation = (content: string) => {
-    const acceptMatch = content.match(/^\[대여 수락\] 책: (.+?) \| 대여일: (.+?) \| 반납예정일: (.+)$/);
+  // Parse rental/purchase confirmation message
+  const parseConfirmationMessage = (content: string) => {
+    const rentAcceptMatch = content.match(/^\[대여 수락\] 책: (.+?) \| 대여일: (.+?) \| 반납예정일: (.+)$/);
+    const purchaseAcceptMatch = content.match(/^\[판매 완료\] 책: (.+?) \| 거래일: (.+)$/);
     const returnMatch = content.match(/^\[반납 완료\] "(.+?)" 반납이 완료되었습니다\.$/);
     
-    if (acceptMatch) {
+    if (rentAcceptMatch) {
       return {
         type: 'accepted' as const,
-        bookTitle: acceptMatch[1],
-        startDate: acceptMatch[2] !== '미정' ? acceptMatch[2] : null,
-        returnDate: acceptMatch[3] !== '미정' ? acceptMatch[3] : null,
+        transactionType: 'rent' as const,
+        bookTitle: rentAcceptMatch[1],
+        startDate: rentAcceptMatch[2] !== '미정' ? rentAcceptMatch[2] : null,
+        returnDate: rentAcceptMatch[3] !== '미정' ? rentAcceptMatch[3] : null,
+      };
+    }
+    if (purchaseAcceptMatch) {
+      return {
+        type: 'accepted' as const,
+        transactionType: 'purchase' as const,
+        bookTitle: purchaseAcceptMatch[1],
+        startDate: purchaseAcceptMatch[2],
+        returnDate: null,
       };
     }
     if (returnMatch) {
       return {
         type: 'returned' as const,
+        transactionType: 'rent' as const,
         bookTitle: returnMatch[1],
       };
     }
@@ -146,15 +158,16 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
             const isRequestMessage = isRentRequest || isPurchaseRequest;
             
             // Check if this is a confirmation message
-            const confirmationData = parseRentalConfirmation(msg.content);
+            const confirmationData = parseConfirmationMessage(msg.content);
             const isConfirmationMessage = confirmationData !== null;
             
             // Book owner can accept - only if they are NOT the sender of the request
             const isBookOwner = conversation.book && user?.id !== msg.sender_id;
             const canAccept = isRequestMessage && isBookOwner && !isOwn && !activeTransaction;
 
-            // Check if owner can see return button on accepted messages
+            // Check if owner can see return button on accepted messages (only for rent, not purchase)
             const canShowReturnButton = confirmationData?.type === 'accepted' && 
+              confirmationData?.transactionType === 'rent' &&
               activeTransaction && 
               activeTransaction.isMine && 
               isOwn; // Owner sent the acceptance message
@@ -208,11 +221,12 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
                       </div>
                     )}
 
-                    {/* Rental Confirmation Card */}
+                    {/* Rental/Purchase Confirmation Card */}
                     {isConfirmationMessage && conversation.book && (
                       <div className="w-full">
                         <RentalConfirmationCard
                           type={confirmationData.type}
+                          transactionType={confirmationData.transactionType}
                           book={{
                             title: conversation.book.title,
                             author: conversation.book.author || '',
@@ -312,15 +326,20 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
                 returnDate
               );
               
-              // Send confirmation message
+              // Send confirmation message based on type
               const startDateStr = startDate 
                 ? format(new Date(startDate), 'yyyy년 M월 d일', { locale: ko })
                 : format(new Date(), 'yyyy년 M월 d일', { locale: ko });
-              const returnDateStr = returnDate 
-                ? format(new Date(returnDate), 'yyyy년 M월 d일', { locale: ko })
-                : '미정';
               
-              const confirmMessage = `[대여 수락] 책: ${conversation.book!.title} | 대여일: ${startDateStr} | 반납예정일: ${returnDateStr}`;
+              let confirmMessage: string;
+              if (acceptRequestType === 'rent') {
+                const returnDateStr = returnDate 
+                  ? format(new Date(returnDate), 'yyyy년 M월 d일', { locale: ko })
+                  : '미정';
+                confirmMessage = `[대여 수락] 책: ${conversation.book!.title} | 대여일: ${startDateStr} | 반납예정일: ${returnDateStr}`;
+              } else {
+                confirmMessage = `[판매 완료] 책: ${conversation.book!.title} | 거래일: ${startDateStr}`;
+              }
               await sendMessage(confirmMessage);
               
               await refreshTransactions();
