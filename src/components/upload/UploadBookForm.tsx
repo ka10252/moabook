@@ -182,10 +182,22 @@ export const UploadBookForm = () => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Cover Uploader - Always visible first */}
+      {user && (
+        <CoverUploader
+          coverUrl={formData.coverUrl}
+          title={formData.title}
+          author={formData.author}
+          userId={user.id}
+          onCoverChange={(url) => setFormData((prev) => ({ ...prev, coverUrl: url }))}
+          disabled={isSubmitting}
+        />
+      )}
+
       {/* Book Search */}
       <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground">책 검색</label>
-        <p className="text-xs text-muted-foreground">한국어와 영어 제목 모두 지원</p>
+        <label className="text-sm font-medium text-foreground">책 검색 (선택)</label>
+        <p className="text-xs text-muted-foreground">검색하면 제목, 저자, 설명이 자동 입력됩니다</p>
         <BookSearchInput
           selectedBook={selectedBook}
           onBookSelect={setSelectedBook}
@@ -198,18 +210,6 @@ export const UploadBookForm = () => {
           </p>
         )}
       </div>
-
-      {/* Cover Uploader */}
-      {user && (
-        <CoverUploader
-          coverUrl={formData.coverUrl}
-          title={formData.title}
-          author={formData.author}
-          userId={user.id}
-          onCoverChange={(url) => setFormData((prev) => ({ ...prev, coverUrl: url }))}
-          disabled={isSubmitting}
-        />
-      )}
 
       {/* Manual Entry Fields */}
       <div className="space-y-4">
