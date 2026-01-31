@@ -20,7 +20,7 @@ import {
 interface BookDetailWithActionsProps {
   book: Book | null;
   onClose: () => void;
-  onChat: (ownerId: string, bookId: string) => void;
+  onChat: (ownerId: string, bookId: string, bookMode: 'rent' | 'sell') => void;
   onEdit?: (book: Book) => void;
   onDelete?: (bookId: string) => Promise<void>;
   isLiked?: boolean;
@@ -208,7 +208,7 @@ export const BookDetailWithActions = ({
                       {/* Non-owner: Request rent or purchase */}
                       <button 
                         className="btn-hip flex-1 flex items-center justify-center gap-2"
-                        onClick={() => onChat(book.owner_id, book.id)}
+                        onClick={() => onChat(book.owner_id, book.id, book.mode)}
                       >
                         <MessageCircle className="w-4 h-4" />
                         {book.mode === 'rent' ? '대여 요청' : '구매 요청'}

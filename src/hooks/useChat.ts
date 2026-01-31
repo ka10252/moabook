@@ -185,15 +185,16 @@ export const useChat = () => {
   const startConversationWithRequest = async (
     otherUserId: string, 
     bookId: string, 
-    requestType: 'rent' | 'purchase'
+    requestType: 'rent' | 'purchase',
+    requesterNickname: string
   ) => {
     const result = await startConversation(otherUserId, bookId);
     
-    if (result.conversation && result.isNew) {
-      // Send automatic request message for new conversations
+    if (result.conversation) {
+      // Always send the request message (for both new and existing conversations)
       const messageContent = requestType === 'rent' 
-        ? '[대여 요청] 이 책을 대여하고 싶습니다.'
-        : '[구매 요청] 이 책을 구매하고 싶습니다.';
+        ? `[대여 요청] ${requesterNickname}님이 대여를 요청합니다.`
+        : `[구매 요청] ${requesterNickname}님이 구매를 요청합니다.`;
       await sendMessage(result.conversation.id, messageContent);
     }
     

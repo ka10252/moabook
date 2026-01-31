@@ -21,13 +21,15 @@ const Index = () => {
   const [showChatModal, setShowChatModal] = useState(false);
   const [chatInitialUserId, setChatInitialUserId] = useState<string | null>(null);
   const [chatInitialBookId, setChatInitialBookId] = useState<string | null>(null);
+  const [chatBookMode, setChatBookMode] = useState<'rent' | 'sell' | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const { user, loading, signOut } = useAuth();
   const { unreadCount } = useNotifications();
 
-  const handleOpenChat = (userId: string, bookId: string) => {
+  const handleOpenChat = (userId: string, bookId: string, bookMode: 'rent' | 'sell') => {
     setChatInitialUserId(userId);
     setChatInitialBookId(bookId);
+    setChatBookMode(bookMode);
     setShowChatModal(true);
   };
 
@@ -35,11 +37,13 @@ const Index = () => {
     setShowChatModal(false);
     setChatInitialUserId(null);
     setChatInitialBookId(null);
+    setChatBookMode(null);
   };
 
   const handleResetChatInitialValues = () => {
     setChatInitialUserId(null);
     setChatInitialBookId(null);
+    setChatBookMode(null);
   };
 
   const renderContent = () => {
@@ -136,6 +140,7 @@ const Index = () => {
         onClose={handleCloseChat}
         initialUserId={chatInitialUserId}
         initialBookId={chatInitialBookId}
+        initialBookMode={chatBookMode}
         onResetInitialValues={handleResetChatInitialValues}
       />
 
