@@ -73,7 +73,7 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
       </header>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-3 min-h-0">
         {/* Book Card Preview at the top if available */}
         {conversation.book && showBookCard && (
           <motion.div
@@ -131,12 +131,12 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                  className={`flex ${isOwn ? 'justify-end' : 'justify-start'} w-full`}
                 >
-                  <div className={`max-w-[85%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col gap-2`}>
+                  <div className={`max-w-[80%] min-w-0 ${isOwn ? 'items-end' : 'items-start'} flex flex-col gap-2`}>
                     {/* Book Card for request messages */}
                     {isRequestMessage && conversation.book && (
-                      <div className={`w-full ${isOwn ? 'pl-4' : 'pr-4'}`}>
+                      <div className="w-full">
                         <BookCardPreview
                           title={conversation.book.title}
                           author={conversation.book.author || ''}
@@ -146,7 +146,7 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
                         {canAccept && (
                           <Button
                             size="sm"
-                            className="w-full mt-2 rounded-xl"
+                            className="w-full mt-2 rounded-xl flex-shrink-0"
                             onClick={() => {
                               setAcceptRequestType(isRentRequest ? 'rent' : 'purchase');
                               setShowAcceptModal(true);
@@ -160,7 +160,7 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
                     
                     {/* Message Bubble */}
                     <div
-                      className={`px-4 py-2.5 rounded-2xl ${
+                      className={`px-4 py-2.5 rounded-2xl max-w-full ${
                         isOwn
                           ? 'bg-primary text-primary-foreground rounded-br-md'
                           : 'bg-muted text-foreground rounded-bl-md'
