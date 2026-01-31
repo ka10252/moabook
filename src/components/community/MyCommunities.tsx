@@ -164,7 +164,7 @@ export const MyCommunities = ({
 
       {/* Leave Confirmation Dialog */}
       <AlertDialog open={!!confirmLeave} onOpenChange={() => setConfirmLeave(null)}>
-        <AlertDialogContent className="rounded-2xl max-w-sm mx-4">
+        <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>탈퇴하시겠습니까?</AlertDialogTitle>
             <AlertDialogDescription>
