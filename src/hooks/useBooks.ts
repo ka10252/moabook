@@ -27,6 +27,7 @@ export const useBooks = (options: UseBooksOptions = {}) => {
           profile:profiles!books_owner_id_fkey(nickname, avatar_url),
           community:communities(name)
         `)
+        .neq('status', 'sold') // Exclude sold books from bookshelf
         .order('created_at', { ascending: false });
 
       // Filter by community

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Users, Crown, Trash2, UserMinus, Loader2, Settings, Pencil } from 'lucide-react';
+import { X, Users, Crown, Trash2, UserMinus, Loader2, Pencil, BookOpen, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,12 +19,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 interface Member {
   id: string;
   user_id: string;
   role: string;
   joined_at: string;
+  kick_count: number;
+  is_banned: boolean;
   profile: {
     id: string;
     nickname: string;
@@ -39,6 +42,8 @@ interface Community {
   cover_url?: string | null;
   created_by?: string | null;
   member_count: number | null;
+  pin_hash?: string;
+  member_visibility?: 'public' | 'members_only' | 'private';
 }
 
 interface CommunityDetailModalProps {
@@ -47,6 +52,7 @@ interface CommunityDetailModalProps {
   community: Community | null;
   onCommunityDeleted?: () => void;
   onCommunityUpdated?: () => void;
+  onNavigateToBookshelf?: (communityId: string) => void;
 }
 
 export const CommunityDetailModal = ({
@@ -55,24 +61,72 @@ export const CommunityDetailModal = ({
   community,
   onCommunityDeleted,
   onCommunityUpdated,
+  onNavigateToBookshelf,
 }: CommunityDetailModalProps) => {
   const { user } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [confirmRemove, setConfirmRemove] = useState<Member | null>(null);
+  const [confirmKick, setConfirmKick] = useState<Member | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showPinDialog, setShowPinDialog] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState(false);
+  const [canViewMembers, setCanViewMembers] = useState(false);
+  const [isMember, setIsMember] = useState(false);
+  const [communityPinHash, setCommunityPinHash] = useState<string | null>(null);
 
   const isOwner = community?.created_by === user?.id;
+  const requiresPin = communityPinHash && communityPinHash !== btoa('0000');
 
   useEffect(() => {
     if (isOpen && community) {
+      checkMembershipAndVisibility();
+    }
+  }, [isOpen, community?.id, user?.id]);
+
+  const checkMembershipAndVisibility = async () => {
+    if (!community || !user) return;
+
+    // Check if user is a member
+    const { data: membership } = await supabase
+      .from('community_members')
+      .select('id')
+      .eq('community_id', community.id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const userIsMember = !!membership;
+    setIsMember(userIsMember);
+
+    // Fetch community with pin_hash and member_visibility
+    const { data: fullCommunity } = await supabase
+      .from('communities')
+      .select('pin_hash, member_visibility')
+      .eq('id', community.id)
+      .maybeSingle();
+
+    if (fullCommunity) {
+      setCommunityPinHash(fullCommunity.pin_hash);
+      const visibility = fullCommunity.member_visibility as 'public' | 'members_only' | 'private';
+      
+      // Determine if user can view members
+      if (visibility === 'public') {
+        setCanViewMembers(true);
+      } else if (visibility === 'members_only') {
+        setCanViewMembers(isOwner || userIsMember);
+      } else { // private
+        setCanViewMembers(isOwner);
+      }
+    }
+
+    if (isOwner || userIsMember) {
       fetchMembers();
     }
-  }, [isOpen, community?.id]);
+  };
 
   const fetchMembers = async () => {
     if (!community) return;
@@ -86,9 +140,12 @@ export const CommunityDetailModal = ({
           user_id,
           role,
           joined_at,
+          kick_count,
+          is_banned,
           profile:profiles(id, nickname, avatar_url)
         `)
         .eq('community_id', community.id)
+        .eq('is_banned', false)
         .order('joined_at', { ascending: true });
 
       if (error) throw error;
@@ -102,27 +159,54 @@ export const CommunityDetailModal = ({
     }
   };
 
-  const handleRemoveMember = async () => {
-    if (!confirmRemove || !community) return;
+  const handleKickMember = async () => {
+    if (!confirmKick || !community) return;
 
-    setRemovingId(confirmRemove.user_id);
+    setRemovingId(confirmKick.user_id);
     try {
-      const { error } = await supabase
-        .from('community_members')
-        .delete()
-        .eq('community_id', community.id)
-        .eq('user_id', confirmRemove.user_id);
+      const newKickCount = (confirmKick.kick_count || 0) + 1;
+      const shouldBan = newKickCount >= 3;
 
-      if (error) throw error;
+      if (shouldBan) {
+        // Mark as banned instead of deleting
+        const { error } = await supabase
+          .from('community_members')
+          .update({ kick_count: newKickCount, is_banned: true })
+          .eq('community_id', community.id)
+          .eq('user_id', confirmKick.user_id);
 
-      setMembers(prev => prev.filter(m => m.user_id !== confirmRemove.user_id));
-      toast.success(`${confirmRemove.profile?.nickname || '멤버'}님을 추방했습니다`);
+        if (error) throw error;
+
+        toast.success(`${confirmKick.profile?.nickname || '멤버'}님이 영구 방출되었습니다 (3회 이상 방출)`);
+      } else {
+        // Delete membership but keep record for kick count
+        const { error } = await supabase
+          .from('community_members')
+          .update({ kick_count: newKickCount })
+          .eq('community_id', community.id)
+          .eq('user_id', confirmKick.user_id);
+
+        if (error) throw error;
+
+        // Now delete the membership
+        const { error: deleteError } = await supabase
+          .from('community_members')
+          .delete()
+          .eq('community_id', community.id)
+          .eq('user_id', confirmKick.user_id);
+
+        if (deleteError) throw deleteError;
+
+        toast.success(`${confirmKick.profile?.nickname || '멤버'}님을 방출했습니다 (${newKickCount}/3)`);
+      }
+
+      setMembers(prev => prev.filter(m => m.user_id !== confirmKick.user_id));
     } catch (err) {
-      console.error('Failed to remove member:', err);
-      toast.error('멤버 추방에 실패했습니다');
+      console.error('Failed to kick member:', err);
+      toast.error('멤버 방출에 실패했습니다');
     } finally {
       setRemovingId(null);
-      setConfirmRemove(null);
+      setConfirmKick(null);
     }
   };
 
@@ -157,6 +241,35 @@ export const CommunityDetailModal = ({
     }
   };
 
+  const handleNavigateToBookshelf = () => {
+    if (!community) return;
+
+    // If public (no PIN) or user is member, navigate directly
+    if (!requiresPin || isMember || isOwner) {
+      onClose();
+      onNavigateToBookshelf?.(community.id);
+    } else {
+      // Show PIN dialog
+      setShowPinDialog(true);
+      setPinInput('');
+      setPinError(false);
+    }
+  };
+
+  const handlePinSubmit = () => {
+    if (!community || !communityPinHash) return;
+
+    const inputHash = btoa(pinInput);
+    if (inputHash === communityPinHash) {
+      setShowPinDialog(false);
+      onClose();
+      onNavigateToBookshelf?.(community.id);
+    } else {
+      setPinError(true);
+      toast.error('잘못된 비밀번호입니다');
+    }
+  };
+
   if (!isOpen || !community) return null;
 
   return (
@@ -180,30 +293,45 @@ export const CommunityDetailModal = ({
             exit={{ opacity: 0, y: 50, scale: 0.95 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-card rounded-2xl h-full flex flex-col shadow-xl overflow-hidden">
+            <div className="bg-card rounded-2xl h-full flex flex-col shadow-xl overflow-hidden max-h-[75vh]">
               {/* Header */}
               <header className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-                <div className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-primary" />
-                  <h2 className="font-bold text-foreground">{community.name}</h2>
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <Users className="w-5 h-5 text-primary shrink-0" />
+                  <h2 className="font-bold text-foreground truncate">{community.name}</h2>
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-xl hover:bg-muted transition-colors"
+                  className="p-2 rounded-xl hover:bg-muted transition-colors shrink-0"
                 >
                   <X className="w-5 h-5 text-muted-foreground" />
                 </button>
               </header>
 
+              {/* Navigate to Bookshelf Button */}
+              <div className="px-4 py-3 border-b border-border shrink-0">
+                <Button
+                  onClick={handleNavigateToBookshelf}
+                  className="w-full h-11 rounded-xl gap-2"
+                  variant="outline"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  {community.name} 책장으로 이동
+                  {requiresPin && !isMember && !isOwner && (
+                    <Lock className="w-3 h-3 ml-1" />
+                  )}
+                </Button>
+              </div>
+
               {/* Community Info */}
               {community.description && (
-                <div className="px-4 py-3 border-b border-border">
-                  <p className="text-sm text-muted-foreground">{community.description}</p>
+                <div className="px-4 py-3 border-b border-border shrink-0">
+                  <p className="text-sm text-muted-foreground line-clamp-2">{community.description}</p>
                 </div>
               )}
 
               {/* Members Header */}
-              <div className="px-4 py-3 flex items-center justify-between border-b border-border">
+              <div className="px-4 py-3 flex items-center justify-between border-b border-border shrink-0">
                 <span className="text-sm font-medium text-foreground">
                   멤버 ({members.length})
                 </span>
@@ -213,27 +341,33 @@ export const CommunityDetailModal = ({
                       size="sm"
                       variant="ghost"
                       onClick={() => setShowEditModal(true)}
-                      className="text-primary hover:text-primary hover:bg-primary/10 gap-1"
+                      className="text-primary hover:text-primary hover:bg-primary/10 gap-1 h-8 px-2"
                     >
                       <Pencil className="w-4 h-4" />
-                      수정
+                      <span className="hidden sm:inline">수정</span>
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => setConfirmDelete(true)}
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1 h-8 px-2"
                     >
                       <Trash2 className="w-4 h-4" />
-                      삭제
+                      <span className="hidden sm:inline">삭제</span>
                     </Button>
                   </div>
                 )}
               </div>
 
               {/* Members List */}
-              <ScrollArea className="flex-1">
-                {loading ? (
+              <ScrollArea className="flex-1 min-h-0">
+                {!canViewMembers ? (
+                  <div className="text-center py-12 text-muted-foreground px-4">
+                    <Lock className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p>멤버 목록을 볼 수 없습니다</p>
+                    <p className="text-xs mt-1">커뮤니티에 가입하면 볼 수 있습니다</p>
+                  </div>
+                ) : loading ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
                   </div>
@@ -253,23 +387,23 @@ export const CommunityDetailModal = ({
                           className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
                           onClick={() => setSelectedMemberId(member.user_id)}
                         >
-                          <div className="flex items-center gap-3">
-                            <Avatar className="w-10 h-10">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <Avatar className="w-10 h-10 shrink-0">
                               <AvatarImage src={member.profile?.avatar_url || undefined} />
                               <AvatarFallback className="bg-primary/10 text-primary">
                                 {member.profile?.nickname?.charAt(0) || '?'}
                               </AvatarFallback>
                             </Avatar>
-                            <div>
+                            <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
-                                <span className="font-medium text-foreground text-sm">
+                                <span className="font-medium text-foreground text-sm truncate">
                                   {member.profile?.nickname || '알 수 없음'}
                                 </span>
                                 {isMemberOwner && (
-                                  <Crown className="w-4 h-4 text-amber-500" />
+                                  <Crown className="w-4 h-4 text-amber-500 shrink-0" />
                                 )}
                                 {isCurrentUser && (
-                                  <span className="text-xs text-primary">(나)</span>
+                                  <span className="text-xs text-primary shrink-0">(나)</span>
                                 )}
                               </div>
                               <span className="text-xs text-muted-foreground capitalize">
@@ -278,17 +412,17 @@ export const CommunityDetailModal = ({
                             </div>
                           </div>
 
-                          {/* Remove button - only for owner, not self */}
+                          {/* Kick button - only for owner, not self */}
                           {isOwner && !isMemberOwner && !isCurrentUser && (
                             <Button
                               size="icon"
                               variant="ghost"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setConfirmRemove(member);
+                                setConfirmKick(member);
                               }}
                               disabled={removingId === member.user_id}
-                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
                             >
                               {removingId === member.user_id ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -308,7 +442,7 @@ export const CommunityDetailModal = ({
 
           {/* Delete Community Confirmation */}
           <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-            <AlertDialogContent className="rounded-2xl max-w-sm mx-4">
+            <AlertDialogContent className="rounded-2xl max-w-[90vw] md:max-w-sm mx-4 z-[60]">
               <AlertDialogHeader>
                 <AlertDialogTitle>커뮤니티를 삭제하시겠습니까?</AlertDialogTitle>
                 <AlertDialogDescription>
@@ -328,22 +462,66 @@ export const CommunityDetailModal = ({
             </AlertDialogContent>
           </AlertDialog>
 
-          {/* Remove Member Confirmation */}
-          <AlertDialog open={!!confirmRemove} onOpenChange={() => setConfirmRemove(null)}>
-            <AlertDialogContent className="rounded-2xl max-w-sm mx-4">
+          {/* Kick Member Confirmation */}
+          <AlertDialog open={!!confirmKick} onOpenChange={() => setConfirmKick(null)}>
+            <AlertDialogContent className="rounded-2xl max-w-[90vw] md:max-w-sm mx-4 z-[60]">
               <AlertDialogHeader>
-                <AlertDialogTitle>멤버를 추방하시겠습니까?</AlertDialogTitle>
+                <AlertDialogTitle>멤버를 방출하시겠습니까?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  {confirmRemove?.profile?.nickname || '이 멤버'}님을 커뮤니티에서 추방합니다.
+                  {confirmKick?.profile?.nickname || '이 멤버'}님을 커뮤니티에서 방출합니다.
+                  {confirmKick && (confirmKick.kick_count || 0) >= 2 && (
+                    <span className="block mt-2 text-destructive font-medium">
+                      ⚠️ 3회 방출 시 영구 차단됩니다!
+                    </span>
+                  )}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel className="rounded-xl">취소</AlertDialogCancel>
                 <AlertDialogAction
-                  onClick={handleRemoveMember}
+                  onClick={handleKickMember}
                   className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
-                  추방
+                  방출
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* PIN Dialog */}
+          <AlertDialog open={showPinDialog} onOpenChange={setShowPinDialog}>
+            <AlertDialogContent className="rounded-2xl max-w-[90vw] md:max-w-sm mx-4 z-[60]">
+              <AlertDialogHeader>
+                <AlertDialogTitle>비밀번호 입력</AlertDialogTitle>
+                <AlertDialogDescription>
+                  비공개 커뮤니티입니다. 4자리 비밀번호를 입력해주세요.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="flex justify-center py-4">
+                <InputOTP
+                  value={pinInput}
+                  onChange={(value) => {
+                    setPinInput(value);
+                    setPinError(false);
+                  }}
+                  maxLength={4}
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} className={`w-12 h-12 text-lg ${pinError ? 'border-destructive' : ''}`} />
+                    <InputOTPSlot index={1} className={`w-12 h-12 text-lg ${pinError ? 'border-destructive' : ''}`} />
+                    <InputOTPSlot index={2} className={`w-12 h-12 text-lg ${pinError ? 'border-destructive' : ''}`} />
+                    <InputOTPSlot index={3} className={`w-12 h-12 text-lg ${pinError ? 'border-destructive' : ''}`} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="rounded-xl">취소</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handlePinSubmit}
+                  disabled={pinInput.length !== 4}
+                  className="rounded-xl"
+                >
+                  확인
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

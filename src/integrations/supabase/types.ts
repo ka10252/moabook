@@ -95,6 +95,7 @@ export type Database = {
           description: string | null
           id: string
           member_count: number | null
+          member_visibility: Database["public"]["Enums"]["member_visibility"]
           name: string
           pin_hash: string
         }
@@ -105,6 +106,7 @@ export type Database = {
           description?: string | null
           id?: string
           member_count?: number | null
+          member_visibility?: Database["public"]["Enums"]["member_visibility"]
           name: string
           pin_hash: string
         }
@@ -115,6 +117,7 @@ export type Database = {
           description?: string | null
           id?: string
           member_count?: number | null
+          member_visibility?: Database["public"]["Enums"]["member_visibility"]
           name?: string
           pin_hash?: string
         }
@@ -132,21 +135,27 @@ export type Database = {
         Row: {
           community_id: string
           id: string
+          is_banned: boolean
           joined_at: string
+          kick_count: number
           role: Database["public"]["Enums"]["community_role"]
           user_id: string
         }
         Insert: {
           community_id: string
           id?: string
+          is_banned?: boolean
           joined_at?: string
+          kick_count?: number
           role?: Database["public"]["Enums"]["community_role"]
           user_id: string
         }
         Update: {
           community_id?: string
           id?: string
+          is_banned?: boolean
           joined_at?: string
+          kick_count?: number
           role?: Database["public"]["Enums"]["community_role"]
           user_id?: string
         }
@@ -525,11 +534,19 @@ export type Database = {
       }
     }
     Functions: {
+      can_view_community_members: {
+        Args: { _community_id: string; _viewer_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_banned_from_community: {
+        Args: { _community_id: string; _user_id: string }
         Returns: boolean
       }
       is_community_member: {
@@ -547,6 +564,7 @@ export type Database = {
       book_mode: "rent" | "sell"
       book_status: "available" | "rented" | "sold"
       community_role: "admin" | "member"
+      member_visibility: "public" | "members_only" | "private"
       transaction_status: "pending" | "active" | "completed" | "cancelled"
       transaction_type: "rent" | "purchase"
     }
@@ -681,6 +699,7 @@ export const Constants = {
       book_mode: ["rent", "sell"],
       book_status: ["available", "rented", "sold"],
       community_role: ["admin", "member"],
+      member_visibility: ["public", "members_only", "private"],
       transaction_status: ["pending", "active", "completed", "cancelled"],
       transaction_type: ["rent", "purchase"],
     },
