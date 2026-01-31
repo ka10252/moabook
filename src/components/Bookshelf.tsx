@@ -87,20 +87,30 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
   }, [allBooks]);
 
   // Filter books based on active filter
-  // For community filter: show all books from community members (not just books assigned to community)
+  // For community filter: show books from that community + my books if I'm a member
   const filteredBooks = useMemo(() => {
     const books = allBooks;
     
     if (activeFilter === 'mine') {
       return books.filter(book => book.owner_id === user?.id);
     } else if (activeFilter !== 'everybody') {
-      // Filter by community - show books that belong to this community
-      // This includes my books if I'm in the community
-      return books.filter(book => book.community_id === activeFilter);
+      // Filter by community - show:
+      // 1. Books that belong to this community
+      // 2. My own public books (if I'm a member of the community)
+      const isMyMemberOfCommunity = myCommunities.some(c => c.id === activeFilter);
+      return books.filter(book => {
+        // Books specifically assigned to this community
+        if (book.community_id === activeFilter) return true;
+        // My books if I'm a member of this community (public or this community)
+        if (isMyMemberOfCommunity && book.owner_id === user?.id) {
+          return book.is_public || book.community_id === activeFilter;
+        }
+        return false;
+      });
     }
     
     return books;
-  }, [allBooks, activeFilter, user?.id]);
+  }, [allBooks, activeFilter, user?.id, myCommunities]);
 
   // Organize books: user's books first in "everybody's" or community views
   const organizedBooks = useMemo(() => {

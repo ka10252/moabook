@@ -34,14 +34,14 @@ export const LikedBooksPopup = ({ isOpen, onClose, onBookClick }: LikedBooksPopu
           
           {/* Popup */}
           <motion.div
-            className="fixed inset-x-4 bottom-24 md:inset-x-auto md:right-4 md:bottom-24 md:w-80 z-50"
-            style={{ maxHeight: '60vh' }}
+            className="fixed inset-x-4 top-1/2 -translate-y-1/2 md:inset-x-auto md:left-1/2 md:w-80 md:-translate-x-1/2 z-50"
+            style={{ maxHeight: '70vh' }}
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           >
-            <div className="bg-card rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[60vh]">
+            <div className="bg-card rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[70vh]">
               {/* Header */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0">
                 <div className="flex items-center gap-2">

@@ -91,7 +91,7 @@ export const BookDetailWithActions = ({
           
           {/* Modal - improved responsive sizing */}
           <motion.div
-            className="fixed inset-x-4 top-[5%] md:inset-x-auto md:left-1/2 md:w-full md:max-w-lg md:-translate-x-1/2 z-50"
+            className="fixed inset-x-4 top-1/2 -translate-y-1/2 md:inset-x-auto md:left-1/2 md:w-full md:max-w-lg md:-translate-x-1/2 z-50"
             style={{ maxHeight: '90vh' }}
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
