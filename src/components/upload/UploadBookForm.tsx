@@ -266,7 +266,7 @@ export const UploadBookForm = () => {
 
       {/* Cover Preview or Upload */}
       <div className="space-y-3">
-        {formData.coverUrl ? (
+        {formData.coverUrl && (
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -287,10 +287,10 @@ export const UploadBookForm = () => {
               </button>
             </div>
           </motion.div>
-        ) : showManualCover || !selectedBook ? null : null}
+        )}
 
-        {/* Manual Cover Upload Button */}
-        {(showManualCover || (formData.title && !formData.coverUrl)) && (
+        {/* Always show upload button when title exists */}
+        {formData.title && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -315,10 +315,10 @@ export const UploadBookForm = () => {
               ) : (
                 <Camera className="w-4 h-4" />
               )}
-              표지 사진 업로드
+              {formData.coverUrl ? '다른 사진으로 변경' : '표지 사진 업로드'}
             </Button>
-            <p className="text-xs text-muted-foreground">
-              표지를 찾을 수 없나요? 직접 업로드하세요
+            <p className="text-xs text-muted-foreground text-center max-w-[250px]">
+              책상태를 파악할 수 있게 실제 책사진을 업로드해주세요
             </p>
           </motion.div>
         )}

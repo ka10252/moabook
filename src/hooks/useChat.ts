@@ -135,17 +135,32 @@ export const useChat = () => {
   }, [user?.id, fetchConversations]);
 
   const startConversation = async (otherUserId: string, bookId?: string) => {
-    if (!user) return { conversation: null, error: new Error('Not logged in') };
+    if (!user) return { conversation: null, error: new Error('Not logged in'), isNew: false };
 
-    // Check if conversation already exists
+    // Check if conversation already exists for this book
+    if (bookId) {
+      const { data: existingWithBook } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('book_id', bookId)
+        .or(`and(participant_1.eq.${user.id},participant_2.eq.${otherUserId}),and(participant_1.eq.${otherUserId},participant_2.eq.${user.id})`)
+        .maybeSingle();
+
+      if (existingWithBook) {
+        return { conversation: existingWithBook, error: null, isNew: false };
+      }
+    }
+
+    // Check if conversation already exists without book
     const { data: existing } = await supabase
       .from('conversations')
       .select('id')
       .or(`and(participant_1.eq.${user.id},participant_2.eq.${otherUserId}),and(participant_1.eq.${otherUserId},participant_2.eq.${user.id})`)
+      .is('book_id', null)
       .maybeSingle();
 
-    if (existing) {
-      return { conversation: existing, error: null };
+    if (existing && !bookId) {
+      return { conversation: existing, error: null, isNew: false };
     }
 
     // Create new conversation
@@ -163,7 +178,26 @@ export const useChat = () => {
       await fetchConversations();
     }
 
-    return { conversation: data, error };
+    return { conversation: data, error, isNew: true };
+  };
+
+  // Start conversation with automatic request message
+  const startConversationWithRequest = async (
+    otherUserId: string, 
+    bookId: string, 
+    requestType: 'rent' | 'purchase'
+  ) => {
+    const result = await startConversation(otherUserId, bookId);
+    
+    if (result.conversation && result.isNew) {
+      // Send automatic request message for new conversations
+      const messageContent = requestType === 'rent' 
+        ? '[대여 요청] 이 책을 대여하고 싶습니다.'
+        : '[구매 요청] 이 책을 구매하고 싶습니다.';
+      await sendMessage(result.conversation.id, messageContent);
+    }
+    
+    return result;
   };
 
   const sendMessage = async (conversationId: string, content: string) => {
@@ -193,6 +227,7 @@ export const useChat = () => {
     loading,
     refresh: fetchConversations,
     startConversation,
+    startConversationWithRequest,
     sendMessage,
   };
 };

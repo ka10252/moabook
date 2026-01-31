@@ -126,26 +126,26 @@ export const Bookshelf = ({ onOpenChat }: BookshelfProps) => {
   return (
     <div className="flex flex-col h-full relative">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-4 bg-card/80 backdrop-blur-sm sticky top-0 z-30">
-        <div className="flex items-center gap-2">
+      <header className="flex items-center justify-between px-4 py-4 bg-card/80 backdrop-blur-sm sticky top-0 z-30 gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {/* Transaction Dashboard Button */}
           {user && (
             <button
               onClick={() => setShowTransactionDashboard(true)}
-              className="p-2 rounded-xl bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+              className="p-2 rounded-xl bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors flex-shrink-0"
               title="거래 현황"
             >
               <BookMarked className="w-5 h-5" />
             </button>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-shrink-0">
           <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
           
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors">
-              {getFilterLabel()}
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            <DropdownMenuTrigger className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors min-w-[120px] justify-between flex-shrink-0">
+              <span className="truncate">{getFilterLabel()}</span>
+              <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 bg-popover border border-border shadow-lg z-50">
               <DropdownMenuItem 
