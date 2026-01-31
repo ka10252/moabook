@@ -15,7 +15,7 @@ import { useCommunities } from '@/hooks/useCommunities';
 import { useLikedBooks } from '@/hooks/useLikedBooks';
 import { useAuth } from '@/hooks/useAuth';
 import { ChevronDown, Loader2, BookOpen, Heart, BookMarked } from 'lucide-react';
-import { dummyKoreanBooks } from '@/data/dummyBooks';
+
 import { toast } from 'sonner';
 import {
   DropdownMenu,
@@ -89,7 +89,7 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
   // Filter books based on active filter
   // For community filter: show all books from community members (not just books assigned to community)
   const filteredBooks = useMemo(() => {
-    let books = allBooks.length > 0 ? allBooks : dummyKoreanBooks;
+    const books = allBooks;
     
     if (activeFilter === 'mine') {
       return books.filter(book => book.owner_id === user?.id);
