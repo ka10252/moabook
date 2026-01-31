@@ -26,6 +26,7 @@ export interface Conversation {
   book?: {
     id: string;
     title: string;
+    author?: string;
     cover_url: string | null;
   };
   last_message?: string;
@@ -51,7 +52,7 @@ export const useChat = () => {
         .from('conversations')
         .select(`
           *,
-          book:books(id, title, cover_url)
+          book:books(id, title, author, cover_url)
         `)
         .or(`participant_1.eq.${user.id},participant_2.eq.${user.id}`)
         .order('last_message_at', { ascending: false });

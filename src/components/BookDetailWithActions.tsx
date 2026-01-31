@@ -5,6 +5,7 @@ import { Book } from '@/types/book';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { MemberProfileModal } from '@/components/profile/MemberProfileModal';
+import { DefaultBookCover } from '@/components/DefaultBookCover';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,6 +52,7 @@ export const BookDetailWithActions = ({
   if (!book) return null;
 
   const isOwner = currentUserId === book.owner_id;
+  const hasValidCover = book.cover && book.cover.length > 0;
 
   const handleDelete = async () => {
     if (!onDelete) return;
@@ -99,11 +101,19 @@ export const BookDetailWithActions = ({
             <div className="glass-card h-full max-h-[90vh] overflow-hidden flex flex-col">
               {/* Header - fixed height */}
               <div className="relative h-56 flex-shrink-0">
-                <img
-                  src={book.cover}
-                  alt={book.title}
-                  className="w-full h-full object-cover"
-                />
+                {hasValidCover ? (
+                  <img
+                    src={book.cover}
+                    alt={book.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <DefaultBookCover 
+                    title={book.title} 
+                    author={book.author} 
+                    className="w-full h-full"
+                  />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
                 
                 {/* Close button */}

@@ -374,6 +374,7 @@ export type Database = {
           end_date: string | null
           id: string
           owner_id: string
+          return_date: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["transaction_status"]
           type: Database["public"]["Enums"]["transaction_type"]
@@ -385,6 +386,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           owner_id: string
+          return_date?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
           type: Database["public"]["Enums"]["transaction_type"]
@@ -396,6 +398,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           owner_id?: string
+          return_date?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
           type?: Database["public"]["Enums"]["transaction_type"]

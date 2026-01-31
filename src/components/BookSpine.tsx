@@ -8,6 +8,7 @@ interface BookSpineProps {
   isSelected: boolean;
   isLent?: boolean;
   isBorrowed?: boolean;
+  isRented?: boolean; // Book is currently rented out (대여중)
   lenderNickname?: string;
 }
 
@@ -26,6 +27,7 @@ export const BookSpine = ({
   isSelected,
   isLent = false,
   isBorrowed = false,
+  isRented = false,
   lenderNickname,
 }: BookSpineProps) => {
   const [isBookmarkHovered, setIsBookmarkHovered] = useState(false);
@@ -59,10 +61,17 @@ export const BookSpine = ({
       onClick={onClick}
       style={{ perspective: '1000px' }}
     >
-      {/* Lent tag */}
+      {/* Lent tag - when user lent their book to someone */}
       {isLent && (
         <div className="absolute -top-1 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-b-sm shadow-sm z-20">
-          Lent
+          대여해줌
+        </div>
+      )}
+      
+      {/* Rented tag - when book is currently rented */}
+      {isRented && !isLent && (
+        <div className="absolute -top-1 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[8px] font-bold px-1.5 py-0.5 rounded-b-sm shadow-sm z-20">
+          대여중
         </div>
       )}
       

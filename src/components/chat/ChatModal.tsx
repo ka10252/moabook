@@ -18,12 +18,14 @@ export const ChatModal = ({ isOpen, onClose, initialUserId, initialBookId, initi
   const { conversations, loading, startConversation, refresh } = useChat();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [hasAutoStarted, setHasAutoStarted] = useState(false);
+  const [showBookCard, setShowBookCard] = useState(false); // Show book card when starting new conversation
 
   // Reset state when modal closes
   useEffect(() => {
     if (!isOpen) {
       setSelectedConversation(null);
       setHasAutoStarted(false);
+      setShowBookCard(false);
     }
   }, [isOpen]);
 
@@ -42,6 +44,7 @@ export const ChatModal = ({ isOpen, onClose, initialUserId, initialBookId, initi
   useEffect(() => {
     if (isOpen && initialUserId && !initialConversationId && !hasAutoStarted) {
       setHasAutoStarted(true);
+      setShowBookCard(!!initialBookId); // Show book card when starting chat from book
       startConversation(initialUserId, initialBookId || undefined).then(({ conversation }) => {
         if (conversation) {
           refresh().then(() => {
@@ -66,6 +69,7 @@ export const ChatModal = ({ isOpen, onClose, initialUserId, initialBookId, initi
   const handleBack = () => {
     setSelectedConversation(null);
     setHasAutoStarted(false);
+    setShowBookCard(false);
     onResetInitialValues?.();
     refresh();
   };
@@ -97,7 +101,7 @@ export const ChatModal = ({ isOpen, onClose, initialUserId, initialBookId, initi
       >
         <div className="bg-card rounded-2xl h-full max-h-[85vh] overflow-hidden flex flex-col shadow-xl">
           {selectedConversation ? (
-            <ChatView conversation={selectedConversation} onBack={handleBack} />
+            <ChatView conversation={selectedConversation} onBack={handleBack} showBookCard={showBookCard} />
           ) : (
             <>
               {/* Header */}

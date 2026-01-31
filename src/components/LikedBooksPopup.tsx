@@ -3,6 +3,7 @@ import { X, Heart, BookOpen, Loader2 } from 'lucide-react';
 import { useLikedBooks } from '@/hooks/useLikedBooks';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Book } from '@/types/book';
+import { DefaultBookCover } from '@/components/DefaultBookCover';
 
 interface LikedBooksPopupProps {
   isOpen: boolean;
@@ -85,16 +86,18 @@ export const LikedBooksPopup = ({ isOpen, onClose, onBookClick }: LikedBooksPopu
                       >
                         {/* Book cover */}
                         <div className="w-12 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                          {item.book?.cover ? (
+                          {item.book?.cover && item.book.cover.length > 0 ? (
                             <img
                               src={item.book.cover}
                               alt={item.book.title}
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <BookOpen className="w-5 h-5 text-muted-foreground" />
-                            </div>
+                            <DefaultBookCover 
+                              title={item.book?.title || ''} 
+                              author={item.book?.author || ''} 
+                              className="w-full h-full text-[6px]"
+                            />
                           )}
                         </div>
 
