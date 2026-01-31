@@ -108,13 +108,13 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
           {/* Header */}
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-foreground mb-2">
-              {mode === 'signin' ? 'Welcome Back' : 'Join Ex-Lib'}
-            </h2>
-            <p className="text-muted-foreground">
-              {mode === 'signin'
-                ? 'Sign in to access your library'
-                : 'Create your account to start sharing'}
+            <img 
+              src="/moa-logo.png" 
+              alt="Moa" 
+              className="h-20 mx-auto mb-3"
+            />
+            <p className="text-muted-foreground text-sm">
+              커뮤니티와 함께 독서하세요
             </p>
           </div>
 
