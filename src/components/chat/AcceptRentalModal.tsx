@@ -77,13 +77,13 @@ export const AcceptRentalModal = ({
 
           {/* Modal */}
           <motion.div
-            className="fixed inset-x-4 top-1/2 -translate-y-1/2 md:inset-x-auto md:left-1/2 md:w-full md:max-w-md md:-translate-x-1/2 z-[60]"
+            className="fixed inset-x-4 top-4 bottom-4 md:inset-x-auto md:top-1/2 md:bottom-auto md:left-1/2 md:w-full md:max-w-md md:-translate-x-1/2 md:-translate-y-1/2 z-[60]"
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           >
-            <div className="bg-card rounded-2xl shadow-xl overflow-hidden">
+            <div className="bg-card rounded-2xl shadow-xl overflow-hidden max-h-full flex flex-col">
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-border">
                 <h2 className="text-lg font-bold text-foreground">{buttonLabel}</h2>
@@ -96,7 +96,7 @@ export const AcceptRentalModal = ({
               </div>
 
               {/* Content */}
-              <div className="p-4 space-y-4">
+              <div className="p-4 space-y-4 overflow-y-auto min-h-0">
                 {/* Book Info */}
                 <div className="bg-muted/50 rounded-xl p-3 flex gap-3">
                   {book.cover_url ? (
@@ -164,7 +164,7 @@ export const AcceptRentalModal = ({
               </div>
 
               {/* Footer */}
-              <div className="p-4 border-t border-border">
+              <div className="p-4 border-t border-border pb-[calc(1rem+env(safe-area-inset-bottom))]">
                 <Button
                   onClick={() => setShowConfirm(true)}
                   className="w-full h-12 rounded-xl font-semibold"
@@ -178,7 +178,7 @@ export const AcceptRentalModal = ({
 
           {/* Confirmation Dialog */}
           <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-            <AlertDialogContent className="rounded-2xl max-w-[90vw] md:max-w-md z-[70]">
+            <AlertDialogContent className="rounded-2xl max-w-[90vw] md:max-w-md z-[70] max-h-[90vh] overflow-y-auto">
               <AlertDialogHeader>
                 <AlertDialogTitle>{actionLabel}을(를) 수락하시겠습니까?</AlertDialogTitle>
                 <AlertDialogDescription>
