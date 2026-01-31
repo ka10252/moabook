@@ -38,13 +38,13 @@ export const NotificationPopup = ({ isOpen, onClose }: NotificationPopupProps) =
 
           {/* Popup */}
           <motion.div
-            className="fixed inset-x-4 top-16 md:inset-x-auto md:right-4 md:w-96 z-50 max-h-[70vh]"
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            className="fixed inset-x-4 top-1/2 -translate-y-1/2 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-96 z-50 max-h-[80vh]"
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-card rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[70vh]">
+            <div className="bg-card rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[80vh]">
               {/* Header */}
               <header className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
                 <div className="flex items-center gap-2">
