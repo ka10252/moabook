@@ -91,14 +91,13 @@ export const BookDetailWithActions = ({
           
           {/* Modal - improved responsive sizing */}
           <motion.div
-            className="fixed inset-x-4 top-1/2 -translate-y-1/2 md:inset-x-auto md:left-1/2 md:w-full md:max-w-lg md:-translate-x-1/2 z-50"
-            style={{ maxHeight: '90vh' }}
-            initial={{ opacity: 0, y: 50, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+            className="fixed inset-x-4 top-4 md:inset-x-auto md:left-1/2 md:w-full md:max-w-lg md:-translate-x-1/2 z-50"
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           >
-            <div className="glass-card h-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="glass-card h-full max-h-[85vh] overflow-hidden flex flex-col">
               {/* Header - fixed height */}
               <div className="relative h-56 flex-shrink-0">
                 {hasValidCover ? (
