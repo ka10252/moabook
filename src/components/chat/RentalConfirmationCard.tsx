@@ -1,10 +1,11 @@
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { Book as BookIcon, Calendar, CheckCircle2 } from 'lucide-react';
+import { Book as BookIcon, Calendar, CheckCircle2, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface RentalConfirmationCardProps {
   type: 'accepted' | 'returned';
+  transactionType?: 'rent' | 'purchase';
   book: {
     title: string;
     author: string;
@@ -19,6 +20,7 @@ interface RentalConfirmationCardProps {
 
 export const RentalConfirmationCard = ({
   type,
+  transactionType = 'rent',
   book,
   startDate,
   returnDate,
@@ -27,15 +29,33 @@ export const RentalConfirmationCard = ({
   showReturnButton = false,
 }: RentalConfirmationCardProps) => {
   const isAccepted = type === 'accepted';
+  const isPurchase = transactionType === 'purchase';
+  
+  // Determine header text
+  const getHeaderText = () => {
+    if (type === 'returned') return '반납이 완료되었습니다';
+    if (isPurchase) return '판매가 완료되었습니다';
+    return '대여가 수락되었습니다';
+  };
+
+  // Determine date label
+  const getDateLabel = () => {
+    if (isPurchase) return '거래일';
+    return '대여일';
+  };
   
   return (
     <div className={`rounded-xl overflow-hidden ${isAccepted ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800' : 'bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800'}`}>
       {/* Header */}
       <div className={`px-3 py-2 ${isAccepted ? 'bg-green-100 dark:bg-green-900/50' : 'bg-blue-100 dark:bg-blue-900/50'}`}>
         <div className="flex items-center gap-2">
-          <CheckCircle2 className={`w-4 h-4 ${isAccepted ? 'text-green-600' : 'text-blue-600'}`} />
+          {isPurchase ? (
+            <ShoppingBag className="w-4 h-4 text-green-600" />
+          ) : (
+            <CheckCircle2 className={`w-4 h-4 ${isAccepted ? 'text-green-600' : 'text-blue-600'}`} />
+          )}
           <span className={`text-sm font-medium ${isAccepted ? 'text-green-700 dark:text-green-300' : 'text-blue-700 dark:text-blue-300'}`}>
-            {isAccepted ? '대여가 수락되었습니다' : '반납이 완료되었습니다'}
+            {getHeaderText()}
           </span>
         </div>
       </div>
@@ -66,16 +86,17 @@ export const RentalConfirmationCard = ({
           {startDate && (
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <Calendar className="w-3 h-3" />
-              <span>대여일: {format(new Date(startDate), 'yyyy년 M월 d일', { locale: ko })}</span>
+              <span>{getDateLabel()}: {format(new Date(startDate), 'yyyy년 M월 d일', { locale: ko })}</span>
             </div>
           )}
-          {returnDate && (
+          {/* Only show return date for rentals */}
+          {!isPurchase && returnDate && (
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <Calendar className="w-3 h-3" />
               <span>{isAccepted ? '반납 예정일' : '반납일'}: {format(new Date(returnDate), 'yyyy년 M월 d일', { locale: ko })}</span>
             </div>
           )}
-          {isAccepted && !returnDate && (
+          {!isPurchase && isAccepted && !returnDate && (
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <Calendar className="w-3 h-3" />
               <span>반납 예정일: 미정</span>
@@ -83,8 +104,8 @@ export const RentalConfirmationCard = ({
           )}
         </div>
         
-        {/* Return Button (only for owner on accepted cards) */}
-        {showReturnButton && isOwner && isAccepted && onReturnClick && (
+        {/* Return Button (only for owner on accepted rental cards, NOT for purchases) */}
+        {!isPurchase && showReturnButton && isOwner && isAccepted && onReturnClick && (
           <Button
             size="sm"
             variant="outline"
