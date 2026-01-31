@@ -12,7 +12,7 @@ import { CommunityDetailModal } from './CommunityDetailModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { dummyCommunities } from '@/data/dummyCommunities';
+
 
 type View = 'list' | 'create' | 'join';
 
@@ -64,20 +64,7 @@ export const CommunityPage = ({ onNavigateToBookshelf }: CommunityPageProps = {}
         created_by: c.created_by as string | null,
       }));
 
-      // Merge with dummy data for demo (filter out duplicates)
-      const dbIds = new Set(dbData.map(c => c.id));
-      const dummyToAdd = dummyCommunities
-        .filter(d => !dbIds.has(d.id))
-        .map(d => ({
-          id: d.id,
-          name: d.name,
-          member_count: d.member_count,
-          description: d.description,
-          cover_url: d.cover_url,
-          created_by: null,
-        }));
-
-      setCommunities([...dbData, ...dummyToAdd]);
+      setCommunities(dbData);
 
       // Fetch user's memberships
       if (user) {
@@ -101,12 +88,6 @@ export const CommunityPage = ({ onNavigateToBookshelf }: CommunityPageProps = {}
 
   const handleLeaveCommunity = async (communityId: string, communityName: string) => {
     if (!user) return;
-
-    // Can't leave dummy communities
-    if (communityId.startsWith('dummy-')) {
-      toast.error("데모 커뮤니티에서는 탈퇴할 수 없습니다");
-      return;
-    }
 
     setLeavingId(communityId);
     try {
@@ -135,11 +116,6 @@ export const CommunityPage = ({ onNavigateToBookshelf }: CommunityPageProps = {}
   };
 
   const handleJoinCommunity = (community: Community) => {
-    // Dummy communities can't be joined
-    if (community.id.startsWith('dummy-')) {
-      toast.info('데모 커뮤니티입니다. 직접 커뮤니티를 만들어보세요!');
-      return;
-    }
     setSelectedCommunity(community);
     setView('join');
   };
