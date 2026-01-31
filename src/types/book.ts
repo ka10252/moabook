@@ -29,7 +29,7 @@ export const transformDbBook = (row: any): Book => ({
   id: row.id,
   title: row.title,
   author: row.author,
-  cover: row.cover_url || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=300&h=400&fit=crop',
+  cover: row.cover_url || '', // Empty string signals to use DefaultBookCover component
   description: row.description,
   condition: row.condition as 'S' | 'A' | 'B',
   mode: row.mode as 'rent' | 'sell',

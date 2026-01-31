@@ -7,14 +7,15 @@ import { BookDetailWithActions } from './BookDetailWithActions';
 import { EditBookModal } from './library/EditBookModal';
 import { LikedBooksPopup } from './LikedBooksPopup';
 import { ViewToggle, ViewMode } from './ViewToggle';
+import { TransactionDashboard } from './transaction/TransactionDashboard';
 import { Book } from '@/types/book';
 import { useBooks, useBorrowedBooks } from '@/hooks/useBooks';
+import { useTransactions } from '@/hooks/useTransactions';
 import { useCommunities } from '@/hooks/useCommunities';
 import { useLikedBooks } from '@/hooks/useLikedBooks';
 import { useAuth } from '@/hooks/useAuth';
-import { ChevronDown, Loader2, BookOpen, Heart } from 'lucide-react';
+import { ChevronDown, Loader2, BookOpen, Heart, BookMarked } from 'lucide-react';
 import { dummyKoreanBooks } from '@/data/dummyBooks';
-import { getLentBookIds, getBorrowedBooksInfo, DEMO_USER_ID } from '@/data/dummyTransactions';
 import { toast } from 'sonner';
 import {
   DropdownMenu,
@@ -38,44 +39,43 @@ export const Bookshelf = ({ onOpenChat }: BookshelfProps) => {
   const [previewBook, setPreviewBook] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>('everybody');
   const [showLikedBooks, setShowLikedBooks] = useState(false);
+  const [showTransactionDashboard, setShowTransactionDashboard] = useState(false);
 
   const { myCommunities } = useCommunities();
   const { books: allBooks, loading, deleteBook, updateBook, refresh } = useBooks({});
   const { borrowedBooks } = useBorrowedBooks();
+  const { getLentBookIds, getRentedBooksInfo } = useTransactions();
   const { isLiked, toggleLike, likedBooks } = useLikedBooks();
 
-  // For demo purposes, use dummy transactions if user is logged in
-  // In production, this would come from real transactions
-  const lentBookIds = useMemo(() => {
-    if (user) {
-      // Check for real lent transactions here
-      // For demo, use dummy data
-      return getLentBookIds(DEMO_USER_ID);
-    }
-    return new Set<string>();
-  }, [user]);
+  // Get lent book IDs from real transactions
+  const lentBookIds = useMemo(() => getLentBookIds(), [getLentBookIds]);
 
   // Get borrowed books info (books I borrowed from others)
   const borrowedBooksInfo = useMemo(() => {
-    // First check real borrowed books
+    // Get from real borrowed books
     const realBorrowed = new Map(
       borrowedBooks
         .filter(t => t.book)
         .map(t => [t.book.id, t.book.owner?.nickname || 'Someone'])
     );
     
-    // For demo, merge with dummy data
-    if (user) {
-      const dummyBorrowed = getBorrowedBooksInfo(DEMO_USER_ID);
-      dummyBorrowed.forEach((nickname, bookId) => {
-        if (!realBorrowed.has(bookId)) {
-          realBorrowed.set(bookId, nickname);
-        }
-      });
-    }
+    // Merge with transaction hook data
+    const rentedInfo = getRentedBooksInfo();
+    rentedInfo.forEach((nickname, bookId) => {
+      if (!realBorrowed.has(bookId)) {
+        realBorrowed.set(bookId, nickname);
+      }
+    });
     
     return realBorrowed;
-  }, [borrowedBooks, user]);
+  }, [borrowedBooks, getRentedBooksInfo]);
+
+  // Get rented book IDs (books that are currently rented out - status = 'rented')
+  const rentedBookIds = useMemo(() => {
+    return new Set(
+      allBooks.filter(book => book.status === 'rented').map(book => book.id)
+    );
+  }, [allBooks]);
 
   // Filter books based on active filter
   // For community filter: show all books from community members (not just books assigned to community)
@@ -127,8 +127,17 @@ export const Bookshelf = ({ onOpenChat }: BookshelfProps) => {
     <div className="flex flex-col h-full relative">
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-4 bg-card/80 backdrop-blur-sm sticky top-0 z-30">
-        <div className="flex-1 min-w-0">
-          {/* Removed 책장 text as requested */}
+        <div className="flex items-center gap-2">
+          {/* Transaction Dashboard Button */}
+          {user && (
+            <button
+              onClick={() => setShowTransactionDashboard(true)}
+              className="p-2 rounded-xl bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+              title="거래 현황"
+            >
+              <BookMarked className="w-5 h-5" />
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
@@ -199,7 +208,7 @@ export const Bookshelf = ({ onOpenChat }: BookshelfProps) => {
                     {shelves.map((shelfBooks, shelfIndex) => (
                       <WoodenShelf key={shelfIndex}>
                         <div className="flex items-end gap-1 h-[140px]">
-                          {shelfBooks.map((book) => (
+                        {shelfBooks.map((book) => (
                             <BookSpine
                               key={book.id}
                               book={book}
@@ -207,6 +216,7 @@ export const Bookshelf = ({ onOpenChat }: BookshelfProps) => {
                               isSelected={previewBook === book.id}
                               isLent={lentBookIds.has(book.id)}
                               isBorrowed={borrowedBooksInfo.has(book.id)}
+                              isRented={rentedBookIds.has(book.id)}
                               lenderNickname={borrowedBooksInfo.get(book.id)}
                             />
                           ))}
@@ -253,6 +263,8 @@ export const Bookshelf = ({ onOpenChat }: BookshelfProps) => {
                         <BookCover
                           book={book}
                           onClick={() => setSelectedBook(book)}
+                          isRented={rentedBookIds.has(book.id)}
+                          isLent={lentBookIds.has(book.id)}
                         />
                       </motion.div>
                     ))}
@@ -278,6 +290,12 @@ export const Bookshelf = ({ onOpenChat }: BookshelfProps) => {
           </span>
         )}
       </motion.button>
+
+      {/* Transaction Dashboard */}
+      <TransactionDashboard
+        isOpen={showTransactionDashboard}
+        onClose={() => setShowTransactionDashboard(false)}
+      />
 
       {/* Liked Books Popup */}
       <LikedBooksPopup

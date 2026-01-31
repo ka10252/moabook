@@ -125,30 +125,44 @@ export const UploadBookForm = () => {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file');
+      toast.error('이미지 파일만 업로드 가능합니다');
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be less than 5MB');
+      toast.error('이미지 크기는 5MB 이하여야 합니다');
       return;
     }
+
+    // Show alert about uploading real book photo
+    toast.info('책상태를 파악할 수 있게 실제 책사진을 업로드해주세요!', {
+      duration: 4000,
+    });
 
     setIsUploadingCover(true);
 
     try {
-      // Convert to base64 for preview (temporary - would use storage bucket in production)
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, coverUrl: reader.result as string }));
-        setIsUploadingCover(false);
-        setShowManualCover(false);
-      };
-      reader.readAsDataURL(file);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { data, error: uploadError } = await supabase.storage
+        .from('book-covers')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('book-covers')
+        .getPublicUrl(fileName);
+
+      setFormData(prev => ({ ...prev, coverUrl: publicUrl }));
+      setShowManualCover(false);
+      toast.success('표지가 업로드되었습니다');
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Failed to upload cover image');
+      toast.error('표지 업로드에 실패했습니다');
+    } finally {
       setIsUploadingCover(false);
     }
   };
@@ -187,9 +201,10 @@ export const UploadBookForm = () => {
     setIsSubmitting(true);
 
     try {
-      // For base64 covers, we'd normally upload to storage first
-      // For now, store as URL or null
-      const coverUrl = formData.coverUrl.startsWith('http') ? formData.coverUrl : null;
+      // Cover URL is now a proper URL from storage (not base64)
+      const coverUrl = formData.coverUrl && formData.coverUrl.startsWith('http') 
+        ? formData.coverUrl 
+        : null;
 
       const { error } = await supabase.from('books').insert({
         title: formData.title.trim(),

@@ -7,13 +7,15 @@ import { useMessages, Conversation } from '@/hooks/useChat';
 import { useAuth } from '@/hooks/useAuth';
 import { format, isToday, isYesterday } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { BookCardPreview } from '@/components/BookCardPreview';
 
 interface ChatViewProps {
   conversation: Conversation;
   onBack: () => void;
+  showBookCard?: boolean;
 }
 
-export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
+export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatViewProps) => {
   const { user } = useAuth();
   const { messages, loading, sendMessage } = useMessages(conversation.id);
   const [newMessage, setNewMessage] = useState('');
@@ -66,6 +68,21 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {/* Book Card Preview at the top if available */}
+        {conversation.book && showBookCard && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4"
+          >
+            <BookCardPreview
+              title={conversation.book.title}
+              author={conversation.book.author || ''}
+              coverUrl={conversation.book.cover_url}
+            />
+          </motion.div>
+        )}
+        
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
