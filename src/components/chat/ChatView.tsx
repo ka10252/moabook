@@ -10,6 +10,8 @@ import { format, isToday, isYesterday } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { BookCardPreview } from '@/components/BookCardPreview';
 import { AcceptRentalModal } from './AcceptRentalModal';
+import { RentalConfirmationCard } from './RentalConfirmationCard';
+import { ReturnConfirmModal } from './ReturnConfirmModal';
 import { toast } from 'sonner';
 
 interface ChatViewProps {
@@ -21,17 +23,28 @@ interface ChatViewProps {
 export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatViewProps) => {
   const { user } = useAuth();
   const { messages, loading, sendMessage } = useMessages(conversation.id);
-  const { createTransaction } = useTransactions();
+  const { createTransaction, transactions, updateTransaction, refresh: refreshTransactions } = useTransactions();
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [showAcceptModal, setShowAcceptModal] = useState(false);
+  const [showReturnModal, setShowReturnModal] = useState(false);
   const [acceptRequestType, setAcceptRequestType] = useState<'rent' | 'purchase'>('rent');
+  const [selectedTransaction, setSelectedTransaction] = useState<{
+    id: string;
+    startDate?: string | null;
+    returnDate?: string | null;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Find active transaction for this book
+  const activeTransaction = conversation.book 
+    ? transactions.find(t => t.book_id === conversation.book!.id && t.status === 'active')
+    : null;
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +58,28 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
 
   const handleBack = () => {
     onBack();
+  };
+
+  // Parse rental confirmation message
+  const parseRentalConfirmation = (content: string) => {
+    const acceptMatch = content.match(/^\[대여 수락\] 책: (.+?) \| 대여일: (.+?) \| 반납예정일: (.+)$/);
+    const returnMatch = content.match(/^\[반납 완료\] "(.+?)" 반납이 완료되었습니다\.$/);
+    
+    if (acceptMatch) {
+      return {
+        type: 'accepted' as const,
+        bookTitle: acceptMatch[1],
+        startDate: acceptMatch[2] !== '미정' ? acceptMatch[2] : null,
+        returnDate: acceptMatch[3] !== '미정' ? acceptMatch[3] : null,
+      };
+    }
+    if (returnMatch) {
+      return {
+        type: 'returned' as const,
+        bookTitle: returnMatch[1],
+      };
+    }
+    return null;
   };
 
   return (
@@ -110,9 +145,19 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
             const isPurchaseRequest = msg.content.startsWith('[구매 요청]');
             const isRequestMessage = isRentRequest || isPurchaseRequest;
             
+            // Check if this is a confirmation message
+            const confirmationData = parseRentalConfirmation(msg.content);
+            const isConfirmationMessage = confirmationData !== null;
+            
             // Book owner can accept - only if they are NOT the sender of the request
             const isBookOwner = conversation.book && user?.id !== msg.sender_id;
-            const canAccept = isRequestMessage && isBookOwner && !isOwn;
+            const canAccept = isRequestMessage && isBookOwner && !isOwn && !activeTransaction;
+
+            // Check if owner can see return button on accepted messages
+            const canShowReturnButton = confirmationData?.type === 'accepted' && 
+              activeTransaction && 
+              activeTransaction.isMine && 
+              isOwn; // Owner sent the acceptance message
 
             return (
               <div key={msg.id}>
@@ -155,27 +200,62 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
                             {isRentRequest ? '대여 수락' : '구매 수락'}
                           </Button>
                         )}
+                        {activeTransaction && !canAccept && (
+                          <div className="text-center text-xs text-muted-foreground mt-2 py-1 bg-muted rounded-lg">
+                            이미 진행 중인 거래가 있습니다
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Rental Confirmation Card */}
+                    {isConfirmationMessage && conversation.book && (
+                      <div className="w-full">
+                        <RentalConfirmationCard
+                          type={confirmationData.type}
+                          book={{
+                            title: conversation.book.title,
+                            author: conversation.book.author || '',
+                            cover_url: conversation.book.cover_url,
+                          }}
+                          startDate={confirmationData.type === 'accepted' ? activeTransaction?.start_date : undefined}
+                          returnDate={confirmationData.type === 'accepted' ? activeTransaction?.return_date : undefined}
+                          isOwner={canShowReturnButton}
+                          showReturnButton={canShowReturnButton}
+                          onReturnClick={() => {
+                            if (activeTransaction) {
+                              setSelectedTransaction({
+                                id: activeTransaction.id,
+                                startDate: activeTransaction.start_date,
+                                returnDate: activeTransaction.return_date,
+                              });
+                              setShowReturnModal(true);
+                            }
+                          }}
+                        />
                       </div>
                     )}
                     
-                    {/* Message Bubble */}
-                    <div
-                      className={`px-4 py-2.5 rounded-2xl max-w-full ${
-                        isOwn
-                          ? 'bg-primary text-primary-foreground rounded-br-md'
-                          : 'bg-muted text-foreground rounded-bl-md'
-                      }`}
-                    >
-                      <p className="text-sm whitespace-pre-wrap break-words">
-                        {isRequestMessage 
-                          ? msg.content.replace(/^\[(대여|구매) 요청\]\s*/, '') 
-                          : msg.content
-                        }
-                      </p>
-                      <p className={`text-xs mt-1 ${isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                        {format(new Date(msg.created_at), 'a h:mm', { locale: ko })}
-                      </p>
-                    </div>
+                    {/* Regular Message Bubble (hide for confirmation messages as they have custom UI) */}
+                    {!isConfirmationMessage && (
+                      <div
+                        className={`px-4 py-2.5 rounded-2xl max-w-full ${
+                          isOwn
+                            ? 'bg-primary text-primary-foreground rounded-br-md'
+                            : 'bg-muted text-foreground rounded-bl-md'
+                        }`}
+                      >
+                        <p className="text-sm whitespace-pre-wrap break-words">
+                          {isRequestMessage 
+                            ? msg.content.replace(/^\[(대여|구매) 요청\]\s*/, '') 
+                            : msg.content
+                          }
+                        </p>
+                        <p className={`text-xs mt-1 ${isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                          {format(new Date(msg.created_at), 'a h:mm', { locale: ko })}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               </div>
@@ -231,6 +311,20 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
                 acceptRequestType,
                 returnDate
               );
+              
+              // Send confirmation message
+              const startDateStr = startDate 
+                ? format(new Date(startDate), 'yyyy년 M월 d일', { locale: ko })
+                : format(new Date(), 'yyyy년 M월 d일', { locale: ko });
+              const returnDateStr = returnDate 
+                ? format(new Date(returnDate), 'yyyy년 M월 d일', { locale: ko })
+                : '미정';
+              
+              const confirmMessage = `[대여 수락] 책: ${conversation.book!.title} | 대여일: ${startDateStr} | 반납예정일: ${returnDateStr}`;
+              await sendMessage(confirmMessage);
+              
+              await refreshTransactions();
+              
               toast.success(
                 acceptRequestType === 'rent' 
                   ? '대여가 수락되었습니다!' 
@@ -238,6 +332,46 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
               );
             } catch (error) {
               console.error('Transaction failed:', error);
+              toast.error('처리에 실패했습니다. 다시 시도해주세요.');
+              throw error;
+            }
+          }}
+        />
+      )}
+
+      {/* Return Confirm Modal */}
+      {conversation.book && conversation.other_user && selectedTransaction && (
+        <ReturnConfirmModal
+          isOpen={showReturnModal}
+          onClose={() => {
+            setShowReturnModal(false);
+            setSelectedTransaction(null);
+          }}
+          book={{
+            id: conversation.book.id,
+            title: conversation.book.title,
+            author: conversation.book.author || '',
+            cover_url: conversation.book.cover_url,
+          }}
+          borrower={{
+            id: conversation.other_user.id,
+            nickname: conversation.other_user.nickname,
+          }}
+          startDate={selectedTransaction.startDate}
+          returnDate={selectedTransaction.returnDate}
+          onConfirmReturn={async () => {
+            try {
+              await updateTransaction(selectedTransaction.id, { status: 'completed' });
+              
+              // Send return completion message
+              const returnMessage = `[반납 완료] "${conversation.book!.title}" 반납이 완료되었습니다.`;
+              await sendMessage(returnMessage);
+              
+              await refreshTransactions();
+              
+              toast.success('반납이 완료되었습니다!');
+            } catch (error) {
+              console.error('Return failed:', error);
               toast.error('처리에 실패했습니다. 다시 시도해주세요.');
               throw error;
             }
