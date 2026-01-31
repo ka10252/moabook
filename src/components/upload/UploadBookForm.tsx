@@ -198,6 +198,7 @@ export const UploadBookForm = () => {
       <div className="space-y-2">
         <label className="text-sm font-medium text-foreground">책 검색 (선택)</label>
         <p className="text-xs text-muted-foreground">검색하면 제목, 저자, 설명이 자동 입력됩니다</p>
+        <p className="text-xs text-muted-foreground">검색결과가 없으면 하단에 수동으로 입력하세요</p>
         <BookSearchInput
           selectedBook={selectedBook}
           onBookSelect={setSelectedBook}
