@@ -37,6 +37,7 @@ export const useChat = () => {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totalUnreadCount, setTotalUnreadCount] = useState(0);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   const fetchConversations = useCallback(async () => {
@@ -97,6 +98,10 @@ export const useChat = () => {
       );
 
       setConversations(conversationsWithDetails);
+      
+      // Calculate total unread count
+      const totalUnread = conversationsWithDetails.reduce((sum, conv) => sum + (conv.unread_count || 0), 0);
+      setTotalUnreadCount(totalUnread);
     } catch (err) {
       console.error('Failed to fetch conversations:', err);
     } finally {
@@ -226,6 +231,7 @@ export const useChat = () => {
   return {
     conversations,
     loading,
+    totalUnreadCount,
     refresh: fetchConversations,
     startConversation,
     startConversationWithRequest,
