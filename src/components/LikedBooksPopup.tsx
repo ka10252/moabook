@@ -22,24 +22,23 @@ export const LikedBooksPopup = ({ isOpen, onClose, onBookClick }: LikedBooksPopu
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-          />
-          
+        <motion.div
+          key="liked-books-backdrop"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+        >
           {/* Popup */}
           <motion.div
-            className="fixed inset-x-4 top-1/2 -translate-y-1/2 md:inset-x-auto md:left-1/2 md:w-80 md:-translate-x-1/2 z-50"
-            style={{ maxHeight: '70vh' }}
-            initial={{ opacity: 0, y: 50, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+            key="liked-books-modal"
+            className="w-[calc(100%-2rem)] max-w-sm h-fit box-border"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="bg-card rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[70vh]">
               {/* Header */}
@@ -128,7 +127,7 @@ export const LikedBooksPopup = ({ isOpen, onClose, onBookClick }: LikedBooksPopu
               </ScrollArea>
             </div>
           </motion.div>
-        </>
+        </motion.div>
       )}
     </AnimatePresence>
   );
