@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, BookOpen, Building2, ArrowLeftRight, Shield, Loader2 } from 'lucide-react';
+import { Users, BookOpen, Building2, ArrowLeftRight, Shield, Loader2, Home } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { AdminUserManagement } from '@/components/admin/AdminUserManagement';
 import { AdminBookManagement } from '@/components/admin/AdminBookManagement';
 import { AdminCommunityManagement } from '@/components/admin/AdminCommunityManagement';
@@ -41,9 +42,20 @@ const AdminPortal = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-3">
-          <Shield className="w-6 h-6 text-primary" />
-          <h1 className="text-xl font-bold text-foreground">관리자 포털</h1>
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Shield className="w-6 h-6 text-primary" />
+            <h1 className="text-xl font-bold text-foreground">관리자 포털</h1>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2"
+          >
+            <Home className="w-4 h-4" />
+            <span className="hidden sm:inline">홈으로</span>
+          </Button>
         </div>
       </header>
 
