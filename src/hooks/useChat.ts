@@ -142,33 +142,20 @@ export const useChat = () => {
   const startConversation = async (otherUserId: string, bookId?: string) => {
     if (!user) return { conversation: null, error: new Error('Not logged in'), isNew: false };
 
-    // Check if conversation already exists for this book
-    if (bookId) {
-      const { data: existingWithBook } = await supabase
-        .from('conversations')
-        .select('id')
-        .eq('book_id', bookId)
-        .or(`and(participant_1.eq.${user.id},participant_2.eq.${otherUserId}),and(participant_1.eq.${otherUserId},participant_2.eq.${user.id})`)
-        .maybeSingle();
-
-      if (existingWithBook) {
-        return { conversation: existingWithBook, error: null, isNew: false };
-      }
-    }
-
-    // Check if conversation already exists without book
+    // Check if ANY conversation already exists with this user (regardless of book)
     const { data: existing } = await supabase
       .from('conversations')
       .select('id')
       .or(`and(participant_1.eq.${user.id},participant_2.eq.${otherUserId}),and(participant_1.eq.${otherUserId},participant_2.eq.${user.id})`)
-      .is('book_id', null)
+      .order('last_message_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
 
-    if (existing && !bookId) {
+    if (existing) {
       return { conversation: existing, error: null, isNew: false };
     }
 
-    // Create new conversation
+    // Create new conversation only if no conversation exists with this user
     const { data, error } = await supabase
       .from('conversations')
       .insert({

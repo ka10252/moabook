@@ -92,22 +92,21 @@ export const MemberProfileModal = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-          />
-
+        <motion.div
+          key="member-profile-backdrop"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+        >
           {/* Modal */}
           <motion.div
-            className="fixed inset-x-4 top-4 md:inset-x-auto md:left-1/2 md:w-full md:max-w-md md:-translate-x-1/2 z-50"
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
+            key="member-profile-modal"
+            className="w-[calc(100%-2rem)] max-w-md h-fit box-border"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="bg-card rounded-2xl max-h-[85vh] flex flex-col shadow-xl overflow-hidden">
@@ -196,7 +195,7 @@ export const MemberProfileModal = ({
               )}
             </div>
           </motion.div>
-        </>
+        </motion.div>
       )}
     </AnimatePresence>
   );

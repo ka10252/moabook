@@ -26,22 +26,21 @@ export const NotificationPopup = ({ isOpen, onClose }: NotificationPopupProps) =
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-          />
-
+        <motion.div
+          key="notification-backdrop"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+        >
           {/* Popup */}
           <motion.div
-            className="fixed inset-x-4 top-4 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-96 z-50 max-h-[80vh]"
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
+            key="notification-modal"
+            className="w-[calc(100%-2rem)] max-w-sm h-fit box-border"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="bg-card rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[80vh]">
@@ -138,7 +137,7 @@ export const NotificationPopup = ({ isOpen, onClose }: NotificationPopupProps) =
               </ScrollArea>
             </div>
           </motion.div>
-        </>
+        </motion.div>
       )}
     </AnimatePresence>
   );

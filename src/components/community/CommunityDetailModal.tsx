@@ -275,22 +275,21 @@ export const CommunityDetailModal = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-          />
-
+        <motion.div
+          key="community-detail-backdrop"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+        >
           {/* Modal */}
           <motion.div
-            className="fixed inset-x-4 top-4 md:inset-x-auto md:left-1/2 md:w-full md:max-w-md md:-translate-x-1/2 z-50"
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
+            key="community-detail-modal"
+            className="w-[calc(100%-2rem)] max-w-md h-fit box-border"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="bg-card rounded-2xl flex flex-col shadow-xl overflow-hidden max-h-[80vh]">
@@ -544,7 +543,7 @@ export const CommunityDetailModal = ({
               fetchMembers();
             }}
           />
-        </>
+        </motion.div>
       )}
     </AnimatePresence>
   );
