@@ -79,10 +79,10 @@ export const ConversationList = ({ conversations, loading, selectedId, onSelect 
             </p>
           </div>
 
-          {/* Unread badge */}
+          {/* Unread badge - KakaoTalk style */}
           {conv.unread_count > 0 && (
-            <div className="w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0">
-              {conv.unread_count}
+            <div className="min-w-5 h-5 px-1.5 rounded-full bg-[hsl(var(--destructive))] text-white text-xs font-bold flex items-center justify-center shrink-0 border border-white shadow-sm">
+              {conv.unread_count > 99 ? '99+' : conv.unread_count}
             </div>
           )}
         </motion.button>

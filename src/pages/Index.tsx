@@ -11,6 +11,7 @@ import { NotificationPopup } from '@/components/notifications/NotificationPopup'
 import { AuthPage } from '@/pages/AuthPage';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useChat } from '@/hooks/useChat';
 import { Loader2, MessageCircle, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -26,6 +27,7 @@ const Index = () => {
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
   const { user, loading, signOut } = useAuth();
   const { unreadCount } = useNotifications();
+  const { totalUnreadCount: unreadMessageCount } = useChat();
 
   const handleOpenChat = (userId: string, bookId: string, bookMode: 'rent' | 'sell') => {
     setChatInitialUserId(userId);
@@ -130,6 +132,11 @@ const Index = () => {
               className="relative"
             >
               <MessageCircle className="w-5 h-5" />
+              {unreadMessageCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-[hsl(var(--destructive))] text-white text-xs font-bold rounded-full flex items-center justify-center border border-white shadow-sm">
+                  {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                </span>
+              )}
             </Button>
           </div>
         </div>
