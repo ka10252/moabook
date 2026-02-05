@@ -128,22 +128,23 @@ export const TransactionEditModal = ({
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
+        key="transaction-edit-backdrop"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-      />
-      
-      <motion.div
-        className="fixed inset-x-4 top-[15%] md:inset-x-auto md:left-1/2 md:w-full md:max-w-md md:-translate-x-1/2 z-[60]"
-        initial={{ opacity: 0, y: 50, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 50, scale: 0.95 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        onClick={(e) => e.stopPropagation()}
       >
-        <div className="bg-card rounded-2xl overflow-hidden shadow-xl">
+        <motion.div
+          key="transaction-edit-modal"
+          className="w-[calc(100%-2rem)] max-w-md h-fit box-border"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="bg-card rounded-2xl overflow-hidden shadow-xl max-h-[85vh] flex flex-col">
           {/* Header */}
           <header className="flex items-center justify-between px-4 py-3 border-b border-border">
             <h2 className="text-lg font-bold text-foreground">거래 수정</h2>
@@ -255,6 +256,7 @@ export const TransactionEditModal = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </motion.div>
     </AnimatePresence>
   );
 };
