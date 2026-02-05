@@ -114,22 +114,23 @@ export const ChatModal = ({
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+        key="chat-backdrop"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={handleClose}
-      />
-      
-      <motion.div
-        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-md z-50"
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        onClick={(e) => e.stopPropagation()}
       >
-        <div className="bg-card rounded-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-xl">
+        <motion.div
+          key="chat-modal"
+          className="w-[calc(100%-2rem)] max-w-md h-fit box-border"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+        <div className="bg-card rounded-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-xl box-border">
           {selectedConversation ? (
             <ChatView conversation={selectedConversation} onBack={handleBack} showBookCard={showBookCard} />
           ) : (
@@ -157,6 +158,7 @@ export const ChatModal = ({
             </>
           )}
         </div>
+        </motion.div>
       </motion.div>
     </AnimatePresence>
   );
