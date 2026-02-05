@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   User, 
@@ -8,7 +9,8 @@ import {
   Loader2, 
   Eye, 
   EyeOff,
-  Lock
+  Lock,
+  Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +36,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { toast } from 'sonner';
 
 interface ProfilePageProps {
@@ -41,7 +44,9 @@ interface ProfilePageProps {
 }
 
 export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
+  const { isAdmin } = useAdminAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showSignOutDialog, setShowSignOutDialog] = useState(false);
@@ -418,6 +423,18 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
           <Lock className="w-4 h-4" />
           비밀번호 변경
         </Button>
+
+        {/* Admin Portal - Only visible to admins */}
+        {isAdmin && (
+          <Button
+            variant="outline"
+            onClick={() => navigate('/admin-portal')}
+            className="w-full h-12 rounded-xl justify-start gap-2 text-primary hover:text-primary hover:bg-primary/10"
+          >
+            <Shield className="w-4 h-4" />
+            관리자 포털
+          </Button>
+        )}
 
         {/* Sign Out */}
         <Button
