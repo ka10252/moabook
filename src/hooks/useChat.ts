@@ -143,16 +143,24 @@ export const useChat = () => {
     if (!user) return { conversation: null, error: new Error('Not logged in'), isNew: false };
 
     // Check if ANY conversation already exists with this user (regardless of book)
+    // This covers both A→B and B→A directions
     const { data: existing } = await supabase
       .from('conversations')
-      .select('id')
+      .select('*')
       .or(`and(participant_1.eq.${user.id},participant_2.eq.${otherUserId}),and(participant_1.eq.${otherUserId},participant_2.eq.${user.id})`)
       .order('last_message_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (existing) {
-      return { conversation: existing, error: null, isNew: false };
+      // Update the book_id to the current book if provided
+      if (bookId) {
+        await supabase
+          .from('conversations')
+          .update({ book_id: bookId })
+          .eq('id', existing.id);
+      }
+      return { conversation: { ...existing, book_id: bookId || existing.book_id }, error: null, isNew: false };
     }
 
     // Create new conversation only if no conversation exists with this user
@@ -173,20 +181,23 @@ export const useChat = () => {
     return { conversation: data, error, isNew: true };
   };
 
-  // Start conversation with automatic request message
+  // Start conversation with automatic request message including book info
   const startConversationWithRequest = async (
     otherUserId: string, 
     bookId: string, 
     requestType: 'rent' | 'purchase',
-    requesterNickname: string
+    requesterNickname: string,
+    bookTitle: string,
+    bookAuthor?: string
   ) => {
     const result = await startConversation(otherUserId, bookId);
     
     if (result.conversation) {
-      // Always send the request message (for both new and existing conversations)
+      // Always send the request message with book info (for both new and existing conversations)
+      // Format: [대여 요청] {nickname}님이 "{bookTitle}" 대여를 요청합니다.
       const messageContent = requestType === 'rent' 
-        ? `[대여 요청] ${requesterNickname}님이 대여를 요청합니다.`
-        : `[구매 요청] ${requesterNickname}님이 구매를 요청합니다.`;
+        ? `[대여 요청] ${requesterNickname}님이 "${bookTitle}"${bookAuthor ? ` (${bookAuthor})` : ''} 대여를 요청합니다. [BOOK_ID:${bookId}]`
+        : `[구매 요청] ${requesterNickname}님이 "${bookTitle}"${bookAuthor ? ` (${bookAuthor})` : ''} 구매를 요청합니다. [BOOK_ID:${bookId}]`;
       await sendMessage(result.conversation.id, messageContent);
     }
     
