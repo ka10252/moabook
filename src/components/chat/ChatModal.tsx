@@ -66,25 +66,14 @@ export const ChatModal = ({
           .eq('id', user.id)
           .single();
         
-        // Get book info
-        const { data: bookData } = await supabase
-          .from('books')
-          .select('title, author')
-          .eq('id', initialBookId)
-          .single();
-        
         const requesterNickname = profile?.nickname || '사용자';
-        const bookTitle = bookData?.title || '책';
-        const bookAuthor = bookData?.author;
         
         // Start conversation with automatic request message including book info
         const { conversation } = await startConversationWithRequest(
           initialUserId, 
           initialBookId, 
           initialBookMode === 'rent' ? 'rent' : 'purchase',
-          requesterNickname,
-          bookTitle,
-          bookAuthor
+          requesterNickname
         );
         
         if (conversation) {
@@ -96,16 +85,15 @@ export const ChatModal = ({
     startChat();
   }, [isOpen, initialUserId, initialBookId, initialBookMode, initialConversationId, hasAutoStarted, user]);
 
-  // Find and select conversation after refresh
+  // Find and select conversation after refresh (user-based, not book-based)
   useEffect(() => {
     if (initialUserId && !initialConversationId && conversations.length > 0 && !selectedConversation && hasAutoStarted) {
       const found = conversations.find(c => 
-        (c.participant_1 === initialUserId || c.participant_2 === initialUserId) &&
-        c.book_id === initialBookId
+        c.participant_1 === initialUserId || c.participant_2 === initialUserId
       );
       if (found) setSelectedConversation(found);
     }
-  }, [conversations, initialUserId, initialBookId, initialConversationId, selectedConversation, hasAutoStarted]);
+  }, [conversations, initialUserId, initialConversationId, selectedConversation, hasAutoStarted]);
 
   const handleBack = () => {
     setSelectedConversation(null);
