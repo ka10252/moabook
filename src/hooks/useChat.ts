@@ -139,7 +139,7 @@ export const useChat = () => {
     };
   }, [user?.id, fetchConversations]);
 
-  const startConversation = async (otherUserId: string, bookId?: string) => {
+  const startConversation = async (otherUserId: string) => {
     if (!user) return { conversation: null, error: new Error('Not logged in'), isNew: false };
 
     // Check if ANY conversation already exists with this user (regardless of book)
@@ -148,28 +148,22 @@ export const useChat = () => {
       .from('conversations')
       .select('*')
       .or(`and(participant_1.eq.${user.id},participant_2.eq.${otherUserId}),and(participant_1.eq.${otherUserId},participant_2.eq.${user.id})`)
-      .order('last_message_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (existing) {
-      // Update the book_id to the current book if provided
-      if (bookId) {
-        await supabase
-          .from('conversations')
-          .update({ book_id: bookId })
-          .eq('id', existing.id);
-      }
-      return { conversation: { ...existing, book_id: bookId || existing.book_id }, error: null, isNew: false };
+      // User-based chat: don't update book_id, just return existing conversation
+      return { conversation: existing, error: null, isNew: false };
     }
 
     // Create new conversation only if no conversation exists with this user
+    // Note: book_id is null for user-based chats - book info is in messages
     const { data, error } = await supabase
       .from('conversations')
       .insert({
         participant_1: user.id,
         participant_2: otherUserId,
-        book_id: bookId || null,
+        book_id: null,
       })
       .select()
       .single();
@@ -186,18 +180,15 @@ export const useChat = () => {
     otherUserId: string, 
     bookId: string, 
     requestType: 'rent' | 'purchase',
-    requesterNickname: string,
-    bookTitle: string,
-    bookAuthor?: string
+    requesterNickname: string
   ) => {
-    const result = await startConversation(otherUserId, bookId);
+    const result = await startConversation(otherUserId);
     
     if (result.conversation) {
-      // Always send the request message with book info (for both new and existing conversations)
-      // Format: [대여 요청] {nickname}님이 "{bookTitle}" 대여를 요청합니다.
+      // Send request message with embedded BOOK_ID for dynamic rendering
       const messageContent = requestType === 'rent' 
-        ? `[대여 요청] ${requesterNickname}님이 "${bookTitle}"${bookAuthor ? ` (${bookAuthor})` : ''} 대여를 요청합니다. [BOOK_ID:${bookId}]`
-        : `[구매 요청] ${requesterNickname}님이 "${bookTitle}"${bookAuthor ? ` (${bookAuthor})` : ''} 구매를 요청합니다. [BOOK_ID:${bookId}]`;
+        ? `[대여 요청] ${requesterNickname}님이 대여를 요청합니다. [BOOK_ID:${bookId}]`
+        : `[구매 요청] ${requesterNickname}님이 구매를 요청합니다. [BOOK_ID:${bookId}]`;
       await sendMessage(result.conversation.id, messageContent);
     }
     
