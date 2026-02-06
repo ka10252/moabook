@@ -66,14 +66,25 @@ export const ChatModal = ({
           .eq('id', user.id)
           .single();
         
-        const requesterNickname = profile?.nickname || '사용자';
+        // Get book info
+        const { data: bookData } = await supabase
+          .from('books')
+          .select('title, author')
+          .eq('id', initialBookId)
+          .single();
         
-        // Start conversation with automatic request message
+        const requesterNickname = profile?.nickname || '사용자';
+        const bookTitle = bookData?.title || '책';
+        const bookAuthor = bookData?.author;
+        
+        // Start conversation with automatic request message including book info
         const { conversation } = await startConversationWithRequest(
           initialUserId, 
           initialBookId, 
           initialBookMode === 'rent' ? 'rent' : 'purchase',
-          requesterNickname
+          requesterNickname,
+          bookTitle,
+          bookAuthor
         );
         
         if (conversation) {
