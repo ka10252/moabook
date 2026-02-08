@@ -8,8 +8,8 @@ interface BookSpineProps {
   isSelected: boolean;
   isLent?: boolean;
   isBorrowed?: boolean;
-  borrowerNickname?: string; // For lent books - the borrower's name
-  lenderNickname?: string; // For borrowed books - the owner's name
+  borrowerNickname?: string;
+  lenderNickname?: string;
 }
 
 const spineColors = [
@@ -32,14 +32,6 @@ export const BookSpine = ({
 }: BookSpineProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const colorClass = spineColors[(book.spineColor - 1) % spineColors.length];
-  
-  // Calculate dynamic bookmark width based on text length
-  const getBookmarkWidth = (text: string) => {
-    const baseWidth = 36;
-    const charWidth = 6;
-    const padding = 16;
-    return Math.min(Math.max(baseWidth, text.length * charWidth + padding), 90);
-  };
   
   // Get bookmark text based on status
   const getLentBookmarkText = (name: string) => `${name}이 대여중`;
@@ -72,22 +64,28 @@ export const BookSpine = ({
       {/* Lent Bookmark - Yellow - when user lent their book to someone */}
       {isLent && borrowerNickname && (
         <motion.div 
-          className="absolute -top-2 left-1/2 z-20 flex flex-col items-center"
+          className="absolute -top-2 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center"
           style={{ 
-            width: getBookmarkWidth(getLentBookmarkText(borrowerNickname)),
+            width: '38px',
+            transformOrigin: 'top right',
           }}
-          initial={{ x: '-50%' }}
           animate={{
-            x: isHovered ? '30%' : '-50%',
+            rotate: isHovered ? -18 : 0,
+            x: isHovered ? '-35%' : '-50%',
           }}
-          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+          transition={{ 
+            type: 'spring', 
+            stiffness: 300, 
+            damping: 20,
+            duration: 0.3
+          }}
         >
           {/* Yellow ribbon bookmark shape */}
           <div 
-            className="relative bg-bookmark-lent shadow-lg"
+            className="relative bg-bookmark-lent shadow-lg box-border"
             style={{
               width: '100%',
-              minHeight: '44px',
+              minHeight: '48px',
               clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
             }}
           >
@@ -97,13 +95,23 @@ export const BookSpine = ({
             {/* Fold effect */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-b from-white/30 to-transparent" />
             
-            {/* Bookmark text */}
-            <span 
-              className="absolute inset-x-0 top-1.5 text-[8px] font-bold text-bookmark-lent-foreground text-center leading-tight px-1 whitespace-nowrap"
-              style={{ textShadow: '0 1px 0 rgba(255,255,255,0.3)' }}
-            >
-              {getLentBookmarkText(borrowerNickname)}
-            </span>
+            {/* Bookmark text - vertical */}
+            <div className="absolute inset-0 flex items-center justify-center pt-1 pb-3">
+              <motion.span 
+                className="text-[7px] font-bold text-bookmark-lent-foreground text-center leading-tight whitespace-nowrap overflow-hidden"
+                style={{ 
+                  textShadow: '0 1px 0 rgba(255,255,255,0.3)',
+                  writingMode: 'vertical-rl',
+                  textOrientation: 'mixed',
+                }}
+                animate={{
+                  opacity: isHovered ? 0.4 : 1,
+                }}
+                transition={{ duration: 0.2 }}
+              >
+                {getLentBookmarkText(borrowerNickname)}
+              </motion.span>
+            </div>
           </div>
         </motion.div>
       )}
@@ -111,22 +119,28 @@ export const BookSpine = ({
       {/* Borrowed Bookmark - Brown - when user borrowed this book from someone */}
       {isBorrowed && lenderNickname && (
         <motion.div 
-          className="absolute -top-2 left-1/2 z-20 flex flex-col items-center"
+          className="absolute -top-2 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center"
           style={{ 
-            width: getBookmarkWidth(getBorrowedBookmarkText(lenderNickname)),
+            width: '38px',
+            transformOrigin: 'top right',
           }}
-          initial={{ x: '-50%' }}
           animate={{
-            x: isHovered ? '30%' : '-50%',
+            rotate: isHovered ? -18 : 0,
+            x: isHovered ? '-35%' : '-50%',
           }}
-          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+          transition={{ 
+            type: 'spring', 
+            stiffness: 300, 
+            damping: 20,
+            duration: 0.3
+          }}
         >
           {/* Brown ribbon bookmark shape */}
           <div 
-            className="relative bg-bookmark-borrowed shadow-lg"
+            className="relative bg-bookmark-borrowed shadow-lg box-border"
             style={{
               width: '100%',
-              minHeight: '44px',
+              minHeight: '48px',
               clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
             }}
           >
@@ -136,13 +150,23 @@ export const BookSpine = ({
             {/* Fold effect */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-b from-white/20 to-transparent" />
             
-            {/* Bookmark text */}
-            <span 
-              className="absolute inset-x-0 top-1.5 text-[8px] font-bold text-bookmark-borrowed-foreground text-center leading-tight px-1 whitespace-nowrap"
-              style={{ textShadow: '0 1px 1px rgba(0,0,0,0.3)' }}
-            >
-              {getBorrowedBookmarkText(lenderNickname)}
-            </span>
+            {/* Bookmark text - vertical */}
+            <div className="absolute inset-0 flex items-center justify-center pt-1 pb-3">
+              <motion.span 
+                className="text-[7px] font-bold text-bookmark-borrowed-foreground text-center leading-tight whitespace-nowrap overflow-hidden"
+                style={{ 
+                  textShadow: '0 1px 1px rgba(0,0,0,0.3)',
+                  writingMode: 'vertical-rl',
+                  textOrientation: 'mixed',
+                }}
+                animate={{
+                  opacity: isHovered ? 0.4 : 1,
+                }}
+                transition={{ duration: 0.2 }}
+              >
+                {getBorrowedBookmarkText(lenderNickname)}
+              </motion.span>
+            </div>
           </div>
         </motion.div>
       )}
@@ -150,7 +174,7 @@ export const BookSpine = ({
       {/* Spine texture overlay */}
       <div className="absolute inset-0 opacity-20 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
       
-      {/* Book title - always visible, fully visible on hover when bookmark slides away */}
+      {/* Book title - always visible, fully visible on hover when bookmark tilts away */}
       <motion.span 
         className="text-white font-semibold text-xs tracking-wide truncate text-shadow-sm relative z-10"
         animate={{
