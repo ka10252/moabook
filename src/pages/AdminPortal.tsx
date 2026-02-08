@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, BookOpen, Building2, ArrowLeftRight, Shield, Loader2, Home } from 'lucide-react';
+import { Users, BookOpen, Building2, ArrowLeftRight, Shield, Loader2, Home, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AdminUserManagement } from '@/components/admin/AdminUserManagement';
 import { AdminBookManagement } from '@/components/admin/AdminBookManagement';
 import { AdminCommunityManagement } from '@/components/admin/AdminCommunityManagement';
 import { AdminTransactionMonitoring } from '@/components/admin/AdminTransactionMonitoring';
+import { AdminAnnouncementManagement } from '@/components/admin/AdminAnnouncementManagement';
 
 const AdminPortal = () => {
   const navigate = useNavigate();
@@ -62,7 +63,7 @@ const AdminPortal = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6">
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+          <TabsList className="grid grid-cols-5 w-full max-w-3xl">
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">사용자</span>
@@ -78,6 +79,10 @@ const AdminPortal = () => {
             <TabsTrigger value="transactions" className="flex items-center gap-2">
               <ArrowLeftRight className="w-4 h-4" />
               <span className="hidden sm:inline">거래</span>
+            </TabsTrigger>
+            <TabsTrigger value="announcements" className="flex items-center gap-2">
+              <Mail className="w-4 h-4" />
+              <span className="hidden sm:inline">공지</span>
             </TabsTrigger>
           </TabsList>
 
@@ -95,6 +100,10 @@ const AdminPortal = () => {
 
           <TabsContent value="transactions">
             <AdminTransactionMonitoring />
+          </TabsContent>
+
+          <TabsContent value="announcements">
+            <AdminAnnouncementManagement />
           </TabsContent>
         </Tabs>
       </main>
