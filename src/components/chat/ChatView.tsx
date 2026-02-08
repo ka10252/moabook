@@ -12,6 +12,7 @@ import { ko } from 'date-fns/locale';
 import { AcceptRentalModal } from './AcceptRentalModal';
 import { ReturnConfirmModal } from './ReturnConfirmModal';
 import { RentalMessageCard, RentalMessageType, TransactionType } from './RentalMessageCard';
+import { handleReturnCompletion } from '@/utils/transactionHelpers';
 import { toast } from 'sonner';
 
 interface BookInfo {
@@ -398,46 +399,52 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
         />
       )}
 
-      {/* Return Confirm Modal */}
-      {selectedBookId && bookInfoCache[selectedBookId] && conversation.other_user && selectedTransaction && (
-        <ReturnConfirmModal
-          isOpen={showReturnModal}
-          onClose={() => {
-            setShowReturnModal(false);
-            setSelectedTransaction(null);
-            setSelectedBookId(null);
-          }}
-          book={{
-            id: selectedBookId,
-            title: bookInfoCache[selectedBookId].title,
-            author: bookInfoCache[selectedBookId].author || '',
-            cover_url: bookInfoCache[selectedBookId].cover_url,
-          }}
-          borrower={{
-            id: conversation.other_user.id,
-            nickname: conversation.other_user.nickname,
-          }}
-          startDate={selectedTransaction.startDate}
-          returnDate={selectedTransaction.returnDate}
-          onConfirmReturn={async () => {
-            try {
-              await updateTransaction(selectedTransaction.id, { status: 'completed' });
-              
-              // Send return completion message with book ID
-              const returnMessage = `[반납 완료] "${bookInfoCache[selectedBookId!].title}" 반납이 완료되었습니다. [BOOK_ID:${selectedBookId}]`;
-              await sendMessage(returnMessage);
-              
-              await refreshTransactions();
-              
-              toast.success('반납이 완료되었습니다!');
-            } catch (error) {
-              console.error('Return failed:', error);
-              toast.error('처리에 실패했습니다. 다시 시도해주세요.');
-              throw error;
-            }
-          }}
-        />
-      )}
+       {/* Return Confirm Modal */}
+       {selectedBookId && bookInfoCache[selectedBookId] && conversation.other_user && selectedTransaction && (
+         <ReturnConfirmModal
+           isOpen={showReturnModal}
+           onClose={() => {
+             setShowReturnModal(false);
+             setSelectedTransaction(null);
+             setSelectedBookId(null);
+           }}
+           book={{
+             id: selectedBookId,
+             title: bookInfoCache[selectedBookId].title,
+             author: bookInfoCache[selectedBookId].author || '',
+             cover_url: bookInfoCache[selectedBookId].cover_url,
+           }}
+           borrower={{
+             id: conversation.other_user.id,
+             nickname: conversation.other_user.nickname,
+           }}
+           startDate={selectedTransaction.startDate}
+           returnDate={selectedTransaction.returnDate}
+           onConfirmReturn={async () => {
+             try {
+               await handleReturnCompletion({
+                 transactionId: selectedTransaction.id,
+                 book: {
+                   id: selectedBookId,
+                   title: bookInfoCache[selectedBookId!].title,
+                   author: bookInfoCache[selectedBookId!].author || '',
+                   cover_url: bookInfoCache[selectedBookId!].cover_url,
+                 },
+                 conversationId: conversation.id,
+                 userId: user!.id,
+               });
+               
+               await refreshTransactions();
+               
+               toast.success('반납이 완료되었습니다!');
+             } catch (error) {
+               console.error('Return failed:', error);
+               toast.error('처리에 실패했습니다. 다시 시도해주세요.');
+               throw error;
+             }
+           }}
+         />
+       )}
     </div>
   );
 };

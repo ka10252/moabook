@@ -4,8 +4,12 @@ import { X, Calendar, User, Book, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTransactions, Transaction } from '@/hooks/useTransactions';
 import { TransactionEditModal } from './TransactionEditModal';
+import { handleReturnCompletion } from '@/utils/transactionHelpers';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 interface TransactionDashboardProps {
   isOpen: boolean;
@@ -13,8 +17,10 @@ interface TransactionDashboardProps {
 }
 
 export const TransactionDashboard = ({ isOpen, onClose }: TransactionDashboardProps) => {
+  const { user } = useAuth();
   const { transactions, loading, updateTransaction, refresh } = useTransactions();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [completingTransaction, setCompletingTransaction] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -41,6 +47,41 @@ export const TransactionDashboard = ({ isOpen, onClose }: TransactionDashboardPr
   const formatReturnDate = (date: string | null) => {
     if (!date) return '미정';
     return format(new Date(date), 'yyyy.MM.dd', { locale: ko });
+  };
+
+  const handleMarkAsReturned = async (transaction: Transaction) => {
+    if (!user) return;
+    setCompletingTransaction(transaction.id);
+    
+    try {
+      // Find the conversation between owner and borrower
+      const { data: conversation } = await supabase
+        .from('conversations')
+        .select('id')
+        .or(`and(participant_1.eq.${transaction.owner_id},participant_2.eq.${transaction.borrower_id}),and(participant_1.eq.${transaction.borrower_id},participant_2.eq.${transaction.owner_id})`)
+        .maybeSingle();
+
+      // Use shared function to handle return completion
+      await handleReturnCompletion({
+        transactionId: transaction.id,
+        book: {
+          id: transaction.book_id,
+          title: transaction.book?.title || '',
+          author: transaction.book?.author || '',
+          cover_url: transaction.book?.cover_url || null,
+        },
+        conversationId: conversation?.id || '',
+        userId: user.id,
+      });
+
+      await refresh();
+      toast.success('반납이 완료되었습니다');
+    } catch (error) {
+      console.error('Failed to mark as returned:', error);
+      toast.error('처리에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setCompletingTransaction(null);
+    }
   };
 
   return (
@@ -126,23 +167,38 @@ export const TransactionDashboard = ({ isOpen, onClose }: TransactionDashboardPr
                       </span>
                     </div>
 
-                    {/* Date & Return Date */}
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Calendar className="w-4 h-4" />
-                        <span>반납일: {formatReturnDate(transaction.return_date)}</span>
-                      </div>
-                      {transaction.isMine && transaction.type === 'rent' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-primary h-8"
-                          onClick={() => setEditingTransaction(transaction)}
-                        >
-                          수정
-                        </Button>
-                      )}
-                    </div>
+                     {/* Date & Return Date */}
+                     <div className="flex items-center justify-between text-sm">
+                       <div className="flex items-center gap-2 text-muted-foreground">
+                         <Calendar className="w-4 h-4" />
+                         <span>반납일: {formatReturnDate(transaction.return_date)}</span>
+                       </div>
+                       {transaction.isMine && transaction.type === 'rent' && (
+                         <div className="flex gap-2">
+                           <Button
+                             variant="ghost"
+                             size="sm"
+                             className="text-primary h-8"
+                             onClick={() => setEditingTransaction(transaction)}
+                           >
+                             수정
+                           </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-primary h-8"
+                              disabled={completingTransaction === transaction.id}
+                              onClick={() => handleMarkAsReturned(transaction)}
+                            >
+                              {completingTransaction === transaction.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                '반납 완료'
+                              )}
+                            </Button>
+                         </div>
+                       )}
+                     </div>
                   </motion.div>
                 ))}
               </div>

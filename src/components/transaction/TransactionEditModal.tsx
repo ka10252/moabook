@@ -24,6 +24,7 @@ import {
 import { Transaction } from '@/hooks/useTransactions';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { handleReturnCompletion } from '@/utils/transactionHelpers';
 import { toast } from 'sonner';
 
 interface TransactionEditModalProps {
@@ -85,33 +86,27 @@ export const TransactionEditModal = ({
     const { data: conversation } = await supabase
       .from('conversations')
       .select('id')
-      .eq('book_id', transaction.book_id)
       .or(`and(participant_1.eq.${transaction.owner_id},participant_2.eq.${transaction.borrower_id}),and(participant_1.eq.${transaction.borrower_id},participant_2.eq.${transaction.owner_id})`)
       .maybeSingle();
 
     if (conversation) {
-      const returnMessage = `[반납 완료] "${transaction.book?.title}" 반납이 완료되었습니다.`;
-      await supabase.from('messages').insert({
-        conversation_id: conversation.id,
-        sender_id: user.id,
-        content: returnMessage,
+      await handleReturnCompletion({
+        transactionId: transaction.id,
+        book: {
+          id: transaction.book_id,
+          title: transaction.book?.title || '',
+          author: transaction.book?.author || '',
+          cover_url: transaction.book?.cover_url || null,
+        },
+        conversationId: conversation.id,
+        userId: user.id,
       });
-
-      // Update conversation's last_message_at
-      await supabase
-        .from('conversations')
-        .update({ last_message_at: new Date().toISOString() })
-        .eq('id', conversation.id);
     }
   };
 
   const handleComplete = async () => {
     setSaving(true);
     try {
-      await onSave(transaction.id, {
-        status: 'completed',
-      });
-      
       // Send return complete message to chat
       await sendReturnCompleteMessage();
       
