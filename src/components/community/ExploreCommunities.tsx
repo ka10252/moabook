@@ -21,7 +21,7 @@ interface ExploreCommunitiesProps {
 export const ExploreCommunities = ({
   communities,
   isLoading,
-  joinedCommunityIds,
+  joinedCommunityIds = new Set(),
   onJoin,
   onEnter,
 }: ExploreCommunitiesProps) => {
