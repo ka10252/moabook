@@ -65,6 +65,12 @@
     --book-spine-4: 35 70% 50%;
     --book-spine-5: 280 40% 45%;
     --book-spine-6: 195 60% 40%;
+    
+    /* Bookmark Colors */
+    --bookmark-lent: 45 93% 47%;
+    --bookmark-lent-foreground: 25 80% 20%;
+    --bookmark-borrowed: 25 60% 30%;
+    --bookmark-borrowed-foreground: 40 40% 95%;
 
     /* Sidebar defaults */
     --sidebar-background: 40 33% 96%;
@@ -111,6 +117,12 @@
     --wood-dark: 25 45% 18%;
     --wood-grain: 28 35% 22%;
     --shelf-shadow: 25 30% 8%;
+    
+    /* Bookmark Colors - Dark Mode */
+    --bookmark-lent: 45 90% 55%;
+    --bookmark-lent-foreground: 25 70% 15%;
+    --bookmark-borrowed: 25 50% 35%;
+    --bookmark-borrowed-foreground: 40 40% 95%;
 
     --sidebar-background: 25 15% 12%;
     --sidebar-foreground: 40 20% 90%;

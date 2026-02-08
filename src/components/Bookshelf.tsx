@@ -53,11 +53,14 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
   const { myCommunities } = useCommunities();
   const { books: allBooks, loading, deleteBook, updateBook, refresh } = useBooks({});
   const { borrowedBooks } = useBorrowedBooks();
-  const { getLentBookIds, getRentedBooksInfo } = useTransactions();
+  const { getLentBookIds, getLentBooksInfo, getRentedBooksInfo } = useTransactions();
   const { isLiked, toggleLike, likedBooks } = useLikedBooks();
 
   // Get lent book IDs from real transactions
   const lentBookIds = useMemo(() => getLentBookIds(), [getLentBookIds]);
+  
+  // Get lent books info with borrower nicknames
+  const lentBooksInfo = useMemo(() => getLentBooksInfo(), [getLentBooksInfo]);
 
   // Get borrowed books info (books I borrowed from others)
   const borrowedBooksInfo = useMemo(() => {
@@ -228,17 +231,17 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
                       <WoodenShelf key={shelfIndex}>
                         <div className="flex items-end gap-1 h-[140px]">
                         {shelfBooks.map((book) => (
-                            <BookSpine
-                              key={book.id}
-                              book={book}
-                              onClick={() => setSelectedBook(book)}
-                              isSelected={previewBook === book.id}
-                              isLent={lentBookIds.has(book.id)}
-                              isBorrowed={borrowedBooksInfo.has(book.id)}
-                              isRented={rentedBookIds.has(book.id)}
-                              lenderNickname={borrowedBooksInfo.get(book.id)}
-                            />
-                          ))}
+                              <BookSpine
+                                key={book.id}
+                                book={book}
+                                onClick={() => setSelectedBook(book)}
+                                isSelected={previewBook === book.id}
+                                isLent={lentBookIds.has(book.id)}
+                                isBorrowed={borrowedBooksInfo.has(book.id)}
+                                borrowerNickname={lentBooksInfo.get(book.id)}
+                                lenderNickname={borrowedBooksInfo.get(book.id)}
+                              />
+                            ))}
                         </div>
                       </WoodenShelf>
                     ))}
