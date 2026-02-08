@@ -133,7 +133,8 @@ export const CommunityPage = ({ onNavigateToBookshelf }: CommunityPageProps = {}
   );
 
   const myCommunities = filteredCommunities.filter((c) => myCommunityIds.has(c.id));
-  const exploreCommunities = filteredCommunities.filter((c) => !myCommunityIds.has(c.id));
+  // Show all communities in explore section (including joined ones)
+  const exploreCommunities = filteredCommunities;
 
   return (
     <div className="flex flex-col h-full max-h-full overflow-hidden">
@@ -196,7 +197,9 @@ export const CommunityPage = ({ onNavigateToBookshelf }: CommunityPageProps = {}
                   <ExploreCommunities
                     communities={exploreCommunities}
                     isLoading={isLoading}
+                    joinedCommunityIds={myCommunityIds}
                     onJoin={handleJoinCommunity}
+                    onEnter={(community) => setDetailCommunity(community)}
                   />
                 </div>
               </ScrollArea>
