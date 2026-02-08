@@ -115,24 +115,45 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
     return books;
   }, [allBooks, activeFilter, user?.id, myCommunities]);
 
-  // Organize books: user's books first in "everybody's" or community views
-  const organizedBooks = useMemo(() => {
-    if (!user || activeFilter === 'mine') {
-      return filteredBooks;
+  // Separate my books and other users' books
+  const { myBooks, otherBooks } = useMemo(() => {
+    if (!user) {
+      return { myBooks: [], otherBooks: filteredBooks };
     }
     
-    const myBooks = filteredBooks.filter(book => book.owner_id === user.id);
-    const otherBooks = filteredBooks.filter(book => book.owner_id !== user.id);
+    const mine = filteredBooks.filter(book => book.owner_id === user.id);
+    const others = filteredBooks.filter(book => book.owner_id !== user.id);
     
-    return [...myBooks, ...otherBooks];
-  }, [filteredBooks, user, activeFilter]);
+    return { myBooks: mine, otherBooks: others };
+  }, [filteredBooks, user]);
 
-  // Split books into shelf rows (4 books per shelf for spine view)
+  // For cover view, combine all books
+  const organizedBooks = useMemo(() => {
+    return [...myBooks, ...otherBooks];
+  }, [myBooks, otherBooks]);
+
+  // Split books into shelf rows - first shelf is always my books, rest are other users' books
   const booksPerShelf = 4;
-  const shelves: Book[][] = [];
-  for (let i = 0; i < organizedBooks.length; i += booksPerShelf) {
-    shelves.push(organizedBooks.slice(i, i + booksPerShelf));
-  }
+  const shelves: { books: Book[]; isMyShelf: boolean }[] = useMemo(() => {
+    const result: { books: Book[]; isMyShelf: boolean }[] = [];
+    
+    // First shelf: my books (can be less than 4)
+    if (myBooks.length > 0 || user) {
+      result.push({ books: myBooks.slice(0, booksPerShelf), isMyShelf: true });
+      
+      // Additional shelves for remaining my books if more than 4
+      for (let i = booksPerShelf; i < myBooks.length; i += booksPerShelf) {
+        result.push({ books: myBooks.slice(i, i + booksPerShelf), isMyShelf: true });
+      }
+    }
+    
+    // Remaining shelves: other users' books
+    for (let i = 0; i < otherBooks.length; i += booksPerShelf) {
+      result.push({ books: otherBooks.slice(i, i + booksPerShelf), isMyShelf: false });
+    }
+    
+    return result;
+  }, [myBooks, otherBooks, user]);
 
   // Always show at least 3 empty shelves
   const minShelves = 3;
@@ -225,23 +246,29 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
               >
                 {/* Wooden bookcase frame */}
                 <div className="wood-texture rounded-lg p-4 shadow-shelf">
-                  <div className="space-y-2">
+                <div className="space-y-2">
                     {/* Shelves with books */}
-                    {shelves.map((shelfBooks, shelfIndex) => (
+                    {shelves.map((shelf, shelfIndex) => (
                       <WoodenShelf key={shelfIndex}>
-                        <div className="flex items-end gap-1 h-[140px]">
-                        {shelfBooks.map((book) => (
-                              <BookSpine
-                                key={book.id}
-                                book={book}
-                                onClick={() => setSelectedBook(book)}
-                                isSelected={previewBook === book.id}
-                                isLent={lentBookIds.has(book.id)}
-                                isBorrowed={borrowedBooksInfo.has(book.id)}
-                                borrowerNickname={lentBooksInfo.get(book.id)}
-                                lenderNickname={borrowedBooksInfo.get(book.id)}
-                              />
-                            ))}
+                        <div className="relative flex items-end gap-1 h-[140px]">
+                          {/* "내 책장" label for my shelf */}
+                          {shelf.isMyShelf && shelfIndex === 0 && (
+                            <span className="absolute right-2 bottom-2 text-xs font-medium text-muted-foreground/40 pointer-events-none select-none">
+                              내 책장
+                            </span>
+                          )}
+                          {shelf.books.map((book) => (
+                            <BookSpine
+                              key={book.id}
+                              book={book}
+                              onClick={() => setSelectedBook(book)}
+                              isSelected={previewBook === book.id}
+                              isLent={lentBookIds.has(book.id)}
+                              isBorrowed={borrowedBooksInfo.has(book.id)}
+                              borrowerNickname={lentBooksInfo.get(book.id)}
+                              lenderNickname={borrowedBooksInfo.get(book.id)}
+                            />
+                          ))}
                         </div>
                       </WoodenShelf>
                     ))}
