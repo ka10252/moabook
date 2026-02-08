@@ -8,8 +8,8 @@ interface BookSpineProps {
   isSelected: boolean;
   isLent?: boolean;
   isBorrowed?: boolean;
-  isRented?: boolean; // Book is currently rented out (대여중)
-  lenderNickname?: string;
+  borrowerNickname?: string; // For lent books - the borrower's name
+  lenderNickname?: string; // For borrowed books - the owner's name
 }
 
 const spineColors = [
@@ -27,23 +27,31 @@ export const BookSpine = ({
   isSelected,
   isLent = false,
   isBorrowed = false,
-  isRented = false,
+  borrowerNickname,
   lenderNickname,
 }: BookSpineProps) => {
-  const [isBookmarkHovered, setIsBookmarkHovered] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const colorClass = spineColors[(book.spineColor - 1) % spineColors.length];
   
-  // Calculate dynamic bookmark width based on nickname length
-  const getBookmarkWidth = (name: string) => {
-    const baseWidth = 28;
-    const charWidth = 5;
+  // Calculate dynamic bookmark width based on text length
+  const getBookmarkWidth = (text: string) => {
+    const baseWidth = 36;
+    const charWidth = 6;
     const padding = 16;
-    return Math.min(Math.max(baseWidth, name.length * charWidth + padding), 80);
+    return Math.min(Math.max(baseWidth, text.length * charWidth + padding), 90);
   };
+  
+  // Get bookmark text based on status
+  const getLentBookmarkText = (name: string) => `${name}이 대여중`;
+  const getBorrowedBookmarkText = (name: string) => `${name}꺼`;
+  
+  const hasBookmark = (isLent && borrowerNickname) || (isBorrowed && lenderNickname);
   
   return (
     <motion.div
       className={`book-spine cursor-pointer h-full min-w-[40px] max-w-[50px] flex-shrink-0 ${colorClass} rounded-sm flex items-center justify-center px-2 relative overflow-visible`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       whileHover={{ 
         x: -8,
         transition: { duration: 0.2 }
@@ -61,56 +69,79 @@ export const BookSpine = ({
       onClick={onClick}
       style={{ perspective: '1000px' }}
     >
-      {/* Lent tag - when user lent their book to someone */}
-      {isLent && (
-        <div className="absolute -top-1 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-b-sm shadow-sm z-20">
-          대여해줌
-        </div>
-      )}
-      
-      {/* Rented tag - when book is currently rented */}
-      {isRented && !isLent && (
-        <div className="absolute -top-1 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[8px] font-bold px-1.5 py-0.5 rounded-b-sm shadow-sm z-20">
-          대여중
-        </div>
-      )}
-      
-      {/* Borrowed bookmark overlay - tactile ribbon design with dynamic width */}
-      {isBorrowed && lenderNickname && (
+      {/* Lent Bookmark - Yellow - when user lent their book to someone */}
+      {isLent && borrowerNickname && (
         <motion.div 
-          className="absolute -top-2 left-1/2 z-20 flex flex-col items-center cursor-pointer"
+          className="absolute -top-2 left-1/2 z-20 flex flex-col items-center"
           style={{ 
-            x: '-50%',
-            width: getBookmarkWidth(lenderNickname),
+            width: getBookmarkWidth(getLentBookmarkText(borrowerNickname)),
           }}
-          onMouseEnter={() => setIsBookmarkHovered(true)}
-          onMouseLeave={() => setIsBookmarkHovered(false)}
+          initial={{ x: '-50%' }}
           animate={{
-            opacity: isBookmarkHovered ? 0.3 : 1,
-            y: isBookmarkHovered ? -4 : 0,
+            x: isHovered ? '30%' : '-50%',
           }}
-          transition={{ duration: 0.2 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         >
-          {/* Ribbon bookmark shape */}
+          {/* Yellow ribbon bookmark shape */}
           <div 
-            className="relative bg-gradient-to-b from-primary via-primary to-primary/90 shadow-lg"
+            className="relative bg-bookmark-lent shadow-lg"
             style={{
               width: '100%',
-              minHeight: '36px',
+              minHeight: '44px',
               clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
             }}
           >
             {/* Texture overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-black/10" />
+            <div className="absolute inset-0 bg-gradient-to-r from-white/15 via-transparent to-black/10" />
+            
+            {/* Fold effect */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-b from-white/30 to-transparent" />
+            
+            {/* Bookmark text */}
+            <span 
+              className="absolute inset-x-0 top-1.5 text-[8px] font-bold text-bookmark-lent-foreground text-center leading-tight px-1 whitespace-nowrap"
+              style={{ textShadow: '0 1px 0 rgba(255,255,255,0.3)' }}
+            >
+              {getLentBookmarkText(borrowerNickname)}
+            </span>
+          </div>
+        </motion.div>
+      )}
+      
+      {/* Borrowed Bookmark - Brown - when user borrowed this book from someone */}
+      {isBorrowed && lenderNickname && (
+        <motion.div 
+          className="absolute -top-2 left-1/2 z-20 flex flex-col items-center"
+          style={{ 
+            width: getBookmarkWidth(getBorrowedBookmarkText(lenderNickname)),
+          }}
+          initial={{ x: '-50%' }}
+          animate={{
+            x: isHovered ? '30%' : '-50%',
+          }}
+          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+        >
+          {/* Brown ribbon bookmark shape */}
+          <div 
+            className="relative bg-bookmark-borrowed shadow-lg"
+            style={{
+              width: '100%',
+              minHeight: '44px',
+              clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
+            }}
+          >
+            {/* Texture overlay */}
+            <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-black/15" />
             
             {/* Fold effect */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-b from-white/20 to-transparent" />
             
-            {/* Nickname text */}
+            {/* Bookmark text */}
             <span 
-              className="absolute inset-x-0 top-1 text-[7px] font-bold text-primary-foreground text-center leading-tight px-1 truncate"
+              className="absolute inset-x-0 top-1.5 text-[8px] font-bold text-bookmark-borrowed-foreground text-center leading-tight px-1 whitespace-nowrap"
+              style={{ textShadow: '0 1px 1px rgba(0,0,0,0.3)' }}
             >
-              {lenderNickname}
+              {getBorrowedBookmarkText(lenderNickname)}
             </span>
           </div>
         </motion.div>
@@ -119,12 +150,13 @@ export const BookSpine = ({
       {/* Spine texture overlay */}
       <div className="absolute inset-0 opacity-20 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
       
-      {/* Book title - fades in when bookmark is hovered */}
+      {/* Book title - always visible, fully visible on hover when bookmark slides away */}
       <motion.span 
-        className="text-white font-semibold text-xs tracking-wide truncate text-shadow-sm"
+        className="text-white font-semibold text-xs tracking-wide truncate text-shadow-sm relative z-10"
         animate={{
-          opacity: isBorrowed && lenderNickname ? (isBookmarkHovered ? 1 : 0.7) : 1,
+          opacity: hasBookmark && !isHovered ? 0.6 : 1,
         }}
+        transition={{ duration: 0.2 }}
       >
         {book.title}
       </motion.span>

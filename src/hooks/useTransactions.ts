@@ -143,6 +143,15 @@ export const useTransactions = () => {
     );
   }, [transactions]);
 
+  // Get lent books info with borrower nickname (books the current user owns but lent out)
+  const getLentBooksInfo = useCallback((): Map<string, string> => {
+    return new Map(
+      transactions
+        .filter(t => t.isMine && t.status === 'active' && t.type === 'rent')
+        .map(t => [t.book_id, t.counterparty?.nickname || '대여자'])
+    );
+  }, [transactions]);
+
   // Get rented book IDs (books rented by current user from others)
   const getRentedBooksInfo = useCallback((): Map<string, string> => {
     return new Map(
@@ -159,6 +168,7 @@ export const useTransactions = () => {
     updateTransaction,
     createTransaction,
     getLentBookIds,
+    getLentBooksInfo,
     getRentedBooksInfo,
   };
 };

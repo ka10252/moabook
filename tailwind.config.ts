@@ -67,6 +67,12 @@ export default {
           5: "hsl(var(--book-spine-5))",
           6: "hsl(var(--book-spine-6))",
         },
+        bookmark: {
+          lent: "hsl(var(--bookmark-lent))",
+          "lent-foreground": "hsl(var(--bookmark-lent-foreground))",
+          borrowed: "hsl(var(--bookmark-borrowed))",
+          "borrowed-foreground": "hsl(var(--bookmark-borrowed-foreground))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
