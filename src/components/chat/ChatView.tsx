@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,10 +9,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { format, isToday, isYesterday } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { BookCardPreview } from '@/components/BookCardPreview';
 import { AcceptRentalModal } from './AcceptRentalModal';
-import { RentalConfirmationCard } from './RentalConfirmationCard';
 import { ReturnConfirmModal } from './ReturnConfirmModal';
+import { RentalMessageCard, RentalMessageType, TransactionType } from './RentalMessageCard';
 import { toast } from 'sonner';
 
 interface BookInfo {
@@ -28,7 +27,17 @@ interface ChatViewProps {
   showBookCard?: boolean;
 }
 
-export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatViewProps) => {
+// Message type detection
+type MessageCategory = 'request' | 'accepted' | 'returned' | 'regular';
+
+interface ParsedMessage {
+  category: MessageCategory;
+  transactionType: TransactionType;
+  bookId: string | null;
+  displayText: string;
+}
+
+export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
   const { user } = useAuth();
   const { messages, loading, sendMessage } = useMessages(conversation.id);
   const { createTransaction, transactions, updateTransaction, refresh: refreshTransactions } = useTransactions();
@@ -36,7 +45,8 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
   const [sending, setSending] = useState(false);
   const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
-  const [acceptRequestType, setAcceptRequestType] = useState<'rent' | 'purchase'>('rent');
+  const [acceptRequestType, setAcceptRequestType] = useState<TransactionType>('rent');
+  const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<{
     id: string;
     startDate?: string | null;
@@ -45,10 +55,69 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
   const [bookInfoCache, setBookInfoCache] = useState<Record<string, BookInfo>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Extract book IDs from request messages
+  // Extract book ID from message content
   const extractBookId = (content: string): string | null => {
     const match = content.match(/\[BOOK_ID:([^\]]+)\]/);
     return match ? match[1] : null;
+  };
+
+  // Parse message to determine category and extract info
+  const parseMessage = (content: string): ParsedMessage => {
+    const bookId = extractBookId(content);
+    const cleanContent = content.replace(/\s*\[BOOK_ID:[^\]]+\]/, '');
+    
+    // Check for request messages
+    if (content.startsWith('[대여 요청]')) {
+      return {
+        category: 'request',
+        transactionType: 'rent',
+        bookId,
+        displayText: cleanContent.replace(/^\[대여 요청\]\s*/, ''),
+      };
+    }
+    if (content.startsWith('[구매 요청]')) {
+      return {
+        category: 'request',
+        transactionType: 'purchase',
+        bookId,
+        displayText: cleanContent.replace(/^\[구매 요청\]\s*/, ''),
+      };
+    }
+    
+    // Check for acceptance messages
+    if (content.startsWith('[대여 수락]')) {
+      return {
+        category: 'accepted',
+        transactionType: 'rent',
+        bookId,
+        displayText: cleanContent,
+      };
+    }
+    if (content.startsWith('[판매 완료]')) {
+      return {
+        category: 'accepted',
+        transactionType: 'purchase',
+        bookId,
+        displayText: cleanContent,
+      };
+    }
+    
+    // Check for return messages
+    if (content.startsWith('[반납 완료]')) {
+      return {
+        category: 'returned',
+        transactionType: 'rent',
+        bookId,
+        displayText: cleanContent,
+      };
+    }
+    
+    return {
+      category: 'regular',
+      transactionType: 'rent',
+      bookId: null,
+      displayText: content,
+    };
   };
 
   // Fetch book info for messages that contain book IDs
@@ -87,11 +156,6 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Find active transaction for this book
-  const activeTransaction = conversation.book 
-    ? transactions.find(t => t.book_id === conversation.book!.id && t.status === 'active')
-    : null;
-
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || sending) return;
@@ -102,42 +166,9 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
     setSending(false);
   };
 
-  const handleBack = () => {
-    onBack();
-  };
-
-  // Parse rental/purchase confirmation message
-  const parseConfirmationMessage = (content: string) => {
-    const rentAcceptMatch = content.match(/^\[대여 수락\] 책: (.+?) \| 대여일: (.+?) \| 반납예정일: (.+)$/);
-    const purchaseAcceptMatch = content.match(/^\[판매 완료\] 책: (.+?) \| 거래일: (.+)$/);
-    const returnMatch = content.match(/^\[반납 완료\] "(.+?)" 반납이 완료되었습니다\.$/);
-    
-    if (rentAcceptMatch) {
-      return {
-        type: 'accepted' as const,
-        transactionType: 'rent' as const,
-        bookTitle: rentAcceptMatch[1],
-        startDate: rentAcceptMatch[2] !== '미정' ? rentAcceptMatch[2] : null,
-        returnDate: rentAcceptMatch[3] !== '미정' ? rentAcceptMatch[3] : null,
-      };
-    }
-    if (purchaseAcceptMatch) {
-      return {
-        type: 'accepted' as const,
-        transactionType: 'purchase' as const,
-        bookTitle: purchaseAcceptMatch[1],
-        startDate: purchaseAcceptMatch[2],
-        returnDate: null,
-      };
-    }
-    if (returnMatch) {
-      return {
-        type: 'returned' as const,
-        transactionType: 'rent' as const,
-        bookTitle: returnMatch[1],
-      };
-    }
-    return null;
+  // Find active transaction for a specific book
+  const findActiveTransaction = (bookId: string) => {
+    return transactions.find(t => t.book_id === bookId && t.status === 'active');
   };
 
   return (
@@ -147,7 +178,7 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
         <Button 
           variant="ghost" 
           size="icon" 
-          onClick={handleBack} 
+          onClick={onBack} 
           className="shrink-0"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -157,31 +188,11 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
           <h2 className="font-semibold text-foreground truncate">
             {conversation.other_user?.nickname}
           </h2>
-          {conversation.book && (
-            <p className="text-xs text-muted-foreground truncate">
-              관련 책: {conversation.book.title}
-            </p>
-          )}
         </div>
       </header>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-3 min-h-0">
-        {/* Book Card Preview at the top if available */}
-        {conversation.book && showBookCard && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4"
-          >
-            <BookCardPreview
-              title={conversation.book.title}
-              author={conversation.book.author || ''}
-              coverUrl={conversation.book.cover_url}
-            />
-          </motion.div>
-        )}
-        
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -198,42 +209,24 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
               new Date(msg.created_at).toDateString() !== 
               new Date(messages[index - 1].created_at).toDateString();
             
-            // Check if this is a request message
-            const isRentRequest = msg.content.startsWith('[대여 요청]');
-            const isPurchaseRequest = msg.content.startsWith('[구매 요청]');
-            const isRequestMessage = isRentRequest || isPurchaseRequest;
+            const parsed = parseMessage(msg.content);
+            const isSpecialMessage = parsed.category !== 'regular';
+            const bookInfo = parsed.bookId ? bookInfoCache[parsed.bookId] : null;
             
-            // Extract book ID from the message for dynamic book info
-            const messageBookId = extractBookId(msg.content);
-            const messageBookInfo = messageBookId ? bookInfoCache[messageBookId] : null;
+            // Find transaction for this book
+            const activeTransaction = parsed.bookId ? findActiveTransaction(parsed.bookId) : null;
             
-            // Use message-specific book info, or fall back to conversation book
-            const displayBook = messageBookInfo || conversation.book;
+            // Determine if current user can take action
+            // For request: owner (not the sender) can accept
+            const isBookOwner = bookInfo && msg.sender_id !== user?.id;
+            const canAccept = parsed.category === 'request' && isBookOwner && !activeTransaction;
             
-            // Check if this is a confirmation message
-            const confirmationData = parseConfirmationMessage(msg.content);
-            const isConfirmationMessage = confirmationData !== null;
-            
-            // Find transaction for the specific book in this message
-            const messageTransaction = messageBookId 
-              ? transactions.find(t => t.book_id === messageBookId && t.status === 'active')
-              : activeTransaction;
-            
-            // Book owner can accept - only if they are NOT the sender of the request
-            const isBookOwner = displayBook && user?.id !== msg.sender_id;
-            const canAccept = isRequestMessage && isBookOwner && !isOwn && !messageTransaction;
-
-            // Check if owner can see return button on accepted messages (only for rent, not purchase)
-            const canShowReturnButton = confirmationData?.type === 'accepted' && 
-              confirmationData?.transactionType === 'rent' &&
-              messageTransaction && 
-              messageTransaction.isMine && 
-              isOwn; // Owner sent the acceptance message
-
-            // Clean message content for display (remove BOOK_ID tag)
-            const cleanMessageContent = (content: string) => {
-              return content.replace(/\s*\[BOOK_ID:[^\]]+\]/, '');
-            };
+            // For accepted: owner (who sent the accept message) can confirm return
+            const canShowReturnButton = parsed.category === 'accepted' && 
+              parsed.transactionType === 'rent' &&
+              activeTransaction && 
+              activeTransaction.isMine && 
+              isOwn;
 
             return (
               <div key={msg.id}>
@@ -254,77 +247,51 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
                   animate={{ opacity: 1, y: 0 }}
                   className={`flex ${isOwn ? 'justify-end' : 'justify-start'} w-full`}
                 >
-                  <div className={`max-w-[80%] min-w-0 ${isOwn ? 'items-end' : 'items-start'} flex flex-col gap-2`}>
-                    {/* Book Card for request messages - use message-specific book info */}
-                    {isRequestMessage && displayBook && (
+                  <div className={`max-w-[85%] min-w-0 ${isOwn ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
+                    {/* Special Card Messages */}
+                    {isSpecialMessage && bookInfo && (
                       <div className="w-full">
-                        <BookCardPreview
-                          title={displayBook.title}
-                          author={displayBook.author || ''}
-                          coverUrl={displayBook.cover_url}
-                          className="shadow-sm"
-                        />
-                        {canAccept && (
-                          <Button
-                            size="sm"
-                            className="w-full mt-2 rounded-xl flex-shrink-0"
-                            onClick={() => {
-                              setAcceptRequestType(isRentRequest ? 'rent' : 'purchase');
-                              // Store the book ID from the message for the modal
-                              if (messageBookId) {
-                                // Update conversation.book temporarily for the modal
-                                conversation.book = {
-                                  id: messageBookId,
-                                  title: displayBook.title,
-                                  author: displayBook.author,
-                                  cover_url: displayBook.cover_url,
-                                };
-                              }
-                              setShowAcceptModal(true);
-                            }}
-                          >
-                            {isRentRequest ? '대여 수락' : '구매 수락'}
-                          </Button>
-                        )}
-                        {messageTransaction && !canAccept && (
-                          <div className="text-center text-xs text-muted-foreground mt-2 py-1 bg-muted rounded-lg">
-                            이미 진행 중인 거래가 있습니다
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Rental/Purchase Confirmation Card */}
-                    {isConfirmationMessage && displayBook && (
-                      <div className="w-full">
-                        <RentalConfirmationCard
-                          type={confirmationData.type}
-                          transactionType={confirmationData.transactionType}
+                        <RentalMessageCard
+                          type={parsed.category as RentalMessageType}
+                          transactionType={parsed.transactionType}
                           book={{
-                            title: displayBook.title,
-                            author: displayBook.author || '',
-                            cover_url: displayBook.cover_url,
+                            title: bookInfo.title,
+                            author: bookInfo.author || '',
+                            cover_url: bookInfo.cover_url,
                           }}
-                          startDate={confirmationData.type === 'accepted' ? messageTransaction?.start_date : undefined}
-                          returnDate={confirmationData.type === 'accepted' ? messageTransaction?.return_date : undefined}
-                          isOwner={canShowReturnButton}
+                          startDate={activeTransaction?.start_date}
+                          returnDate={activeTransaction?.return_date}
+                          showAcceptButton={canAccept}
+                          hasActiveTransaction={!!activeTransaction && parsed.category === 'request'}
+                          onAcceptClick={() => {
+                            if (bookInfo) {
+                              setSelectedBookId(bookInfo.id);
+                              setAcceptRequestType(parsed.transactionType);
+                              setShowAcceptModal(true);
+                            }
+                          }}
                           showReturnButton={canShowReturnButton}
                           onReturnClick={() => {
-                            if (messageTransaction) {
+                            if (activeTransaction && bookInfo) {
+                              setSelectedBookId(bookInfo.id);
                               setSelectedTransaction({
-                                id: messageTransaction.id,
-                                startDate: messageTransaction.start_date,
-                                returnDate: messageTransaction.return_date,
+                                id: activeTransaction.id,
+                                startDate: activeTransaction.start_date,
+                                returnDate: activeTransaction.return_date,
                               });
                               setShowReturnModal(true);
                             }
                           }}
                         />
+                        {/* Timestamp for card messages */}
+                        <p className={`text-xs mt-1 ${isOwn ? 'text-right' : 'text-left'} text-muted-foreground`}>
+                          {format(new Date(msg.created_at), 'a h:mm', { locale: ko })}
+                        </p>
                       </div>
                     )}
                     
-                    {/* Regular Message Bubble (hide for confirmation messages as they have custom UI) */}
-                    {!isConfirmationMessage && (
+                    {/* Regular Message Bubble */}
+                    {!isSpecialMessage && (
                       <div
                         className={`px-4 py-2.5 rounded-2xl max-w-full ${
                           isOwn
@@ -333,10 +300,7 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
                         }`}
                       >
                         <p className="text-sm whitespace-pre-wrap break-words">
-                          {isRequestMessage 
-                            ? cleanMessageContent(msg.content).replace(/^\[(대여|구매) 요청\]\s*/, '') 
-                            : msg.content
-                          }
+                          {parsed.displayText}
                         </p>
                         <p className={`text-xs mt-1 ${isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                           {format(new Date(msg.created_at), 'a h:mm', { locale: ko })}
@@ -374,15 +338,18 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
       </form>
 
       {/* Accept Rental Modal */}
-      {conversation.book && conversation.other_user && (
+      {selectedBookId && bookInfoCache[selectedBookId] && conversation.other_user && (
         <AcceptRentalModal
           isOpen={showAcceptModal}
-          onClose={() => setShowAcceptModal(false)}
+          onClose={() => {
+            setShowAcceptModal(false);
+            setSelectedBookId(null);
+          }}
           book={{
-            id: conversation.book.id,
-            title: conversation.book.title,
-            author: conversation.book.author || '',
-            cover_url: conversation.book.cover_url,
+            id: selectedBookId,
+            title: bookInfoCache[selectedBookId].title,
+            author: bookInfoCache[selectedBookId].author || '',
+            cover_url: bookInfoCache[selectedBookId].cover_url,
           }}
           borrower={{
             id: conversation.other_user.id,
@@ -392,14 +359,14 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
           onAccept={async (startDate, returnDate) => {
             try {
               await createTransaction(
-                conversation.book!.id,
+                selectedBookId!,
                 user!.id,
                 conversation.other_user!.id,
                 acceptRequestType,
                 returnDate
               );
               
-              // Send confirmation message based on type
+              // Send confirmation message with book ID
               const startDateStr = startDate 
                 ? format(new Date(startDate), 'yyyy년 M월 d일', { locale: ko })
                 : format(new Date(), 'yyyy년 M월 d일', { locale: ko });
@@ -409,9 +376,9 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
                 const returnDateStr = returnDate 
                   ? format(new Date(returnDate), 'yyyy년 M월 d일', { locale: ko })
                   : '미정';
-                confirmMessage = `[대여 수락] 책: ${conversation.book!.title} | 대여일: ${startDateStr} | 반납예정일: ${returnDateStr}`;
+                confirmMessage = `[대여 수락] 책: ${bookInfoCache[selectedBookId!].title} | 대여일: ${startDateStr} | 반납예정일: ${returnDateStr} [BOOK_ID:${selectedBookId}]`;
               } else {
-                confirmMessage = `[판매 완료] 책: ${conversation.book!.title} | 거래일: ${startDateStr}`;
+                confirmMessage = `[판매 완료] 책: ${bookInfoCache[selectedBookId!].title} | 거래일: ${startDateStr} [BOOK_ID:${selectedBookId}]`;
               }
               await sendMessage(confirmMessage);
               
@@ -432,18 +399,19 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
       )}
 
       {/* Return Confirm Modal */}
-      {conversation.book && conversation.other_user && selectedTransaction && (
+      {selectedBookId && bookInfoCache[selectedBookId] && conversation.other_user && selectedTransaction && (
         <ReturnConfirmModal
           isOpen={showReturnModal}
           onClose={() => {
             setShowReturnModal(false);
             setSelectedTransaction(null);
+            setSelectedBookId(null);
           }}
           book={{
-            id: conversation.book.id,
-            title: conversation.book.title,
-            author: conversation.book.author || '',
-            cover_url: conversation.book.cover_url,
+            id: selectedBookId,
+            title: bookInfoCache[selectedBookId].title,
+            author: bookInfoCache[selectedBookId].author || '',
+            cover_url: bookInfoCache[selectedBookId].cover_url,
           }}
           borrower={{
             id: conversation.other_user.id,
@@ -455,8 +423,8 @@ export const ChatView = ({ conversation, onBack, showBookCard = false }: ChatVie
             try {
               await updateTransaction(selectedTransaction.id, { status: 'completed' });
               
-              // Send return completion message
-              const returnMessage = `[반납 완료] "${conversation.book!.title}" 반납이 완료되었습니다.`;
+              // Send return completion message with book ID
+              const returnMessage = `[반납 완료] "${bookInfoCache[selectedBookId!].title}" 반납이 완료되었습니다. [BOOK_ID:${selectedBookId}]`;
               await sendMessage(returnMessage);
               
               await refreshTransactions();
