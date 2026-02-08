@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Users, Lock, Loader2 } from 'lucide-react';
+import { Users, Lock, Loader2, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface Community {
@@ -13,13 +13,17 @@ interface Community {
 interface ExploreCommunitiesProps {
   communities: Community[];
   isLoading: boolean;
+  joinedCommunityIds: Set<string>;
   onJoin: (community: Community) => void;
+  onEnter: (community: Community) => void;
 }
 
 export const ExploreCommunities = ({
   communities,
   isLoading,
+  joinedCommunityIds,
   onJoin,
+  onEnter,
 }: ExploreCommunitiesProps) => {
   if (isLoading) {
     return (
@@ -52,60 +56,82 @@ export const ExploreCommunities = ({
       </h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {communities.map((community, index) => (
-          <motion.div
-            key={community.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className="relative overflow-hidden rounded-2xl group"
-          >
-            {/* Full Background Image */}
-            <div className="absolute inset-0">
-              {community.cover_url ? (
-                <img
-                  src={community.cover_url}
-                  alt={community.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-wood-medium to-wood-dark" />
-              )}
-              {/* Dark Overlay */}
-              <div className="absolute inset-0 bg-black/50 group-hover:bg-black/40 transition-colors" />
-            </div>
-
-            {/* Content */}
-            <div className="relative z-10 p-4">
-              {/* Privacy Badge */}
-              <div className="flex items-center gap-1 text-xs bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full text-white/90 w-fit mb-3">
-                <Lock className="w-3 h-3" />
-                비공개
+        {communities.map((community, index) => {
+          const isJoined = joinedCommunityIds.has(community.id);
+          
+          return (
+            <motion.div
+              key={community.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              className="relative overflow-hidden rounded-2xl group"
+            >
+              {/* Full Background Image */}
+              <div className="absolute inset-0">
+                {community.cover_url ? (
+                  <img
+                    src={community.cover_url}
+                    alt={community.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-wood-medium to-wood-dark" />
+                )}
+                {/* Dark Overlay */}
+                <div className="absolute inset-0 bg-black/50 group-hover:bg-black/40 transition-colors" />
               </div>
 
-              <h3 className="font-semibold text-white truncate drop-shadow-md">
-                {community.name}
-              </h3>
-              {community.description && (
-                <p className="text-xs text-white/80 mt-1 line-clamp-2">
-                  {community.description}
-                </p>
-              )}
-              <div className="flex items-center justify-between mt-3">
-                <span className="text-xs text-white/70">
-                  {community.member_count || 0}명
-                </span>
-                <Button
-                  size="sm"
-                  onClick={() => onJoin(community)}
-                  className="h-8 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0"
-                >
-                  가입
-                </Button>
+              {/* Content */}
+              <div className="relative z-10 p-4">
+                {/* Status Badge */}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-1 text-xs bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full text-white/90">
+                    <Lock className="w-3 h-3" />
+                    비공개
+                  </div>
+                  {isJoined && (
+                    <div className="flex items-center gap-1 text-xs bg-primary/80 backdrop-blur-sm px-2 py-1 rounded-full text-primary-foreground">
+                      가입됨
+                    </div>
+                  )}
+                </div>
+
+                <h3 className="font-semibold text-white truncate drop-shadow-md">
+                  {community.name}
+                </h3>
+                {community.description && (
+                  <p className="text-xs text-white/80 mt-1 line-clamp-2">
+                    {community.description}
+                  </p>
+                )}
+                <div className="flex items-center justify-between mt-3">
+                  <span className="text-xs text-white/70">
+                    {community.member_count || 0}명
+                  </span>
+                  {isJoined ? (
+                    <Button
+                      size="sm"
+                      onClick={() => onEnter(community)}
+                      className="h-8 bg-primary hover:bg-primary/90 text-primary-foreground border-0"
+                    >
+                      <LogIn className="w-3.5 h-3.5 mr-1" />
+                      입장
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={() => onJoin(community)}
+                      className="h-8 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0"
+                    >
+                      가입
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          );
+        })}
       </div>
     </div>
   );
