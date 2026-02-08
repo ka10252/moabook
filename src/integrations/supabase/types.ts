@@ -375,6 +375,35 @@ export type Database = {
         }
         Relationships: []
       }
+      site_announcements: {
+        Row: {
+          admin_message: string
+          id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          admin_message?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          admin_message?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_announcements_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           book_id: string

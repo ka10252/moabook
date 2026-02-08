@@ -8,11 +8,13 @@ import { ProfilePage } from '@/components/profile/ProfilePage';
 import { WishlistPage } from '@/components/wishlist/WishlistPage';
 import { ChatModal } from '@/components/chat/ChatModal';
 import { NotificationPopup } from '@/components/notifications/NotificationPopup';
+import { AnnouncementPopup } from '@/components/notifications/AnnouncementPopup';
 import { AuthPage } from '@/pages/AuthPage';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useChat } from '@/hooks/useChat';
-import { Loader2, MessageCircle, Bell } from 'lucide-react';
+import { useAnnouncement } from '@/hooks/useAnnouncement';
+import { Loader2, MessageCircle, Bell, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 type NavItem = 'shelf' | 'wishlist' | 'upload' | 'community' | 'profile';
@@ -24,10 +26,12 @@ const Index = () => {
   const [chatInitialBookId, setChatInitialBookId] = useState<string | null>(null);
   const [chatBookMode, setChatBookMode] = useState<'rent' | 'sell' | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showAnnouncement, setShowAnnouncement] = useState(false);
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
   const { user, loading, signOut } = useAuth();
   const { unreadCount } = useNotifications();
   const { totalUnreadCount: unreadMessageCount } = useChat();
+  const { hasNewAnnouncement, markAsSeen } = useAnnouncement();
 
   const handleOpenChat = (userId: string, bookId: string, bookMode: 'rent' | 'sell') => {
     setChatInitialUserId(userId);
@@ -109,6 +113,22 @@ const Index = () => {
           />
           
           <div className="flex items-center gap-1">
+            {/* Announcement Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                setShowAnnouncement(true);
+                markAsSeen();
+              }}
+              className="relative"
+            >
+              <Mail className="w-5 h-5" />
+              {hasNewAnnouncement && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
+              )}
+            </Button>
+
             {/* Notification Button */}
             <Button
               variant="ghost"
@@ -175,6 +195,12 @@ const Index = () => {
       <NotificationPopup
         isOpen={showNotifications}
         onClose={() => setShowNotifications(false)}
+      />
+
+      {/* Announcement Popup */}
+      <AnnouncementPopup
+        isOpen={showAnnouncement}
+        onClose={() => setShowAnnouncement(false)}
       />
     </div>
   );
