@@ -55,7 +55,7 @@ export const ExploreCommunities = ({
         커뮤니티 둘러보기
       </h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full min-w-0">
         {communities.map((community, index) => {
           const isJoined = joinedCommunityIds.has(community.id);
           
@@ -65,7 +65,7 @@ export const ExploreCommunities = ({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="relative overflow-hidden rounded-2xl group"
+              className="relative overflow-hidden rounded-2xl group min-w-0 w-full"
             >
               {/* Full Background Image */}
               <div className="absolute inset-0">
@@ -83,46 +83,46 @@ export const ExploreCommunities = ({
               </div>
 
               {/* Content */}
-              <div className="relative z-10 p-4">
+              <div className="relative z-10 p-3 sm:p-4 min-w-0">
                 {/* Status Badge */}
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="flex items-center gap-1 text-xs bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full text-white/90">
-                    <Lock className="w-3 h-3" />
+                <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+                  <div className="flex items-center gap-1 text-[10px] sm:text-xs bg-white/20 backdrop-blur-sm px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-white/90">
+                    <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
                     비공개
                   </div>
                   {isJoined && (
-                    <div className="flex items-center gap-1 text-xs bg-primary/80 backdrop-blur-sm px-2 py-1 rounded-full text-primary-foreground">
+                    <div className="flex items-center gap-1 text-[10px] sm:text-xs bg-primary/80 backdrop-blur-sm px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-primary-foreground">
                       가입됨
                     </div>
                   )}
                 </div>
 
-                <h3 className="font-semibold text-white truncate drop-shadow-md">
+                <h3 className="font-semibold text-white truncate drop-shadow-md text-sm sm:text-base">
                   {community.name}
                 </h3>
                 {community.description && (
-                  <p className="text-xs text-white/80 mt-1 line-clamp-2">
+                  <p className="text-[10px] sm:text-xs text-white/80 mt-1 line-clamp-2">
                     {community.description}
                   </p>
                 )}
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-xs text-white/70">
+                <div className="flex items-center justify-between mt-2 sm:mt-3 gap-2 min-w-0">
+                  <span className="text-[10px] sm:text-xs text-white/70 flex-shrink-0">
                     {community.member_count || 0}명
                   </span>
                   {isJoined ? (
                     <Button
                       size="sm"
                       onClick={() => onEnter(community)}
-                      className="h-8 bg-primary hover:bg-primary/90 text-primary-foreground border-0"
+                      className="h-7 sm:h-8 px-2.5 sm:px-3 text-xs bg-primary hover:bg-primary/90 text-primary-foreground border-0 flex-shrink-0"
                     >
-                      <LogIn className="w-3.5 h-3.5 mr-1" />
+                      <LogIn className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 flex-shrink-0" />
                       입장
                     </Button>
                   ) : (
                     <Button
                       size="sm"
                       onClick={() => onJoin(community)}
-                      className="h-8 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0"
+                      className="h-7 sm:h-8 px-2.5 sm:px-3 text-xs bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0 flex-shrink-0"
                     >
                       가입
                     </Button>
