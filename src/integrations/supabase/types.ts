@@ -342,6 +342,7 @@ export type Database = {
           age_public: boolean | null
           avatar_url: string | null
           bio: string | null
+          country: string | null
           created_at: string
           gender: string | null
           gender_public: boolean | null
@@ -354,6 +355,7 @@ export type Database = {
           age_public?: boolean | null
           avatar_url?: string | null
           bio?: string | null
+          country?: string | null
           created_at?: string
           gender?: string | null
           gender_public?: boolean | null
@@ -366,6 +368,7 @@ export type Database = {
           age_public?: boolean | null
           avatar_url?: string | null
           bio?: string | null
+          country?: string | null
           created_at?: string
           gender?: string | null
           gender_public?: boolean | null

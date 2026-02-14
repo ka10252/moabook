@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, nickname: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, nickname: string, country?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, nickname: string) => {
+  const signUp = async (email: string, password: string, nickname: string, country?: string) => {
     // Check if nickname is unique (case-insensitive)
     const { data: existingProfile } = await supabase
       .from('profiles')
@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: new Error('이미 존재하는 닉네임입니다.') };
     }
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -60,6 +60,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       },
     });
+
+    // If signup succeeded and country provided, update the profile
+    if (!error && data.user && country) {
+      await supabase
+        .from('profiles')
+        .update({ country })
+        .eq('id', data.user.id);
+    }
+
     return { error: error as Error | null };
   };
 
