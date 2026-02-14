@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, 
   Camera, 
@@ -10,7 +10,9 @@ import {
   Eye, 
   EyeOff,
   Lock,
-  Shield
+  Shield,
+  Globe,
+  AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +40,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { toast } from 'sonner';
+import { CountrySelector } from '@/components/auth/CountrySelector';
+import { ALLOWED_COUNTRY } from '@/data/countries';
 
 interface ProfilePageProps {
   onSignOut: () => void;
@@ -60,6 +64,8 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   const [genderPublic, setGenderPublic] = useState(false);
   const [agePublic, setAgePublic] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [country, setCountry] = useState('');
+  const [showRegionBlock, setShowRegionBlock] = useState(false);
   
   // Password change
   const [newPassword, setNewPassword] = useState('');
@@ -91,6 +97,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
           age?: number | null;
           gender_public?: boolean | null;
           age_public?: boolean | null;
+          country?: string | null;
         };
         setNickname(profileData.nickname || '');
         setBio(profileData.bio || '');
@@ -99,6 +106,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
         setGenderPublic(profileData.gender_public || false);
         setAgePublic(profileData.age_public || false);
         setAvatarUrl(profileData.avatar_url);
+        setCountry(profileData.country || '');
       }
     } catch (error) {
       console.error('Fetch profile error:', error);
@@ -113,6 +121,12 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
     
     if (!nickname.trim()) {
       toast.error('닉네임은 필수입니다');
+      return;
+    }
+
+    // Validate country if changed
+    if (country && country !== ALLOWED_COUNTRY) {
+      setShowRegionBlock(true);
       return;
     }
 
@@ -141,7 +155,8 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
           age: age ? parseInt(age) : null,
           gender_public: genderPublic,
           age_public: agePublic,
-        })
+          country: country || null,
+        } as Record<string, unknown>)
         .eq('id', user.id);
 
       if (error) {
@@ -386,6 +401,19 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
           />
         </div>
 
+        {/* Country */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Globe className="w-4 h-4 text-muted-foreground" />
+            <Label>거주 국가</Label>
+          </div>
+          <CountrySelector
+            value={country}
+            onChange={setCountry}
+            className="bg-secondary border-border"
+          />
+        </div>
+
         {/* Save Button */}
         <Button
           onClick={handleSaveProfile}
@@ -513,6 +541,41 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Region Block Popup */}
+      <AnimatePresence>
+        {showRegionBlock && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setShowRegionBlock(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="w-[calc(100%-2rem)] max-w-sm bg-card rounded-2xl p-6 shadow-2xl text-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="w-6 h-6 text-destructive" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground mb-2">서비스 이용 불가</h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                죄송합니다. 아직 해당 지역에서는 서비스 이용이 준비되지 않았습니다.
+              </p>
+              <Button
+                onClick={() => setShowRegionBlock(false)}
+                className="w-full rounded-xl"
+              >
+                확인
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
