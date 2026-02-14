@@ -19,7 +19,81 @@ import { Button } from '@/components/ui/button';
 
 type NavItem = 'shelf' | 'wishlist' | 'upload' | 'community' | 'profile';
 
+const Header = ({ 
+  unreadCount, 
+  unreadMessageCount, 
+  hasNewAnnouncement, 
+  onOpenNotifications, 
+  onOpenAnnouncements, 
+  onOpenChat,
+  markAnnouncementAsSeen
+}: {
+  unreadCount: number;
+  unreadMessageCount: number;
+  hasNewAnnouncement: boolean;
+  onOpenNotifications: () => void;
+  onOpenAnnouncements: () => void;
+  onOpenChat: () => void;
+  markAnnouncementAsSeen: () => void;
+}) => (
+  <header className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+    <div className="flex items-center justify-between px-4 h-14">
+      <img 
+        src="/moa-logo.png" 
+        alt="Moa" 
+        className="h-8"
+      />
+      
+      <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            onOpenAnnouncements();
+            markAnnouncementAsSeen();
+          }}
+          className="relative"
+        >
+          <Mail className="w-5 h-5" />
+          {hasNewAnnouncement && (
+            <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
+          )}
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onOpenNotifications}
+          className="relative"
+        >
+          <Bell className="w-5 h-5" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs font-bold rounded-full flex items-center justify-center">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onOpenChat}
+          className="relative"
+        >
+          <MessageCircle className="w-5 h-5" />
+          {unreadMessageCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-[hsl(var(--destructive))] text-white text-xs font-bold rounded-full flex items-center justify-center border border-white shadow-sm">
+              {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+            </span>
+          )}
+        </Button>
+      </div>
+    </div>
+  </header>
+);
+
 const Index = () => {
+  // Default to 'shelf' (Bookshelf) as the first screen after login
   const [activeTab, setActiveTab] = useState<NavItem>('shelf');
   const [showChatModal, setShowChatModal] = useState(false);
   const [chatInitialUserId, setChatInitialUserId] = useState<string | null>(null);
@@ -28,6 +102,7 @@ const Index = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showAnnouncement, setShowAnnouncement] = useState(false);
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
+  
   const { user, loading, signOut } = useAuth();
   const { unreadCount } = useNotifications();
   const { totalUnreadCount: unreadMessageCount } = useChat();
@@ -87,7 +162,6 @@ const Index = () => {
     }
   };
 
-  // Show loading spinner while checking auth
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -96,73 +170,22 @@ const Index = () => {
     );
   }
 
-  // Show auth page if not logged in
   if (!user) {
     return <AuthPage />;
   }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center justify-between px-4 h-14">
-          <img 
-            src="/moa-logo.png" 
-            alt="Moa" 
-            className="h-8"
-          />
-          
-          <div className="flex items-center gap-1">
-            {/* Announcement Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                setShowAnnouncement(true);
-                markAsSeen();
-              }}
-              className="relative"
-            >
-              <Mail className="w-5 h-5" />
-              {hasNewAnnouncement && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
-              )}
-            </Button>
+      <Header 
+        unreadCount={unreadCount}
+        unreadMessageCount={unreadMessageCount}
+        hasNewAnnouncement={hasNewAnnouncement}
+        onOpenNotifications={() => setShowNotifications(true)}
+        onOpenAnnouncements={() => setShowAnnouncement(true)}
+        onOpenChat={() => setShowChatModal(true)}
+        markAnnouncementAsSeen={markAsSeen}
+      />
 
-            {/* Notification Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowNotifications(true)}
-              className="relative"
-            >
-              <Bell className="w-5 h-5" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs font-bold rounded-full flex items-center justify-center">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </Button>
-
-            {/* Chat Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowChatModal(true)}
-              className="relative"
-            >
-              <MessageCircle className="w-5 h-5" />
-              {unreadMessageCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-[hsl(var(--destructive))] text-white text-xs font-bold rounded-full flex items-center justify-center border border-white shadow-sm">
-                  {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
-                </span>
-              )}
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content Area */}
       <main className="flex-1 pt-14 pb-20 overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div
@@ -178,10 +201,8 @@ const Index = () => {
         </AnimatePresence>
       </main>
 
-      {/* Bottom Navigation */}
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
 
-      {/* Chat Modal */}
       <ChatModal 
         isOpen={showChatModal} 
         onClose={handleCloseChat}
@@ -191,13 +212,11 @@ const Index = () => {
         onResetInitialValues={handleResetChatInitialValues}
       />
 
-      {/* Notification Popup */}
       <NotificationPopup
         isOpen={showNotifications}
         onClose={() => setShowNotifications(false)}
       />
 
-      {/* Announcement Popup */}
       <AnnouncementPopup
         isOpen={showAnnouncement}
         onClose={() => setShowAnnouncement(false)}
