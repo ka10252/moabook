@@ -21,8 +21,6 @@ const signInSchema = z.object({
   password: z.string().min(1, { message: "비밀번호를 입력해주세요" }).max(100),
 });
 
-// Mock nicknames for demo
-const MOCK_NICKNAMES = ['책벌레', '독서광', '책덕후', '페이지터너', '소설팬'];
 
 export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
@@ -86,37 +84,32 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
     }
   };
 
-  // Mock login for prototype - creates a demo account
+  // Demo login - uses a single fixed demo account
+  const DEMO_EMAIL = 'demo@moa-demo.com';
+  const DEMO_PASSWORD = 'demo_password_123';
+  const DEMO_NICKNAME = '체험용계정';
+
   const handleDemoLogin = async () => {
     setIsDemoLoading(true);
     try {
-      // Generate a unique mock email and random nickname
-      const timestamp = Date.now();
-      const mockEmail = `demo_${timestamp}@moa-demo.com`;
-      const mockPassword = `demo_password_${timestamp}`;
-      const mockNickname = MOCK_NICKNAMES[Math.floor(Math.random() * MOCK_NICKNAMES.length)] + '_' + timestamp.toString().slice(-4);
-
-      // First try to sign up
-      const { error: signUpError } = await signUp(mockEmail, mockPassword, mockNickname);
+      // Try signing in with the fixed demo account first
+      const { error: signInError } = await signIn(DEMO_EMAIL, DEMO_PASSWORD);
       
-      if (signUpError) {
-        // If signup fails (maybe account exists), try signing in with existing demo
-        const { error: signInError } = await signIn('demo@moa-demo.com', 'demo_password_123');
-        if (signInError) {
-          // Create a fresh demo account
-          const { error } = await signUp('demo@moa-demo.com', 'demo_password_123', '체험용계정');
-          if (error && !error.message.includes('already registered')) {
-            throw error;
-          }
-          // Try signing in again
-          await signIn('demo@moa-demo.com', 'demo_password_123');
+      if (signInError) {
+        // If sign in fails, create the demo account once
+        const { error: signUpError } = await signUp(DEMO_EMAIL, DEMO_PASSWORD, DEMO_NICKNAME);
+        if (signUpError && !signUpError.message.includes('already registered')) {
+          throw signUpError;
         }
+        // Try signing in again after signup
+        const { error } = await signIn(DEMO_EMAIL, DEMO_PASSWORD);
+        if (error) throw error;
       }
       
-      toast.success(`환영합니다, ${mockNickname}님! 📚`);
+      toast.success(`환영합니다, ${DEMO_NICKNAME}님! 📚`);
     } catch (err) {
       console.error('Demo login error:', err);
-      toast.error('체험 계정 생성에 실패했습니다');
+      toast.error('체험 로그인에 실패했습니다');
     } finally {
       setIsDemoLoading(false);
     }
