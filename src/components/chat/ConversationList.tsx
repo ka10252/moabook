@@ -3,6 +3,23 @@ import { MessageCircle, Loader2 } from 'lucide-react';
 import { Conversation } from '@/hooks/useChat';
 import { formatDistanceToNow } from 'date-fns';
 
+const SPECIAL_PREFIX_MAP: Record<string, string> = {
+  '[대여 요청]': '대여 요청',
+  '[구매 요청]': '구매 요청',
+  '[대여 수락]': '대여 수락됨',
+  '[판매 완료]': '판매 완료',
+  '[반납 완료]': '반납 완료',
+  '[반납 요청]': '반납 요청',
+};
+
+const formatLastMessage = (content: string | undefined): string => {
+  if (!content) return '메시지 없음';
+  for (const [prefix, label] of Object.entries(SPECIAL_PREFIX_MAP)) {
+    if (content.startsWith(prefix)) return label;
+  }
+  return content.replace(/\s*\[BOOK_ID:[^\]]+\]/, '');
+};
+
 interface ConversationListProps {
   conversations: Conversation[];
   loading: boolean;
@@ -75,7 +92,7 @@ export const ConversationList = ({ conversations, loading, selectedId, onSelect 
             )}
 
             <p className="text-sm text-muted-foreground truncate mt-1">
-              {conv.last_message || 'No messages yet'}
+              {formatLastMessage(conv.last_message)}
             </p>
           </div>
 

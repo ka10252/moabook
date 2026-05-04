@@ -49,59 +49,73 @@ export const useChat = () => {
 
     setLoading(true);
     try {
+      // Query 1: fetch all conversations
       const { data, error } = await supabase
         .from('conversations')
-        .select(`
-          *,
-          book:books(id, title, author, cover_url)
-        `)
+        .select(`*, book:books(id, title, author, cover_url)`)
         .or(`participant_1.eq.${user.id},participant_2.eq.${user.id}`)
         .order('last_message_at', { ascending: false });
 
       if (error) throw error;
+      if (!data || data.length === 0) {
+        setConversations([]);
+        setTotalUnreadCount(0);
+        setLoading(false);
+        return;
+      }
 
-      // Fetch other user profiles and last messages
-      const conversationsWithDetails = await Promise.all(
-        (data || []).map(async (conv) => {
-          const otherUserId = conv.participant_1 === user.id ? conv.participant_2 : conv.participant_1;
-          
-          // Get other user's profile
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('id, nickname')
-            .eq('id', otherUserId)
-            .single();
-
-          // Get last message
-          const { data: messages } = await supabase
-            .from('messages')
-            .select('content, is_read, sender_id')
-            .eq('conversation_id', conv.id)
-            .order('created_at', { ascending: false })
-            .limit(1);
-
-          // Count unread
-          const { count } = await supabase
-            .from('messages')
-            .select('id', { count: 'exact', head: true })
-            .eq('conversation_id', conv.id)
-            .eq('is_read', false)
-            .neq('sender_id', user.id);
-
-          return {
-            ...conv,
-            other_user: profile || { id: otherUserId, nickname: 'Unknown' },
-            last_message: messages?.[0]?.content,
-            unread_count: count || 0,
-          };
-        })
+      const convIds = data.map(c => c.id);
+      const otherUserIds = data.map(c =>
+        c.participant_1 === user.id ? c.participant_2 : c.participant_1
       );
 
+      // Query 2: batch fetch all other user profiles
+      const [profilesResult, messagesResult, unreadResult] = await Promise.all([
+        supabase.from('profiles').select('id, nickname').in('id', otherUserIds),
+        // Query 3: recent messages for last-message preview (desc order, pick first per conv client-side)
+        supabase
+          .from('messages')
+          .select('conversation_id, content, created_at')
+          .in('conversation_id', convIds)
+          .order('created_at', { ascending: false })
+          .limit(Math.min(data.length * 10, 300)),
+        // Query 4: all unread messages for this user across all conversations
+        supabase
+          .from('messages')
+          .select('conversation_id')
+          .in('conversation_id', convIds)
+          .eq('is_read', false)
+          .neq('sender_id', user.id),
+      ]);
+
+      const profileMap = new Map((profilesResult.data || []).map(p => [p.id, p]));
+
+      // Last message per conversation (first seen = most recent due to desc order)
+      const lastMessageByConv = new Map<string, string>();
+      for (const msg of (messagesResult.data || [])) {
+        if (!lastMessageByConv.has(msg.conversation_id)) {
+          lastMessageByConv.set(msg.conversation_id, msg.content);
+        }
+      }
+
+      // Unread count per conversation
+      const unreadByConv = new Map<string, number>();
+      for (const msg of (unreadResult.data || [])) {
+        unreadByConv.set(msg.conversation_id, (unreadByConv.get(msg.conversation_id) || 0) + 1);
+      }
+
+      const conversationsWithDetails = data.map(conv => {
+        const otherUserId = conv.participant_1 === user.id ? conv.participant_2 : conv.participant_1;
+        return {
+          ...conv,
+          other_user: profileMap.get(otherUserId) || { id: otherUserId, nickname: 'Unknown' },
+          last_message: lastMessageByConv.get(conv.id),
+          unread_count: unreadByConv.get(conv.id) || 0,
+        };
+      });
+
       setConversations(conversationsWithDetails);
-      
-      // Calculate total unread count
-      const totalUnread = conversationsWithDetails.reduce((sum, conv) => sum + (conv.unread_count || 0), 0);
-      setTotalUnreadCount(totalUnread);
+      setTotalUnreadCount(conversationsWithDetails.reduce((sum, c) => sum + (c.unread_count || 0), 0));
     } catch (err) {
       console.error('Failed to fetch conversations:', err);
     } finally {
@@ -122,11 +136,22 @@ export const useChat = () => {
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'messages',
         },
-        () => {
+        (payload) => {
+          const msg = payload.new as { sender_id: string; content: string };
+          // Show browser notification for messages from others when tab is hidden
+          if (
+            msg.sender_id !== user.id &&
+            'Notification' in window &&
+            Notification.permission === 'granted' &&
+            document.hidden
+          ) {
+            const preview = msg.content.replace(/\s*\[BOOK_ID:[^\]]+\]/, '').slice(0, 60);
+            new window.Notification('새 메시지', { body: preview, icon: '/moa-logo.png' });
+          }
           fetchConversations();
         }
       )

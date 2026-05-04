@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Book } from '@/types/book';
 
 interface BookSpineProps {
@@ -21,9 +21,14 @@ const spineColors = [
   'bg-book-6',
 ];
 
-export const BookSpine = ({ 
-  book, 
-  onClick, 
+// Bookmark shape: classic V-notch, clean proportions
+const BOOKMARK_WIDTH = 26;
+const BOOKMARK_HEIGHT = 38;
+const BOOKMARK_CLIP = 'polygon(0 0, 100% 0, 100% 78%, 50% 100%, 0 78%)';
+
+export const BookSpine = ({
+  book,
+  onClick,
   isSelected,
   isLent = false,
   isBorrowed = false,
@@ -32,160 +37,145 @@ export const BookSpine = ({
 }: BookSpineProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const colorClass = spineColors[(book.spineColor - 1) % spineColors.length];
-  
-  // Get bookmark text based on status
-  const getLentBookmarkText = (name: string) => `${name}이 대여중`;
-  const getBorrowedBookmarkText = (name: string) => `${name}꺼`;
-  
+
   const hasBookmark = (isLent && borrowerNickname) || (isBorrowed && lenderNickname);
-  
+  const chipName = isLent ? borrowerNickname : lenderNickname;
+
   return (
     <motion.div
       className={`book-spine cursor-pointer h-full min-w-[40px] max-w-[50px] flex-shrink-0 ${colorClass} rounded-sm flex items-center justify-center px-2 relative overflow-visible`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      whileHover={{ 
+      whileHover={{
         x: -8,
-        transition: { duration: 0.2 }
+        rotate: 0,
+        transition: { duration: 0.2 },
       }}
-      animate={isSelected ? { 
-        x: -20,
-        rotateY: -15,
-        scale: 1.02,
-      } : { 
-        x: 0,
-        rotateY: 0,
-        scale: 1,
-      }}
+      animate={
+        isSelected
+          ? { x: -20, rotateY: -15, scale: 1.02, rotate: 0 }
+          : { x: 0, rotateY: 0, scale: 1, rotate: isBorrowed ? -5 : 0 }
+      }
       transition={{ type: 'spring', stiffness: 300, damping: 25 }}
       onClick={onClick}
-      style={{ perspective: '1000px' }}
+      style={{ perspective: '1000px', transformOrigin: 'bottom center' }}
     >
-      {/* Lent Bookmark - Yellow - when user lent their book to someone */}
+      {/* ── Floating name chip (shown on hover) ───────────────── */}
+      <AnimatePresence>
+        {isHovered && hasBookmark && chipName && (
+          <motion.div
+            className="absolute left-1/2 z-30 pointer-events-none"
+            style={{ top: `-${BOOKMARK_HEIGHT + 28}px`, x: '-50%' }}
+            initial={{ opacity: 0, y: 6, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 4, scale: 0.9 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+          >
+            <div
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-full shadow-lg whitespace-nowrap text-white text-[10px] font-bold ${
+                isLent
+                  ? 'bg-gradient-to-r from-amber-400 to-amber-500'
+                  : 'bg-gradient-to-r from-indigo-400 to-indigo-600'
+              }`}
+            >
+              <span className="opacity-80">{isLent ? '↑' : '↓'}</span>
+              <span>{chipName}</span>
+            </div>
+            {/* Arrow tip pointing down */}
+            <div
+              className="mx-auto mt-0.5"
+              style={{
+                width: 8,
+                height: 5,
+                background: isLent ? '#f59e0b' : '#6366f1',
+                clipPath: 'polygon(0 0, 100% 0, 50% 100%)',
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Lent bookmark (amber) ──────────────────────────────── */}
       {isLent && borrowerNickname && (
-        <motion.div 
-          className="absolute -top-2 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center"
-          style={{ 
-            width: '38px',
-            transformOrigin: 'top right',
-          }}
-          animate={{
-            rotate: isHovered ? -18 : 0,
-            x: isHovered ? '-35%' : '-50%',
-          }}
-          transition={{ 
-            type: 'spring', 
-            stiffness: 300, 
-            damping: 20,
-            duration: 0.3
-          }}
+        <motion.div
+          className="absolute left-1/2 -translate-x-1/2 z-20"
+          style={{ top: -BOOKMARK_HEIGHT + 10, width: BOOKMARK_WIDTH }}
+          animate={{ y: isHovered ? -5 : 0 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 22 }}
         >
-          {/* Yellow ribbon bookmark shape */}
-          <div 
-            className="relative bg-bookmark-lent shadow-lg box-border"
+          <div
+            className="relative shadow-md"
             style={{
               width: '100%',
-              minHeight: '48px',
-              clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
+              height: BOOKMARK_HEIGHT,
+              background: 'linear-gradient(160deg, #fcd34d 0%, #f59e0b 60%, #d97706 100%)',
+              clipPath: BOOKMARK_CLIP,
             }}
           >
-            {/* Texture overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-white/15 via-transparent to-black/10" />
-            
-            {/* Fold effect */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-b from-white/30 to-transparent" />
-            
-            {/* Bookmark text - vertical */}
-            <div className="absolute inset-0 flex items-center justify-center pt-1 pb-3">
-              <motion.span 
-                className="text-[7px] font-bold text-bookmark-lent-foreground text-center leading-tight whitespace-nowrap overflow-hidden"
-                style={{ 
-                  textShadow: '0 1px 0 rgba(255,255,255,0.3)',
-                  writingMode: 'vertical-rl',
-                  textOrientation: 'mixed',
-                }}
-                animate={{
-                  opacity: isHovered ? 0.4 : 1,
-                }}
-                transition={{ duration: 0.2 }}
+            {/* Sheen */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-black/10" />
+            {/* Top edge highlight */}
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-white/40 rounded-t-sm" />
+            {/* Icon */}
+            <div className="absolute inset-0 flex items-center justify-center" style={{ paddingBottom: BOOKMARK_HEIGHT * 0.22 }}>
+              <span
+                className="font-black text-amber-900/60 select-none"
+                style={{ fontSize: 11, lineHeight: 1 }}
               >
-                {getLentBookmarkText(borrowerNickname)}
-              </motion.span>
+                ↑
+              </span>
             </div>
           </div>
         </motion.div>
       )}
-      
-      {/* Borrowed Bookmark - Brown - when user borrowed this book from someone */}
+
+      {/* ── Borrowed bookmark (indigo) ─────────────────────────── */}
       {isBorrowed && lenderNickname && (
-        <motion.div 
-          className="absolute -top-2 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center"
-          style={{ 
-            width: '38px',
-            transformOrigin: 'top right',
-          }}
-          animate={{
-            rotate: isHovered ? -18 : 0,
-            x: isHovered ? '-35%' : '-50%',
-          }}
-          transition={{ 
-            type: 'spring', 
-            stiffness: 300, 
-            damping: 20,
-            duration: 0.3
-          }}
+        <motion.div
+          className="absolute left-1/2 -translate-x-1/2 z-20"
+          style={{ top: -BOOKMARK_HEIGHT + 10, width: BOOKMARK_WIDTH }}
+          animate={{ y: isHovered ? -5 : 0 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 22 }}
         >
-          {/* Brown ribbon bookmark shape */}
-          <div 
-            className="relative bg-bookmark-borrowed shadow-lg box-border"
+          <div
+            className="relative shadow-md"
             style={{
               width: '100%',
-              minHeight: '48px',
-              clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
+              height: BOOKMARK_HEIGHT,
+              background: 'linear-gradient(160deg, #a5b4fc 0%, #6366f1 60%, #4f46e5 100%)',
+              clipPath: BOOKMARK_CLIP,
             }}
           >
-            {/* Texture overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-black/15" />
-            
-            {/* Fold effect */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-b from-white/20 to-transparent" />
-            
-            {/* Bookmark text - vertical */}
-            <div className="absolute inset-0 flex items-center justify-center pt-1 pb-3">
-              <motion.span 
-                className="text-[7px] font-bold text-bookmark-borrowed-foreground text-center leading-tight whitespace-nowrap overflow-hidden"
-                style={{ 
-                  textShadow: '0 1px 1px rgba(0,0,0,0.3)',
-                  writingMode: 'vertical-rl',
-                  textOrientation: 'mixed',
-                }}
-                animate={{
-                  opacity: isHovered ? 0.4 : 1,
-                }}
-                transition={{ duration: 0.2 }}
+            {/* Sheen */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-transparent to-black/15" />
+            {/* Top edge highlight */}
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-white/35 rounded-t-sm" />
+            {/* Icon */}
+            <div className="absolute inset-0 flex items-center justify-center" style={{ paddingBottom: BOOKMARK_HEIGHT * 0.22 }}>
+              <span
+                className="font-black text-indigo-900/50 select-none"
+                style={{ fontSize: 11, lineHeight: 1 }}
               >
-                {getBorrowedBookmarkText(lenderNickname)}
-              </motion.span>
+                ↓
+              </span>
             </div>
           </div>
         </motion.div>
       )}
-      
-      {/* Spine texture overlay */}
+
+      {/* Spine texture */}
       <div className="absolute inset-0 opacity-20 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-      
-      {/* Book title - always visible, fully visible on hover when bookmark tilts away */}
-      <motion.span 
+
+      {/* Book title */}
+      <motion.span
         className="text-white font-semibold text-xs tracking-wide truncate text-shadow-sm relative z-10"
-        animate={{
-          opacity: hasBookmark && !isHovered ? 0.6 : 1,
-        }}
+        animate={{ opacity: hasBookmark && !isHovered ? 0.65 : 1 }}
         transition={{ duration: 0.2 }}
       >
         {book.title}
       </motion.span>
-      
-      {/* Edge highlight */}
+
+      {/* Edge highlights */}
       <div className="absolute right-0 top-0 bottom-0 w-[2px] bg-white/20" />
       <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-black/30" />
     </motion.div>

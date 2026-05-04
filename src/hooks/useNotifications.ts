@@ -52,7 +52,14 @@ export const useNotifications = () => {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // Real-time subscription
+  // Request browser notification permission once
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  // Real-time subscription + browser push
   useEffect(() => {
     if (!user) return;
 
@@ -70,6 +77,14 @@ export const useNotifications = () => {
           const newNotification = payload.new as Notification;
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
+
+          // Show browser push notification if tab is not focused
+          if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
+            new window.Notification(newNotification.title, {
+              body: newNotification.body ?? undefined,
+              icon: '/moa-logo.png',
+            });
+          }
         }
       )
       .subscribe();

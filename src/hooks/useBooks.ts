@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { Book, transformDbBook } from '@/types/book';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface UseBooksOptions {
   communityId?: string | null;
@@ -14,6 +15,7 @@ export const useBooks = (options: UseBooksOptions = {}) => {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   const fetchBooks = useCallback(async () => {
     setLoading(true);
@@ -60,6 +62,20 @@ export const useBooks = (options: UseBooksOptions = {}) => {
 
   useEffect(() => {
     fetchBooks();
+  }, [fetchBooks]);
+
+  // Realtime subscription — refresh on any books change
+  useEffect(() => {
+    channelRef.current = supabase
+      .channel('books-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'books' }, () => {
+        fetchBooks();
+      })
+      .subscribe();
+
+    return () => {
+      if (channelRef.current) supabase.removeChannel(channelRef.current);
+    };
   }, [fetchBooks]);
 
   const deleteBook = async (bookId: string) => {

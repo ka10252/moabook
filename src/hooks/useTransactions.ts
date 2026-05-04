@@ -52,24 +52,25 @@ export const useTransactions = () => {
 
       if (error) throw error;
 
-      // Fetch counterparty info for each transaction
-      const transactionsWithDetails = await Promise.all(
-        (data || []).map(async (t) => {
-          const counterpartyId = t.owner_id === user.id ? t.borrower_id : t.owner_id;
-          
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('id, nickname')
-            .eq('id', counterpartyId)
-            .single();
-
-          return {
-            ...t,
-            counterparty: profile || { id: counterpartyId, nickname: '알 수 없음' },
-            isMine: t.owner_id === user.id,
-          };
-        })
+      // Batch fetch all counterparty profiles in one query
+      const counterpartyIds = (data || []).map(t =>
+        t.owner_id === user.id ? t.borrower_id : t.owner_id
       );
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, nickname')
+        .in('id', counterpartyIds);
+
+      const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+
+      const transactionsWithDetails = (data || []).map(t => {
+        const counterpartyId = t.owner_id === user.id ? t.borrower_id : t.owner_id;
+        return {
+          ...t,
+          counterparty: profileMap.get(counterpartyId) || { id: counterpartyId, nickname: '알 수 없음' },
+          isMine: t.owner_id === user.id,
+        };
+      });
 
       setTransactions(transactionsWithDetails);
     } catch (err) {
@@ -171,4 +172,55 @@ export const useTransactions = () => {
     getLentBooksInfo,
     getRentedBooksInfo,
   };
+};
+
+export const useTransactionHistory = () => {
+  const { user } = useAuth();
+  const [history, setHistory] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) { setHistory([]); setLoading(false); return; }
+
+    const fetch = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('transactions')
+          .select(`*, book:books(id, title, author, cover_url)`)
+          .or(`owner_id.eq.${user.id},borrower_id.eq.${user.id}`)
+          .in('status', ['completed', 'cancelled'])
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        if (error) throw error;
+
+        const counterpartyIds = (data || []).map(t =>
+          t.owner_id === user.id ? t.borrower_id : t.owner_id
+        );
+        const { data: profiles } = await supabase
+          .from('profiles').select('id, nickname').in('id', counterpartyIds);
+        const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+
+        setHistory(
+          (data || []).map(t => {
+            const cpId = t.owner_id === user.id ? t.borrower_id : t.owner_id;
+            return {
+              ...t,
+              counterparty: profileMap.get(cpId) || { id: cpId, nickname: '알 수 없음' },
+              isMine: t.owner_id === user.id,
+            };
+          })
+        );
+      } catch (e) {
+        console.error('Failed to fetch history:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetch();
+  }, [user?.id]);
+
+  return { history, loading };
 };

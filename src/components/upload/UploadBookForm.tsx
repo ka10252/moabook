@@ -45,55 +45,33 @@ export const UploadBookForm = () => {
     communityId: null,
   });
 
-  // Summarize description using AI
-  const summarizeDescription = async (description: string): Promise<string> => {
-    if (!description || description.length <= 200) return description;
-    
-    try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/summarize-book`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ description, language: 'ko' }),
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        return data.summary || description.slice(0, 200) + '...';
-      }
-    } catch (error) {
-      console.error('Summarization failed:', error);
-    }
-    
-    // Fallback: simple truncation
-    return description.slice(0, 200) + '...';
+  const truncateDescription = (description: string): string => {
+    if (!description || description.length <= 300) return description;
+    const firstParagraph = description.split(/\n\n|\r\n\r\n/)[0];
+    if (firstParagraph.length <= 300) return firstParagraph;
+    return description.slice(0, 300) + '...';
   };
 
   useEffect(() => {
     const fillBookDetails = async () => {
       if (!selectedBook) return;
-      
+
       setIsFetchingDetails(true);
-      
-      // Fetch description
-      const description = await fetchBookDetails(selectedBook.key);
-      
-      // Summarize if too long
-      const summarizedDescription = description 
-        ? await summarizeDescription(description)
-        : '';
-      
-      // Don't use API cover - let user upload their own
+
+      // Google Books already returns description in search results — skip re-fetch
+      let description = selectedBook.description;
+      if (!description) {
+        description = await fetchBookDetails(selectedBook.key);
+      }
+
       setFormData((prev) => ({
         ...prev,
         title: selectedBook.title,
         author: selectedBook.author,
-        coverUrl: '', // Clear cover - user will upload
-        description: summarizedDescription,
+        coverUrl: '',
+        description: description ? truncateDescription(description) : '',
       }));
-      
+
       setIsFetchingDetails(false);
     };
 

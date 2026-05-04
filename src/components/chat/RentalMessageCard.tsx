@@ -4,7 +4,7 @@ import { Book as BookIcon, Calendar, CheckCircle2, Clock, PackageCheck } from 'l
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 
-export type RentalMessageType = 'request' | 'accepted' | 'returned';
+export type RentalMessageType = 'request' | 'accepted' | 'returned' | 'return_request';
 export type TransactionType = 'rent' | 'purchase';
 
 interface RentalMessageCardProps {
@@ -21,9 +21,15 @@ interface RentalMessageCardProps {
   showAcceptButton?: boolean;
   onAcceptClick?: () => void;
   hasActiveTransaction?: boolean;
-  // For accepted cards
+  // For accepted cards (owner side)
   showReturnButton?: boolean;
   onReturnClick?: () => void;
+  // For accepted cards (borrower side)
+  showRequestReturnButton?: boolean;
+  onRequestReturnClick?: () => void;
+  // For return_request cards (owner side)
+  showAcceptReturnButton?: boolean;
+  onAcceptReturnClick?: () => void;
 }
 
 export const RentalMessageCard = ({
@@ -37,6 +43,10 @@ export const RentalMessageCard = ({
   hasActiveTransaction = false,
   showReturnButton = false,
   onReturnClick,
+  showRequestReturnButton = false,
+  onRequestReturnClick,
+  showAcceptReturnButton = false,
+  onAcceptReturnClick,
 }: RentalMessageCardProps) => {
   const isPurchase = transactionType === 'purchase';
   
@@ -72,6 +82,16 @@ export const RentalMessageCard = ({
           iconColor: 'text-blue-600',
           cardBg: 'bg-blue-50 dark:bg-blue-950/30',
           borderColor: 'border-blue-200 dark:border-blue-800',
+        };
+      case 'return_request':
+        return {
+          text: '반납을 요청합니다',
+          icon: PackageCheck,
+          bgColor: 'bg-orange-100 dark:bg-orange-900/50',
+          textColor: 'text-orange-700 dark:text-orange-300',
+          iconColor: 'text-orange-600',
+          cardBg: 'bg-orange-50 dark:bg-orange-950/30',
+          borderColor: 'border-orange-200 dark:border-orange-800',
         };
     }
   };
@@ -151,7 +171,19 @@ export const RentalMessageCard = ({
           </div>
         )}
         
-        {/* Accepted: Return Button (for owner only, rent only) */}
+        {/* Accepted: Borrower requests return */}
+        {type === 'accepted' && !isPurchase && showRequestReturnButton && onRequestReturnClick && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full rounded-xl"
+            onClick={onRequestReturnClick}
+          >
+            반납 요청하기
+          </Button>
+        )}
+
+        {/* Accepted: Owner confirms return */}
         {type === 'accepted' && !isPurchase && showReturnButton && onReturnClick && (
           <div className="w-full flex flex-col items-center gap-1">
             <Button
@@ -159,6 +191,23 @@ export const RentalMessageCard = ({
               variant="outline"
               className="w-full rounded-xl border-green-300 text-green-700 hover:bg-green-100 dark:border-green-700 dark:text-green-300 dark:hover:bg-green-900/50"
               onClick={onReturnClick}
+            >
+              반납 수락
+            </Button>
+            <span className="text-[10px] text-muted-foreground">
+              반납을 진행하려면 클릭해주세요
+            </span>
+          </div>
+        )}
+
+        {/* Return request: Owner accepts the return */}
+        {type === 'return_request' && showAcceptReturnButton && onAcceptReturnClick && (
+          <div className="w-full flex flex-col items-center gap-1">
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full rounded-xl border-green-300 text-green-700 hover:bg-green-100 dark:border-green-700 dark:text-green-300 dark:hover:bg-green-900/50"
+              onClick={onAcceptReturnClick}
             >
               반납 수락
             </Button>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, User, Book, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useTransactions, Transaction } from '@/hooks/useTransactions';
+import { useTransactions, useTransactionHistory, Transaction } from '@/hooks/useTransactions';
 import { TransactionEditModal } from './TransactionEditModal';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -14,7 +14,9 @@ interface TransactionDashboardProps {
 
 export const TransactionDashboard = ({ isOpen, onClose }: TransactionDashboardProps) => {
   const { transactions, loading, updateTransaction, refresh } = useTransactions();
+  const { history, loading: historyLoading } = useTransactionHistory();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [tab, setTab] = useState<'active' | 'history'>('active');
 
   if (!isOpen) return null;
 
@@ -64,28 +66,44 @@ export const TransactionDashboard = ({ isOpen, onClose }: TransactionDashboardPr
           {/* Header */}
           <header className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
             <h2 className="text-lg font-bold text-foreground">거래 현황</h2>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-xl hover:bg-muted transition-colors"
-            >
+            <button onClick={onClose} className="p-2 rounded-xl hover:bg-muted transition-colors">
               <X className="w-5 h-5 text-muted-foreground" />
             </button>
           </header>
 
+          {/* Tabs */}
+          <div className="flex border-b border-border shrink-0">
+            {(['active', 'history'] as const).map(t => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+                  tab === t
+                    ? 'text-primary border-b-2 border-primary'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {t === 'active' ? '진행 중' : '히스토리'}
+              </button>
+            ))}
+          </div>
+
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-4">
-            {loading ? (
+            {(tab === 'active' ? loading : historyLoading) ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
-            ) : transactions.length === 0 ? (
+            ) : (tab === 'active' ? transactions : history).length === 0 ? (
               <div className="text-center py-8">
                 <Book className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-                <p className="text-muted-foreground">진행 중인 거래가 없습니다</p>
+                <p className="text-muted-foreground">
+                  {tab === 'active' ? '진행 중인 거래가 없습니다' : '거래 기록이 없습니다'}
+                </p>
               </div>
             ) : (
               <div className="space-y-3">
-                {transactions.map((transaction) => (
+                {(tab === 'active' ? transactions : history).map((transaction) => (
                   <motion.div
                     key={transaction.id}
                     initial={{ opacity: 0, y: 10 }}
@@ -132,7 +150,7 @@ export const TransactionDashboard = ({ isOpen, onClose }: TransactionDashboardPr
                          <Calendar className="w-4 h-4" />
                          <span>반납일: {formatReturnDate(transaction.return_date)}</span>
                        </div>
-                       {transaction.isMine && transaction.type === 'rent' && (
+                       {tab === 'active' && transaction.isMine && transaction.type === 'rent' && (
                          <Button
                            variant="ghost"
                            size="sm"

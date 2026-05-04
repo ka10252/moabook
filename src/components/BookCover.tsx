@@ -7,9 +7,10 @@ interface BookCoverProps {
   onClick: () => void;
   isRented?: boolean;
   isLent?: boolean;
+  isBorrowed?: boolean;
 }
 
-export const BookCover = ({ book, onClick, isRented = false, isLent = false }: BookCoverProps) => {
+export const BookCover = ({ book, onClick, isRented = false, isLent = false, isBorrowed = false }: BookCoverProps) => {
   const hasValidCover = book.cover && !book.cover.includes('unsplash.com/photo-1544947950');
   return (
     <motion.div
@@ -38,12 +39,14 @@ export const BookCover = ({ book, onClick, isRented = false, isLent = false }: B
           />
         )}
         
-        {/* Rented/Lent Status Badge */}
-        {(isRented || isLent) && (
+        {/* Status Badge */}
+        {(isRented || isLent || isBorrowed) && (
           <div className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-bold ${
-            isLent ? 'bg-amber-500 text-white' : 'bg-primary text-primary-foreground'
+            isLent ? 'bg-amber-500 text-white'
+            : isBorrowed ? 'bg-amber-800 text-white'
+            : 'bg-primary text-primary-foreground'
           }`}>
-            {isLent ? '대여해줌' : '대여중'}
+            {isLent ? '대여해줌' : isBorrowed ? '빌린책' : '대여중'}
           </div>
         )}
         

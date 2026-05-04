@@ -49,12 +49,14 @@ interface ProfilePageProps {
 
 export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, deleteAccount } = useAuth();
   const { isAdmin } = useAdminAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showSignOutDialog, setShowSignOutDialog] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   
   // Profile fields
   const [nickname, setNickname] = useState('');
@@ -258,6 +260,18 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   const handleSignOut = () => {
     setShowSignOutDialog(false);
     onSignOut();
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeletingAccount(true);
+    const { error } = await deleteAccount();
+    setIsDeletingAccount(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setShowDeleteDialog(false);
+      toast.success('계정이 삭제되었습니다');
+    }
   };
 
   if (isLoading) {
@@ -473,6 +487,15 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
           <LogOut className="w-4 h-4" />
           로그아웃
         </Button>
+
+        {/* Delete Account */}
+        <Button
+          variant="ghost"
+          onClick={() => setShowDeleteDialog(true)}
+          className="w-full h-10 rounded-xl justify-center text-xs text-muted-foreground hover:text-destructive"
+        >
+          회원 탈퇴
+        </Button>
       </motion.div>
 
       {/* Sign Out Dialog */}
@@ -537,6 +560,28 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
               ) : (
                 '비밀번호 변경'
               )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Account Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>정말 탈퇴하시겠습니까?</AlertDialogTitle>
+            <AlertDialogDescription>
+              계정과 모든 데이터(등록한 책, 채팅 기록 등)가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAccount}
+              disabled={isDeletingAccount}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeletingAccount ? <Loader2 className="w-4 h-4 animate-spin" /> : '탈퇴하기'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
