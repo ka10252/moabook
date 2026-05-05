@@ -27,9 +27,10 @@ interface Community {
 
 interface CommunityPageProps {
   onNavigateToBookshelf?: (communityId: string) => void;
+  onOpenBoard?: (communityId: string, communityName: string) => void;
 }
 
-export const CommunityPage = ({ onNavigateToBookshelf }: CommunityPageProps = {}) => {
+export const CommunityPage = ({ onNavigateToBookshelf, onOpenBoard }: CommunityPageProps = {}) => {
   const { user } = useAuth();
   const [view, setView] = useState<View>('list');
   const [searchQuery, setSearchQuery] = useState('');
@@ -148,8 +149,9 @@ export const CommunityPage = ({ onNavigateToBookshelf }: CommunityPageProps = {}
           <div className="inline-flex items-center justify-center w-14 h-14 bg-primary/10 rounded-2xl mb-3">
             <Users className="w-7 h-7 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">커뮤니티</h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <p className="eyebrow">Communities</p>
+          <h1 className="font-display text-[28px] font-medium tracking-tight text-foreground mt-1">커뮤니티</h1>
+          <p className="text-muted-foreground text-sm mt-1.5">
             비공개 그룹에서 책을 나눠보세요
           </p>
         </motion.div>
@@ -262,6 +264,7 @@ export const CommunityPage = ({ onNavigateToBookshelf }: CommunityPageProps = {}
         onCommunityDeleted={fetchCommunities}
         onCommunityUpdated={fetchCommunities}
         onNavigateToBookshelf={onNavigateToBookshelf}
+        onOpenBoard={onOpenBoard}
       />
     </div>
   );

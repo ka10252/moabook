@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Users, Lock, Loader2, LogIn } from 'lucide-react';
+import { Users, Lock, Loader2, LogIn, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface Community {
@@ -70,16 +70,23 @@ export const ExploreCommunities = ({
               {/* Full Background Image */}
               <div className="absolute inset-0">
                 {community.cover_url ? (
-                  <img
-                    src={community.cover_url}
-                    alt={community.name}
-                    className="w-full h-full object-cover"
-                  />
+                  <>
+                    <img
+                      src={community.cover_url}
+                      alt={community.name}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/50 group-hover:bg-black/40 transition-colors" />
+                  </>
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-wood-medium to-wood-dark" />
+                  <>
+                    <div className="w-full h-full bg-gradient-to-br from-primary/80 via-primary/60 to-accent/70" />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-10">
+                      <BookOpen className="w-20 h-20 text-white" />
+                    </div>
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
+                  </>
                 )}
-                {/* Dark Overlay */}
-                <div className="absolute inset-0 bg-black/50 group-hover:bg-black/40 transition-colors" />
               </div>
 
               {/* Content */}

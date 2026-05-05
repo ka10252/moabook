@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MessageCircle, Heart, Edit2, Trash2, Loader2 } from 'lucide-react';
+import { X, MessageCircle, Heart, Edit2, Trash2, Loader2, Clock } from 'lucide-react';
 import { Book } from '@/types/book';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { MemberProfileModal } from '@/components/profile/MemberProfileModal';
 import { DefaultBookCover } from '@/components/DefaultBookCover';
@@ -48,6 +49,46 @@ export const BookDetailWithActions = ({
   const [deleting, setDeleting] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
   const [showOwnerProfile, setShowOwnerProfile] = useState(false);
+  const [isInWaitlist, setIsInWaitlist] = useState(false);
+  const [waitlistCount, setWaitlistCount] = useState(0);
+  const [waitlistLoading, setWaitlistLoading] = useState(false);
+
+  useEffect(() => {
+    if (!book) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [book, onClose]);
+
+  // Load waitlist info when a rented book is shown
+  useEffect(() => {
+    if (!book || book.status !== 'rented' || !currentUserId) return;
+    const load = async () => {
+      const [myEntry, countResult] = await Promise.all([
+        supabase.from('book_waitlist').select('id').eq('book_id', book.id).eq('user_id', currentUserId).maybeSingle(),
+        supabase.from('book_waitlist').select('id', { count: 'exact' }).eq('book_id', book.id),
+      ]);
+      setIsInWaitlist(!!myEntry.data);
+      setWaitlistCount(countResult.count ?? 0);
+    };
+    load();
+  }, [book?.id, book?.status, currentUserId]);
+
+  const handleWaitlist = async () => {
+    if (!book || !currentUserId) return;
+    setWaitlistLoading(true);
+    if (isInWaitlist) {
+      await supabase.from('book_waitlist').delete().eq('book_id', book.id).eq('user_id', currentUserId);
+      setIsInWaitlist(false);
+      setWaitlistCount(c => Math.max(0, c - 1));
+      toast.success('대기열에서 취소했습니다');
+    } else {
+      const { error } = await supabase.from('book_waitlist').insert({ book_id: book.id, user_id: currentUserId });
+      if (error) { toast.error('대기 등록에 실패했습니다'); }
+      else { setIsInWaitlist(true); setWaitlistCount(c => c + 1); toast.success('대기열에 등록되었습니다. 반납 시 알림을 드릴게요!'); }
+    }
+    setWaitlistLoading(false);
+  };
 
   if (!book) return null;
 
@@ -144,8 +185,9 @@ export const BookDetailWithActions = ({
                 
                 {/* Content - scrollable */}
                 <div className="flex-1 overflow-y-auto p-6 min-h-0">
-                  <h2 className="text-2xl font-bold text-foreground mb-1">{book.title}</h2>
-                  <p className="text-muted-foreground mb-4">by {book.author}</p>
+                  <p className="eyebrow">{book.mode === 'rent' ? 'For Rent' : 'For Sale'}</p>
+                  <h2 className="font-display text-[26px] font-medium leading-tight tracking-tight text-foreground mt-1.5 mb-1">{book.title}</h2>
+                  <p className="font-display italic text-muted-foreground mb-5">by {book.author}</p>
                   
                   {/* Description - max 4 lines with truncation */}
                   {book.description && (
@@ -202,14 +244,26 @@ export const BookDetailWithActions = ({
                       </>
                     ) : (
                       <>
-                        {/* Non-owner: Request rent or purchase */}
-                        <button 
-                          className="btn-hip flex-1 flex items-center justify-center gap-2"
-                          onClick={() => onChat(book.owner_id, book.id, book.mode)}
-                        >
-                          <MessageCircle className="w-4 h-4" />
-                          {book.mode === 'rent' ? '대여 요청' : '구매 요청'}
-                        </button>
+                        {book.status === 'rented' ? (
+                          /* Book is rented → show waitlist button */
+                          <button
+                            className={`btn-hip flex-1 flex items-center justify-center gap-2 ${isInWaitlist ? 'opacity-70' : ''}`}
+                            onClick={handleWaitlist}
+                            disabled={waitlistLoading}
+                          >
+                            {waitlistLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
+                            {isInWaitlist ? '대기 취소' : `대기 신청${waitlistCount > 0 ? ` (${waitlistCount}명)` : ''}`}
+                          </button>
+                        ) : (
+                          /* Book is available → chat/request */
+                          <button
+                            className="btn-hip flex-1 flex items-center justify-center gap-2"
+                            onClick={() => onChat(book.owner_id, book.id, book.mode)}
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                            {book.mode === 'rent' ? '대여 요청' : '구매 요청'}
+                          </button>
+                        )}
                       </>
                     )}
                     {/* Heart button - adds to Interested Books */}

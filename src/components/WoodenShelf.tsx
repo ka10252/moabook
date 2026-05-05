@@ -19,13 +19,7 @@ export const WoodenShelf = ({ children, isEmpty = false }: WoodenShelfProps) => 
         
         {/* Books container */}
         <div className="relative z-10 h-[140px] flex items-end">
-          {isEmpty ? (
-            <div className="w-full flex items-center justify-center text-muted-foreground/40 text-sm italic">
-              Empty shelf
-            </div>
-          ) : (
-            children
-          )}
+          {!isEmpty && children}
         </div>
       </div>
       

@@ -162,6 +162,24 @@ export const useTransactions = () => {
     );
   }, [transactions]);
 
+  // Return dates for books I lent out (bookId → returnDate)
+  const getLentReturnDates = useCallback((): Map<string, string | null> => {
+    return new Map(
+      transactions
+        .filter(t => t.isMine && t.status === 'active' && t.type === 'rent')
+        .map(t => [t.book_id, t.return_date])
+    );
+  }, [transactions]);
+
+  // Return dates for books I borrowed (bookId → returnDate)
+  const getBorrowedReturnDates = useCallback((): Map<string, string | null> => {
+    return new Map(
+      transactions
+        .filter(t => !t.isMine && t.status === 'active' && t.type === 'rent')
+        .map(t => [t.book_id, t.return_date])
+    );
+  }, [transactions]);
+
   return {
     transactions,
     loading,
@@ -171,6 +189,8 @@ export const useTransactions = () => {
     getLentBookIds,
     getLentBooksInfo,
     getRentedBooksInfo,
+    getLentReturnDates,
+    getBorrowedReturnDates,
   };
 };
 

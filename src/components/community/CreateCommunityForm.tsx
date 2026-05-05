@@ -154,7 +154,8 @@ export const CreateCommunityForm = ({ onSuccess, onCancel }: CreateCommunityForm
         <div className="inline-flex items-center justify-center w-14 h-14 bg-primary/10 rounded-2xl mb-3">
           <Plus className="w-7 h-7 text-primary" />
         </div>
-        <h2 className="text-xl font-bold text-foreground">커뮤니티 만들기</h2>
+        <p className="eyebrow">New community</p>
+        <h2 className="font-display text-[24px] font-medium tracking-tight text-foreground mt-1.5">커뮤니티 만들기</h2>
         <p className="text-sm text-muted-foreground mt-1">
           그룹을 위한 비공개 공간을 만드세요
         </p>

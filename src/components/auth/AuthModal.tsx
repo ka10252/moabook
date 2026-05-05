@@ -114,6 +114,10 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               alt="Moa" 
               className="h-20 mx-auto mb-3"
             />
+            <p className="eyebrow">{mode === 'signin' ? 'Welcome back' : 'Get started'}</p>
+            <h2 className="font-display text-[24px] font-medium tracking-tight text-foreground mt-1.5 mb-1">
+              {mode === 'signin' ? '다시 만나서 반갑습니다' : '계정 만들기'}
+            </h2>
             <p className="text-muted-foreground text-sm">
               커뮤니티와 함께 독서하세요
             </p>

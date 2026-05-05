@@ -54,15 +54,15 @@ export const CommunityCard = ({
         {isJoined && (
           <div className="absolute top-2 right-2 flex items-center gap-1 text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full">
             <Check className="w-3 h-3" />
-            Joined
+            가입됨
           </div>
         )}
-        
+
         {/* Privacy indicator */}
         <div className="absolute top-2 left-2">
           <div className="flex items-center gap-1 text-xs bg-background/80 backdrop-blur-sm px-2 py-1 rounded-full text-muted-foreground">
             <Lock className="w-3 h-3" />
-            Private
+            비공개
           </div>
         </div>
       </div>
@@ -77,9 +77,9 @@ export const CommunityCard = ({
         )}
         <div className="flex items-center justify-between mt-3">
           <span className="text-xs text-muted-foreground">
-            {memberCount} member{memberCount !== 1 ? 's' : ''}
+            {memberCount}명
           </span>
-          
+
           {isJoined ? (
             <Button
               size="sm"
@@ -93,7 +93,7 @@ export const CommunityCard = ({
               ) : (
                 <>
                   <LogOut className="w-4 h-4 mr-1" />
-                  Leave
+                  나가기
                 </>
               )}
             </Button>
@@ -103,7 +103,7 @@ export const CommunityCard = ({
               onClick={onJoin}
               className="h-8"
             >
-              Join
+              가입
             </Button>
           )}
         </div>

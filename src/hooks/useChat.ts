@@ -296,7 +296,7 @@ export const useMessages = (conversationId: string | null) => {
       .then();
   }, [conversationId, user?.id, messages]);
 
-  // Real-time subscription
+  // Real-time subscription (INSERT + UPDATE for read receipts)
   useEffect(() => {
     if (!conversationId) return;
 
@@ -312,6 +312,21 @@ export const useMessages = (conversationId: string | null) => {
         },
         (payload) => {
           setMessages(prev => [...prev, payload.new as Message]);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          // Update is_read status in place (read receipt)
+          setMessages(prev =>
+            prev.map(m => m.id === payload.new.id ? { ...m, is_read: payload.new.is_read } : m)
+          );
         }
       )
       .subscribe();

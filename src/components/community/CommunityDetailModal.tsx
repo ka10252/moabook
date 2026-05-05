@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Users, Crown, Trash2, UserMinus, Loader2, Pencil, BookOpen, Lock } from 'lucide-react';
+import { X, Users, Crown, Trash2, UserMinus, Loader2, Pencil, BookOpen, Lock, LayoutList, Link2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -53,6 +53,7 @@ interface CommunityDetailModalProps {
   onCommunityDeleted?: () => void;
   onCommunityUpdated?: () => void;
   onNavigateToBookshelf?: (communityId: string) => void;
+  onOpenBoard?: (communityId: string, communityName: string) => void;
 }
 
 export const CommunityDetailModal = ({
@@ -62,6 +63,7 @@ export const CommunityDetailModal = ({
   onCommunityDeleted,
   onCommunityUpdated,
   onNavigateToBookshelf,
+  onOpenBoard,
 }: CommunityDetailModalProps) => {
   const { user } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
@@ -78,6 +80,9 @@ export const CommunityDetailModal = ({
   const [canViewMembers, setCanViewMembers] = useState(false);
   const [isMember, setIsMember] = useState(false);
   const [communityPinHash, setCommunityPinHash] = useState<string | null>(null);
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
+  const [inviteCopied, setInviteCopied] = useState(false);
+  const [inviteLoading, setInviteLoading] = useState(false);
 
   const isOwner = community?.created_by === user?.id;
   const requiresPin = communityPinHash && communityPinHash !== btoa('0000');
@@ -105,12 +110,13 @@ export const CommunityDetailModal = ({
     // Fetch community with pin_hash and member_visibility
     const { data: fullCommunity } = await supabase
       .from('communities')
-      .select('pin_hash, member_visibility')
+      .select('pin_hash, member_visibility, invite_token')
       .eq('id', community.id)
       .maybeSingle();
 
     if (fullCommunity) {
       setCommunityPinHash(fullCommunity.pin_hash);
+      setInviteToken((fullCommunity as any).invite_token ?? null);
       const visibility = fullCommunity.member_visibility as 'public' | 'members_only' | 'private';
       
       // Determine if user can view members
@@ -241,6 +247,32 @@ export const CommunityDetailModal = ({
     }
   };
 
+  const handleCopyInviteLink = async () => {
+    if (!community) return;
+    setInviteLoading(true);
+    let token = inviteToken;
+    if (!token) {
+      // Generate a new token and save it
+      token = Array.from(crypto.getRandomValues(new Uint8Array(6)))
+        .map(b => b.toString(36).padStart(2, '0'))
+        .join('')
+        .toUpperCase()
+        .slice(0, 8);
+      const { error } = await supabase
+        .from('communities')
+        .update({ invite_token: token } as any)
+        .eq('id', community.id);
+      if (error) { toast.error('초대 링크 생성에 실패했습니다'); setInviteLoading(false); return; }
+      setInviteToken(token);
+    }
+    const url = `${window.location.origin}/?invite=${token}`;
+    await navigator.clipboard.writeText(url);
+    setInviteCopied(true);
+    toast.success('초대 링크가 복사됐어요!');
+    setTimeout(() => setInviteCopied(false), 2500);
+    setInviteLoading(false);
+  };
+
   const handleNavigateToBookshelf = () => {
     if (!community) return;
 
@@ -307,8 +339,8 @@ export const CommunityDetailModal = ({
                 </button>
               </header>
 
-              {/* Navigate to Bookshelf Button */}
-              <div className="px-4 py-3 border-b border-border shrink-0">
+              {/* Navigation buttons */}
+              <div className="px-4 py-3 border-b border-border shrink-0 space-y-2">
                 <Button
                   onClick={handleNavigateToBookshelf}
                   className="w-full h-11 rounded-xl gap-2"
@@ -320,6 +352,19 @@ export const CommunityDetailModal = ({
                     <Lock className="w-3 h-3 ml-1" />
                   )}
                 </Button>
+                {(isMember || isOwner) && (
+                  <Button
+                    onClick={() => {
+                      onClose();
+                      onOpenBoard?.(community.id, community.name);
+                    }}
+                    className="w-full h-11 rounded-xl gap-2"
+                    variant="outline"
+                  >
+                    <LayoutList className="w-4 h-4" />
+                    커뮤니티 게시판
+                  </Button>
+                )}
               </div>
 
               {/* Community Info */}
@@ -336,6 +381,22 @@ export const CommunityDetailModal = ({
                 </span>
                 {isOwner && (
                   <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleCopyInviteLink}
+                      disabled={inviteLoading}
+                      className="text-primary hover:text-primary hover:bg-primary/10 gap-1 h-8 px-2"
+                    >
+                      {inviteLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : inviteCopied ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        <Link2 className="w-4 h-4" />
+                      )}
+                      <span className="hidden sm:inline">{inviteCopied ? '복사됨' : '초대'}</span>
+                    </Button>
                     <Button
                       size="sm"
                       variant="ghost"
@@ -545,6 +606,7 @@ export const CommunityDetailModal = ({
           />
         </motion.div>
       )}
+
     </AnimatePresence>
   );
 };

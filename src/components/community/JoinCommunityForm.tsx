@@ -116,7 +116,8 @@ export const JoinCommunityForm = ({ community, onSuccess, onBack }: JoinCommunit
         <div className="inline-flex items-center justify-center w-14 h-14 bg-primary/10 rounded-2xl mb-3">
           <Users className="w-7 h-7 text-primary" />
         </div>
-        <h2 className="text-xl font-bold text-foreground">커뮤니티 가입</h2>
+        <p className="eyebrow">Join community</p>
+        <h2 className="font-display text-[24px] font-medium tracking-tight text-foreground mt-1.5">커뮤니티 가입</h2>
         <p className="text-sm text-muted-foreground mt-1">
           {community.name}
         </p>

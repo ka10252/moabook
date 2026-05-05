@@ -136,7 +136,7 @@ export const CommunityList = ({ onSelectCommunity, onCreateNew }: CommunityListP
           placeholder="Search communities..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 h-12 bg-secondary border-border rounded-xl"
+          className="pl-10 input-search h-12"
         />
       </div>
 
@@ -144,7 +144,7 @@ export const CommunityList = ({ onSelectCommunity, onCreateNew }: CommunityListP
       <Button
         onClick={onCreateNew}
         variant="outline"
-        className="w-full h-12 rounded-xl border-dashed border-2 hover:border-primary hover:bg-primary/5"
+        className="w-full h-12 rounded-full border-dashed border-2 border-border hover:border-primary hover:bg-primary/5 font-display"
       >
         <Plus className="w-5 h-5 mr-2" />
         Create New Community
@@ -155,7 +155,7 @@ export const CommunityList = ({ onSelectCommunity, onCreateNew }: CommunityListP
           {/* My Communities */}
           {myCommunities.length > 0 && (
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              <h3 className="eyebrow">
                 My Communities
               </h3>
               <div className="space-y-2">
@@ -205,7 +205,7 @@ export const CommunityList = ({ onSelectCommunity, onCreateNew }: CommunityListP
           {/* Available Communities */}
           {otherCommunities.length > 0 && (
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              <h3 className="eyebrow">
                 Available Communities
               </h3>
               <div className="space-y-2">

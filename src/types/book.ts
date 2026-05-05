@@ -42,5 +42,5 @@ export const transformDbBook = (row: any): Book => ({
   updated_at: row.updated_at,
   owner: row.profile ? { nickname: row.profile.nickname, avatar_url: row.profile.avatar_url } : undefined,
   community: row.community ? { name: row.community.name } : null,
-  spineColor: Math.floor(Math.random() * 6) + 1, // Random spine color for now
+  spineColor: row.spine_color ?? (Math.floor(Math.random() * 6) + 1),
 });

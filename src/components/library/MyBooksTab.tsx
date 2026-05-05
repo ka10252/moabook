@@ -66,7 +66,7 @@ export const MyBooksTab = ({ books, loading, onDelete, onEdit }: MyBooksTabProps
     return (
       <div className="text-center py-12">
         <BookOpen className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-foreground mb-2">No books yet</h3>
+        <h3 className="font-display text-xl font-medium text-foreground mb-2">No books yet</h3>
         <p className="text-muted-foreground text-sm">
           Upload your first book to share with the community!
         </p>

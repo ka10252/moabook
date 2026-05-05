@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Heart, BookOpen, Loader2 } from 'lucide-react';
 import { useLikedBooks } from '@/hooks/useLikedBooks';
@@ -12,7 +13,12 @@ interface LikedBooksPopupProps {
 }
 
 export const LikedBooksPopup = ({ isOpen, onClose, onBookClick }: LikedBooksPopupProps) => {
-  const { likedBooks, loading, unlikeBook } = useLikedBooks();
+  const { likedBooks, loading, unlikeBook, refresh } = useLikedBooks();
+
+  // Re-fetch whenever popup opens so it stays in sync with heart button actions
+  useEffect(() => {
+    if (isOpen) refresh();
+  }, [isOpen]);
 
   const handleUnlike = async (e: React.MouseEvent, bookId: string) => {
     e.stopPropagation();

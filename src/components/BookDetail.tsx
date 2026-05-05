@@ -76,8 +76,9 @@ export const BookDetail = ({ book, onClose, onChat, currentUserId }: BookDetailP
               
               {/* Content */}
               <div className="flex-1 overflow-y-auto p-6">
-                <h2 className="text-2xl font-bold text-foreground mb-1">{book.title}</h2>
-                <p className="text-muted-foreground mb-4">by {book.author}</p>
+                <p className="eyebrow">{book.mode === 'rent' ? 'For Rent' : 'For Sale'}</p>
+                <h2 className="font-display text-[26px] font-medium leading-tight tracking-tight text-foreground mt-1.5 mb-1">{book.title}</h2>
+                <p className="font-display italic text-muted-foreground mb-5">by {book.author}</p>
                 
                 {book.description && (
                   <p className="text-foreground/80 leading-relaxed mb-6">

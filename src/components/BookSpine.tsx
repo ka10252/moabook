@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { differenceInCalendarDays } from 'date-fns';
 import { Book } from '@/types/book';
 
 interface BookSpineProps {
@@ -10,6 +11,7 @@ interface BookSpineProps {
   isBorrowed?: boolean;
   borrowerNickname?: string;
   lenderNickname?: string;
+  returnDate?: string | null;
 }
 
 const spineColors = [
@@ -21,10 +23,18 @@ const spineColors = [
   'bg-book-6',
 ];
 
-// Bookmark shape: classic V-notch, clean proportions
 const BOOKMARK_WIDTH = 26;
 const BOOKMARK_HEIGHT = 38;
 const BOOKMARK_CLIP = 'polygon(0 0, 100% 0, 100% 78%, 50% 100%, 0 78%)';
+
+function getDDayLabel(returnDate: string | null | undefined): { label: string; urgent: boolean } | null {
+  if (!returnDate) return null;
+  const diff = differenceInCalendarDays(new Date(returnDate), new Date());
+  if (diff > 7) return null; // only show badge when ≤7 days left or overdue
+  if (diff < 0) return { label: `D+${Math.abs(diff)}`, urgent: true };
+  if (diff === 0) return { label: 'D-day', urgent: true };
+  return { label: `D-${diff}`, urgent: diff <= 3 };
+}
 
 export const BookSpine = ({
   book,
@@ -34,6 +44,7 @@ export const BookSpine = ({
   isBorrowed = false,
   borrowerNickname,
   lenderNickname,
+  returnDate,
 }: BookSpineProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const colorClass = spineColors[(book.spineColor - 1) % spineColors.length];
@@ -41,9 +52,11 @@ export const BookSpine = ({
   const hasBookmark = (isLent && borrowerNickname) || (isBorrowed && lenderNickname);
   const chipName = isLent ? borrowerNickname : lenderNickname;
 
+  const dday = useMemo(() => getDDayLabel(returnDate), [returnDate]);
+
   return (
     <motion.div
-      className={`book-spine cursor-pointer h-full min-w-[40px] max-w-[50px] flex-shrink-0 ${colorClass} rounded-sm flex items-center justify-center px-2 relative overflow-visible`}
+      className={`book-spine cursor-pointer h-full min-w-[40px] max-w-[50px] flex-shrink-0 ${colorClass} rounded-sm flex items-center justify-center px-2 py-3 relative overflow-visible`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       whileHover={{
@@ -60,6 +73,19 @@ export const BookSpine = ({
       onClick={onClick}
       style={{ perspective: '1000px', transformOrigin: 'bottom center' }}
     >
+      {/* ── D-day badge ────────────────────────────────────────── */}
+      {dday && !isHovered && (
+        <div
+          className={`absolute top-1 left-1/2 -translate-x-1/2 z-30 px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none whitespace-nowrap pointer-events-none ${
+            dday.urgent
+              ? 'bg-red-500 text-white'
+              : 'bg-yellow-400 text-yellow-900'
+          }`}
+        >
+          {dday.label}
+        </div>
+      )}
+
       {/* ── Floating name chip (shown on hover) ───────────────── */}
       <AnimatePresence>
         {isHovered && hasBookmark && chipName && (
@@ -80,8 +106,12 @@ export const BookSpine = ({
             >
               <span className="opacity-80">{isLent ? '↑' : '↓'}</span>
               <span>{chipName}</span>
+              {dday && (
+                <span className={`ml-1 px-1 rounded text-[9px] ${dday.urgent ? 'bg-red-500/80' : 'bg-yellow-400/80 text-yellow-900'}`}>
+                  {dday.label}
+                </span>
+              )}
             </div>
-            {/* Arrow tip pointing down */}
             <div
               className="mx-auto mt-0.5"
               style={{
@@ -112,18 +142,10 @@ export const BookSpine = ({
               clipPath: BOOKMARK_CLIP,
             }}
           >
-            {/* Sheen */}
             <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-black/10" />
-            {/* Top edge highlight */}
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-white/40 rounded-t-sm" />
-            {/* Icon */}
             <div className="absolute inset-0 flex items-center justify-center" style={{ paddingBottom: BOOKMARK_HEIGHT * 0.22 }}>
-              <span
-                className="font-black text-amber-900/60 select-none"
-                style={{ fontSize: 11, lineHeight: 1 }}
-              >
-                ↑
-              </span>
+              <span className="font-black text-amber-900/60 select-none" style={{ fontSize: 11, lineHeight: 1 }}>↑</span>
             </div>
           </div>
         </motion.div>
@@ -146,18 +168,10 @@ export const BookSpine = ({
               clipPath: BOOKMARK_CLIP,
             }}
           >
-            {/* Sheen */}
             <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-transparent to-black/15" />
-            {/* Top edge highlight */}
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-white/35 rounded-t-sm" />
-            {/* Icon */}
             <div className="absolute inset-0 flex items-center justify-center" style={{ paddingBottom: BOOKMARK_HEIGHT * 0.22 }}>
-              <span
-                className="font-black text-indigo-900/50 select-none"
-                style={{ fontSize: 11, lineHeight: 1 }}
-              >
-                ↓
-              </span>
+              <span className="font-black text-indigo-900/50 select-none" style={{ fontSize: 11, lineHeight: 1 }}>↓</span>
             </div>
           </div>
         </motion.div>

@@ -1,137 +1,154 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 @import "@fontsource/plus-jakarta-sans/400.css";
 @import "@fontsource/plus-jakarta-sans/500.css";
 @import "@fontsource/plus-jakarta-sans/600.css";
 @import "@fontsource/plus-jakarta-sans/700.css";
 @import "@fontsource/plus-jakarta-sans/800.css";
 
-/* Ex-Lib Design System - Traditional Library meets Modern Minimalist */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* MOA BOOK Design System
+   Light → "Cozy Library"   : 따뜻한 크림 페이퍼 + 호두나무 책장
+   Dark  → "Reading Room"   : 늦은 밤 도서관 + 램프 글로우
+*/
 
 @layer base {
   :root {
-    /* Core backgrounds */
-    --background: 40 33% 96%;
-    --foreground: 25 10% 15%;
+    /* ── Cozy Library (Light) ─────────────────────────── */
+    /* Core surfaces */
+    --background: 39 47% 93%;        /* #F7F1E5 cream paper */
+    --foreground: 28 35% 12%;        /* #2A1F14 walnut ink */
 
-    /* Card surfaces */
-    --card: 0 0% 100%;
-    --card-foreground: 25 10% 15%;
+    --card: 40 50% 96%;              /* #FBF6EA soft cream */
+    --card-foreground: 28 35% 12%;
 
-    /* Popover/Modal surfaces */
-    --popover: 0 0% 100%;
-    --popover-foreground: 25 10% 15%;
+    --popover: 40 50% 96%;
+    --popover-foreground: 28 35% 12%;
 
-    /* Primary - Warm Wood Brown */
-    --primary: 25 65% 35%;
-    --primary-foreground: 40 33% 96%;
+    /* Primary — Walnut */
+    --primary: 24 53% 31%;           /* #7B4B26 */
+    --primary-foreground: 40 50% 96%;
 
-    /* Secondary - Cream */
-    --secondary: 40 40% 92%;
-    --secondary-foreground: 25 10% 20%;
+    /* Secondary — light cream */
+    --secondary: 40 45% 90%;
+    --secondary-foreground: 28 30% 18%;
 
-    /* Muted - Soft Beige */
-    --muted: 35 25% 88%;
-    --muted-foreground: 25 10% 45%;
+    /* Muted — taupe */
+    --muted: 38 32% 86%;
+    --muted-foreground: 30 18% 42%;  /* #6B5841 dimmed ink */
 
-    /* Accent - Warm Amber */
-    --accent: 35 80% 50%;
-    --accent-foreground: 25 10% 15%;
+    /* Accent — Antique gold (warm wood lamp) */
+    --accent: 36 60% 48%;            /* #C18432 */
+    --accent-foreground: 28 35% 12%;
 
     /* Destructive */
-    --destructive: 0 72% 51%;
+    --destructive: 0 65% 48%;
     --destructive-foreground: 0 0% 100%;
 
     /* Border & Input */
-    --border: 35 20% 82%;
-    --input: 35 20% 85%;
-    --ring: 25 65% 35%;
+    --border: 38 40% 82%;            /* #E5D8BE */
+    --input: 38 40% 86%;
+    --ring: 24 53% 31%;
 
-    --radius: 1rem;
+    --radius: 0.875rem;              /* slightly less aggressive */
 
-    /* Custom Wood Palette */
-    --wood-light: 33 45% 65%;
-    --wood-medium: 28 55% 45%;
-    --wood-dark: 25 60% 30%;
-    --wood-grain: 30 50% 40%;
-    --shelf-shadow: 25 40% 20%;
-    
-    /* Book Colors */
-    --book-spine-1: 0 65% 45%;
-    --book-spine-2: 210 55% 40%;
-    --book-spine-3: 150 45% 35%;
-    --book-spine-4: 35 70% 50%;
-    --book-spine-5: 280 40% 45%;
-    --book-spine-6: 195 60% 40%;
-    
-    /* Bookmark Colors */
-    --bookmark-lent: 45 93% 47%;
-    --bookmark-lent-foreground: 25 80% 20%;
-    --bookmark-borrowed: 25 60% 30%;
-    --bookmark-borrowed-foreground: 40 40% 95%;
+    /* Wood Palette — Cozy walnut */
+    --wood-light: 30 47% 60%;        /* #C99A6A */
+    --wood-medium: 26 47% 37%;       /* #8C5A33 */
+    --wood-dark: 24 57% 23%;         /* #5A3719 */
+    --wood-grain: 28 50% 30%;
+    --shelf-shadow: 24 40% 15%;
 
-    /* Sidebar defaults */
-    --sidebar-background: 40 33% 96%;
-    --sidebar-foreground: 25 10% 20%;
-    --sidebar-primary: 25 65% 35%;
-    --sidebar-primary-foreground: 40 33% 96%;
-    --sidebar-accent: 35 40% 90%;
-    --sidebar-accent-foreground: 25 10% 20%;
-    --sidebar-border: 35 20% 82%;
-    --sidebar-ring: 25 65% 35%;
+    /* Book spine palette — softer, more harmonious */
+    --book-spine-1: 7 50% 44%;       /* brick red */
+    --book-spine-2: 207 30% 33%;     /* deep navy */
+    --book-spine-3: 105 17% 39%;     /* moss green */
+    --book-spine-4: 36 60% 49%;      /* ochre */
+    --book-spine-5: 290 16% 41%;     /* plum */
+    --book-spine-6: 188 30% 35%;     /* teal */
+
+    /* Bookmark — gold (lent) / walnut (borrowed) */
+    --bookmark-lent: 36 65% 52%;
+    --bookmark-lent-foreground: 24 60% 18%;
+    --bookmark-borrowed: 24 53% 31%;
+    --bookmark-borrowed-foreground: 40 50% 96%;
+
+    /* Sidebar */
+    --sidebar-background: 40 50% 96%;
+    --sidebar-foreground: 28 30% 18%;
+    --sidebar-primary: 24 53% 31%;
+    --sidebar-primary-foreground: 40 50% 96%;
+    --sidebar-accent: 38 40% 90%;
+    --sidebar-accent-foreground: 28 30% 18%;
+    --sidebar-border: 38 40% 82%;
+    --sidebar-ring: 24 53% 31%;
   }
 
   .dark {
-    --background: 25 15% 10%;
-    --foreground: 40 20% 90%;
+    /* ── Reading Room (Dark) ──────────────────────────── */
+    /* Core surfaces — deep walnut night */
+    --background: 25 25% 10%;        /* #1F1813 */
+    --foreground: 38 50% 88%;        /* #EFE5D2 paper */
 
-    --card: 25 20% 14%;
-    --card-foreground: 40 20% 90%;
+    --card: 26 22% 14%;              /* #2A211A raised wood */
+    --card-foreground: 38 50% 88%;
 
-    --popover: 25 20% 14%;
-    --popover-foreground: 40 20% 90%;
+    --popover: 26 22% 14%;
+    --popover-foreground: 38 50% 88%;
 
-    --primary: 35 60% 55%;
-    --primary-foreground: 25 15% 10%;
+    /* Primary — Warm lamp glow */
+    --primary: 32 70% 61%;           /* #E0A656 amber lamp */
+    --primary-foreground: 25 25% 10%;
 
-    --secondary: 25 20% 20%;
-    --secondary-foreground: 40 20% 90%;
+    /* Secondary — raised wood */
+    --secondary: 26 20% 18%;
+    --secondary-foreground: 38 50% 88%;
 
-    --muted: 25 15% 22%;
-    --muted-foreground: 35 15% 60%;
+    /* Muted — dust */
+    --muted: 26 18% 22%;
+    --muted-foreground: 36 18% 60%;  /* #8A7B65 */
 
-    --accent: 35 70% 50%;
-    --accent-foreground: 25 15% 10%;
+    /* Accent — same lamp tone, used sparingly */
+    --accent: 32 70% 61%;
+    --accent-foreground: 25 25% 10%;
 
-    --destructive: 0 62% 45%;
+    --destructive: 0 60% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 25 15% 25%;
-    --input: 25 15% 25%;
-    --ring: 35 60% 55%;
+    /* Border & Input */
+    --border: 26 22% 22%;            /* #3D3024 */
+    --input: 26 22% 22%;
+    --ring: 32 70% 61%;
 
-    --wood-light: 30 35% 35%;
-    --wood-medium: 28 40% 25%;
-    --wood-dark: 25 45% 18%;
-    --wood-grain: 28 35% 22%;
-    --shelf-shadow: 25 30% 8%;
-    
-    /* Bookmark Colors - Dark Mode */
-    --bookmark-lent: 45 90% 55%;
-    --bookmark-lent-foreground: 25 70% 15%;
-    --bookmark-borrowed: 25 50% 35%;
-    --bookmark-borrowed-foreground: 40 40% 95%;
+    /* Wood — darker walnut */
+    --wood-light: 26 41% 32%;        /* #7A5232 */
+    --wood-medium: 25 49% 24%;       /* #5C3A20 */
+    --wood-dark: 25 56% 12%;         /* #2E1C0F */
+    --wood-grain: 26 45% 20%;
+    --shelf-shadow: 0 0% 0%;
 
-    --sidebar-background: 25 15% 12%;
-    --sidebar-foreground: 40 20% 90%;
-    --sidebar-primary: 35 60% 55%;
-    --sidebar-primary-foreground: 25 15% 10%;
-    --sidebar-accent: 25 20% 20%;
-    --sidebar-accent-foreground: 40 20% 90%;
-    --sidebar-border: 25 15% 25%;
-    --sidebar-ring: 35 60% 55%;
+    /* Book spines — slightly muted, warmly lit */
+    --book-spine-1: 7 50% 42%;
+    --book-spine-2: 207 30% 33%;
+    --book-spine-3: 105 17% 40%;
+    --book-spine-4: 36 60% 49%;
+    --book-spine-5: 290 16% 38%;
+    --book-spine-6: 188 30% 35%;
+
+    --bookmark-lent: 32 70% 61%;
+    --bookmark-lent-foreground: 25 25% 10%;
+    --bookmark-borrowed: 38 45% 80%;
+    --bookmark-borrowed-foreground: 25 25% 10%;
+
+    --sidebar-background: 26 22% 12%;
+    --sidebar-foreground: 38 50% 88%;
+    --sidebar-primary: 32 70% 61%;
+    --sidebar-primary-foreground: 25 25% 10%;
+    --sidebar-accent: 26 20% 18%;
+    --sidebar-accent-foreground: 38 50% 88%;
+    --sidebar-border: 26 22% 22%;
+    --sidebar-ring: 32 70% 61%;
   }
 }
 
@@ -143,53 +160,71 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-feature-settings: 'ss01', 'cv11';
+  }
+
+  /* Headlines / display = serif (Cormorant Garamond + Noto Serif KR) */
+  h1, h2, .font-display {
+    font-family: 'Cormorant Garamond', 'Noto Serif KR', Georgia, serif;
+    letter-spacing: -0.01em;
+  }
+  /* Section eyebrow / overline */
+  .eyebrow {
+    @apply text-[10px] font-bold uppercase text-muted-foreground;
+    letter-spacing: 0.25em;
+  }
+
+  /* Reading Room — soft warm lamp glow over the whole app in dark mode */
+  .dark body {
+    background-image:
+      radial-gradient(ellipse at 50% -10%, hsl(var(--primary) / 0.10) 0%, transparent 55%),
+      radial-gradient(ellipse at 100% 100%, hsl(var(--primary) / 0.05) 0%, transparent 50%);
+    background-attachment: fixed;
   }
 }
 
 @layer components {
-  /* Wooden Shelf Texture */
+  /* ── Wooden shelf textures ─────────────────────────── */
   .wood-texture {
-    background: 
+    background:
       repeating-linear-gradient(
         90deg,
         transparent,
         transparent 2px,
-        hsl(var(--wood-grain) / 0.1) 2px,
-        hsl(var(--wood-grain) / 0.1) 4px
+        hsl(var(--wood-grain) / 0.08) 2px,
+        hsl(var(--wood-grain) / 0.08) 4px
       ),
       linear-gradient(
         180deg,
         hsl(var(--wood-light)) 0%,
-        hsl(var(--wood-medium)) 50%,
+        hsl(var(--wood-medium)) 55%,
         hsl(var(--wood-dark)) 100%
       );
   }
 
   .shelf-plank {
-    background: 
+    background:
       repeating-linear-gradient(
-        85deg,
+        88deg,
         transparent,
         transparent 3px,
-        hsl(var(--wood-grain) / 0.15) 3px,
-        hsl(var(--wood-grain) / 0.15) 6px
+        hsl(var(--wood-grain) / 0.18) 3px,
+        hsl(var(--wood-grain) / 0.18) 6px
       ),
       linear-gradient(
-        90deg,
-        hsl(var(--wood-dark)) 0%,
-        hsl(var(--wood-medium)) 5%,
-        hsl(var(--wood-light)) 50%,
-        hsl(var(--wood-medium)) 95%,
+        180deg,
+        hsl(var(--wood-light)) 0%,
+        hsl(var(--wood-medium)) 55%,
         hsl(var(--wood-dark)) 100%
       );
-    box-shadow: 
-      inset 0 2px 4px hsl(var(--wood-light) / 0.5),
-      inset 0 -3px 6px hsl(var(--shelf-shadow) / 0.4),
-      0 8px 16px -4px hsl(var(--shelf-shadow) / 0.5);
+    box-shadow:
+      inset 0 1px 0 hsl(var(--wood-light) / 0.55),
+      inset 0 -2px 4px hsl(var(--shelf-shadow) / 0.45),
+      0 6px 14px -4px hsl(var(--shelf-shadow) / 0.55);
   }
 
   .shelf-side {
-    background: 
+    background:
       repeating-linear-gradient(
         180deg,
         transparent,
@@ -205,70 +240,121 @@
       );
   }
 
-  /* Book Spine Styles */
+  /* ── Book spine ────────────────────────────────────── */
   .book-spine {
     writing-mode: vertical-rl;
     text-orientation: mixed;
     transform: rotate(180deg);
-    box-shadow: 
-      inset -2px 0 4px rgba(0,0,0,0.2),
-      inset 2px 0 4px rgba(255,255,255,0.1),
-      2px 0 8px rgba(0,0,0,0.15);
+    box-shadow:
+      inset -2px 0 4px rgba(0,0,0,0.22),
+      inset 2px 0 4px rgba(255,255,255,0.10),
+      1px 0 6px rgba(0,0,0,0.18);
+  }
+  .dark .book-spine {
+    box-shadow:
+      inset -2px 0 4px rgba(0,0,0,0.45),
+      inset 2px 0 4px rgba(255,255,255,0.06),
+      1px 0 8px rgba(0,0,0,0.5);
   }
 
-  /* Modern Hip Button */
+  /* ── Buttons ───────────────────────────────────────── */
   .btn-hip {
-    @apply px-6 py-3 rounded-2xl font-semibold text-sm tracking-wide;
+    @apply px-6 py-3 rounded-full font-semibold text-sm tracking-wide;
     @apply bg-primary text-primary-foreground;
     @apply shadow-lg shadow-primary/20;
     @apply transition-all duration-300 ease-out;
-    @apply hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/30;
-    @apply active:scale-[0.98];
+    @apply hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5;
+    @apply active:translate-y-0 active:shadow-md;
   }
 
   .btn-hip-outline {
-    @apply px-6 py-3 rounded-2xl font-semibold text-sm tracking-wide;
-    @apply bg-transparent border-2 border-primary text-primary;
+    @apply px-6 py-3 rounded-full font-semibold text-sm tracking-wide;
+    @apply bg-transparent border border-border text-foreground;
     @apply transition-all duration-300 ease-out;
-    @apply hover:bg-primary hover:text-primary-foreground;
+    @apply hover:bg-secondary hover:border-foreground/20;
     @apply active:scale-[0.98];
   }
 
-  /* Glass Card */
+  /* ── Glass card ────────────────────────────────────── */
   .glass-card {
-    @apply bg-card/80 backdrop-blur-xl rounded-3xl;
-    @apply border border-border/50;
-    @apply shadow-xl shadow-black/5;
+    @apply bg-card/85 backdrop-blur-xl rounded-2xl;
+    @apply border border-border/60;
+    @apply shadow-[0_4px_24px_-8px_hsl(var(--shelf-shadow)/0.25)];
   }
 
-  /* Navigation Bar */
+  /* ── Bottom nav ────────────────────────────────────── */
   .nav-bar {
-    @apply bg-card/95 backdrop-blur-xl;
-    @apply border-t border-border/50;
-    @apply shadow-[0_-4px_24px_-4px] shadow-black/10;
+    @apply bg-card/90 backdrop-blur-xl;
+    @apply border-t border-border/70;
+    box-shadow: 0 -4px 24px -4px hsl(var(--shelf-shadow) / 0.18);
   }
 
   .nav-item {
-    @apply flex flex-col items-center gap-1 px-4 py-2;
+    @apply flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl;
     @apply text-muted-foreground transition-all duration-200;
-    @apply hover:text-primary;
+    @apply hover:text-foreground;
   }
-
   .nav-item.active {
     @apply text-primary;
   }
 
-  /* View Toggle */
+  /* ── View toggle ───────────────────────────────────── */
   .view-toggle {
-    @apply inline-flex p-1 rounded-full bg-muted;
+    @apply inline-flex p-0.5 rounded-full bg-secondary border border-border;
   }
 
   .view-toggle-btn {
-    @apply px-4 py-2 rounded-full text-sm font-medium;
+    @apply px-3.5 py-1.5 rounded-full text-xs font-semibold;
     @apply text-muted-foreground transition-all duration-200;
   }
 
   .view-toggle-btn.active {
-    @apply bg-card text-foreground shadow-md;
+    @apply bg-foreground text-background shadow-sm;
+  }
+  .dark .view-toggle-btn.active {
+    @apply bg-primary text-primary-foreground;
+  }
+
+  /* ── Section eyebrow / quiet heading ───────────────── */
+  .section-divider {
+    @apply flex items-center gap-3 px-1 pb-2 pt-1;
+  }
+  .section-divider-label {
+    font-family: 'Cormorant Garamond', 'Noto Serif KR', serif;
+    font-style: italic;
+    font-size: 14px;
+    font-weight: 600;
+    color: hsl(36 70% 88%);
+    text-shadow: 0 1px 2px hsl(24 57% 15% / 0.6);
+    letter-spacing: 0.01em;
+  }
+  .dark .section-divider-label {
+    color: hsl(36 70% 80%);
+    text-shadow: 0 1px 2px hsl(24 57% 10% / 0.8);
+  }
+  .section-divider-rule {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, hsl(36 60% 70% / 0.4), transparent);
+  }
+
+  /* ── Pill (filter chip / sort chip) ────────────────── */
+  .pill {
+    @apply inline-flex items-center gap-1 px-3.5 py-2 rounded-full text-xs font-semibold;
+    @apply bg-secondary text-foreground border border-border;
+    @apply transition-colors hover:bg-muted;
+  }
+  .pill-active {
+    @apply bg-foreground text-background border-transparent;
+  }
+  .dark .pill-active {
+    @apply bg-primary text-primary-foreground;
+  }
+
+  /* ── Search input ──────────────────────────────────── */
+  .input-search {
+    @apply w-full pl-9 pr-8 py-2.5 text-sm rounded-full outline-none;
+    @apply bg-card border border-border text-foreground placeholder:text-muted-foreground;
+    @apply focus-visible:border-foreground/30 focus-visible:ring-2 focus-visible:ring-primary/30 transition-colors;
   }
 }

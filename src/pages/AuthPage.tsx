@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { Separator } from '@/components/ui/separator';
 import { CountrySelector } from '@/components/auth/CountrySelector';
 import { ALLOWED_COUNTRY } from '@/data/countries';
+import { Link } from 'react-router-dom';
 
 const signUpSchema = z.object({
   email: z.string().trim().email({ message: "올바른 이메일 주소를 입력해주세요" }).max(255),
@@ -84,29 +85,12 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
     }
   };
 
-  // Demo login - uses a single fixed demo account
-  const DEMO_EMAIL = 'demo@moa-demo.com';
-  const DEMO_PASSWORD = 'demo_password_123';
-  const DEMO_NICKNAME = '체험용계정';
-
   const handleDemoLogin = async () => {
     setIsDemoLoading(true);
     try {
-      // Try signing in with the fixed demo account first
-      const { error: signInError } = await signIn(DEMO_EMAIL, DEMO_PASSWORD);
-      
-      if (signInError) {
-        // If sign in fails, create the demo account once
-        const { error: signUpError } = await signUp(DEMO_EMAIL, DEMO_PASSWORD, DEMO_NICKNAME);
-        if (signUpError && !signUpError.message.includes('already registered')) {
-          throw signUpError;
-        }
-        // Try signing in again after signup
-        const { error } = await signIn(DEMO_EMAIL, DEMO_PASSWORD);
-        if (error) throw error;
-      }
-      
-      toast.success(`환영합니다, ${DEMO_NICKNAME}님! 📚`);
+      const { error } = await signIn('demo@moabook.app', 'demo1234!');
+      if (error) throw error;
+      toast.success('체험 계정으로 로그인했습니다 📚');
     } catch (err) {
       console.error('Demo login error:', err);
       toast.error('체험 로그인에 실패했습니다');
@@ -139,7 +123,7 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
             transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
             className="h-24 mx-auto mb-2"
           />
-          <p className="text-muted-foreground">
+          <p className="font-display italic text-muted-foreground text-lg">
             커뮤니티와 함께 독서하세요
           </p>
         </div>
@@ -148,7 +132,8 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
         <div className="bg-card rounded-3xl p-8 shadow-xl border border-border">
           {/* Header */}
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-foreground mb-1">
+            <p className="eyebrow">{mode === 'signin' ? 'Welcome back' : 'Get started'}</p>
+            <h2 className="font-display text-[28px] font-medium tracking-tight text-foreground mt-1.5 mb-2">
               {mode === 'signin' ? '다시 오신 것을 환영합니다' : '계정 만들기'}
             </h2>
             <p className="text-sm text-muted-foreground">
@@ -259,6 +244,21 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
               </button>
             </p>
           </div>
+
+          {/* Legal links */}
+          <div className="mt-4 text-center">
+            <p className="text-xs text-muted-foreground">
+              서비스 이용 시{' '}
+              <Link to="/terms" className="underline hover:text-foreground transition-colors">
+                이용약관
+              </Link>
+              {' '}및{' '}
+              <Link to="/privacy" className="underline hover:text-foreground transition-colors">
+                개인정보 처리방침
+              </Link>
+              에 동의하게 됩니다.
+            </p>
+          </div>
         </div>
 
         {/* Region Block Popup */}
@@ -281,7 +281,7 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
                 <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
                   <AlertTriangle className="w-6 h-6 text-destructive" />
                 </div>
-                <h3 className="text-lg font-bold text-foreground mb-2">서비스 이용 불가</h3>
+                <h3 className="font-display text-xl font-medium text-foreground mb-2">서비스 이용 불가</h3>
                 <p className="text-sm text-muted-foreground mb-6">
                   죄송합니다. 아직 해당 지역에서는 서비스 이용이 준비되지 않았습니다.
                 </p>

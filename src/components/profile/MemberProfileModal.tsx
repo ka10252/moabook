@@ -132,7 +132,7 @@ export const MemberProfileModal = ({
                         {profile.nickname?.charAt(0) || <User className="w-10 h-10" />}
                       </AvatarFallback>
                     </Avatar>
-                    <h2 className="text-xl font-bold text-foreground mt-4">
+                    <h2 className="font-display text-[24px] font-medium tracking-tight text-foreground mt-4">
                       {profile.nickname}
                     </h2>
                     {profile.bio && (

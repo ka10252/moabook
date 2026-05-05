@@ -45,10 +45,10 @@ export const NotificationPopup = ({ isOpen, onClose }: NotificationPopupProps) =
           >
             <div className="bg-card rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[80vh]">
               {/* Header */}
-              <header className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-                <div className="flex items-center gap-2">
-                  <Bell className="w-5 h-5 text-primary" />
-                  <h3 className="font-bold text-foreground">알림</h3>
+              <header className="flex items-end justify-between px-5 pt-4 pb-3 border-b border-border shrink-0">
+                <div>
+                  <p className="eyebrow flex items-center gap-1.5"><Bell className="w-3 h-3" /> Updates</p>
+                  <h3 className="font-display text-[20px] font-medium tracking-tight text-foreground mt-0.5">알림</h3>
                 </div>
                 <div className="flex items-center gap-1">
                   {notifications.some(n => !n.is_read) && (
@@ -63,7 +63,7 @@ export const NotificationPopup = ({ isOpen, onClose }: NotificationPopupProps) =
                   )}
                   <button
                     onClick={onClose}
-                    className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                    className="p-1.5 rounded-full hover:bg-muted transition-colors"
                   >
                     <X className="w-5 h-5 text-muted-foreground" />
                   </button>

@@ -1,10 +1,8 @@
 import { useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Loader2, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { motion } from 'framer-motion';
+import { Camera, ImagePlus, Loader2, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { DefaultBookCover } from '@/components/DefaultBookCover';
 
 interface CoverUploaderProps {
   coverUrl: string;
@@ -30,20 +28,17 @@ export const CoverUploader = ({
     const file = e.target.files?.[0];
     if (!file || !userId) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('이미지 파일만 업로드 가능합니다');
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('이미지 크기는 5MB 이하여야 합니다');
       return;
     }
 
     setIsUploading(true);
-
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${userId}/${Date.now()}.${fileExt}`;
@@ -59,10 +54,10 @@ export const CoverUploader = ({
         .getPublicUrl(fileName);
 
       onCoverChange(publicUrl);
-      toast.success('표지가 업로드되었습니다');
+      toast.success('사진이 업로드되었습니다');
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('표지 업로드에 실패했습니다');
+      toast.error('사진 업로드에 실패했습니다');
     } finally {
       setIsUploading(false);
     }
@@ -70,80 +65,92 @@ export const CoverUploader = ({
 
   const handleRemove = () => {
     onCoverChange('');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleClick = () => {
+    if (!disabled && !isUploading) fileInputRef.current?.click();
   };
 
   return (
-    <div className="space-y-3">
-      {/* Cover Preview */}
-      <div className="flex justify-center">
-        <div className="relative">
-          {coverUrl ? (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="relative"
-            >
-              <img
-                src={coverUrl}
-                alt={title || '책 표지'}
-                className="w-32 h-44 object-cover rounded-lg shadow-lg"
-              />
-              <button
-                type="button"
-                onClick={handleRemove}
-                disabled={disabled}
-                className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground p-1.5 rounded-full shadow-md hover:bg-destructive/90 transition-colors disabled:opacity-50"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </motion.div>
-          ) : title ? (
-            <DefaultBookCover
-              title={title}
-              author={author}
-              className="w-32 h-44"
-            />
-          ) : null}
-        </div>
+    <div className="space-y-2">
+      {/* Label */}
+      <div className="flex items-center gap-2">
+        <Camera className="w-4 h-4 text-primary" />
+        <span className="text-sm font-semibold text-foreground">내 책 사진</span>
+        <span className="text-xs text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">권장</span>
       </div>
+      <p className="text-xs text-muted-foreground">
+        실제 책 상태가 보이는 사진을 올리면 대여·거래 신뢰도가 올라갑니다
+      </p>
 
-      {/* Upload Button */}
-      {title && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-center gap-2"
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleUpload}
-            className="hidden"
-            disabled={disabled}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading || disabled}
-            className="gap-2"
-          >
+      {/* Upload Zone — always visible */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleUpload}
+        className="hidden"
+        disabled={disabled}
+      />
+
+      <motion.button
+        type="button"
+        onClick={handleClick}
+        disabled={disabled || isUploading}
+        whileTap={{ scale: 0.98 }}
+        className={`
+          w-full relative overflow-hidden rounded-2xl border-2 transition-colors
+          ${coverUrl
+            ? 'border-primary/40 bg-primary/5'
+            : 'border-dashed border-border hover:border-primary/50 hover:bg-primary/5 bg-secondary/50'}
+          ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+        `}
+      >
+        {coverUrl ? (
+          /* Uploaded photo preview */
+          <div className="flex items-center gap-4 px-4 py-3">
+            <img
+              src={coverUrl}
+              alt="내 책 사진"
+              className="w-16 h-22 object-cover rounded-xl shadow-md flex-shrink-0"
+              style={{ height: '88px' }}
+            />
+            <div className="flex-1 text-left">
+              <p className="text-sm font-semibold text-foreground">사진 등록 완료</p>
+              <p className="text-xs text-muted-foreground mt-0.5">탭하면 다른 사진으로 변경</p>
+            </div>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); handleRemove(); }}
+              className="p-1.5 rounded-full bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          /* Empty state — prominent upload CTA */
+          <div className="flex flex-col items-center justify-center py-8 gap-3">
             {isUploading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
             ) : (
-              <Camera className="w-4 h-4" />
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <ImagePlus className="w-7 h-7 text-primary" />
+              </div>
             )}
-            {coverUrl ? '다른 사진으로 변경' : '표지 사진 업로드'}
-          </Button>
-          <p className="text-xs text-muted-foreground text-center max-w-[250px]">
-            책 상태 확인이 가능한 이미지를 업로드해주세요
-          </p>
-        </motion.div>
-      )}
+            <div className="text-center">
+              <p className="text-sm font-semibold text-foreground">
+                {isUploading ? '업로드 중...' : '내 책 상태 사진 추가'}
+              </p>
+              {!isUploading && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  앞면·뒷면·손상 부위 등 실제 상태를 찍어주세요
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+      </motion.button>
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bookshelf } from '@/components/Bookshelf';
 import { BottomNav } from '@/components/BottomNav';
@@ -7,6 +7,8 @@ import { CommunityPage } from '@/components/community/CommunityPage';
 import { ProfilePage } from '@/components/profile/ProfilePage';
 import { WishlistPage } from '@/components/wishlist/WishlistPage';
 import { ChatModal } from '@/components/chat/ChatModal';
+import { CommunityBoard } from '@/components/community/CommunityBoard';
+import { OnboardingModal } from '@/components/OnboardingModal';
 import { NotificationPopup } from '@/components/notifications/NotificationPopup';
 import { AnnouncementPopup } from '@/components/notifications/AnnouncementPopup';
 import { AuthPage } from '@/pages/AuthPage';
@@ -14,6 +16,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useChat } from '@/hooks/useChat';
 import { useAnnouncement } from '@/hooks/useAnnouncement';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { Loader2, MessageCircle, Bell, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -37,12 +41,9 @@ const Header = ({
   markAnnouncementAsSeen: () => void;
 }) => (
   <header className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
-    <div className="flex items-center justify-between px-4 h-14">
-      <img 
-        src="/moa-logo.png" 
-        alt="Moa" 
-        className="h-8"
-      />
+    <div className="flex items-center justify-between px-4 h-14 max-w-[520px] mx-auto w-full">
+      <img src="/moa-logo.png"      alt="Moa" className="h-8 block dark:hidden" />
+      <img src="/moa-logo-dark.png" alt="Moa" className="h-8 hidden dark:block" />
       
       <div className="flex items-center gap-1">
         <Button
@@ -102,8 +103,59 @@ const Index = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showAnnouncement, setShowAnnouncement] = useState(false);
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
+  const [boardPage, setBoardPage] = useState<{ communityId: string; communityName: string } | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   
   const { user, loading, signOut } = useAuth();
+
+  // Show onboarding only for accounts created within the last 24 hours (new signups).
+  // Existing users get their localStorage key set automatically so it never shows.
+  const handleOnboardingComplete = () => {
+    if (user) localStorage.setItem(`moa_onboarded_${user.id}`, '1');
+    setShowOnboarding(false);
+  };
+  useEffect(() => {
+    if (!user) return;
+    const key = `moa_onboarded_${user.id}`;
+    if (localStorage.getItem(key)) return;
+
+    const accountAgeMs = Date.now() - new Date(user.created_at).getTime();
+    const isNewUser = accountAgeMs < 24 * 60 * 60 * 1000; // 24시간 이내 가입
+
+    if (isNewUser) {
+      setShowOnboarding(true);
+    } else {
+      // 기존 유저 — 온보딩 본 것으로 처리해 다시 표시 안 함
+      localStorage.setItem(key, '1');
+    }
+  }, [user?.id]);
+
+  // Handle community invite link: ?invite=TOKEN
+  useEffect(() => {
+    if (!user) return;
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('invite');
+    if (!token) return;
+    // Remove the query param immediately so reload won't re-trigger
+    window.history.replaceState({}, '', window.location.pathname);
+    (async () => {
+      const { data, error } = await supabase.rpc('join_via_invite' as any, { p_token: token });
+      if (error || !data) { toast.error('초대 링크가 유효하지 않습니다'); return; }
+      const result = data as any;
+      if (!result.success) {
+        if (result.error === 'banned') toast.error('해당 커뮤니티에서 차단된 상태입니다');
+        else toast.error('초대 링크가 만료되었거나 유효하지 않습니다');
+        return;
+      }
+      if (result.already_member) {
+        toast.info(`이미 "${result.community_name}" 멤버입니다`);
+      } else {
+        toast.success(`"${result.community_name}"에 가입했습니다!`);
+      }
+      setActiveTab('community');
+    })();
+  }, [user?.id]);
+
   const { unreadCount } = useNotifications();
   const { totalUnreadCount: unreadMessageCount } = useChat();
   const { hasNewAnnouncement, markAsSeen } = useAnnouncement();
@@ -133,12 +185,40 @@ const Index = () => {
     setActiveTab('shelf');
   };
 
+  const contentKey = boardPage
+    ? `board-${boardPage.communityId}`
+    : showChatModal
+    ? 'chat'
+    : activeTab;
+
   const renderContent = () => {
+    if (boardPage) {
+      return (
+        <CommunityBoard
+          isOpen={true}
+          onClose={() => setBoardPage(null)}
+          communityId={boardPage.communityId}
+          communityName={boardPage.communityName}
+        />
+      );
+    }
+    if (showChatModal) {
+      return (
+        <ChatModal
+          isOpen={true}
+          onClose={handleCloseChat}
+          initialUserId={chatInitialUserId}
+          initialBookId={chatInitialBookId}
+          initialBookMode={chatBookMode}
+          onResetInitialValues={handleResetChatInitialValues}
+        />
+      );
+    }
     switch (activeTab) {
       case 'shelf':
         return (
-          <Bookshelf 
-            onOpenChat={handleOpenChat} 
+          <Bookshelf
+            onOpenChat={handleOpenChat}
             initialCommunityId={selectedCommunityId}
             onCommunityFilterClear={() => setSelectedCommunityId(null)}
           />
@@ -148,13 +228,18 @@ const Index = () => {
       case 'upload':
         return <UploadPage />;
       case 'community':
-        return <CommunityPage onNavigateToBookshelf={handleNavigateToBookshelf} />;
+        return (
+          <CommunityPage
+            onNavigateToBookshelf={handleNavigateToBookshelf}
+            onOpenBoard={(id, name) => setBoardPage({ communityId: id, communityName: name })}
+          />
+        );
       case 'profile':
         return <ProfilePage onSignOut={signOut} />;
       default:
         return (
-          <Bookshelf 
-            onOpenChat={handleOpenChat} 
+          <Bookshelf
+            onOpenChat={handleOpenChat}
             initialCommunityId={selectedCommunityId}
             onCommunityFilterClear={() => setSelectedCommunityId(null)}
           />
@@ -189,12 +274,12 @@ const Index = () => {
       <main className="flex-1 pt-14 pb-20 overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div
-            key={activeTab}
+            key={contentKey}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="h-full"
+            className="h-full max-w-[520px] mx-auto w-full"
           >
             {renderContent()}
           </motion.div>
@@ -202,15 +287,6 @@ const Index = () => {
       </main>
 
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
-
-      <ChatModal 
-        isOpen={showChatModal} 
-        onClose={handleCloseChat}
-        initialUserId={chatInitialUserId}
-        initialBookId={chatInitialBookId}
-        initialBookMode={chatBookMode}
-        onResetInitialValues={handleResetChatInitialValues}
-      />
 
       <NotificationPopup
         isOpen={showNotifications}
@@ -221,6 +297,8 @@ const Index = () => {
         isOpen={showAnnouncement}
         onClose={() => setShowAnnouncement(false)}
       />
+
+      {showOnboarding && <OnboardingModal onComplete={handleOnboardingComplete} />}
     </div>
   );
 };

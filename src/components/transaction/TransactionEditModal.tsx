@@ -142,7 +142,7 @@ export const TransactionEditModal = ({
           <div className="bg-card rounded-2xl overflow-hidden shadow-xl max-h-[85vh] flex flex-col">
           {/* Header */}
           <header className="flex items-center justify-between px-4 py-3 border-b border-border">
-            <h2 className="text-lg font-bold text-foreground">거래 수정</h2>
+            <h2 className="font-display text-[20px] font-medium tracking-tight text-foreground">거래 수정</h2>
             <button
               onClick={onClose}
               className="p-2 rounded-xl hover:bg-muted transition-colors"

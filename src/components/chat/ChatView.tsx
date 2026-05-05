@@ -269,7 +269,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
   };
 
   return (
-    <div className="flex flex-col h-full max-h-[85vh]">
+    <div className="flex flex-col h-full">
       {/* Header */}
       <header className="flex items-center gap-3 px-4 py-3 bg-card border-b border-border shrink-0">
         <Button 
@@ -282,7 +282,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
         </Button>
         
         <div className="flex-1 min-w-0">
-          <h2 className="font-semibold text-foreground truncate">
+          <h2 className="font-display text-[18px] font-medium tracking-tight text-foreground truncate">
             {conversation.other_user?.nickname}
           </h2>
         </div>
@@ -345,7 +345,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
             {conversationTransactions.length === 1 && (
               <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
                 conversationTransactions[0].isMine
-                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
+                  ? 'bg-bookmark-lent/20 text-bookmark-lent'
                   : 'bg-primary/10 text-primary'
               }`}>
                 {conversationTransactions[0].type === 'purchase' ? '판매완료'
@@ -490,19 +490,25 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
                     
                     {/* Regular Message Bubble */}
                     {!isSpecialMessage && (
-                      <div
-                        className={`px-4 py-2.5 rounded-2xl max-w-full ${
-                          isOwn
-                            ? 'bg-primary text-primary-foreground rounded-br-md'
-                            : 'bg-muted text-foreground rounded-bl-md'
-                        }`}
-                      >
-                        <p className="text-sm whitespace-pre-wrap break-words">
-                          {parsed.displayText}
-                        </p>
-                        <p className={`text-xs mt-1 ${isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                          {format(new Date(msg.created_at), 'a h:mm', { locale: ko })}
-                        </p>
+                      <div className={`flex items-end gap-1 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+                        {/* KakaoTalk-style unread "1" */}
+                        {isOwn && !msg.is_read && (
+                          <span className="text-[11px] font-bold text-primary leading-none mb-1 shrink-0">1</span>
+                        )}
+                        <div
+                          className={`px-4 py-2.5 rounded-2xl max-w-full ${
+                            isOwn
+                              ? 'bg-primary text-primary-foreground rounded-br-md'
+                              : 'bg-muted text-foreground rounded-bl-md'
+                          }`}
+                        >
+                          <p className="text-sm whitespace-pre-wrap break-words">
+                            {parsed.displayText}
+                          </p>
+                          <p className={`text-xs mt-1 ${isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                            {format(new Date(msg.created_at), 'a h:mm', { locale: ko })}
+                          </p>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -573,7 +579,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-              <h3 className="font-semibold text-foreground">대여할 책 선택</h3>
+              <h3 className="font-display text-lg font-medium tracking-tight text-foreground">대여할 책 선택</h3>
               <button
                 type="button"
                 onClick={() => setShowBookPicker(false)}

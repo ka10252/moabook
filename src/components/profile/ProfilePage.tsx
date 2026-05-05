@@ -1,18 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  User, 
-  Camera, 
-  Save, 
-  LogOut, 
-  Loader2, 
-  Eye, 
+import {
+  User,
+  Camera,
+  Save,
+  LogOut,
+  Loader2,
+  Eye,
   EyeOff,
   Lock,
   Shield,
   Globe,
-  AlertTriangle
+  AlertTriangle,
+  Sun,
+  Moon,
+  MapPin,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,9 +42,11 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useTheme } from '@/hooks/useTheme';
 import { toast } from 'sonner';
 import { CountrySelector } from '@/components/auth/CountrySelector';
 import { ALLOWED_COUNTRY } from '@/data/countries';
+import { SINGAPORE_DISTRICTS } from '@/data/singaporeDistricts';
 
 interface ProfilePageProps {
   onSignOut: () => void;
@@ -51,6 +56,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   const navigate = useNavigate();
   const { user, deleteAccount } = useAuth();
   const { isAdmin } = useAdminAuth();
+  const { theme, setTheme } = useTheme();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showSignOutDialog, setShowSignOutDialog] = useState(false);
@@ -67,6 +73,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   const [agePublic, setAgePublic] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [country, setCountry] = useState('');
+  const [district, setDistrict] = useState('');
   const [showRegionBlock, setShowRegionBlock] = useState(false);
   
   // Password change
@@ -100,6 +107,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
           gender_public?: boolean | null;
           age_public?: boolean | null;
           country?: string | null;
+          district?: string | null;
         };
         setNickname(profileData.nickname || '');
         setBio(profileData.bio || '');
@@ -109,6 +117,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
         setAgePublic(profileData.age_public || false);
         setAvatarUrl(profileData.avatar_url);
         setCountry(profileData.country || '');
+        setDistrict(profileData.district || '');
       }
     } catch (error) {
       console.error('Fetch profile error:', error);
@@ -158,6 +167,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
           gender_public: genderPublic,
           age_public: agePublic,
           country: country || null,
+          district: country === 'SG' ? (district || null) : null,
         } as Record<string, unknown>)
         .eq('id', user.id);
 
@@ -423,10 +433,36 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
           </div>
           <CountrySelector
             value={country}
-            onChange={setCountry}
+            onChange={(val) => {
+              setCountry(val);
+              if (val !== 'SG') setDistrict('');
+            }}
             className="bg-secondary border-border"
           />
         </div>
+
+        {/* District — Singapore only */}
+        {country === 'SG' && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-muted-foreground" />
+              <Label>거주 지역</Label>
+            </div>
+            <Select value={district} onValueChange={setDistrict}>
+              <SelectTrigger className="h-12 bg-secondary border-border rounded-xl">
+                <SelectValue placeholder="지역을 선택하세요" />
+              </SelectTrigger>
+              <SelectContent className="max-h-64 overflow-y-auto">
+                {SINGAPORE_DISTRICTS.map(d => (
+                  <SelectItem key={d} value={d}>{d}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              지역을 설정하면 이웃 책장 필터를 사용할 수 있습니다
+            </p>
+          </div>
+        )}
 
         {/* Save Button */}
         <Button
@@ -454,6 +490,18 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
               계정 설정
             </span>
           </div>
+        </div>
+
+        {/* Theme toggle */}
+        <div className="flex items-center justify-between h-12 px-4 rounded-xl border border-border bg-secondary">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            {theme === 'dark' ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-primary" />}
+            {theme === 'dark' ? '다크 모드' : '라이트 모드'}
+          </div>
+          <Switch
+            checked={theme === 'dark'}
+            onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
+          />
         </div>
 
         {/* Change Password */}
@@ -607,7 +655,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
               <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
                 <AlertTriangle className="w-6 h-6 text-destructive" />
               </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">서비스 이용 불가</h3>
+              <h3 className="font-display text-xl font-medium text-foreground mb-2">서비스 이용 불가</h3>
               <p className="text-sm text-muted-foreground mb-6">
                 죄송합니다. 아직 해당 지역에서는 서비스 이용이 준비되지 않았습니다.
               </p>

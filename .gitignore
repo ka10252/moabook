@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Internal docs — do not commit
+ACCOUNTS.md
+LAUNCH_ISSUES.md
+
+# Environment variables — never commit
+.env
+.env.*
+!.env.example

@@ -14,11 +14,11 @@ export const PlaceholderTab = ({ icon: Icon, title, description }: PlaceholderTa
       animate={{ opacity: 1, y: 0 }}
       className="flex flex-col items-center justify-center h-full px-8 text-center"
     >
-      <div className="p-6 rounded-3xl bg-muted/50 mb-6">
+      <div className="p-6 rounded-full bg-muted/50 mb-6">
         <Icon className="w-12 h-12 text-primary" strokeWidth={1.5} />
       </div>
-      <h2 className="text-2xl font-bold text-foreground mb-2">{title}</h2>
-      <p className="text-muted-foreground max-w-xs">{description}</p>
+      <h2 className="font-display text-[28px] font-medium tracking-tight text-foreground mb-2">{title}</h2>
+      <p className="text-muted-foreground max-w-xs leading-relaxed">{description}</p>
     </motion.div>
   );
 };

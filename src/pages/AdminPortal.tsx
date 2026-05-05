@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, BookOpen, Building2, ArrowLeftRight, Shield, Loader2, Home, Mail } from 'lucide-react';
+import { Users, BookOpen, Building2, ArrowLeftRight, Shield, Loader2, Home, Mail, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { AdminUserManagement } from '@/components/admin/AdminUserManagement';
 import { AdminBookManagement } from '@/components/admin/AdminBookManagement';
 import { AdminCommunityManagement } from '@/components/admin/AdminCommunityManagement';
@@ -21,7 +22,6 @@ const AdminPortal = () => {
       navigate('/');
       return;
     }
-
     if (!adminLoading && !isAdmin) {
       navigate('/');
     }
@@ -35,18 +35,20 @@ const AdminPortal = () => {
     );
   }
 
-  if (!isAdmin) {
-    return null;
-  }
+  if (!isAdmin) return null;
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Shield className="w-6 h-6 text-primary" />
-            <h1 className="text-xl font-bold text-foreground">관리자 포털</h1>
+            <div>
+              <p className="eyebrow">Admin</p>
+              <h1 className="font-display text-[22px] font-medium leading-none tracking-tight text-foreground mt-0.5">
+                관리자 포털
+              </h1>
+            </div>
           </div>
           <Button
             variant="outline"
@@ -60,31 +62,38 @@ const AdminPortal = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6">
-        <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid grid-cols-5 w-full max-w-3xl">
-            <TabsTrigger value="users" className="flex items-center gap-2">
+        <Tabs defaultValue="dashboard" className="space-y-6">
+          <TabsList className="grid grid-cols-6 w-full max-w-3xl">
+            <TabsTrigger value="dashboard" className="flex items-center gap-1.5">
+              <LayoutDashboard className="w-4 h-4" />
+              <span className="hidden sm:inline">대시보드</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center gap-1.5">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">사용자</span>
             </TabsTrigger>
-            <TabsTrigger value="books" className="flex items-center gap-2">
+            <TabsTrigger value="books" className="flex items-center gap-1.5">
               <BookOpen className="w-4 h-4" />
               <span className="hidden sm:inline">도서</span>
             </TabsTrigger>
-            <TabsTrigger value="communities" className="flex items-center gap-2">
+            <TabsTrigger value="communities" className="flex items-center gap-1.5">
               <Building2 className="w-4 h-4" />
               <span className="hidden sm:inline">커뮤니티</span>
             </TabsTrigger>
-            <TabsTrigger value="transactions" className="flex items-center gap-2">
+            <TabsTrigger value="transactions" className="flex items-center gap-1.5">
               <ArrowLeftRight className="w-4 h-4" />
               <span className="hidden sm:inline">거래</span>
             </TabsTrigger>
-            <TabsTrigger value="announcements" className="flex items-center gap-2">
+            <TabsTrigger value="announcements" className="flex items-center gap-1.5">
               <Mail className="w-4 h-4" />
               <span className="hidden sm:inline">공지</span>
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="dashboard">
+            <AdminDashboard />
+          </TabsContent>
 
           <TabsContent value="users">
             <AdminUserManagement />

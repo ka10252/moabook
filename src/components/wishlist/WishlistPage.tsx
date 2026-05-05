@@ -70,14 +70,17 @@ export const WishlistPage = () => {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <header className="px-4 py-4 bg-card/80 backdrop-blur-sm sticky top-0 z-30 space-y-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-foreground">위시리스트</h1>
+      <header className="px-5 pt-5 pb-3 bg-background/85 backdrop-blur-md sticky top-0 z-30 border-b border-border/40 space-y-4">
+        <div className="flex items-end justify-between gap-2">
+          <div>
+            <p className="eyebrow">Wishlist</p>
+            <h1 className="font-display text-[26px] font-medium leading-none tracking-tight text-foreground mt-1">위시리스트</h1>
+          </div>
           {user && (
             <Button
               size="sm"
               onClick={() => setShowAddForm(!showAddForm)}
-              className="gap-2"
+              className="gap-2 rounded-full"
             >
               <Plus className="w-4 h-4" />
               책 추가
@@ -89,10 +92,10 @@ export const WishlistPage = () => {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="위시리스트 검색..."
+            placeholder="위시리스트 검색…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-muted border-0"
+            className="input-search pl-9"
           />
         </div>
       </header>
@@ -205,7 +208,7 @@ const EmptyState = () => (
     className="text-center py-12"
   >
     <Heart className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
-    <h3 className="text-lg font-semibold text-foreground mb-2">아직 위시리스트가 없습니다</h3>
+    <h3 className="font-display text-xl font-medium text-foreground mb-2">아직 위시리스트가 없습니다</h3>
     <p className="text-muted-foreground text-sm max-w-xs mx-auto">
       찾고 있는 책을 추가해보세요! 커뮤니티에서 찾을 수 있을지도 몰라요.
     </p>

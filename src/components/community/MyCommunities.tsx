@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, ChevronRight, Loader2, LogOut } from 'lucide-react';
+import { Users, ChevronRight, Loader2, LogOut, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
@@ -113,16 +113,23 @@ export const MyCommunities = ({
                   {/* Background Image or Default */}
                   <div className="absolute inset-0">
                     {community.cover_url ? (
-                      <img
-                        src={community.cover_url}
-                        alt={community.name}
-                        className="w-full h-full object-cover"
-                      />
+                      <>
+                        <img
+                          src={community.cover_url}
+                          alt={community.name}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors" />
+                      </>
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-wood-medium to-wood-dark" />
+                      <>
+                        <div className="w-full h-full bg-gradient-to-br from-primary/80 via-primary/60 to-accent/70" />
+                        <div className="absolute inset-0 flex items-center justify-center opacity-10">
+                          <BookOpen className="w-14 h-14 text-white" />
+                        </div>
+                        <div className="absolute inset-0 bg-black/15 group-hover:bg-black/25 transition-colors" />
+                      </>
                     )}
-                    {/* Dark Overlay for Readability */}
-                    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors" />
                   </div>
                   
                   {/* Content */}

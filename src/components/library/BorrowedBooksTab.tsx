@@ -22,7 +22,7 @@ export const BorrowedBooksTab = ({ borrowedBooks, loading, onChat }: BorrowedBoo
     return (
       <div className="text-center py-12">
         <Clock className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-foreground mb-2">No borrowed books</h3>
+        <h3 className="font-display text-xl font-medium text-foreground mb-2">아직 빌린 책이 없어요</h3>
         <p className="text-muted-foreground text-sm">
           Browse the shelf and find books to rent or buy!
         </p>

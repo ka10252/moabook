@@ -42,14 +42,14 @@ export const AnnouncementPopup = ({ isOpen, onClose }: AnnouncementPopupProps) =
           >
             <div className="bg-card rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[80vh]">
               {/* Header */}
-              <header className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-                <div className="flex items-center gap-2">
-                  <Mail className="w-5 h-5 text-primary" />
-                  <h3 className="font-bold text-foreground">관리자의 한마디</h3>
+              <header className="flex items-end justify-between px-5 pt-4 pb-3 border-b border-border shrink-0">
+                <div>
+                  <p className="eyebrow flex items-center gap-1.5"><Mail className="w-3 h-3" /> From the team</p>
+                  <h3 className="font-display text-[20px] font-medium tracking-tight text-foreground mt-0.5">관리자의 한마디</h3>
                 </div>
                 <button
                   onClick={handleClose}
-                  className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                  className="p-1.5 rounded-full hover:bg-muted transition-colors"
                 >
                   <X className="w-5 h-5 text-muted-foreground" />
                 </button>

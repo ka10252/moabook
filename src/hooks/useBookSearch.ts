@@ -61,8 +61,10 @@ export const useBookSearch = () => {
 
   // Search using Google Books API (has Korean book support)
   const searchGoogleBooks = async (query: string): Promise<BookSearchResult[]> => {
+    const apiKey = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY;
+    const keyParam = apiKey ? `&key=${apiKey}` : '';
     const response = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=8&langRestrict=ko`
+      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=8&langRestrict=ko${keyParam}`
     );
 
     if (!response.ok) throw new Error('Failed to search Korean books');
@@ -127,7 +129,9 @@ export const useBookSearch = () => {
     // Check if it's a Google Books ID (not starting with /)
     if (!key.startsWith('/')) {
       try {
-        const response = await fetch(`https://www.googleapis.com/books/v1/volumes/${key}`);
+        const apiKey = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY;
+        const keyParam = apiKey ? `?key=${apiKey}` : '';
+        const response = await fetch(`https://www.googleapis.com/books/v1/volumes/${key}${keyParam}`);
         if (!response.ok) return null;
         const data = await response.json();
         return data.volumeInfo?.description || null;

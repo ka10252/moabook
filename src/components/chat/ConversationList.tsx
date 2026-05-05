@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion';
-import { MessageCircle, Loader2 } from 'lucide-react';
+import { MessageCircle, Loader2, BookOpen } from 'lucide-react';
 import { Conversation } from '@/hooks/useChat';
 import { formatDistanceToNow } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
 const SPECIAL_PREFIX_MAP: Record<string, string> = {
   '[대여 요청]': '대여 요청',
@@ -54,49 +55,47 @@ export const ConversationList = ({ conversations, loading, selectedId, onSelect 
         <motion.button
           key={conv.id}
           onClick={() => onSelect(conv)}
-          className={`w-full p-4 flex items-start gap-3 text-left transition-colors hover:bg-muted/50 ${
+          className={`w-full px-4 py-3 flex items-center gap-3 text-left transition-colors hover:bg-muted/50 ${
             selectedId === conv.id ? 'bg-muted' : ''
           }`}
           whileTap={{ scale: 0.98 }}
         >
-          {/* Avatar / Book cover */}
-          <div className="w-12 h-12 rounded-xl bg-muted shrink-0 overflow-hidden">
-            {conv.book?.cover_url ? (
-              <img
-                src={conv.book.cover_url}
-                alt={conv.book.title}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                <MessageCircle className="w-5 h-5" />
-              </div>
-            )}
+          {/* Book cover thumbnail */}
+          <div className="relative shrink-0">
+            <div className="w-11 h-14 rounded-lg bg-muted overflow-hidden shadow-sm">
+              {conv.book?.cover_url ? (
+                <img src={conv.book.cover_url} alt={conv.book.title} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                  <BookOpen className="w-5 h-5 opacity-40" />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="font-semibold text-foreground truncate">
-                {conv.other_user?.nickname || 'Unknown'}
-              </h3>
-              <span className="text-xs text-muted-foreground shrink-0">
-                {formatDistanceToNow(new Date(conv.last_message_at), { addSuffix: false })}
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <h3 className="font-semibold text-foreground text-sm truncate">
+                  {conv.other_user?.nickname || 'Unknown'}
+                </h3>
+                {conv.book && (
+                  <p className="text-[11px] text-primary/80 truncate mt-0.5 font-medium">
+                    📖 {conv.book.title}
+                  </p>
+                )}
+              </div>
+              <span className="text-[11px] text-muted-foreground shrink-0 mt-0.5">
+                {formatDistanceToNow(new Date(conv.last_message_at), { addSuffix: false, locale: ko })}
               </span>
             </div>
-
-            {conv.book && (
-              <p className="text-xs text-primary truncate mt-0.5">
-                Re: {conv.book.title}
-              </p>
-            )}
-
-            <p className="text-sm text-muted-foreground truncate mt-1">
+            <p className="text-xs text-muted-foreground truncate mt-1">
               {formatLastMessage(conv.last_message)}
             </p>
           </div>
 
-          {/* Unread badge - KakaoTalk style */}
+          {/* Unread badge */}
           {conv.unread_count > 0 && (
             <div className="min-w-5 h-5 px-1.5 rounded-full bg-[hsl(var(--destructive))] text-white text-xs font-bold flex items-center justify-center shrink-0 border border-white shadow-sm">
               {conv.unread_count > 99 ? '99+' : conv.unread_count}

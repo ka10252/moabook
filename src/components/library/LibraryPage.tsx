@@ -23,8 +23,9 @@ export const LibraryPage = ({ onOpenChat }: LibraryPageProps) => {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <header className="px-4 py-4 bg-card/80 backdrop-blur-sm sticky top-0 z-30">
-        <h1 className="text-xl font-bold text-foreground">My Library</h1>
+      <header className="px-5 pt-5 pb-3 bg-background/85 backdrop-blur-md sticky top-0 z-30 border-b border-border/40">
+        <p className="eyebrow">Personal Collection</p>
+        <h1 className="font-display text-[26px] font-medium leading-none tracking-tight text-foreground mt-1">나의 도서관</h1>
       </header>
 
       {/* Content */}

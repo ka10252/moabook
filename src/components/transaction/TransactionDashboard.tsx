@@ -64,9 +64,12 @@ export const TransactionDashboard = ({ isOpen, onClose }: TransactionDashboardPr
         >
           <div className="bg-card rounded-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-xl">
           {/* Header */}
-          <header className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-            <h2 className="text-lg font-bold text-foreground">거래 현황</h2>
-            <button onClick={onClose} className="p-2 rounded-xl hover:bg-muted transition-colors">
+          <header className="flex items-end justify-between px-5 pt-4 pb-3 border-b border-border shrink-0">
+            <div>
+              <p className="eyebrow">Lending & Borrowing</p>
+              <h2 className="font-display text-[22px] font-medium tracking-tight text-foreground mt-0.5">거래 현황</h2>
+            </div>
+            <button onClick={onClose} className="p-2 rounded-full hover:bg-muted transition-colors">
               <X className="w-5 h-5 text-muted-foreground" />
             </button>
           </header>
