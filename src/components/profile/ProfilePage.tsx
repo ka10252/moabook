@@ -16,6 +16,7 @@ import {
   Sun,
   Moon,
   MapPin,
+  Bell,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,6 +44,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useTheme } from '@/hooks/useTheme';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { toast } from 'sonner';
 import { CountrySelector } from '@/components/auth/CountrySelector';
 import { ALLOWED_COUNTRY } from '@/data/countries';
@@ -57,6 +59,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   const { user, deleteAccount } = useAuth();
   const { isAdmin } = useAdminAuth();
   const { theme, setTheme } = useTheme();
+  const { isPushSupported, permission, isSubscribed, loading: pushLoading, requestAndSubscribe, unsubscribe: unsubscribePush } = usePushNotifications();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showSignOutDialog, setShowSignOutDialog] = useState(false);
@@ -503,6 +506,24 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
             onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
           />
         </div>
+
+        {/* Push notification toggle — only when API is available */}
+        {isPushSupported && permission !== 'denied' && (
+          <div className="flex items-center justify-between h-12 px-4 rounded-xl border border-border bg-secondary">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <Bell className="w-4 h-4 text-primary" />
+              백그라운드 알림
+            </div>
+            {pushLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+            ) : (
+              <Switch
+                checked={isSubscribed}
+                onCheckedChange={(checked) => checked ? requestAndSubscribe() : unsubscribePush()}
+              />
+            )}
+          </div>
+        )}
 
         {/* Change Password */}
         <Button

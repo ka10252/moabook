@@ -25,7 +25,7 @@ export const AnnouncementPopup = ({ isOpen, onClose }: AnnouncementPopupProps) =
       {isOpen && (
         <motion.div
           key="announcement-backdrop"
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-center justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

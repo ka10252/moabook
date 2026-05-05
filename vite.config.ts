@@ -15,6 +15,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
+      injectRegister: "auto",
       includeAssets: ["favicon.ico", "moa-logo.png", "moa-logo-dark.png", "icons/*.png"],
       manifest: {
         name: "MOA | 함께 읽는 책장",
@@ -38,37 +42,8 @@ export default defineConfig({
           { src: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
         ],
       },
-      workbox: {
+      injectManifest: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "google-fonts-cache",
-              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "gstatic-fonts-cache",
-              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/covers\.openlibrary\.org\/.*/i,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "book-covers-cache",
-              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-        ],
       },
     }),
   ],

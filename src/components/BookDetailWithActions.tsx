@@ -29,6 +29,14 @@ interface BookDetailWithActionsProps {
   currentUserId?: string;
 }
 
+interface SiblingBook {
+  id: string;
+  status: 'available' | 'rented' | 'sold';
+  mode: 'rent' | 'sell';
+  owner_id: string;
+  owner?: { nickname: string; avatar_url?: string | null };
+}
+
 // Truncate description to max 4 lines (roughly 200 chars)
 const truncateDescription = (text: string, maxLength: number = 200): string => {
   if (text.length <= maxLength) return text;
@@ -52,6 +60,7 @@ export const BookDetailWithActions = ({
   const [isInWaitlist, setIsInWaitlist] = useState(false);
   const [waitlistCount, setWaitlistCount] = useState(0);
   const [waitlistLoading, setWaitlistLoading] = useState(false);
+  const [siblingBooks, setSiblingBooks] = useState<SiblingBook[]>([]);
 
   useEffect(() => {
     if (!book) return;
@@ -59,6 +68,30 @@ export const BookDetailWithActions = ({
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [book, onClose]);
+
+  // Reset siblings when book changes
+  useEffect(() => {
+    setSiblingBooks([]);
+    if (!book) return;
+    supabase
+      .from('books')
+      .select('id, status, mode, owner_id, profile:profiles!books_owner_id_fkey(nickname, avatar_url)')
+      .ilike('title', book.title)
+      .ilike('author', book.author)
+      .neq('id', book.id)
+      .eq('is_public', true)
+      .neq('status', 'sold')
+      .then(({ data }) => {
+        if (!data) return;
+        setSiblingBooks(data.map((row: any) => ({
+          id: row.id,
+          status: row.status,
+          mode: row.mode,
+          owner_id: row.owner_id,
+          owner: row.profile ? { nickname: row.profile.nickname, avatar_url: row.profile.avatar_url } : undefined,
+        })));
+      });
+  }, [book?.id]);
 
   // Load waitlist info when a rented book is shown
   useEffect(() => {
@@ -219,8 +252,47 @@ export const BookDetailWithActions = ({
                       </div>
                     </div>
                   </div>
+
+                  {/* Sibling books — other owners of the same title */}
+                  {siblingBooks.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2.5">
+                        이 책을 가진 다른 이웃 ({siblingBooks.length})
+                      </p>
+                      <div className="space-y-2">
+                        {siblingBooks.map((sibling) => (
+                          <div key={sibling.id} className="bg-muted/40 rounded-xl p-3 flex items-center gap-3">
+                            <Avatar className="w-8 h-8 shrink-0">
+                              <AvatarImage src={sibling.owner?.avatar_url || undefined} />
+                              <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                                {sibling.owner?.nickname?.charAt(0) || '?'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <p className="flex-1 min-w-0 text-sm font-medium text-foreground truncate">
+                              {sibling.owner?.nickname || '알 수 없음'}
+                            </p>
+                            <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold shrink-0 ${
+                              sibling.status === 'available'
+                                ? 'bg-green-500/15 text-green-600'
+                                : 'bg-amber-500/15 text-amber-600'
+                            }`}>
+                              {sibling.status === 'available' ? '대여 가능' : '대여중'}
+                            </span>
+                            {sibling.status === 'available' && currentUserId && sibling.owner_id !== currentUserId && (
+                              <button
+                                className="text-[11px] px-2.5 py-1.5 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors shrink-0"
+                                onClick={() => onChat(sibling.owner_id, sibling.id, sibling.mode)}
+                              >
+                                요청
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                
+
                 {/* Actions - removed Share button */}
                 <div className="flex-shrink-0 p-4 border-t border-border bg-card/50">
                   <div className="flex gap-3">

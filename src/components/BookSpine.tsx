@@ -12,6 +12,7 @@ interface BookSpineProps {
   borrowerNickname?: string;
   lenderNickname?: string;
   returnDate?: string | null;
+  duplicateCount?: number;
 }
 
 const spineColors = [
@@ -45,6 +46,7 @@ export const BookSpine = ({
   borrowerNickname,
   lenderNickname,
   returnDate,
+  duplicateCount,
 }: BookSpineProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const colorClass = spineColors[(book.spineColor - 1) % spineColors.length];
@@ -175,6 +177,13 @@ export const BookSpine = ({
             </div>
           </div>
         </motion.div>
+      )}
+
+      {/* ── Duplicate count badge ─────────────────────────── */}
+      {(duplicateCount ?? 1) > 1 && !isHovered && (
+        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 z-30 px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none whitespace-nowrap pointer-events-none bg-white/85 text-foreground shadow-sm">
+          ×{duplicateCount}
+        </div>
       )}
 
       {/* Spine texture */}

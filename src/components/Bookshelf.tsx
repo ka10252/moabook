@@ -222,6 +222,23 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
     return [...books].sort((a, b) => (isLiked(a.id) ? 0 : 1) - (isLiked(b.id) ? 0 : 1));
   }, [filteredBooks, allBooks, getRentedBooksInfo, user?.id, activeFilter, isLiked]);
 
+  // Deduplicate community books by title+author — keep only the first occurrence per pair
+  const { dedupedCommunityBooks, communityDuplicateCounts } = useMemo(() => {
+    const seenKey = new Map<string, ShelfBook>();
+    const counts = new Map<string, number>();
+    for (const book of communityBooks) {
+      const key = `${book.title.toLowerCase().trim()}|||${book.author.toLowerCase().trim()}`;
+      if (!seenKey.has(key)) {
+        seenKey.set(key, book);
+        counts.set(book.id, 1);
+      } else {
+        const rep = seenKey.get(key)!;
+        counts.set(rep.id, (counts.get(rep.id) ?? 1) + 1);
+      }
+    }
+    return { dedupedCommunityBooks: [...seenKey.values()], communityDuplicateCounts: counts };
+  }, [communityBooks]);
+
   // Dynamic shelf groups — books fill shelves continuously within each section
   const shelfGroups = useMemo((): ShelfGroup[] => {
     const groups: ShelfGroup[] = [];
@@ -236,13 +253,13 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
     };
 
     const hasPersonal = user && filteredMySection.length > 0;
-    const hasCommunity = activeFilter !== 'mine' && communityBooks.length > 0;
+    const hasCommunity = activeFilter !== 'mine' && dedupedCommunityBooks.length > 0;
 
     if (hasPersonal) addSection(filteredMySection, hasCommunity ? '나의 책장' : undefined);
-    if (hasCommunity) addSection(communityBooks, hasPersonal ? getFilterLabel() : undefined);
+    if (hasCommunity) addSection(dedupedCommunityBooks, hasPersonal ? getFilterLabel() : undefined);
 
     // Fill with dummy books when everybody view has fewer than threshold real books
-    const totalRealBooks = filteredMySection.length + communityBooks.length;
+    const totalRealBooks = filteredMySection.length + dedupedCommunityBooks.length;
     const showDummy = activeFilter === 'everybody' && totalRealBooks < DUMMY_THRESHOLD && !searchQuery.trim();
     if (showDummy) {
       const needed = DUMMY_THRESHOLD - totalRealBooks;
@@ -250,9 +267,9 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
     }
 
     return groups;
-  }, [filteredMySection, communityBooks, activeFilter, user, booksPerShelf, getFilterLabel, searchQuery]);
+  }, [filteredMySection, dedupedCommunityBooks, activeFilter, user, booksPerShelf, getFilterLabel, searchQuery]);
 
-  const totalRealBooks = filteredMySection.length + communityBooks.length;
+  const totalRealBooks = filteredMySection.length + dedupedCommunityBooks.length;
   const showDummyBanner = activeFilter === 'everybody' && totalRealBooks < DUMMY_THRESHOLD && !searchQuery.trim();
 
   const emptyShelvesNeeded = Math.max(0, 3 - shelfGroups.length);
@@ -460,6 +477,7 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
                                   borrowerNickname={lentBooksInfo.get(book.id)}
                                   lenderNickname={borrowedBooksInfo.get(book.id)}
                                   returnDate={retDate}
+                                  duplicateCount={communityDuplicateCounts.get(book.id)}
                                 />
                               );
                             })}
@@ -505,7 +523,7 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
                 transition={{ duration: 0.3 }}
                 className="max-w-[520px] mx-auto w-full"
               >
-                {filteredMySection.length === 0 && communityBooks.length === 0 ? (
+                {filteredMySection.length === 0 && dedupedCommunityBooks.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-20 text-center">
                     <BookOpen className="w-16 h-16 text-muted-foreground/30 mb-4" />
                     <h3 className="text-lg font-semibold text-foreground mb-2">아직 책이 없습니다</h3>
@@ -521,7 +539,7 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
                   <div className="space-y-6">
                     {user && filteredMySection.length > 0 && (
                       <div>
-                        {communityBooks.length > 0 && (
+                        {dedupedCommunityBooks.length > 0 && (
                           <p className="text-[11px] font-semibold text-muted-foreground/60 tracking-widest uppercase mb-3">나의 책장</p>
                         )}
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -540,17 +558,25 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
                       </div>
                     )}
 
-                    {activeFilter !== 'mine' && communityBooks.length > 0 && (
+                    {activeFilter !== 'mine' && dedupedCommunityBooks.length > 0 && (
                       <div>
                         {user && filteredMySection.length > 0 && (
                           <p className="text-[11px] font-semibold text-muted-foreground/60 tracking-widest uppercase mb-3">{getFilterLabel()}</p>
                         )}
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                          {communityBooks.map((book, index) => (
-                            <motion.div key={book.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
-                              <BookCover book={book} onClick={() => setSelectedBook(book)} isRented={rentedBookIds.has(book.id)} isLent={lentBookIds.has(book.id)} />
-                            </motion.div>
-                          ))}
+                          {dedupedCommunityBooks.map((book, index) => {
+                            const dupeCount = communityDuplicateCounts.get(book.id) ?? 1;
+                            return (
+                              <motion.div key={book.id} className="relative" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
+                                <BookCover book={book} onClick={() => setSelectedBook(book)} isRented={rentedBookIds.has(book.id)} isLent={lentBookIds.has(book.id)} />
+                                {dupeCount > 1 && (
+                                  <div className="absolute top-1.5 right-1.5 z-10 bg-white/85 text-foreground text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-sm leading-none pointer-events-none">
+                                    ×{dupeCount}
+                                  </div>
+                                )}
+                              </motion.div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
