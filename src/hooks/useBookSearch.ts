@@ -73,15 +73,22 @@ export const useBookSearch = () => {
     
     if (!data.items) return [];
 
-    return data.items.map((item: { id: string; volumeInfo: { title: string; authors?: string[]; imageLinks?: { thumbnail?: string }; description?: string; publishedDate?: string; industryIdentifiers?: { type: string; identifier: string }[] } }) => ({
+    return data.items.map((item: { id: string; volumeInfo: { title: string; authors?: string[]; imageLinks?: { thumbnail?: string; small?: string; medium?: string }; description?: string; publishedDate?: string; industryIdentifiers?: { type: string; identifier: string }[] } }) => {
+      const imageLinks = item.volumeInfo.imageLinks;
+      const rawCover = imageLinks?.medium || imageLinks?.small || imageLinks?.thumbnail || null;
+      const cover = rawCover
+        ? rawCover.replace('http:', 'https:').replace('zoom=1', 'zoom=0').replace('&edge=curl', '')
+        : null;
+      return ({
       key: item.id,
       title: item.volumeInfo.title,
       author: item.volumeInfo.authors?.[0] || 'Unknown Author',
-      cover: item.volumeInfo.imageLinks?.thumbnail?.replace('http:', 'https:') || null,
+      cover,
       description: item.volumeInfo.description || null,
       firstPublishYear: item.volumeInfo.publishedDate ? parseInt(item.volumeInfo.publishedDate.split('-')[0]) : undefined,
       isbn: item.volumeInfo.industryIdentifiers?.find((id: { type: string }) => id.type === 'ISBN_13')?.identifier,
-    }));
+    });
+  });
   };
 
   const searchBooks = useCallback(async (query: string) => {
