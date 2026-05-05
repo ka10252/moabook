@@ -32,8 +32,17 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-type ShelfBook = Book & { _isBorrowed?: boolean };
+type ShelfBook = Book & { _isBorrowed?: boolean; _isDummy?: boolean };
 type ShelfGroup = { label?: string; books: ShelfBook[] };
+
+const DUMMY_BOOKS: ShelfBook[] = [
+  { id: 'dummy-1', title: '채식주의자', author: '한강', cover: null, status: 'available', mode: 'rent', owner_id: '', is_public: true, created_at: '', _isDummy: true } as ShelfBook,
+  { id: 'dummy-2', title: '어린 왕자', author: '생텍쥐페리', cover: null, status: 'available', mode: 'rent', owner_id: '', is_public: true, created_at: '', _isDummy: true } as ShelfBook,
+  { id: 'dummy-3', title: '데미안', author: '헤르만 헤세', cover: null, status: 'available', mode: 'rent', owner_id: '', is_public: true, created_at: '', _isDummy: true } as ShelfBook,
+  { id: 'dummy-4', title: '1984', author: '조지 오웰', cover: null, status: 'available', mode: 'rent', owner_id: '', is_public: true, created_at: '', _isDummy: true } as ShelfBook,
+  { id: 'dummy-5', title: '소년이 온다', author: '한강', cover: null, status: 'available', mode: 'rent', owner_id: '', is_public: true, created_at: '', _isDummy: true } as ShelfBook,
+];
+const DUMMY_THRESHOLD = 5;
 type StatusFilter = 'all' | 'available' | 'rented';
 
 interface BookshelfProps {
@@ -232,8 +241,19 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
     if (hasPersonal) addSection(filteredMySection, hasCommunity ? '나의 책장' : undefined);
     if (hasCommunity) addSection(communityBooks, hasPersonal ? getFilterLabel() : undefined);
 
+    // Fill with dummy books when everybody view has fewer than threshold real books
+    const totalRealBooks = filteredMySection.length + communityBooks.length;
+    const showDummy = activeFilter === 'everybody' && totalRealBooks < DUMMY_THRESHOLD && !searchQuery.trim();
+    if (showDummy) {
+      const needed = DUMMY_THRESHOLD - totalRealBooks;
+      addSection(DUMMY_BOOKS.slice(0, needed));
+    }
+
     return groups;
-  }, [filteredMySection, communityBooks, activeFilter, user, booksPerShelf, getFilterLabel]);
+  }, [filteredMySection, communityBooks, activeFilter, user, booksPerShelf, getFilterLabel, searchQuery]);
+
+  const totalRealBooks = filteredMySection.length + communityBooks.length;
+  const showDummyBanner = activeFilter === 'everybody' && totalRealBooks < DUMMY_THRESHOLD && !searchQuery.trim();
 
   const emptyShelvesNeeded = Math.max(0, 3 - shelfGroups.length);
 
@@ -411,6 +431,17 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
                         <WoodenShelf>
                           <div className="flex items-end gap-1 h-[140px]">
                             {group.books.map(book => {
+                              if (book._isDummy) {
+                                return (
+                                  <div
+                                    key={book.id}
+                                    className="opacity-30 pointer-events-none select-none"
+                                    style={{ minWidth: 40 }}
+                                  >
+                                    <BookSpine book={book} onClick={() => {}} isSelected={false} isLent={false} isBorrowed={false} />
+                                  </div>
+                                );
+                              }
                               const isLentBook = !book._isBorrowed && lentBookIds.has(book.id);
                               const isBorrowedBook = !!book._isBorrowed;
                               const retDate = isLentBook
@@ -444,6 +475,26 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
                     ))}
                   </div>
                 </div>
+
+                {/* Dummy books banner */}
+                {showDummyBanner && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="mt-4 mx-auto max-w-[520px] bg-primary/8 border border-primary/20 rounded-2xl px-5 py-4 flex items-center gap-4"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                      <BookOpen className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground">예시 화면입니다</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        책이 5권 이상 쌓이면 예시 책들이 사라져요. 지금 첫 책을 등록해보세요!
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
               </motion.div>
             ) : (
               <motion.div
