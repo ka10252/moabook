@@ -186,6 +186,16 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     return () => document.removeEventListener('mousedown', handler);
   }, [showMore]);
 
+  // Derive the primary book this conversation is about (first BOOK_ID found in messages)
+  const conversationBook = useMemo(() => {
+    if (conversation.book) return conversation.book;
+    for (const msg of messages) {
+      const bookId = extractBookId(msg.content);
+      if (bookId && bookInfoCache[bookId]) return bookInfoCache[bookId];
+    }
+    return null;
+  }, [messages, bookInfoCache, conversation.book]);
+
   // Active transactions with the conversation partner
   const conversationTransactions = useMemo(() => {
     if (!conversation.other_user || !user) return [];
@@ -272,19 +282,33 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     <div className="flex flex-col h-full">
       {/* Header */}
       <header className="flex items-center gap-3 px-4 py-3 bg-card border-b border-border shrink-0">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={onBack} 
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onBack}
           className="shrink-0"
         >
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        
+
+        {/* Book cover thumbnail */}
+        {conversationBook?.cover_url && (
+          <img
+            src={conversationBook.cover_url}
+            alt={conversationBook.title}
+            className="w-7 h-10 object-cover rounded shrink-0 shadow-sm"
+          />
+        )}
+
         <div className="flex-1 min-w-0">
-          <h2 className="font-display text-[18px] font-medium tracking-tight text-foreground truncate">
+          <h2 className="font-display text-[16px] font-medium tracking-tight text-foreground truncate leading-tight">
             {conversation.other_user?.nickname}
           </h2>
+          {conversationBook && (
+            <p className="text-xs text-muted-foreground truncate leading-tight mt-0.5">
+              {conversationBook.title}
+            </p>
+          )}
         </div>
       </header>
 
@@ -358,7 +382,8 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-3 min-h-0">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+        <div className="flex flex-col justify-end min-h-full p-4 space-y-3">
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -518,6 +543,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
           })
         )}
         <div ref={messagesEndRef} />
+        </div>
       </div>
 
       {/* Input */}
