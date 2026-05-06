@@ -43,7 +43,7 @@ const DUMMY_BOOKS: ShelfBook[] = [
   { id: 'dummy-5', title: '소년이 온다', author: '한강', cover: null, status: 'available', mode: 'rent', owner_id: '', is_public: true, created_at: '', _isDummy: true } as ShelfBook,
 ];
 const DUMMY_THRESHOLD = 5;
-type StatusFilter = 'all' | 'available' | 'rented';
+type StatusFilter = 'all' | 'available' | 'rented' | 'selling';
 
 interface BookshelfProps {
   onOpenChat: (userId: string, bookId: string, bookMode: 'rent' | 'sell') => void;
@@ -51,7 +51,7 @@ interface BookshelfProps {
   onCommunityFilterClear?: () => void;
 }
 
-type FilterType = 'everybody' | 'mine' | 'nearby' | string;
+type FilterType = 'everybody' | 'mine' | string;
 
 export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterClear }: BookshelfProps) => {
   const { user } = useAuth();
@@ -61,6 +61,8 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
   const [previewBook, setPreviewBook] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>(initialCommunityId || 'everybody');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
+  const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
   const [showLikedBooks, setShowLikedBooks] = useState(false);
   const [showTransactionDashboard, setShowTransactionDashboard] = useState(false);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
@@ -116,22 +118,19 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
   } = useTransactions();
   const { isLiked, toggleLike, likedBooks } = useLikedBooks();
 
-  // Current user's district for nearby filter
-  const [userDistrict, setUserDistrict] = useState<string | null>(null);
+  // Fetch all distinct districts for the multi-select filter
   useEffect(() => {
-    if (!user) return;
     import('@/integrations/supabase/client').then(({ supabase }) => {
-      supabase.from('profiles').select('district').eq('id', user.id).single()
-        .then(({ data }) => {
-          if (data) setUserDistrict((data as any).district || null);
-        });
+      supabase.from('profiles').select('district').then(({ data }) => {
+        const all = [...new Set((data || []).map((p: any) => p.district).filter(Boolean))].sort() as string[];
+        setAvailableDistricts(all);
+      });
     });
-  }, [user?.id]);
+  }, []);
 
   const getFilterLabel = () => {
     if (activeFilter === 'everybody') return '모두의 책장';
     if (activeFilter === 'mine') return '내 책장';
-    if (activeFilter === 'nearby') return userDistrict ? `${userDistrict} 이웃 책장` : '이웃 책장';
     const community = myCommunities.find(c => c.id === activeFilter);
     return community?.name || '커뮤니티';
   };
@@ -149,8 +148,9 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
   }, [allBooks]);
 
   const applyStatusFilter = useCallback(<T extends Book>(books: T[]): T[] => {
-    if (statusFilter === 'available') return books.filter(b => b.status === 'available');
+    if (statusFilter === 'available') return books.filter(b => b.status === 'available' && b.mode === 'rent');
     if (statusFilter === 'rented') return books.filter(b => b.status === 'rented');
+    if (statusFilter === 'selling') return books.filter(b => b.mode === 'sell');
     return books;
   }, [statusFilter]);
 
@@ -159,10 +159,6 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
 
     if (activeFilter === 'mine') {
       books = books.filter(book => book.owner_id === user?.id);
-    } else if (activeFilter === 'nearby') {
-      if (userDistrict) {
-        books = books.filter(book => (book.owner as any)?.district === userDistrict);
-      }
     } else if (activeFilter !== 'everybody') {
       const isMyMemberOfCommunity = myCommunities.some(c => c.id === activeFilter);
       books = books.filter(book => {
@@ -171,6 +167,13 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
           return book.is_public || book.community_id === activeFilter;
         }
         return false;
+      });
+    }
+
+    if (selectedDistricts.length > 0) {
+      books = books.filter(book => {
+        const d = (book.owner as any)?.district;
+        return d && selectedDistricts.includes(d);
       });
     }
 
@@ -183,7 +186,7 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
     else if (sortBy === 'author') books = [...books].sort((a, b) => a.author.localeCompare(b.author));
 
     return applyStatusFilter(books);
-  }, [allBooks, activeFilter, user?.id, myCommunities, searchQuery, sortBy, userDistrict, applyStatusFilter]);
+  }, [allBooks, activeFilter, user?.id, myCommunities, selectedDistricts, searchQuery, sortBy, applyStatusFilter]);
 
   const myBooksSection = useMemo((): ShelfBook[] => {
     if (!user) return [];
@@ -278,12 +281,13 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
     all: '전체',
     available: '대여 가능',
     rented: '대여중',
+    selling: '판매중',
   };
 
   const activeFilterCount =
     (statusFilter !== 'all' ? 1 : 0) +
     (sortBy !== 'newest' ? 1 : 0) +
-    (activeFilter === 'nearby' ? 1 : 0);
+    (selectedDistricts.length > 0 ? 1 : 0);
 
   return (
     <div className="flex flex-col h-full relative">
@@ -357,12 +361,6 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
                 {user && (
                   <DropdownMenuItem onClick={() => setActiveFilter('mine')} className={activeFilter === 'mine' ? 'bg-accent/15 text-foreground' : ''}>
                     내 책장
-                  </DropdownMenuItem>
-                )}
-                {user && userDistrict && (
-                  <DropdownMenuItem onClick={() => setActiveFilter('nearby')} className={activeFilter === 'nearby' ? 'bg-accent/15 text-foreground' : ''}>
-                    <MapPin className="w-3.5 h-3.5 mr-1.5" />
-                    {userDistrict} 이웃 책장
                   </DropdownMenuItem>
                 )}
                 {myCommunities.length > 0 && (
@@ -530,8 +528,8 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
                     <p className="text-muted-foreground text-sm max-w-xs">
                       {activeFilter === 'mine'
                         ? '등록한 책이나 대여 중인 책이 없습니다.'
-                        : activeFilter === 'nearby'
-                        ? '근처 이웃의 책이 없습니다.'
+                        : selectedDistricts.length > 0
+                        ? '선택한 지역에 책이 없습니다.'
                         : '책장이 비어있습니다. 책을 등록해보세요!'}
                     </p>
                   </div>
@@ -627,7 +625,7 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
             <div className="space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">책 상태</p>
               <div className="flex gap-2 flex-wrap">
-                {(['all', 'available', 'rented'] as StatusFilter[]).map(s => (
+                {(['all', 'available', 'rented', 'selling'] as StatusFilter[]).map(s => (
                   <button key={s} onClick={() => setStatusFilter(s)} className={`pill ${statusFilter === s ? 'pill-active' : ''}`}>
                     {statusFilterLabels[s]}
                   </button>
@@ -635,24 +633,39 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
               </div>
             </div>
 
-            {/* District */}
-            {user && userDistrict && (
+            {/* District multi-select */}
+            {availableDistricts.length > 0 && (
               <div className="space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">거주 지역</p>
-                <button
-                  onClick={() => setActiveFilter(activeFilter === 'nearby' ? 'everybody' : 'nearby')}
-                  className={`pill gap-1.5 ${activeFilter === 'nearby' ? 'pill-active' : ''}`}
-                >
-                  <MapPin className="w-3.5 h-3.5" />
-                  {userDistrict} 이웃 책장
-                </button>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">관심 지역</p>
+                <div className="flex gap-2 flex-wrap">
+                  {availableDistricts.map(d => {
+                    const active = selectedDistricts.includes(d);
+                    return (
+                      <button
+                        key={d}
+                        onClick={() => setSelectedDistricts(prev =>
+                          active ? prev.filter(x => x !== d) : [...prev, d]
+                        )}
+                        className={`pill gap-1 ${active ? 'pill-active' : ''}`}
+                      >
+                        <MapPin className="w-3 h-3" />
+                        {d}
+                      </button>
+                    );
+                  })}
+                </div>
+                {selectedDistricts.length > 0 && (
+                  <button onClick={() => setSelectedDistricts([])} className="text-[11px] text-muted-foreground underline underline-offset-2">
+                    지역 선택 해제
+                  </button>
+                )}
               </div>
             )}
 
             {/* Reset */}
             {activeFilterCount > 0 && (
               <button
-                onClick={() => { setStatusFilter('all'); setSortBy('newest'); if (activeFilter === 'nearby') setActiveFilter('everybody'); }}
+                onClick={() => { setStatusFilter('all'); setSortBy('newest'); setSelectedDistricts([]); }}
                 className="text-xs text-muted-foreground underline underline-offset-2"
               >
                 필터 초기화
