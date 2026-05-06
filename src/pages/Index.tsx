@@ -187,8 +187,6 @@ const Index = () => {
 
   const contentKey = boardPage
     ? `board-${boardPage.communityId}`
-    : showChatModal
-    ? 'chat'
     : activeTab;
 
   const renderContent = () => {
@@ -199,18 +197,6 @@ const Index = () => {
           onClose={() => setBoardPage(null)}
           communityId={boardPage.communityId}
           communityName={boardPage.communityName}
-        />
-      );
-    }
-    if (showChatModal) {
-      return (
-        <ChatModal
-          isOpen={true}
-          onClose={handleCloseChat}
-          initialUserId={chatInitialUserId}
-          initialBookId={chatInitialBookId}
-          initialBookMode={chatBookMode}
-          onResetInitialValues={handleResetChatInitialValues}
         />
       );
     }
@@ -287,6 +273,22 @@ const Index = () => {
       </main>
 
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+
+      {/* Chat overlay — fixed so it's immune to main's pb-20 */}
+      {showChatModal && (
+        <div className="fixed inset-x-0 top-14 bottom-20 z-[45] bg-background overflow-hidden">
+          <div className="h-full max-w-[520px] mx-auto w-full">
+            <ChatModal
+              isOpen={true}
+              onClose={handleCloseChat}
+              initialUserId={chatInitialUserId}
+              initialBookId={chatInitialBookId}
+              initialBookMode={chatBookMode}
+              onResetInitialValues={handleResetChatInitialValues}
+            />
+          </div>
+        </div>
+      )}
 
       <NotificationPopup
         isOpen={showNotifications}

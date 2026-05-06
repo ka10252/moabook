@@ -603,14 +603,14 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
         )}
       </motion.button>
 
-      {/* Filter Dialog — positioned slightly above center */}
+      {/* Filter Dialog */}
       <Dialog open={showFilterSheet} onOpenChange={setShowFilterSheet}>
-        <DialogContent className="!top-[42%] w-[calc(100%-2rem)] max-w-sm rounded-2xl p-0 overflow-hidden max-h-[72vh] flex flex-col">
-          <DialogHeader className="px-6 pt-6 pb-0 shrink-0">
+        <DialogContent className="w-[calc(100%-2rem)] max-w-sm rounded-2xl mb-[10vh]">
+          <DialogHeader>
             <DialogTitle className="text-left text-base">필터 / 정렬</DialogTitle>
           </DialogHeader>
 
-          <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
+          <div className="space-y-5">
             {/* Sort */}
             <div className="space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">정렬</p>
