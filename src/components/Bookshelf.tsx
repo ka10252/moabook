@@ -63,6 +63,7 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
   const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
+  const [districtDropdownOpen, setDistrictDropdownOpen] = useState(false);
   const [showLikedBooks, setShowLikedBooks] = useState(false);
   const [showTransactionDashboard, setShowTransactionDashboard] = useState(false);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
@@ -118,14 +119,16 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
   } = useTransactions();
   const { isLiked, toggleLike, likedBooks } = useLikedBooks();
 
-  // Fetch all distinct districts for the multi-select filter
+  // Singapore planning areas — service region is SG only
   useEffect(() => {
-    import('@/integrations/supabase/client').then(({ supabase }) => {
-      supabase.from('profiles').select('district').then(({ data }) => {
-        const all = [...new Set((data || []).map((p: any) => p.district).filter(Boolean))].sort() as string[];
-        setAvailableDistricts(all);
-      });
-    });
+    setAvailableDistricts([
+      'Ang Mo Kio', 'Bedok', 'Bishan', 'Bukit Batok', 'Bukit Merah',
+      'Bukit Panjang', 'Bukit Timah', 'Choa Chu Kang', 'Clementi',
+      'Geylang', 'Hougang', 'Jurong East', 'Jurong West', 'Kallang',
+      'Marine Parade', 'Novena', 'Pasir Ris', 'Punggol', 'Queenstown',
+      'Sembawang', 'Sengkang', 'Serangoon', 'Tampines', 'Tanglin',
+      'Toa Payoh', 'Woodlands', 'Yishun',
+    ]);
   }, []);
 
   const getFilterLabel = () => {
@@ -602,7 +605,7 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
       </motion.button>
 
       {/* Filter Dialog */}
-      <Dialog open={showFilterSheet} onOpenChange={setShowFilterSheet}>
+      <Dialog open={showFilterSheet} onOpenChange={v => { setShowFilterSheet(v); if (!v) setDistrictDropdownOpen(false); }}>
         <DialogContent className="w-[calc(100%-2rem)] max-w-sm rounded-2xl mb-[10vh]">
           <DialogHeader>
             <DialogTitle className="text-left text-base">필터 / 정렬</DialogTitle>
@@ -633,34 +636,62 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
               </div>
             </div>
 
-            {/* District multi-select */}
-            {availableDistricts.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">관심 지역</p>
-                <div className="flex gap-2 flex-wrap">
-                  {availableDistricts.map(d => {
-                    const active = selectedDistricts.includes(d);
-                    return (
-                      <button
-                        key={d}
-                        onClick={() => setSelectedDistricts(prev =>
-                          active ? prev.filter(x => x !== d) : [...prev, d]
-                        )}
-                        className={`pill gap-1 ${active ? 'pill-active' : ''}`}
-                      >
-                        <MapPin className="w-3 h-3" />
-                        {d}
-                      </button>
-                    );
-                  })}
-                </div>
-                {selectedDistricts.length > 0 && (
-                  <button onClick={() => setSelectedDistricts([])} className="text-[11px] text-muted-foreground underline underline-offset-2">
-                    지역 선택 해제
-                  </button>
+            {/* District multi-select dropdown */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">관심 지역</p>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setDistrictDropdownOpen(v => !v)}
+                  className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-xl border border-border bg-background hover:bg-muted/50 transition-colors"
+                >
+                  <span className="flex items-center gap-1.5 text-left">
+                    <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    {selectedDistricts.length === 0
+                      ? <span className="text-muted-foreground">지역 선택 (복수 가능)</span>
+                      : <span className="text-foreground font-medium truncate">{selectedDistricts.join(', ')}</span>
+                    }
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${districtDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {districtDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-background border border-border rounded-xl shadow-lg overflow-hidden">
+                    <div className="max-h-48 overflow-y-auto">
+                      {availableDistricts.map(d => {
+                        const checked = selectedDistricts.includes(d);
+                        return (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => setSelectedDistricts(prev =>
+                              checked ? prev.filter(x => x !== d) : [...prev, d]
+                            )}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left hover:bg-muted/60 transition-colors"
+                          >
+                            <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${checked ? 'bg-primary border-primary' : 'border-border'}`}>
+                              {checked && <svg className="w-2.5 h-2.5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>}
+                            </span>
+                            <span className={checked ? 'font-medium text-foreground' : 'text-foreground/80'}>{d}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {selectedDistricts.length > 0 && (
+                      <div className="border-t border-border px-3 py-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedDistricts([])}
+                          className="text-xs text-muted-foreground underline underline-offset-2"
+                        >
+                          선택 해제 ({selectedDistricts.length}개)
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
+            </div>
 
             {/* Reset */}
             {activeFilterCount > 0 && (
