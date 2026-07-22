@@ -1,6 +1,6 @@
 .env
 .env.*
 !.env.example
-supabase/
+/supabase/
 ACCOUNTS.md
 .playwright-mcp/

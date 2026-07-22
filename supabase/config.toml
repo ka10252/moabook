@@ -9,10 +9,13 @@ project_id = "venrajnufandslcbehkz"
 [auth]
 enabled = true
 # 배포 주소. 인증 메일의 링크가 이 주소를 기준으로 만들어진다.
-# TODO: Vercel 배포 주소 또는 도메인으로 바꿀 것. 지금 값이면 메일 링크가 localhost로 간다.
-site_url = "http://localhost:8080"
-# 인증 메일·재설정 메일이 돌아올 수 있는 주소 목록
+site_url = "https://moabook.vercel.app"
+# 인증 메일·재설정 메일이 돌아올 수 있는 주소 목록.
+# 배포 주소 + 로컬 개발용을 모두 허용한다.
 additional_redirect_urls = [
+  "https://moabook.vercel.app",
+  "https://moabook.vercel.app/auth",
+  "https://moabook.vercel.app/auth/reset",
   "http://localhost:8080",
   "http://localhost:8080/auth",
   "http://localhost:8080/auth/reset",
@@ -58,7 +61,7 @@ content_path = "./supabase/templates/recovery.html"
 #
 # 값은 .env.local 에서 읽는다 (이 파일은 git에 올라가므로 키를 직접 적지 않는다).
 [auth.email.smtp]
-enabled = false   # .env.local 을 채운 뒤 true로 바꾸고 `npm run config:push`
+enabled = true
 host = "env(SMTP_HOST)"
 port = 465
 user = "env(SMTP_USER)"
