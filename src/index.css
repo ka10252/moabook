@@ -1,3 +1,8 @@
+/* 책등 전용 — Noto Sans KR Bold (한글 서브셋).
+   Instrument Serif에는 한글 글리프가 없어 시스템 명조로 폴백됐고,
+   세로쓰기 12px에서 획이 얇아 읽히지 않았다. */
+@import "@fontsource/noto-sans-kr/korean-700.css";
+
 @import "@fontsource/plus-jakarta-sans/400.css";
 @import "@fontsource/plus-jakarta-sans/500.css";
 @import "@fontsource/plus-jakarta-sans/600.css";
@@ -8,81 +13,78 @@
 @tailwind components;
 @tailwind utilities;
 
-/* MOA BOOK Design System
-   Light → "Cozy Library"   : 따뜻한 크림 페이퍼 + 호두나무 책장
-   Dark  → "Reading Room"   : 늦은 밤 도서관 + 램프 글로우
+/* MOA BOOK Design System — Bookshelf Refresh
+   Light → "Editorial Minimal + Virtual Library"
+           크림 배경 · Instrument Serif 헤드라인 · 선셋 코랄(#F26A4B) 포인트
+   Dark  → "Reading Room" : 늦은 밤 도서관 (코랄 포인트 유지)
+   사양: docs/design/bookshelf-refresh-handoff.md
 */
 
 @layer base {
   :root {
-    /* ── Cozy Library (Light) ─────────────────────────── */
+    /* ── Editorial Minimal (Light) ────────────────────── */
     /* Core surfaces */
-    --background: 39 47% 93%;        /* #F7F1E5 cream paper */
-    --foreground: 28 35% 12%;        /* #2A1F14 walnut ink */
+    --background: 42.0 31.3% 93.7%;        /* #F4F1EA cream */
+    --foreground: 42.9 15.6% 8.8%;         /* #1A1813 ink */
 
-    --card: 40 50% 96%;              /* #FBF6EA soft cream */
-    --card-foreground: 28 35% 12%;
+    --card: 40 45% 97%;              /* soft cream (bg보다 한 톤 밝게) */
+    --card-foreground: 43 16% 9%;
 
-    --popover: 40 50% 96%;
-    --popover-foreground: 28 35% 12%;
+    --popover: 40 45% 97%;
+    --popover-foreground: 43 16% 9%;
 
-    /* Primary — Walnut */
-    --primary: 24 53% 31%;           /* #7B4B26 */
-    --primary-foreground: 40 50% 96%;
+    /* Primary — Coral (브랜드 포인트) */
+    --primary: 11.1 86.5% 62.2%;         /* #F26A4B sunset coral */
+    --primary-foreground: 0 0% 100%;
 
-    /* Secondary — light cream */
-    --secondary: 40 45% 90%;
-    --secondary-foreground: 28 30% 18%;
+    /* Secondary — 배지 배경 */
+    --secondary: 40.9 32.4% 86.7%;         /* #E8E1D2 */
+    --secondary-foreground: 37 8% 32%;
 
-    /* Muted — taupe */
-    --muted: 38 32% 86%;
-    --muted-foreground: 30 18% 42%;  /* #6B5841 dimmed ink */
+    /* Muted — 이웃 블록 / 흐린 텍스트 */
+    --muted: 42.0 38.5% 89.8%;             /* #EFE9DB */
+    --muted-foreground: 37 8% 32%;   /* #57524A */
 
-    /* Accent — Antique gold (warm wood lamp) */
-    --accent: 36 60% 48%;            /* #C18432 */
-    --accent-foreground: 28 35% 12%;
+    /* Accent — 포인트는 코랄 하나로 통일 */
+    --accent: 11.1 86.5% 62.2%;          /* #F26A4B sunset coral */
+    --accent-foreground: 0 0% 100%;
 
     /* Destructive */
     --destructive: 0 65% 48%;
     --destructive-foreground: 0 0% 100%;
 
     /* Border & Input */
-    --border: 38 40% 82%;            /* #E5D8BE */
-    --input: 38 40% 86%;
-    --ring: 24 53% 31%;
+    --border: 41 30% 84%;
+    --input: 41 30% 87%;
+    --ring: 11.1 86.5% 62.2%;
 
-    --radius: 0.875rem;              /* slightly less aggressive */
+    --radius: 0.875rem;              /* 14px — 카드 12~16px 범위 */
 
-    /* Wood Palette — Cozy walnut */
-    --wood-light: 30 47% 60%;        /* #C99A6A */
-    --wood-medium: 26 47% 37%;       /* #8C5A33 */
-    --wood-dark: 24 57% 23%;         /* #5A3719 */
-    --wood-grain: 28 50% 30%;
-    --shelf-shadow: 24 40% 15%;
+    /* Editorial tokens */
+    --faint: 41.1 9.4% 60.2%;              /* #A39D90 eyebrow / 흐린 텍스트 */
+    --sheet-radius: 26px;            /* 하단 시트 상단 라운드 */
 
-    /* Book spine palette — softer, more harmonious */
-    --book-spine-1: 7 50% 44%;       /* brick red */
-    --book-spine-2: 207 30% 33%;     /* deep navy */
-    --book-spine-3: 105 17% 39%;     /* moss green */
-    --book-spine-4: 36 60% 49%;      /* ochre */
-    --book-spine-5: 290 16% 41%;     /* plum */
-    --book-spine-6: 188 30% 35%;     /* teal */
 
-    /* Bookmark — gold (lent) / walnut (borrowed) */
-    --bookmark-lent: 36 65% 52%;
-    --bookmark-lent-foreground: 24 60% 18%;
-    --bookmark-borrowed: 24 53% 31%;
-    --bookmark-borrowed-foreground: 40 50% 96%;
+    /* Book spine — "Dusty Jewel" (채도·명도를 근접시켜 서가가 차분히 어우러짐) */
+    --book-spine-1: 6 36% 45%;       /* #9E524A dusty brick */
+    --book-spine-2: 213 22% 39%;     /* #4E627B dusty navy */
+    --book-spine-3: 104 14% 42%;     /* #63795B dusty moss */
+    --book-spine-4: 33 42% 53%;      /* #B98C55 dusty ochre */
+    --book-spine-5: 281 11% 46%;     /* #7B6A83 dusty plum */
+    --book-spine-6: 186 21% 39%;     /* #4F767A dusty teal */
+    --book-spine-text: 39 48% 92%;   /* #F4EDE0 — 모든 책등 텍스트는 크림 */
 
-    /* Sidebar */
-    --sidebar-background: 40 50% 96%;
-    --sidebar-foreground: 28 30% 18%;
-    --sidebar-primary: 24 53% 31%;
-    --sidebar-primary-foreground: 40 50% 96%;
-    --sidebar-accent: 38 40% 90%;
-    --sidebar-accent-foreground: 28 30% 18%;
-    --sidebar-border: 38 40% 82%;
-    --sidebar-ring: 24 53% 31%;
+    /* Bookmark ribbon — 금색(빌려줌↑) / 남색(빌림↓) 2종만.
+       반납 임박해도 색을 바꾸지 않는다. D-day는 텍스트로만 알린다. */
+    --bookmark-lent: 44 68% 49%;         /* #D4A827 gold */
+    --bookmark-lent-foreground: 0 0% 100%;
+    --bookmark-borrowed: 238 32% 42%;    /* #484B8C navy */
+    --bookmark-borrowed-foreground: 0 0% 100%;
+
+    /* Ghost in place — 빌려준 책은 "자리를 지키되 비어 있음" */
+    --ghost-overlay: 244 241 234;    /* rgba(...,.6)로 사용 */
+    --ghost-dash: 41 16% 60%;        /* #A89E88 */
+
   }
 
   .dark {
@@ -97,9 +99,9 @@
     --popover: 26 22% 14%;
     --popover-foreground: 38 50% 88%;
 
-    /* Primary — Warm lamp glow */
-    --primary: 32 70% 61%;           /* #E0A656 amber lamp */
-    --primary-foreground: 25 25% 10%;
+    /* Primary — Coral (다크에선 살짝 밝혀 대비 확보) */
+    --primary: 12 85% 68%;           /* #F58163 — 다크에선 한 톤 밝게 */
+    --primary-foreground: 0 0% 100%;
 
     /* Secondary — raised wood */
     --secondary: 26 20% 18%;
@@ -109,9 +111,9 @@
     --muted: 26 18% 22%;
     --muted-foreground: 36 18% 60%;  /* #8A7B65 */
 
-    /* Accent — same lamp tone, used sparingly */
-    --accent: 32 70% 61%;
-    --accent-foreground: 25 25% 10%;
+    /* Accent — 코랄로 통일 */
+    --accent: 12 85% 68%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 60% 48%;
     --destructive-foreground: 0 0% 100%;
@@ -119,36 +121,25 @@
     /* Border & Input */
     --border: 26 22% 22%;            /* #3D3024 */
     --input: 26 22% 22%;
-    --ring: 32 70% 61%;
+    --ring: 12 85% 68%;
 
-    /* Wood — darker walnut */
-    --wood-light: 26 41% 32%;        /* #7A5232 */
-    --wood-medium: 25 49% 24%;       /* #5C3A20 */
-    --wood-dark: 25 56% 12%;         /* #2E1C0F */
-    --wood-grain: 26 45% 20%;
-    --shelf-shadow: 0 0% 0%;
+    --faint: 36 12% 52%;
+    --ghost-overlay: 31 24 19;       /* 다크는 배경색으로 고스트 처리 */
+    --ghost-dash: 36 14% 42%;
 
-    /* Book spines — slightly muted, warmly lit */
-    --book-spine-1: 7 50% 42%;
-    --book-spine-2: 207 30% 33%;
-    --book-spine-3: 105 17% 40%;
-    --book-spine-4: 36 60% 49%;
-    --book-spine-5: 290 16% 38%;
-    --book-spine-6: 188 30% 35%;
+    /* Book spines — Dusty Jewel (라이트와 동일 톤 유지) */
+    --book-spine-1: 6 36% 45%;
+    --book-spine-2: 213 22% 39%;
+    --book-spine-3: 104 14% 42%;
+    --book-spine-4: 33 42% 53%;
+    --book-spine-5: 281 11% 46%;
+    --book-spine-6: 186 21% 39%;
+    --book-spine-text: 39 48% 92%;
 
-    --bookmark-lent: 32 70% 61%;
-    --bookmark-lent-foreground: 25 25% 10%;
-    --bookmark-borrowed: 38 45% 80%;
-    --bookmark-borrowed-foreground: 25 25% 10%;
-
-    --sidebar-background: 26 22% 12%;
-    --sidebar-foreground: 38 50% 88%;
-    --sidebar-primary: 32 70% 61%;
-    --sidebar-primary-foreground: 25 25% 10%;
-    --sidebar-accent: 26 20% 18%;
-    --sidebar-accent-foreground: 38 50% 88%;
-    --sidebar-border: 26 22% 22%;
-    --sidebar-ring: 32 70% 61%;
+    --bookmark-lent: 44 68% 49%;
+    --bookmark-lent-foreground: 0 0% 100%;
+    --bookmark-borrowed: 238 32% 42%;
+    --bookmark-borrowed-foreground: 0 0% 100%;
   }
 }
 
@@ -161,17 +152,24 @@
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     font-feature-settings: 'ss01', 'cv11';
+
+    /* 한글은 기본값(break-all에 가까운 동작)으로 두면 "화면이에 / 요"처럼 낱말이 잘린다.
+       keep-all은 어절 단위로만 줄을 바꾼다. 긴 URL·영문 단어는 break-word로 구제한다. */
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
 
-  /* Headlines / display = serif (Cormorant Garamond + Noto Serif KR) */
+  /* Headlines / display = Instrument Serif (한글은 Noto Serif KR 폴백) */
   h1, h2, .font-display {
-    font-family: 'Cormorant Garamond', 'Noto Serif KR', Georgia, serif;
-    letter-spacing: -0.01em;
+    font-family: 'Instrument Serif', 'Noto Serif KR', Georgia, serif;
+    font-weight: 400;
+    letter-spacing: -0.02em;
   }
-  /* Section eyebrow / overline */
+  /* Section eyebrow / overline — VIRTUAL LIBRARY, BOOKSHELF */
   .eyebrow {
-    @apply text-[10px] font-bold uppercase text-muted-foreground;
-    letter-spacing: 0.25em;
+    @apply text-[10px] font-bold uppercase;
+    color: hsl(var(--faint));
+    letter-spacing: 0.3em;
   }
 
   /* Reading Room — soft warm lamp glow over the whole app in dark mode */
@@ -184,77 +182,43 @@
 }
 
 @layer components {
-  /* ── Wooden shelf textures ─────────────────────────── */
-  .wood-texture {
-    background:
-      repeating-linear-gradient(
-        90deg,
-        transparent,
-        transparent 2px,
-        hsl(var(--wood-grain) / 0.08) 2px,
-        hsl(var(--wood-grain) / 0.08) 4px
-      ),
-      linear-gradient(
-        180deg,
-        hsl(var(--wood-light)) 0%,
-        hsl(var(--wood-medium)) 55%,
-        hsl(var(--wood-dark)) 100%
-      );
+  /* ── Virtual Library: 서가 몰입감을 위한 비네트 ────── */
+  .shelf-vignette::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(120% 70% at 50% 40%, transparent 55%, rgba(60, 45, 25, 0.12) 100%);
   }
 
-  .shelf-plank {
-    background:
-      repeating-linear-gradient(
-        88deg,
-        transparent,
-        transparent 3px,
-        hsl(var(--wood-grain) / 0.18) 3px,
-        hsl(var(--wood-grain) / 0.18) 6px
-      ),
-      linear-gradient(
-        180deg,
-        hsl(var(--wood-light)) 0%,
-        hsl(var(--wood-medium)) 55%,
-        hsl(var(--wood-dark)) 100%
-      );
-    box-shadow:
-      inset 0 1px 0 hsl(var(--wood-light) / 0.55),
-      inset 0 -2px 4px hsl(var(--shelf-shadow) / 0.45),
-      0 6px 14px -4px hsl(var(--shelf-shadow) / 0.55);
+  /* ── Ghost in place: 빌려준 책 = 자리를 지키되 비어 있음 ── */
+  .book-ghost {
+    position: relative;
+    outline: 1px dashed hsl(var(--ghost-dash));
+    outline-offset: -2px;
+  }
+  .book-ghost::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: rgb(var(--ghost-overlay) / 0.6);
   }
 
-  .shelf-side {
-    background:
-      repeating-linear-gradient(
-        180deg,
-        transparent,
-        transparent 4px,
-        hsl(var(--wood-grain) / 0.12) 4px,
-        hsl(var(--wood-grain) / 0.12) 8px
-      ),
-      linear-gradient(
-        90deg,
-        hsl(var(--wood-dark)) 0%,
-        hsl(var(--wood-medium)) 50%,
-        hsl(var(--wood-dark)) 100%
-      );
-  }
-
-  /* ── Book spine ────────────────────────────────────── */
+  /* ── Book spine ──────────────────────────────────────
+     세로쓰기는 writing-mode만 쓴다. rotate(180deg)를 넣으면 한글이 뒤집혀 보인다.
+     CJK는 vertical-rl에서 자동으로 정립된다. */
   .book-spine {
     writing-mode: vertical-rl;
     text-orientation: mixed;
-    transform: rotate(180deg);
     box-shadow:
-      inset -2px 0 4px rgba(0,0,0,0.22),
-      inset 2px 0 4px rgba(255,255,255,0.10),
-      1px 0 6px rgba(0,0,0,0.18);
+      inset -3px 0 5px rgba(0,0,0,0.2),
+      inset 2px 0 2px rgba(255,255,255,0.16);
   }
   .dark .book-spine {
     box-shadow:
-      inset -2px 0 4px rgba(0,0,0,0.45),
-      inset 2px 0 4px rgba(255,255,255,0.06),
-      1px 0 8px rgba(0,0,0,0.5);
+      inset -3px 0 5px rgba(0,0,0,0.4),
+      inset 2px 0 2px rgba(255,255,255,0.1);
   }
 
   /* ── Buttons ───────────────────────────────────────── */
@@ -298,45 +262,7 @@
     @apply text-primary;
   }
 
-  /* ── View toggle ───────────────────────────────────── */
-  .view-toggle {
-    @apply inline-flex p-0.5 rounded-full bg-secondary border border-border;
-  }
 
-  .view-toggle-btn {
-    @apply px-3.5 py-1.5 rounded-full text-xs font-semibold;
-    @apply text-muted-foreground transition-all duration-200;
-  }
-
-  .view-toggle-btn.active {
-    @apply bg-foreground text-background shadow-sm;
-  }
-  .dark .view-toggle-btn.active {
-    @apply bg-primary text-primary-foreground;
-  }
-
-  /* ── Section eyebrow / quiet heading ───────────────── */
-  .section-divider {
-    @apply flex items-center gap-3 px-1 pb-2 pt-1;
-  }
-  .section-divider-label {
-    font-family: 'Cormorant Garamond', 'Noto Serif KR', serif;
-    font-style: italic;
-    font-size: 14px;
-    font-weight: 600;
-    color: hsl(36 70% 88%);
-    text-shadow: 0 1px 2px hsl(24 57% 15% / 0.6);
-    letter-spacing: 0.01em;
-  }
-  .dark .section-divider-label {
-    color: hsl(36 70% 80%);
-    text-shadow: 0 1px 2px hsl(24 57% 10% / 0.8);
-  }
-  .section-divider-rule {
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(to right, hsl(36 60% 70% / 0.4), transparent);
-  }
 
   /* ── Pill (filter chip / sort chip) ────────────────── */
   .pill {
@@ -351,10 +277,43 @@
     @apply bg-primary text-primary-foreground;
   }
 
-  /* ── Search input ──────────────────────────────────── */
+  /* ── Filter chip ───────────────────────────────────────
+     책등과 같은 2px 라운드. 알약형이 아니다 — 에디토리얼 무드의 각진 톤. */
+  .chip {
+    @apply shrink-0 whitespace-nowrap text-[11px] font-semibold px-3.5 py-[7px];
+    @apply border border-border text-muted-foreground bg-transparent;
+    @apply transition-colors hover:text-foreground hover:border-foreground/30;
+    border-radius: 2px;
+    letter-spacing: 0.04em;
+  }
+  .chip-active {
+    @apply bg-primary text-primary-foreground border-primary font-bold;
+  }
+
+  /* ── Search input ──────────────────────────────────────
+     박스가 아니라 밑줄 하나. 에디토리얼 무드에서 검색창은 종이에 그은 선처럼 보인다. */
   .input-search {
-    @apply w-full pl-9 pr-8 py-2.5 text-sm rounded-full outline-none;
-    @apply bg-card border border-border text-foreground placeholder:text-muted-foreground;
-    @apply focus-visible:border-foreground/30 focus-visible:ring-2 focus-visible:ring-primary/30 transition-colors;
+    @apply w-full bg-transparent border-0 outline-none text-[13px] text-foreground p-0;
+    @apply placeholder:text-[#9A9488];
+  }
+  .search-underline {
+    @apply flex items-center gap-2;
+    border-bottom: 1.5px solid hsl(var(--foreground));
+    padding: 12px 2px 8px;
+    transition: border-color 0.2s ease;
+  }
+  .search-underline:focus-within {
+    border-bottom-color: hsl(var(--primary));
+  }
+}
+
+@layer utilities {
+  /* 가로 스크롤 칩 — 스크롤바는 숨기되 스크롤은 살린다 */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }

@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 type Condition = 'S' | 'A' | 'B';
@@ -17,40 +16,39 @@ const conditions: { value: Condition; label: string; description: string }[] = [
 export const ConditionSelector = ({ value, onChange }: ConditionSelectorProps) => {
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-foreground">책 상태</label>
+      <p className="text-[10px] font-bold tracking-wide text-muted-foreground">상태</p>
       <div className="flex gap-2">
-        {conditions.map((condition) => (
-          <button
-            key={condition.value}
-            type="button"
-            onClick={() => onChange(condition.value)}
-            className={cn(
-              "relative flex-1 py-3 px-4 rounded-xl border-2 transition-all duration-200",
-              value === condition.value
-                ? "border-primary bg-primary/10"
-                : "border-border bg-secondary hover:border-muted-foreground"
-            )}
-          >
-            {value === condition.value && (
-              <motion.div
-                layoutId="condition-indicator"
-                className="absolute inset-0 rounded-xl bg-primary/10 border-2 border-primary"
-                transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
-              />
-            )}
-            <div className="relative flex flex-col items-center gap-1">
-              <span className={cn(
-                "text-lg font-bold",
-                value === condition.value ? "text-primary" : "text-foreground"
-              )}>
+        {conditions.map((condition) => {
+          const isActive = value === condition.value;
+          return (
+            <button
+              key={condition.value}
+              type="button"
+              onClick={() => onChange(condition.value)}
+              className={cn(
+                'flex-1 py-2.5 rounded-[11px] border transition-colors',
+                isActive ? 'bg-primary border-primary' : 'bg-card border-border'
+              )}
+            >
+              <span
+                className={cn(
+                  'block font-display text-[18px] leading-none',
+                  isActive ? 'text-primary-foreground' : 'text-foreground'
+                )}
+              >
                 {condition.label}
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span
+                className={cn(
+                  'block text-[9px] mt-1',
+                  isActive ? 'text-primary-foreground/85' : 'text-faint'
+                )}
+              >
                 {condition.description}
               </span>
-            </div>
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

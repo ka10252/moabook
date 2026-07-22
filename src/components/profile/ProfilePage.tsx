@@ -17,6 +17,10 @@ import {
   Moon,
   MapPin,
   Bell,
+  Share,
+  Plus,
+  ChevronRight,
+  ChevronLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,14 +48,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useTheme } from '@/hooks/useTheme';
-import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { usePushNotifications, pushResultMessage } from '@/hooks/usePushNotifications';
 import { toast } from 'sonner';
 import { CountrySelector } from '@/components/auth/CountrySelector';
 import { ALLOWED_COUNTRY } from '@/data/countries';
 import { SINGAPORE_DISTRICTS } from '@/data/singaporeDistricts';
+import { spineClassFrom } from '@/lib/spineColor';
+
+/** 탈퇴·문의 접수 채널. 자동 탈퇴가 실패해도 이 경로는 항상 열려 있어야 한다. */
+const SUPPORT_EMAIL = 'admin@moabook.app';
 
 interface ProfilePageProps {
   onSignOut: () => void;
+}
+
+type View = 'overview' | 'edit' | 'notifications';
+
+interface Stats {
+  registered: number;
+  lent: number;
+  deals: number;
 }
 
 export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
@@ -59,14 +75,26 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   const { user, deleteAccount } = useAuth();
   const { isAdmin } = useAdminAuth();
   const { theme, setTheme } = useTheme();
-  const { isPushSupported, permission, isSubscribed, loading: pushLoading, requestAndSubscribe, unsubscribe: unsubscribePush } = usePushNotifications();
+  const {
+    isPushSupported,
+    isPushConfigured,
+    needsHomeScreenInstall,
+    permission,
+    isSubscribed,
+    loading: pushLoading,
+    requestAndSubscribe,
+    unsubscribe: unsubscribePush,
+  } = usePushNotifications();
+
+  const [view, setView] = useState<View>('overview');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showSignOutDialog, setShowSignOutDialog] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showDeleteFallback, setShowDeleteFallback] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-  
+
   // Profile fields
   const [nickname, setNickname] = useState('');
   const [bio, setBio] = useState('');
@@ -78,7 +106,8 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   const [country, setCountry] = useState('');
   const [district, setDistrict] = useState('');
   const [showRegionBlock, setShowRegionBlock] = useState(false);
-  
+  const [stats, setStats] = useState<Stats>({ registered: 0, lent: 0, deals: 0 });
+
   // Password change
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -87,12 +116,13 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   useEffect(() => {
     if (user) {
       fetchProfile();
+      fetchStats();
     }
   }, [user]);
 
   const fetchProfile = async () => {
     if (!user) return;
-    
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -130,15 +160,41 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
     }
   };
 
+  /** 숫자는 지어내지 않는다 — 전부 DB 카운트다. */
+  const fetchStats = async () => {
+    if (!user) return;
+    try {
+      const [registered, lent, deals] = await Promise.all([
+        supabase.from('books').select('id', { count: 'exact', head: true }).eq('owner_id', user.id),
+        supabase
+          .from('books')
+          .select('id', { count: 'exact', head: true })
+          .eq('owner_id', user.id)
+          .eq('status', 'rented'),
+        supabase
+          .from('transactions')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'completed')
+          .or(`owner_id.eq.${user.id},borrower_id.eq.${user.id}`),
+      ]);
+      setStats({
+        registered: registered.count ?? 0,
+        lent: lent.count ?? 0,
+        deals: deals.count ?? 0,
+      });
+    } catch (error) {
+      console.error('Fetch stats error:', error);
+    }
+  };
+
   const handleSaveProfile = async () => {
     if (!user) return;
-    
+
     if (!nickname.trim()) {
       toast.error('닉네임은 필수입니다');
       return;
     }
 
-    // Validate country if changed
     if (country && country !== ALLOWED_COUNTRY) {
       setShowRegionBlock(true);
       return;
@@ -146,7 +202,6 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
 
     setIsSaving(true);
     try {
-      // Check if nickname is unique (case-insensitive, excluding current user)
       const { data: existingProfile } = await supabase
         .from('profiles')
         .select('id')
@@ -170,12 +225,11 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
           gender_public: genderPublic,
           age_public: agePublic,
           country: country || null,
-          district: country === 'SG' ? (district || null) : null,
+          district: country === 'SG' ? district || null : null,
         } as Record<string, unknown>)
         .eq('id', user.id);
 
       if (error) {
-        // Check for unique constraint violation
         if (error.code === '23505') {
           toast.error('이미 존재하는 닉네임입니다.');
           return;
@@ -184,6 +238,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
       }
 
       toast.success('프로필이 저장되었습니다!');
+      setView('overview');
     } catch (error) {
       console.error('Save profile error:', error);
       toast.error('프로필 저장에 실패했습니다');
@@ -196,7 +251,6 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('이미지 크기는 5MB 이하여야 합니다');
       return;
@@ -207,21 +261,15 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/avatar.${fileExt}`;
 
-      // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(fileName, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
-
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
       const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
 
-      // Update profile with new avatar URL
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: publicUrl })
@@ -244,7 +292,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
       toast.error('비밀번호는 6자 이상이어야 합니다');
       return;
     }
-    
+
     if (newPassword !== confirmPassword) {
       toast.error('비밀번호가 일치하지 않습니다');
       return;
@@ -252,10 +300,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
 
     setIsChangingPassword(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
-
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
 
       toast.success('비밀번호가 변경되었습니다!');
@@ -270,22 +315,36 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
     }
   };
 
-  const handleSignOut = () => {
-    setShowSignOutDialog(false);
-    onSignOut();
-  };
-
   const handleDeleteAccount = async () => {
     setIsDeletingAccount(true);
-    const { error } = await deleteAccount();
+    const { error, unavailable } = await deleteAccount();
     setIsDeletingAccount(false);
-    if (error) {
-      toast.error(error.message);
-    } else {
+
+    if (!error) {
       setShowDeleteDialog(false);
       toast.success('계정이 삭제되었습니다');
+      return;
     }
+
+    // 자동 탈퇴가 불가능하면 유저를 막다른 길에 두지 않고 수동 요청 경로를 연다.
+    if (unavailable) {
+      setShowDeleteDialog(false);
+      setShowDeleteFallback(true);
+      return;
+    }
+    toast.error(error.message);
   };
+
+  const deletionRequestMailto = (() => {
+    const subject = encodeURIComponent('[MOA Book] 회원 탈퇴 요청');
+    const body = encodeURIComponent(
+      `아래 계정의 탈퇴 및 개인정보 삭제를 요청합니다.\n\n` +
+        `이메일: ${user?.email ?? ''}\n` +
+        `사용자 ID: ${user?.id ?? ''}\n\n` +
+        `※ 이 메일은 자동 탈퇴 처리가 일시적으로 불가능하여 발송됩니다.`
+    );
+    return `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
+  })();
 
   if (isLoading) {
     return (
@@ -296,276 +355,328 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   }
 
   return (
-    <div className="h-full px-4 py-6 pb-24 overflow-auto">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-8"
-      >
-        <div className="relative inline-block">
-          <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-4 border-background shadow-lg">
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <User className="w-10 h-10 text-primary" />
-            )}
-          </div>
-          <label className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center cursor-pointer shadow-md hover:bg-primary/90 transition-colors">
-            <Camera className="w-4 h-4 text-primary-foreground" />
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarUpload}
-              className="hidden"
-            />
-          </label>
-        </div>
-        <h1 className="text-2xl font-bold text-foreground mt-4">프로필</h1>
-        <p className="text-muted-foreground">계정 설정을 관리하세요</p>
-      </motion.div>
-
-      {/* Form */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.1 }}
-        className="space-y-6 max-w-md mx-auto"
-      >
-        {/* Nickname */}
-        <div className="space-y-2">
-          <Label htmlFor="nickname">닉네임 *</Label>
-          <Input
-            id="nickname"
-            value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
-            placeholder="표시될 이름"
-            className="h-12 bg-secondary border-border rounded-xl"
-          />
-        </div>
-
-        {/* Bio */}
-        <div className="space-y-2">
-          <Label htmlFor="bio">한 줄 소개</Label>
-          <Textarea
-            id="bio"
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            placeholder="자신을 소개해주세요..."
-            maxLength={100}
-            className="bg-secondary border-border rounded-xl resize-none"
-            rows={2}
-          />
-          <p className="text-xs text-muted-foreground text-right">
-            {bio.length}/100
-          </p>
-        </div>
-
-        {/* Gender */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="gender">성별</Label>
-            <div className="flex items-center gap-2">
-              {genderPublic ? (
-                <Eye className="w-4 h-4 text-primary" />
-              ) : (
-                <EyeOff className="w-4 h-4 text-muted-foreground" />
-              )}
-              <Switch
-                checked={genderPublic}
-                onCheckedChange={setGenderPublic}
-              />
-              <span className="text-xs text-muted-foreground">
-                {genderPublic ? '공개' : '비공개'}
-              </span>
-            </div>
-          </div>
-          <Select value={gender} onValueChange={setGender}>
-            <SelectTrigger className="h-12 bg-secondary border-border rounded-xl">
-              <SelectValue placeholder="성별 선택" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="male">남성</SelectItem>
-              <SelectItem value="female">여성</SelectItem>
-              <SelectItem value="other">기타</SelectItem>
-              <SelectItem value="prefer-not-to-say">밝히지 않음</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Age */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="age">나이</Label>
-            <div className="flex items-center gap-2">
-              {agePublic ? (
-                <Eye className="w-4 h-4 text-primary" />
-              ) : (
-                <EyeOff className="w-4 h-4 text-muted-foreground" />
-              )}
-              <Switch
-                checked={agePublic}
-                onCheckedChange={setAgePublic}
-              />
-              <span className="text-xs text-muted-foreground">
-                {agePublic ? '공개' : '비공개'}
-              </span>
-            </div>
-          </div>
-          <Input
-            id="age"
-            type="number"
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
-            placeholder="나이를 입력하세요"
-            min={13}
-            max={120}
-            className="h-12 bg-secondary border-border rounded-xl"
-          />
-        </div>
-
-        {/* Country */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Globe className="w-4 h-4 text-muted-foreground" />
-            <Label>거주 국가</Label>
-          </div>
-          <CountrySelector
-            value={country}
-            onChange={(val) => {
-              setCountry(val);
-              if (val !== 'SG') setDistrict('');
-            }}
-            className="bg-secondary border-border"
-          />
-        </div>
-
-        {/* District — Singapore only */}
-        {country === 'SG' && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-muted-foreground" />
-              <Label>거주 지역</Label>
-            </div>
-            <Select value={district} onValueChange={setDistrict}>
-              <SelectTrigger className="h-12 bg-secondary border-border rounded-xl">
-                <SelectValue placeholder="지역을 선택하세요" />
-              </SelectTrigger>
-              <SelectContent className="max-h-64 overflow-y-auto">
-                {SINGAPORE_DISTRICTS.map(d => (
-                  <SelectItem key={d} value={d}>{d}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              지역을 설정하면 이웃 책장 필터를 사용할 수 있습니다
-            </p>
-          </div>
-        )}
-
-        {/* Save Button */}
-        <Button
-          onClick={handleSaveProfile}
-          disabled={isSaving}
-          className="w-full h-12 rounded-xl"
-        >
-          {isSaving ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            <>
-              <Save className="w-4 h-4 mr-2" />
-              프로필 저장
-            </>
-          )}
-        </Button>
-
-        {/* Divider */}
-        <div className="relative py-4">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              계정 설정
-            </span>
-          </div>
-        </div>
-
-        {/* Theme toggle */}
-        <div className="flex items-center justify-between h-12 px-4 rounded-xl border border-border bg-secondary">
-          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-            {theme === 'dark' ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-primary" />}
-            {theme === 'dark' ? '다크 모드' : '라이트 모드'}
-          </div>
-          <Switch
-            checked={theme === 'dark'}
-            onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
-          />
-        </div>
-
-        {/* Push notification toggle — only when API is available */}
-        {isPushSupported && permission !== 'denied' && (
-          <div className="flex items-center justify-between h-12 px-4 rounded-xl border border-border bg-secondary">
-            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <Bell className="w-4 h-4 text-primary" />
-              백그라운드 알림
-            </div>
-            {pushLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-            ) : (
-              <Switch
-                checked={isSubscribed}
-                onCheckedChange={(checked) => checked ? requestAndSubscribe() : unsubscribePush()}
-              />
-            )}
-          </div>
-        )}
-
-        {/* Change Password */}
-        <Button
-          variant="outline"
-          onClick={() => setShowPasswordDialog(true)}
-          className="w-full h-12 rounded-xl justify-start gap-2"
-        >
-          <Lock className="w-4 h-4" />
-          비밀번호 변경
-        </Button>
-
-        {/* Admin Portal - Only visible to admins */}
-        {isAdmin && (
-          <Button
-            variant="outline"
-            onClick={() => navigate('/admin-portal')}
-            className="w-full h-12 rounded-xl justify-start gap-2 text-primary hover:text-primary hover:bg-primary/10"
+    <div className="h-full overflow-y-auto px-5 pt-5 pb-8">
+      <AnimatePresence mode="wait">
+        {view === 'overview' && (
+          <motion.div
+            key="overview"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
           >
-            <Shield className="w-4 h-4" />
-            관리자 포털
-          </Button>
+            {/* 정체성 */}
+            <div className="text-center">
+              <div className="relative inline-block">
+                <div
+                  className={`w-[82px] h-[82px] rounded-full flex items-center justify-center overflow-hidden ${
+                    avatarUrl ? 'bg-muted' : spineClassFrom(nickname || 'moa')
+                  }`}
+                >
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="font-display text-[36px] text-spine-text leading-none">
+                      {(nickname || '?').charAt(0)}
+                    </span>
+                  )}
+                </div>
+                <label className="absolute bottom-0 right-0 w-7 h-7 bg-primary rounded-full flex items-center justify-center cursor-pointer shadow-md">
+                  <Camera className="w-3.5 h-3.5 text-primary-foreground" />
+                  <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                </label>
+              </div>
+
+              <h1 className="font-display text-[28px] font-medium text-foreground mt-3 leading-none">
+                {nickname || '이름 없음'}
+              </h1>
+              {bio && <p className="text-xs text-muted-foreground mt-1.5">{bio}</p>}
+              {district && (
+                <p className="text-[10.5px] text-faint mt-1.5 flex items-center justify-center gap-1">
+                  <MapPin className="w-3 h-3" />
+                  {district}
+                </p>
+              )}
+            </div>
+
+            {/* 지표 */}
+            <div className="flex mt-5 bg-card border border-border rounded-[14px] py-4">
+              {[
+                { n: stats.registered, l: '등록한 책' },
+                { n: stats.lent, l: '빌려줌' },
+                { n: stats.deals, l: '거래' },
+              ].map((s, i) => (
+                <div
+                  key={s.l}
+                  className={`flex-1 text-center ${i < 2 ? 'border-r border-border' : ''}`}
+                >
+                  <p className="font-display text-[23px] text-primary leading-none">{s.n}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">{s.l}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* 메뉴 */}
+            <div className="mt-4">
+              <MenuRow icon={User} label="프로필 편집" onClick={() => setView('edit')} />
+              <MenuRow icon={Bell} label="알림 설정" onClick={() => setView('notifications')} />
+              <MenuRow
+                icon={theme === 'dark' ? Moon : Sun}
+                label={theme === 'dark' ? '다크 모드' : '라이트 모드'}
+                trailing={
+                  <Switch
+                    checked={theme === 'dark'}
+                    onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
+                  />
+                }
+              />
+              <MenuRow icon={Lock} label="비밀번호 변경" onClick={() => setShowPasswordDialog(true)} />
+              {isAdmin && (
+                <MenuRow icon={Shield} label="관리자 포털" onClick={() => navigate('/admin-portal')} />
+              )}
+              <MenuRow
+                icon={LogOut}
+                label="로그아웃"
+                danger
+                onClick={() => setShowSignOutDialog(true)}
+              />
+            </div>
+
+            <button
+              onClick={() => setShowDeleteDialog(true)}
+              className="w-full text-center text-[11px] text-faint hover:text-destructive transition-colors mt-6 py-2"
+            >
+              회원 탈퇴
+            </button>
+          </motion.div>
         )}
 
-        {/* Sign Out */}
-        <Button
-          variant="outline"
-          onClick={() => setShowSignOutDialog(true)}
-          className="w-full h-12 rounded-xl justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-        >
-          <LogOut className="w-4 h-4" />
-          로그아웃
-        </Button>
+        {view === 'edit' && (
+          <motion.div
+            key="edit"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+          >
+            <SubHeader title="프로필 편집" onBack={() => setView('overview')} />
 
-        {/* Delete Account */}
-        <Button
-          variant="ghost"
-          onClick={() => setShowDeleteDialog(true)}
-          className="w-full h-10 rounded-xl justify-center text-xs text-muted-foreground hover:text-destructive"
-        >
-          회원 탈퇴
-        </Button>
-      </motion.div>
+            <div className="space-y-5 mt-4">
+              <div className="space-y-2">
+                <Label htmlFor="nickname" className="text-[10px] font-bold tracking-wide text-muted-foreground">
+                  닉네임 *
+                </Label>
+                <Input
+                  id="nickname"
+                  value={nickname}
+                  onChange={(e) => setNickname(e.target.value)}
+                  placeholder="표시될 이름"
+                  className="h-11 text-[13px] bg-card border-border rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="bio" className="text-[10px] font-bold tracking-wide text-muted-foreground">
+                  한 줄 소개
+                </Label>
+                <Textarea
+                  id="bio"
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="자신을 소개해주세요…"
+                  maxLength={100}
+                  className="text-[13px] bg-card border-border rounded-xl resize-none"
+                  rows={2}
+                />
+                <p className="text-[10px] text-faint text-right">{bio.length}/100</p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-[10px] font-bold tracking-wide text-muted-foreground">성별</Label>
+                  <div className="flex items-center gap-2">
+                    {genderPublic ? (
+                      <Eye className="w-3.5 h-3.5 text-primary" />
+                    ) : (
+                      <EyeOff className="w-3.5 h-3.5 text-faint" />
+                    )}
+                    <Switch checked={genderPublic} onCheckedChange={setGenderPublic} />
+                    <span className="text-[10px] text-faint">{genderPublic ? '공개' : '비공개'}</span>
+                  </div>
+                </div>
+                <Select value={gender} onValueChange={setGender}>
+                  <SelectTrigger className="h-11 text-[13px] bg-card border-border rounded-xl">
+                    <SelectValue placeholder="성별 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">남성</SelectItem>
+                    <SelectItem value="female">여성</SelectItem>
+                    <SelectItem value="other">기타</SelectItem>
+                    <SelectItem value="prefer-not-to-say">밝히지 않음</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="age" className="text-[10px] font-bold tracking-wide text-muted-foreground">
+                    나이
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    {agePublic ? (
+                      <Eye className="w-3.5 h-3.5 text-primary" />
+                    ) : (
+                      <EyeOff className="w-3.5 h-3.5 text-faint" />
+                    )}
+                    <Switch checked={agePublic} onCheckedChange={setAgePublic} />
+                    <span className="text-[10px] text-faint">{agePublic ? '공개' : '비공개'}</span>
+                  </div>
+                </div>
+                <Input
+                  id="age"
+                  type="number"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  placeholder="나이를 입력하세요"
+                  min={13}
+                  max={120}
+                  className="h-11 text-[13px] bg-card border-border rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold tracking-wide text-muted-foreground flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5" />
+                  거주 국가
+                </Label>
+                <CountrySelector
+                  value={country}
+                  onChange={(val) => {
+                    setCountry(val);
+                    if (val !== 'SG') setDistrict('');
+                  }}
+                  className="bg-card border-border"
+                />
+              </div>
+
+              {country === 'SG' && (
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold tracking-wide text-muted-foreground flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5" />
+                    거주 지역
+                  </Label>
+                  <Select value={district} onValueChange={setDistrict}>
+                    <SelectTrigger className="h-11 text-[13px] bg-card border-border rounded-xl">
+                      <SelectValue placeholder="지역을 선택하세요" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-64 overflow-y-auto">
+                      {SINGAPORE_DISTRICTS.map((d) => (
+                        <SelectItem key={d} value={d}>
+                          {d}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-faint">
+                    지역을 설정하면 이웃 책장 필터를 사용할 수 있습니다
+                  </p>
+                </div>
+              )}
+
+              <Button
+                onClick={handleSaveProfile}
+                disabled={isSaving}
+                className="w-full h-[52px] rounded-xl text-sm font-bold"
+              >
+                {isSaving ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    프로필 저장
+                  </>
+                )}
+              </Button>
+            </div>
+          </motion.div>
+        )}
+
+        {view === 'notifications' && (
+          <motion.div
+            key="notifications"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+          >
+            <SubHeader title="알림 설정" onBack={() => setView('overview')} />
+
+            {/* iOS는 홈 화면에 추가하지 않으면 푸시를 아예 못 받으므로, 토글 대신 방법을 알려준다. */}
+            <div className="mt-4 rounded-[14px] border border-border bg-card p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-[13px] font-bold text-foreground">
+                  <Bell className="w-4 h-4 text-primary" />
+                  알림 받기
+                </div>
+                {!needsHomeScreenInstall &&
+                  isPushSupported &&
+                  permission !== 'denied' &&
+                  (pushLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-faint" />
+                  ) : (
+                    <Switch
+                      checked={isSubscribed}
+                      onCheckedChange={async (checked) => {
+                        if (!checked) {
+                          await unsubscribePush();
+                          return;
+                        }
+                        // 실패하면 왜 실패했는지 그대로 알린다
+                        const result = await requestAndSubscribe();
+                        if (result === 'granted') toast.success(pushResultMessage(result));
+                        else toast.error(pushResultMessage(result));
+                      }}
+                    />
+                  ))}
+              </div>
+
+              <ul className="space-y-1 text-[11px] text-muted-foreground">
+                <li>· 이웃이 내 책을 빌리고 싶어할 때</li>
+                <li>· 빌린 책의 반납일이 다가올 때</li>
+                <li>· 채팅 메시지가 도착했을 때</li>
+              </ul>
+
+              {needsHomeScreenInstall ? (
+                <div className="rounded-xl bg-muted p-3 space-y-1.5">
+                  <p className="text-[12px] font-bold text-foreground">
+                    iPhone은 홈 화면에 추가해야 알림을 받을 수 있어요
+                  </p>
+                  <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                    <Share className="w-3 h-3 shrink-0" />
+                    Safari 하단 <b className="text-foreground">공유</b> →{' '}
+                    <Plus className="w-3 h-3 shrink-0" />
+                    <b className="text-foreground">홈 화면에 추가</b>
+                  </p>
+                  <p className="text-[11px] text-faint">
+                    추가한 뒤 홈 화면 아이콘으로 열면 여기서 알림을 켤 수 있습니다.
+                  </p>
+                </div>
+              ) : permission === 'denied' ? (
+                <p className="text-[11px] text-destructive">
+                  브라우저에서 이 사이트의 알림이 차단돼 있어요. 주소창 왼쪽 자물쇠 → 알림 → 허용으로
+                  바꾼 뒤 새로고침해주세요.
+                </p>
+              ) : !isPushSupported ? (
+                <p className="text-[11px] text-muted-foreground">
+                  이 브라우저는 알림을 지원하지 않습니다.
+                </p>
+              ) : !isPushConfigured ? (
+                /* 푸시 서버 키(VAPID)가 아직 없다. 켜진 척하면 안 된다. */
+                <p className="text-[11px] text-muted-foreground">
+                  알림 서버가 아직 준비 중이에요. 정식 배포 후 사용할 수 있습니다.
+                </p>
+              ) : null}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Sign Out Dialog */}
       <AlertDialog open={showSignOutDialog} onOpenChange={setShowSignOutDialog}>
@@ -578,7 +689,12 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSignOut}>
+            <AlertDialogAction
+              onClick={() => {
+                setShowSignOutDialog(false);
+                onSignOut();
+              }}
+            >
               로그아웃
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -590,9 +706,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>비밀번호 변경</AlertDialogTitle>
-            <AlertDialogDescription>
-              새 비밀번호를 입력해주세요.
-            </AlertDialogDescription>
+            <AlertDialogDescription>새 비밀번호를 입력해주세요.</AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -620,15 +734,8 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleChangePassword}
-              disabled={isChangingPassword}
-            >
-              {isChangingPassword ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                '비밀번호 변경'
-              )}
+            <AlertDialogAction onClick={handleChangePassword} disabled={isChangingPassword}>
+              {isChangingPassword ? <Loader2 className="w-4 h-4 animate-spin" /> : '비밀번호 변경'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -640,7 +747,8 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
           <AlertDialogHeader>
             <AlertDialogTitle>정말 탈퇴하시겠습니까?</AlertDialogTitle>
             <AlertDialogDescription>
-              계정과 모든 데이터(등록한 책, 채팅 기록 등)가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+              계정과 모든 데이터(등록한 책, 채팅 기록 등)가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수
+              없습니다.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -651,6 +759,25 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isDeletingAccount ? <Loader2 className="w-4 h-4 animate-spin" /> : '탈퇴하기'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 자동 탈퇴 실패 시 대체 경로 — 유저가 삭제를 요청할 방법은 항상 열려 있어야 한다 */}
+      <AlertDialog open={showDeleteFallback} onOpenChange={setShowDeleteFallback}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>지금은 자동 탈퇴가 어렵습니다</AlertDialogTitle>
+            <AlertDialogDescription>
+              일시적인 문제로 즉시 탈퇴 처리가 되지 않았습니다. 아래 버튼으로 탈퇴 요청을 보내주시면
+              영업일 기준 7일 이내에 계정과 개인정보를 삭제해 드립니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>닫기</AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <a href={deletionRequestMailto}>탈퇴 요청 메일 보내기</a>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -680,10 +807,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
               <p className="text-sm text-muted-foreground mb-6">
                 죄송합니다. 아직 해당 지역에서는 서비스 이용이 준비되지 않았습니다.
               </p>
-              <Button
-                onClick={() => setShowRegionBlock(false)}
-                className="w-full rounded-xl"
-              >
+              <Button onClick={() => setShowRegionBlock(false)} className="w-full rounded-xl">
                 확인
               </Button>
             </motion.div>
@@ -691,5 +815,49 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
         )}
       </AnimatePresence>
     </div>
+  );
+};
+
+/* ── 보조 컴포넌트 ─────────────────────────────────────── */
+
+const SubHeader = ({ title, onBack }: { title: string; onBack: () => void }) => (
+  <div className="flex items-center gap-2">
+    <button
+      onClick={onBack}
+      className="p-1.5 -ml-1.5 rounded-full text-muted-foreground hover:bg-muted transition-colors"
+    >
+      <ChevronLeft className="w-5 h-5" />
+    </button>
+    <h1 className="font-display text-[24px] font-medium text-foreground leading-none">{title}</h1>
+  </div>
+);
+
+const MenuRow = ({
+  icon: Icon,
+  label,
+  onClick,
+  danger,
+  trailing,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  onClick?: () => void;
+  danger?: boolean;
+  trailing?: React.ReactNode;
+}) => {
+  const Wrapper = onClick ? 'button' : 'div';
+  return (
+    <Wrapper
+      onClick={onClick}
+      className="w-full flex items-center gap-3 py-3.5 px-1 border-b border-border text-left"
+    >
+      <Icon className={`w-[17px] h-[17px] shrink-0 ${danger ? 'text-destructive' : 'text-muted-foreground'}`} />
+      <span
+        className={`flex-1 text-[13px] font-semibold ${danger ? 'text-destructive' : 'text-foreground'}`}
+      >
+        {label}
+      </span>
+      {trailing ?? <ChevronRight className="w-[15px] h-[15px] text-faint shrink-0" />}
+    </Wrapper>
   );
 };

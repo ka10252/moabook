@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, BookOpen, Building2, ArrowLeftRight, Shield, Loader2, Home, Mail, LayoutDashboard } from 'lucide-react';
+import { Users, BookOpen, Building2, ArrowLeftRight, Shield, Loader2, Home, Mail, LayoutDashboard, Flag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { AdminUserManagement } from '@/components/admin/AdminUserManagement';
@@ -11,6 +11,7 @@ import { AdminBookManagement } from '@/components/admin/AdminBookManagement';
 import { AdminCommunityManagement } from '@/components/admin/AdminCommunityManagement';
 import { AdminTransactionMonitoring } from '@/components/admin/AdminTransactionMonitoring';
 import { AdminAnnouncementManagement } from '@/components/admin/AdminAnnouncementManagement';
+import { AdminReportManagement } from '@/components/admin/AdminReportManagement';
 
 const AdminPortal = () => {
   const navigate = useNavigate();
@@ -64,10 +65,14 @@ const AdminPortal = () => {
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid grid-cols-6 w-full max-w-3xl">
+          <TabsList className="grid grid-cols-7 w-full max-w-3xl">
             <TabsTrigger value="dashboard" className="flex items-center gap-1.5">
               <LayoutDashboard className="w-4 h-4" />
               <span className="hidden sm:inline">대시보드</span>
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="flex items-center gap-1.5">
+              <Flag className="w-4 h-4" />
+              <span className="hidden sm:inline">신고</span>
             </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center gap-1.5">
               <Users className="w-4 h-4" />
@@ -93,6 +98,10 @@ const AdminPortal = () => {
 
           <TabsContent value="dashboard">
             <AdminDashboard />
+          </TabsContent>
+
+          <TabsContent value="reports">
+            <AdminReportManagement />
           </TabsContent>
 
           <TabsContent value="users">

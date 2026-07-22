@@ -33,8 +33,7 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
     
     if (!title.trim()) {
       toast({
-        title: 'Title required',
-        description: 'Please enter a book title.',
+        title: '책 제목을 입력해주세요',
         variant: 'destructive',
       });
       return;
@@ -46,14 +45,14 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
 
     if (error) {
       toast({
-        title: 'Failed to add',
+        title: '추가에 실패했습니다',
         description: error.message,
         variant: 'destructive',
       });
     } else {
       toast({
-        title: 'Added to wishlist!',
-        description: 'Others can now see what you\'re looking for.',
+        title: '위시리스트에 추가했어요',
+        description: '이웃들이 어떤 책을 찾고 있는지 볼 수 있습니다.',
       });
       setTitle('');
       setAuthor('');
@@ -91,9 +90,9 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
             </button>
           )}
           <h3 className="font-semibold text-foreground">
-            {mode === 'search' && 'Find a Book'}
-            {mode === 'manual' && 'Enter Book Details'}
-            {mode === 'confirm' && 'Confirm & Add Notes'}
+            {mode === 'search' && '책 찾기'}
+            {mode === 'manual' && '직접 입력'}
+            {mode === 'confirm' && '한마디 남기기'}
           </h3>
         </div>
         <button
@@ -129,7 +128,7 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
             className="space-y-3"
           >
             <Input
-              placeholder="Book title *"
+              placeholder="책 제목 *"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={200}
@@ -137,14 +136,14 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
               autoFocus
             />
             <Input
-              placeholder="Author (optional)"
+              placeholder="저자 (선택)"
               value={author}
               onChange={(e) => setAuthor(e.target.value)}
               maxLength={100}
               className="bg-muted border-0"
             />
             <Textarea
-              placeholder="Notes - why you want it, edition preferences, etc. (optional)"
+              placeholder="이웃에게 한마디 — 왜 찾고 있는지, 어떤 판본이면 좋은지 (선택)"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               maxLength={500}
@@ -160,7 +159,7 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
               ) : (
                 <Plus className="w-4 h-4" />
               )}
-              Add to Wishlist
+              위시리스트에 추가
             </Button>
           </motion.div>
         )}
@@ -175,10 +174,10 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
           >
             <div className="bg-muted rounded-xl p-3 space-y-1">
               <p className="font-medium text-foreground">{title}</p>
-              {author && <p className="text-sm text-muted-foreground">by {author}</p>}
+              {author && <p className="text-sm text-muted-foreground">{author}</p>}
             </div>
             <Textarea
-              placeholder="Notes - why you want it, edition preferences, etc. (optional)"
+              placeholder="이웃에게 한마디 — 왜 찾고 있는지, 어떤 판본이면 좋은지 (선택)"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               maxLength={500}
@@ -195,7 +194,7 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
               ) : (
                 <Plus className="w-4 h-4" />
               )}
-              Add to Wishlist
+              위시리스트에 추가
             </Button>
           </motion.div>
         )}

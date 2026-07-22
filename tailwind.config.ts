@@ -15,8 +15,9 @@ export default {
     extend: {
       fontFamily: {
         sans: ["'Plus Jakarta Sans'", "system-ui", "sans-serif"],
-        display: ["'Cormorant Garamond'", "'Noto Serif KR'", "Georgia", "serif"],
-        serif: ["'Cormorant Garamond'", "'Noto Serif KR'", "Georgia", "serif"],
+        // Instrument Serif는 한글 글리프가 없다. Noto Serif KR 폴백이 반드시 뒤따라야 한다.
+        display: ["'Instrument Serif'", "'Noto Serif KR'", "Georgia", "serif"],
+        serif: ["'Instrument Serif'", "'Noto Serif KR'", "Georgia", "serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -52,15 +53,6 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        wood: {
-          light: "hsl(var(--wood-light))",
-          medium: "hsl(var(--wood-medium))",
-          dark: "hsl(var(--wood-dark))",
-          grain: "hsl(var(--wood-grain))",
-        },
-        shelf: {
-          shadow: "hsl(var(--shelf-shadow))",
-        },
         book: {
           1: "hsl(var(--book-spine-1))",
           2: "hsl(var(--book-spine-2))",
@@ -75,16 +67,10 @@ export default {
           borrowed: "hsl(var(--bookmark-borrowed))",
           "borrowed-foreground": "hsl(var(--bookmark-borrowed-foreground))",
         },
-        sidebar: {
-          DEFAULT: "hsl(var(--sidebar-background))",
-          foreground: "hsl(var(--sidebar-foreground))",
-          primary: "hsl(var(--sidebar-primary))",
-          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
-          accent: "hsl(var(--sidebar-accent))",
-          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
-          border: "hsl(var(--sidebar-border))",
-          ring: "hsl(var(--sidebar-ring))",
-        },
+        // Bookshelf Refresh
+        faint: "hsl(var(--faint))",              // eyebrow / 흐린 텍스트
+        "spine-text": "hsl(var(--book-spine-text))",
+        "ghost-dash": "hsl(var(--ghost-dash))",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -95,7 +81,6 @@ export default {
         "4xl": "2rem",
       },
       boxShadow: {
-        "shelf": "0 8px 32px -8px hsl(var(--shelf-shadow) / 0.5)",
         "book": "2px 0 8px rgba(0,0,0,0.15), inset -2px 0 4px rgba(0,0,0,0.2)",
         "hip": "0 4px 24px -4px rgba(0,0,0,0.12)",
         "hip-lg": "0 8px 40px -8px rgba(0,0,0,0.15)",

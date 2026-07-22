@@ -1,73 +1,105 @@
-# Welcome to your Lovable project
+# moabook (모아북)
 
-## Project info
+> **"우리 동네의 책장을 하나로 모은다."**
+> 싱가포르 거주 한인·유학생이 동네·커뮤니티 단위로 책을 빌려주고, 빌리고, 사고파는 하이퍼로컬 북 커뮤니티.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+---
 
-## How can I edit this code?
+## 왜 만들었나
 
-There are several ways of editing your application.
+싱가포르 유학 생활에서 한 번에 들고 올 수 있는 책은 2~3권뿐이다. 한 학기면 다 읽고, 한글책은 현지에서 구하기 어렵고 비싸다. 반대로 떠나는 유학생은 책을 처분해야 한다. **가까이 있는 사람의 책장에 무엇이 있는지 알 수 없다는 것**이 문제였다.
 
-**Use Lovable**
+배경·목표·요구사항은 **[PRD.md](./PRD.md)** 참고.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## 주요 기능
 
-**Use your preferred IDE**
+| 기능 | 설명 |
+|------|------|
+| **책장** | 나무 책장 UI에 책등(spine)으로 시각화 |
+| **책 등록** | Google Books / Open Library 검색 자동완성, 상태(S/A/B), 대여·판매 모드 |
+| **거래** | 대여/구매 요청 → 수락 → 반납 확인까지 상태 관리, 반납일 D-day 배지 |
+| **채팅** | Supabase Realtime 기반 1:1 채팅, 대여 요청/수락/반납 카드 |
+| **커뮤니티** | PIN 기반 비공개 그룹, 게시판, 초대 링크 |
+| **위시리스트** | 읽고 싶은 책 등록 |
+| **신고·차단** | 콘텐츠 신고, 유저 차단 (서버 RLS로 양방향 강제) |
+| **관리자 포털** | 유저·도서·거래·커뮤니티·신고 관리 (`/admin-portal`) |
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 기술 스택
 
-Follow these steps:
+- **프론트엔드**: Vite + React 18 + TypeScript + Tailwind CSS + shadcn/ui
+- **데이터**: TanStack Query, Supabase JS
+- **백엔드**: Supabase (Postgres + Auth + Realtime + Storage + Edge Functions)
+- **애니메이션**: Framer Motion
+- **PWA**: vite-plugin-pwa (커스텀 서비스 워커)
+
+> 모든 테이블에 Row Level Security(RLS) 적용. 권한·차단 판정은 클라이언트가 아니라 DB에서 강제한다.
+
+---
+
+## 로컬 실행
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+npm install
+npm run dev          # http://localhost:8080
 ```
 
-**Edit a file directly in GitHub**
+`.env` 필요 (`.env.example` 참고):
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_PUBLISHABLE_KEY=...
+VITE_GOOGLE_BOOKS_API_KEY=...
+VITE_VAPID_PUBLIC_KEY=...        # 웹 푸시용 (선택)
+```
 
-**Use GitHub Codespaces**
+### 그 외 명령어
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```sh
+npm run build        # 프로덕션 빌드
+npm run lint         # ESLint
+npm test             # Vitest
+```
 
-## What technologies are used for this project?
+---
 
-This project is built with:
+## 데이터베이스
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+스키마는 `supabase/migrations/`에 시간순으로 있다. 새 환경을 세팅하려면 Supabase SQL Editor에서 순서대로 실행한다.
 
-## How can I deploy this project?
+```
+supabase/
+├── migrations/           # 스키마 (순서대로 실행)
+└── functions/
+    ├── delete-account/   # 인앱 회원 탈퇴 (auth.users까지 삭제)
+    └── send-push/        # 웹 푸시 발송
+```
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+> ⚠️ Supabase 무료 플랜은 일정 기간 활동이 없으면 프로젝트를 **일시정지(pause)** 시킨다.
+> 앱 전체가 먹통이고 API 호스트가 DNS에서 안 잡히면, 코드를 의심하기 전에 대시보드에서 프로젝트 상태부터 확인할 것.
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes, you can!
+## 문서
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+| 문서 | 내용 |
+|------|------|
+| [PRD.md](./PRD.md) | 제품 요구사항 — 문제 정의, 목표·지표, 기능 명세, 출시 계획, 법적·보안 요건 |
+| [DESIGN_GUIDE.md](./DESIGN_GUIDE.md) | 브랜드·디자인 시스템 — 컬러 토큰, 타이포그래피, 컴포넌트, 모션 |
+| `LAUNCH_ISSUES.md` | 출시 전 검토 이슈 (비공개) |
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+---
+
+## 성능 기준선
+
+회귀 감지용 기준. 크게 벗어나면 원인을 찾을 것.
+
+| 항목 | 기준 |
+|------|------|
+| 메인 JS (gzip) | ~277 KB |
+| CSS (gzip) | ~24 KB |
+| PWA 프리캐시 | ~1,776 KB |
+| 타입 에러 | 0 |

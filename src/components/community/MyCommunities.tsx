@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, ChevronRight, Loader2, LogOut, BookOpen } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Users, ChevronRight, Loader2, LogOut } from 'lucide-react';
+import { spineClassFrom } from '@/lib/spineColor';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,22 +36,9 @@ export const MyCommunities = ({
   isLoading,
   leavingId,
   onLeave,
-  onViewAll,
   onCommunityClick,
 }: MyCommunitiesProps) => {
   const [confirmLeave, setConfirmLeave] = useState<{ id: string; name: string } | null>(null);
-
-  const handleLeaveClick = (e: React.MouseEvent, id: string, name: string) => {
-    e.stopPropagation();
-    setConfirmLeave({ id, name });
-  };
-
-  const handleConfirmLeave = () => {
-    if (confirmLeave) {
-      onLeave(confirmLeave.id, confirmLeave.name);
-      setConfirmLeave(null);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -62,114 +48,71 @@ export const MyCommunities = ({
     );
   }
 
-  if (communities.length === 0) {
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="bg-secondary/50 rounded-2xl p-6 text-center"
-      >
-        <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-        <p className="text-sm text-muted-foreground">
-          아직 가입한 커뮤니티가 없습니다.
-        </p>
-        <p className="text-xs text-muted-foreground mt-1">
-          아래에서 커뮤니티를 찾아보세요!
-        </p>
-      </motion.div>
-    );
-  }
-
   return (
     <>
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-            내 커뮤니티
-          </h2>
-          {communities.length > 3 && (
-            <button
-              onClick={onViewAll}
-              className="text-xs text-primary flex items-center gap-1 hover:underline"
-            >
-              전체 보기
-              <ChevronRight className="w-3 h-3" />
-            </button>
-          )}
-        </div>
+      <section className="space-y-2">
+        <p className="font-display italic text-[15px] text-foreground px-0.5">내 커뮤니티</p>
 
-        <ScrollArea className="w-full whitespace-nowrap">
-          <div className="flex gap-3 pb-2">
-            <AnimatePresence>
-              {communities.map((community) => (
-                <motion.div
-                  key={community.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className="relative flex-shrink-0 w-48 h-28 rounded-xl overflow-hidden cursor-pointer group"
-                  onClick={() => onCommunityClick?.(community)}
-                >
-                  {/* Background Image or Default */}
-                  <div className="absolute inset-0">
-                    {community.cover_url ? (
-                      <>
-                        <img
-                          src={community.cover_url}
-                          alt={community.name}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors" />
-                      </>
-                    ) : (
-                      <>
-                        <div className="w-full h-full bg-gradient-to-br from-primary/80 via-primary/60 to-accent/70" />
-                        <div className="absolute inset-0 flex items-center justify-center opacity-10">
-                          <BookOpen className="w-14 h-14 text-white" />
-                        </div>
-                        <div className="absolute inset-0 bg-black/15 group-hover:bg-black/25 transition-colors" />
-                      </>
-                    )}
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="relative z-10 h-full p-3 flex flex-col justify-between">
-                    <div className="flex items-start justify-between">
-                      <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                        <Users className="w-4 h-4 text-white" />
-                      </div>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={(e) => handleLeaveClick(e, community.id, community.name)}
-                        disabled={leavingId === community.id}
-                        className="h-7 w-7 text-white/70 hover:text-white hover:bg-white/20"
-                      >
-                        {leavingId === community.id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <LogOut className="w-3.5 h-3.5" />
-                        )}
-                      </Button>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-white text-sm truncate drop-shadow-md">
-                        {community.name}
-                      </p>
-                      <p className="text-xs text-white/80">
-                        {community.member_count || 0}명
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+        {communities.length === 0 ? (
+          <div className="bg-muted/60 rounded-[14px] p-5 text-center">
+            <Users className="w-8 h-8 text-faint mx-auto mb-2" />
+            <p className="text-xs text-muted-foreground">아직 가입한 커뮤니티가 없습니다</p>
+            <p className="text-[11px] text-faint mt-1">아래에서 커뮤니티를 찾아보세요</p>
           </div>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
-      </div>
+        ) : (
+          <AnimatePresence>
+            {communities.map((community) => (
+              <motion.div
+                key={community.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                onClick={() => onCommunityClick?.(community)}
+                className="flex items-center gap-3 bg-card border border-border rounded-[14px] p-3 cursor-pointer"
+              >
+                {community.cover_url ? (
+                  <img
+                    src={community.cover_url}
+                    alt=""
+                    className="w-[42px] h-[42px] rounded-[11px] object-cover shrink-0"
+                  />
+                ) : (
+                  <span
+                    className={`w-[42px] h-[42px] rounded-[11px] flex items-center justify-center shrink-0 font-display text-[19px] text-spine-text ${spineClassFrom(community.name)}`}
+                  >
+                    {community.name.charAt(0)}
+                  </span>
+                )}
 
-      {/* Leave Confirmation Dialog */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-bold text-foreground truncate">{community.name}</p>
+                  <p className="text-[10.5px] text-faint mt-0.5">
+                    멤버 {community.member_count ?? 0}명
+                  </p>
+                </div>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setConfirmLeave({ id: community.id, name: community.name });
+                  }}
+                  disabled={leavingId === community.id}
+                  className="p-1.5 rounded-full text-faint hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
+                  title="탈퇴"
+                >
+                  {leavingId === community.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <LogOut className="w-4 h-4" />
+                  )}
+                </button>
+                <ChevronRight className="w-[17px] h-[17px] text-faint shrink-0" />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        )}
+      </section>
+
       <AlertDialog open={!!confirmLeave} onOpenChange={() => setConfirmLeave(null)}>
         <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
@@ -181,7 +124,10 @@ export const MyCommunities = ({
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-xl">취소</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleConfirmLeave}
+              onClick={() => {
+                if (confirmLeave) onLeave(confirmLeave.id, confirmLeave.name);
+                setConfirmLeave(null);
+              }}
               className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               나가기

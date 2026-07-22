@@ -11,13 +11,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { BookMode } from '@/lib/bookMode';
 
 interface PostBook {
   id: string;
   title: string;
   author: string;
   cover_url: string | null;
-  mode: 'rent' | 'sell';
+  mode: BookMode;
   condition: 'S' | 'A' | 'B';
 }
 

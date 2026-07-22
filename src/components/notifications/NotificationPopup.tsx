@@ -6,18 +6,75 @@ import { useNotifications, Notification } from '@/hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { routeFor } from '@/lib/notificationRoutes';
 
 interface NotificationPopupProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenChat?: (target: { userId: string; conversationId?: string }) => void;
+  /** 위시 매칭·커뮤니티 새 책 → 그 책을 연다 */
+  onOpenBook?: (bookId: string) => void;
+  /** 반납 임박·연체 → 거래 현황을 연다 */
+  onOpenTransactions?: () => void;
+  /** 커뮤니티 새 멤버 → 커뮤니티 탭을 연다 */
+  onOpenCommunity?: (communityId: string) => void;
 }
 
-export const NotificationPopup = ({ isOpen, onClose }: NotificationPopupProps) => {
+export const NotificationPopup = ({
+  isOpen,
+  onClose,
+  onOpenChat,
+  onOpenBook,
+  onOpenTransactions,
+  onOpenCommunity,
+}: NotificationPopupProps) => {
   const { notifications, loading, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
 
+  /**
+   * 알림을 눌렀는데 아무 일도 안 일어나면, 유저는 다음부터 알림을 안 누른다.
+   * 모든 알림은 "그래서 뭘 보라는 건데?"에 답하는 화면으로 이어져야 한다.
+   */
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.is_read) {
       await markAsRead(notification.id);
+    }
+
+    // 연결표는 notificationRoutes.ts 한 곳에만 있다. 여기서 타입을 나열하기 시작하면
+    // 새 알림이 추가될 때마다 한쪽만 고쳐지고 다른 쪽은 죽은 링크로 남는다.
+    const route = routeFor(notification.type);
+    if (!route) return;
+
+    const data = notification.data ?? {};
+
+    switch (route.destination) {
+      case 'chat': {
+        const userId = data.sender_id as string | undefined;
+        const conversationId = data.conversation_id as string | undefined;
+        if (!userId && !conversationId) return;
+        // 같은 상대와 책별로 여러 대화가 있을 수 있다. sender_id만으로는 엉뚱한 방이 열린다.
+        onClose();
+        onOpenChat?.({ userId: userId ?? '', conversationId });
+        return;
+      }
+      case 'book': {
+        const bookId = data.book_id as string | undefined;
+        if (!bookId) return;
+        onClose();
+        onOpenBook?.(bookId);
+        return;
+      }
+      case 'transactions': {
+        onClose();
+        onOpenTransactions?.();
+        return;
+      }
+      case 'community': {
+        const communityId = data.community_id as string | undefined;
+        if (!communityId) return;
+        onClose();
+        onOpenCommunity?.(communityId);
+        return;
+      }
     }
   };
 

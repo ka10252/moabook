@@ -11,6 +11,7 @@ import { CommunitySelector } from '@/components/upload/CommunitySelector';
 import { CoverUploader } from '@/components/upload/CoverUploader';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { BookMode } from '@/lib/bookMode';
 
 interface EditBookModalProps {
   book: Book | null;
@@ -28,7 +29,7 @@ export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => 
     description: '',
     coverUrl: '',
     condition: 'A' as 'S' | 'A' | 'B',
-    mode: 'rent' as 'rent' | 'sell',
+    mode: 'rent' as BookMode,
     price: '',
     isPublic: true,
     communityId: null as string | null,
@@ -66,8 +67,7 @@ export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => 
 
     if (formData.mode === 'sell' && !formData.price) {
       toast({
-        title: 'Price required',
-        description: 'Please enter a price for selling.',
+        title: '판매 가격을 입력해주세요',
         variant: 'destructive',
       });
       return;
@@ -206,7 +206,7 @@ export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => 
                 {/* Mode */}
                 <ModeToggle
                   value={formData.mode}
-                  onChange={(mode) => setFormData(prev => ({ ...prev, mode }))}
+                  onChange={(mode) => setFormData(prev => ({ ...prev, mode, price: mode === 'sell' ? prev.price : '' }))}
                 />
 
                 {/* Price (for sell mode) */}
@@ -218,7 +218,7 @@ export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => 
                       exit={{ opacity: 0, height: 0 }}
                       className="space-y-2 overflow-hidden"
                     >
-                      <label className="text-sm font-medium text-foreground">Price ($)</label>
+                      <label className="text-sm font-medium text-foreground">판매 가격 (S$)</label>
                       <Input
                         type="number"
                         value={formData.price}

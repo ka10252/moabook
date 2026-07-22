@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Search, Plus } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -11,6 +11,7 @@ import { JoinCommunityForm } from './JoinCommunityForm';
 import { CommunityDetailModal } from './CommunityDetailModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useBackClose } from '@/hooks/useBackClose';
 import { toast } from 'sonner';
 
 
@@ -40,6 +41,9 @@ export const CommunityPage = ({ onNavigateToBookshelf, onOpenBoard }: CommunityP
   const [leavingId, setLeavingId] = useState<string | null>(null);
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
   const [detailCommunity, setDetailCommunity] = useState<Community | null>(null);
+
+  // 뒤로가기로 상세 모달을 닫는다
+  useBackClose(!!detailCommunity, () => setDetailCommunity(null));
 
   useEffect(() => {
     fetchCommunities();
@@ -140,18 +144,13 @@ export const CommunityPage = ({ onNavigateToBookshelf, onOpenBoard }: CommunityP
   return (
     <div className="flex flex-col h-full max-h-full overflow-hidden">
       {/* Header - Fixed */}
-      <div className="flex-shrink-0 px-4 pt-6 pb-4">
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center"
-        >
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-primary/10 rounded-2xl mb-3">
-            <Users className="w-7 h-7 text-primary" />
-          </div>
-          <p className="eyebrow">Communities</p>
-          <h1 className="font-display text-[28px] font-medium tracking-tight text-foreground mt-1">커뮤니티</h1>
-          <p className="text-muted-foreground text-sm mt-1.5">
+      <div className="flex-shrink-0 px-5 pt-5 pb-2">
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+          <p className="eyebrow">COMMUNITIES</p>
+          <h1 className="font-display text-[30px] font-medium leading-none tracking-tight text-foreground mt-1">
+            커뮤니티
+          </h1>
+          <p className="text-xs text-muted-foreground mt-1.5">
             비공개 그룹에서 책을 나눠보세요
           </p>
         </motion.div>
@@ -169,22 +168,22 @@ export const CommunityPage = ({ onNavigateToBookshelf, onOpenBoard }: CommunityP
               className="flex flex-col h-full"
             >
               {/* Search Bar - Fixed */}
-              <div className="flex-shrink-0 px-4 pb-4">
+              <div className="flex-shrink-0 px-5 pb-3">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-faint" />
                   <Input
                     type="text"
-                    placeholder="커뮤니티 검색..."
+                    placeholder="커뮤니티 검색…"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 h-12 bg-secondary border-border rounded-xl"
+                    className="pl-9 h-10 text-xs bg-card border-border rounded-xl"
                   />
                 </div>
               </div>
 
               {/* Scrollable Content */}
               <ScrollArea className="flex-1 min-h-0">
-                <div className="space-y-6 px-4 pb-24">
+                <div className="space-y-5 px-5 pb-24">
                   {/* My Communities */}
                   <MyCommunities
                     communities={myCommunities}

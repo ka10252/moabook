@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MessageCircle, Heart, Edit2, Trash2, Loader2, Clock } from 'lucide-react';
+import { X, MessageCircle, Heart, Edit2, Trash2, Loader2, Clock, Flag } from 'lucide-react';
 import { Book } from '@/types/book';
+import { BookMode, MODE_EYEBROW, MODE_CTA, availabilityLabel } from '@/lib/bookMode';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { MemberProfileModal } from '@/components/profile/MemberProfileModal';
+import { ReportModal } from '@/components/report/ReportModal';
+import { useGuestGate } from '@/hooks/useGuestGate';
 import { DefaultBookCover } from '@/components/DefaultBookCover';
+import { cn } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +25,7 @@ import {
 interface BookDetailWithActionsProps {
   book: Book | null;
   onClose: () => void;
-  onChat: (ownerId: string, bookId: string, bookMode: 'rent' | 'sell') => void;
+  onChat: (ownerId: string, bookId: string, bookMode: BookMode) => void;
   onEdit?: (book: Book) => void;
   onDelete?: (bookId: string) => Promise<void>;
   isLiked?: boolean;
@@ -32,7 +36,7 @@ interface BookDetailWithActionsProps {
 interface SiblingBook {
   id: string;
   status: 'available' | 'rented' | 'sold';
-  mode: 'rent' | 'sell';
+  mode: BookMode;
   owner_id: string;
   owner?: { nickname: string; avatar_url?: string | null };
 }
@@ -54,6 +58,8 @@ export const BookDetailWithActions = ({
   currentUserId 
 }: BookDetailWithActionsProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const { requireAuth } = useGuestGate();
   const [deleting, setDeleting] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
   const [showOwnerProfile, setShowOwnerProfile] = useState(false);
@@ -128,6 +134,22 @@ export const BookDetailWithActions = ({
   const isOwner = currentUserId === book.owner_id;
   const hasValidCover = book.cover && book.cover.length > 0;
 
+  // 상태 줄에 쓸 한글 라벨. 대여중 / 대여 가능(+대기) / 나눔·판매 라벨.
+  const statusText =
+    book.status === 'rented'
+      ? '대여중'
+      : book.mode === 'rent'
+      ? `대여 가능${waitlistCount > 0 ? ` · ${waitlistCount}명 대기` : ''}`
+      : availabilityLabel(book.mode, book.price);
+
+  // 책 상태(S/A/B)를 뜻과 3단계 눈금으로. "상태 A"만 보면 뜻을 모른다.
+  const CONDITION_META = {
+    S: { word: '새 책', level: 3, good: true },
+    A: { word: '양호', level: 2, good: true },
+    B: { word: '보통', level: 1, good: false },
+  } as const;
+  const cond = CONDITION_META[book.condition] ?? CONDITION_META.A;
+
   const handleDelete = async () => {
     if (!onDelete) return;
     setDeleting(true);
@@ -155,206 +177,252 @@ export const BookDetailWithActions = ({
       <AnimatePresence>
         {book && (
           <motion.div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
           >
+            {/* 하단 시트 — 아래로 드래그하거나 바깥을 탭하면 닫힌다 */}
             <motion.div
-              className="w-[calc(100%-2rem)] max-w-lg box-border"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="w-full max-w-[520px] box-border bg-card overflow-hidden flex flex-col max-h-[88vh]"
+              style={{ borderRadius: 'var(--sheet-radius) var(--sheet-radius) 0 0' }}
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+              drag="y"
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={{ top: 0, bottom: 0.4 }}
+              onDragEnd={(_, info) => {
+                if (info.offset.y > 120 || info.velocity.y > 500) onClose();
+              }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="glass-card h-full max-h-[85vh] overflow-hidden flex flex-col">
-                {/* Header - fixed height */}
-                <div className="relative h-56 flex-shrink-0">
-                  {hasValidCover ? (
-                    <img
-                      src={book.cover}
-                      alt={book.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <DefaultBookCover 
-                      title={book.title} 
-                      author={book.author} 
-                      className="w-full h-full"
-                    />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
-                  
-                  {/* Close button */}
+              {/* 1. 그랩 핸들 */}
+              <div className="flex justify-center pt-3 pb-1 shrink-0 cursor-grab active:cursor-grabbing">
+                <div className="w-[38px] h-1 rounded-full bg-[#D3CCBC]" />
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-5 pt-3 pb-5 min-h-0">
+                {/* 2. 표지 + 제목/저자 */}
+                <div className="flex gap-4">
+                  <div className="w-[92px] shrink-0 aspect-[2/3] rounded-xl overflow-hidden shadow-hip">
+                    {hasValidCover ? (
+                      <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <DefaultBookCover title={book.title} author={book.author} className="w-full h-full" />
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0 pt-1">
+                    {/* 상태등 + 영문 모드 + 한글 상태를 한 줄로. 예전엔 이 정보가
+                        eyebrow·배지·배지 세 곳에 흩어져 같은 말을 세 번 했다. */}
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={cn(
+                          'w-2 h-2 rounded-full shrink-0',
+                          book.status === 'available'
+                            ? 'bg-green-500'
+                            : book.status === 'rented'
+                            ? 'bg-red-500'
+                            : 'bg-muted-foreground'
+                        )}
+                      />
+                      <span className="eyebrow">{MODE_EYEBROW[book.mode]}</span>
+                      <span
+                        className={cn(
+                          'text-[11px] font-semibold',
+                          book.status === 'available'
+                            ? 'text-green-600 dark:text-green-500'
+                            : book.status === 'rented'
+                            ? 'text-red-500'
+                            : 'text-muted-foreground'
+                        )}
+                      >
+                        · {statusText}
+                      </span>
+                    </div>
+                    <h2 className="font-display text-[22px] leading-tight text-foreground mt-1">
+                      {book.title}
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-1">{book.author}</p>
+                  </div>
+
                   <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 p-2 rounded-full bg-card/80 backdrop-blur-sm text-foreground hover:bg-card transition-colors"
+                    className="self-start p-1.5 rounded-full text-muted-foreground hover:bg-muted transition-colors shrink-0"
+                    aria-label="닫기"
                   >
                     <X className="w-5 h-5" />
                   </button>
-                  
-                  {/* Badges */}
-                  <div className="absolute top-4 left-4 flex gap-2">
-                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-                      book.condition === 'S' 
-                        ? 'bg-accent text-accent-foreground' 
-                        : book.condition === 'A'
-                        ? 'bg-secondary text-secondary-foreground'
-                        : 'bg-muted text-muted-foreground'
-                    }`}>
-                      {book.condition === 'S' ? '새 책' : book.condition === 'A' ? '양호' : '보통'}
-                    </span>
-                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-                      book.mode === 'rent' 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-accent text-accent-foreground'
-                    }`}>
-                      {book.mode === 'rent' ? '대여' : `₩${book.price?.toLocaleString()}`}
-                    </span>
-                  </div>
-                </div>
-                
-                {/* Content - scrollable */}
-                <div className="flex-1 overflow-y-auto p-6 min-h-0">
-                  <p className="eyebrow">{book.mode === 'rent' ? 'For Rent' : 'For Sale'}</p>
-                  <h2 className="font-display text-[26px] font-medium leading-tight tracking-tight text-foreground mt-1.5 mb-1">{book.title}</h2>
-                  <p className="font-display italic text-muted-foreground mb-5">by {book.author}</p>
-                  
-                  {/* Description - max 4 lines with truncation */}
-                  {book.description && (
-                    <p className="text-foreground/80 leading-relaxed mb-6 line-clamp-4">
-                      {truncateDescription(book.description)}
-                    </p>
-                  )}
-                  
-                  {/* Owner info - clickable */}
-                  <div 
-                    className="bg-muted/50 rounded-2xl p-4 mb-4 cursor-pointer hover:bg-muted/70 transition-colors"
-                    onClick={() => setShowOwnerProfile(true)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Avatar className="w-10 h-10">
-                        <AvatarImage src={book.owner?.avatar_url || undefined} />
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          {book.owner?.nickname?.charAt(0) || '?'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <p className="font-semibold text-foreground">{book.owner?.nickname || '알 수 없음'}</p>
-                        {book.community && (
-                          <p className="text-sm text-primary">{book.community.name}</p>
-                        )}
-                        {book.is_public && !book.community && (
-                          <p className="text-sm text-muted-foreground">공개 도서</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Sibling books — other owners of the same title */}
-                  {siblingBooks.length > 0 && (
-                    <div className="mt-4">
-                      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2.5">
-                        이 책을 가진 다른 이웃 ({siblingBooks.length})
-                      </p>
-                      <div className="space-y-2">
-                        {siblingBooks.map((sibling) => (
-                          <div key={sibling.id} className="bg-muted/40 rounded-xl p-3 flex items-center gap-3">
-                            <Avatar className="w-8 h-8 shrink-0">
-                              <AvatarImage src={sibling.owner?.avatar_url || undefined} />
-                              <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                                {sibling.owner?.nickname?.charAt(0) || '?'}
-                              </AvatarFallback>
-                            </Avatar>
-                            <p className="flex-1 min-w-0 text-sm font-medium text-foreground truncate">
-                              {sibling.owner?.nickname || '알 수 없음'}
-                            </p>
-                            <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold shrink-0 ${
-                              sibling.status === 'available'
-                                ? 'bg-green-500/15 text-green-600'
-                                : 'bg-amber-500/15 text-amber-600'
-                            }`}>
-                              {sibling.status === 'available' ? '대여 가능' : '대여중'}
-                            </span>
-                            {sibling.status === 'available' && currentUserId && sibling.owner_id !== currentUserId && (
-                              <button
-                                className="text-[11px] px-2.5 py-1.5 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors shrink-0"
-                                onClick={() => onChat(sibling.owner_id, sibling.id, sibling.mode)}
-                              >
-                                요청
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
 
-                {/* Actions - removed Share button */}
-                <div className="flex-shrink-0 p-4 border-t border-border bg-card/50">
-                  <div className="flex gap-3">
-                    {isOwner ? (
-                      <>
-                        {/* Owner actions: Edit & Delete */}
-                        <button 
-                          className="flex-1 btn-hip flex items-center justify-center gap-2"
-                          onClick={() => onEdit?.(book)}
-                        >
-                          <Edit2 className="w-4 h-4" />
-                          수정
-                        </button>
-                        <button 
-                          className="flex-1 py-3 px-4 rounded-2xl bg-destructive/10 text-destructive font-semibold flex items-center justify-center gap-2 hover:bg-destructive/20 transition-colors"
-                          onClick={() => setShowDeleteConfirm(true)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          삭제
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        {book.status === 'rented' ? (
-                          /* Book is rented → show waitlist button */
-                          <button
-                            className={`btn-hip flex-1 flex items-center justify-center gap-2 ${isInWaitlist ? 'opacity-70' : ''}`}
-                            onClick={handleWaitlist}
-                            disabled={waitlistLoading}
-                          >
-                            {waitlistLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
-                            {isInWaitlist ? '대기 취소' : `대기 신청${waitlistCount > 0 ? ` (${waitlistCount}명)` : ''}`}
-                          </button>
-                        ) : (
-                          /* Book is available → chat/request */
-                          <button
-                            className="btn-hip flex-1 flex items-center justify-center gap-2"
-                            onClick={() => onChat(book.owner_id, book.id, book.mode)}
-                          >
-                            <MessageCircle className="w-4 h-4" />
-                            {book.mode === 'rent' ? '대여 요청' : '구매 요청'}
-                          </button>
-                        )}
-                      </>
+                {/* 3. 책 상태 — 뜻 + 3단계 눈금(컴팩트, 왼쪽에 붙여 한 그룹) */}
+                <div className="flex items-center gap-2.5 mt-4">
+                  <span className="eyebrow">책 상태</span>
+                  <span
+                    className={cn(
+                      'text-[12px] font-bold',
+                      cond.good ? 'text-green-600 dark:text-green-500' : 'text-amber-600 dark:text-amber-500'
                     )}
-                    {/* Heart button - adds to Interested Books */}
-                    <button 
-                      className={`p-3 rounded-2xl transition-colors ${
-                        isLiked 
-                          ? 'bg-primary/20 text-primary' 
-                          : 'bg-muted text-muted-foreground hover:text-primary'
-                      }`}
-                      onClick={handleLike}
-                      disabled={likeLoading}
-                    >
-                      {likeLoading ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      ) : (
-                        <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-                      )}
-                    </button>
+                  >
+                    {cond.word}
+                  </span>
+                  <div className="flex gap-1 items-center">
+                    {[1, 2, 3].map((i) => (
+                      <span
+                        key={i}
+                        className={cn(
+                          'w-5 h-1.5 rounded-full',
+                          i <= cond.level
+                            ? cond.good
+                              ? 'bg-green-500'
+                              : 'bg-amber-500'
+                            : 'bg-muted'
+                        )}
+                      />
+                    ))}
                   </div>
+                </div>
+
+                {/* 4. 책 주인 — 얇은 한 줄 */}
+                <button
+                  className="w-full mt-3 pt-3 border-t border-border flex items-center gap-2.5 text-left"
+                  onClick={() => setShowOwnerProfile(true)}
+                >
+                  <Avatar className="w-[30px] h-[30px] shrink-0">
+                    <AvatarImage src={book.owner?.avatar_url || undefined} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                      {book.owner?.nickname?.charAt(0) || '?'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-[13.5px] font-bold text-foreground truncate min-w-0">
+                    {book.owner?.nickname || '알 수 없음'}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground shrink-0">님의 책장</span>
+                  {book.community && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 bg-[#EFEAF6] text-[#6E5B9E]">
+                      📚 {book.community.name}
+                    </span>
+                  )}
+                  <span className="ml-auto text-[11.5px] font-bold text-primary shrink-0">프로필 ›</span>
+                </button>
+
+                {/* 5. 소개 */}
+                {book.description && (
+                  <p className="text-[13px] leading-[1.6] text-muted-foreground mt-4">
+                    {truncateDescription(book.description)}
+                  </p>
+                )}
+
+                {/* 이 책을 가진 다른 이웃 */}
+                {siblingBooks.length > 0 && (
+                  <div className="mt-5">
+                    <p className="eyebrow mb-2.5">이 책을 가진 다른 이웃 ({siblingBooks.length})</p>
+                    <div className="space-y-2">
+                      {siblingBooks.map((sibling) => (
+                        <div key={sibling.id} className="bg-muted/60 rounded-xl p-3 flex items-center gap-3">
+                          <Avatar className="w-8 h-8 shrink-0">
+                            <AvatarImage src={sibling.owner?.avatar_url || undefined} />
+                            <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                              {sibling.owner?.nickname?.charAt(0) || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <p className="flex-1 min-w-0 text-sm font-medium text-foreground truncate">
+                            {sibling.owner?.nickname || '알 수 없음'}
+                          </p>
+                          <span
+                            className={`text-[11px] px-2 py-0.5 rounded-full font-semibold shrink-0 ${
+                              sibling.status === 'available'
+                                ? 'border border-primary text-primary'
+                                : 'bg-secondary text-secondary-foreground'
+                            }`}
+                          >
+                            {sibling.status === 'available' ? '대여 가능' : '대여중'}
+                          </span>
+                          {sibling.status === 'available' && currentUserId && sibling.owner_id !== currentUserId && (
+                            <button
+                              className="text-[11px] px-2.5 py-1.5 rounded-full bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors shrink-0"
+                              onClick={() => onChat(sibling.owner_id, sibling.id, sibling.mode)}
+                            >
+                              요청
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 6. 액션 — 코랄 풀폭 CTA + 위시(하트) 48px */}
+              <div className="shrink-0 px-5 pt-3 pb-5 border-t border-border bg-card">
+                <div className="flex gap-2.5">
+                  {isOwner ? (
+                    <>
+                      <button
+                        className="flex-1 btn-hip flex items-center justify-center gap-2"
+                        onClick={() => onEdit?.(book)}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        수정
+                      </button>
+                      <button
+                        className="flex-1 py-3 px-4 rounded-full bg-destructive/10 text-destructive font-semibold flex items-center justify-center gap-2 hover:bg-destructive/20 transition-colors"
+                        onClick={() => setShowDeleteConfirm(true)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        삭제
+                      </button>
+                    </>
+                  ) : book.status === 'rented' ? (
+                    <button
+                      className={`btn-hip flex-1 flex items-center justify-center gap-2 ${isInWaitlist ? 'opacity-70' : ''}`}
+                      onClick={() => { if (requireAuth()) handleWaitlist(); }}
+                      disabled={waitlistLoading}
+                    >
+                      {waitlistLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
+                      {isInWaitlist ? '대기 취소' : `대기 신청${waitlistCount > 0 ? ` (${waitlistCount}명)` : ''}`}
+                    </button>
+                  ) : (
+                    <button
+                      className="btn-hip flex-1 flex items-center justify-center gap-2"
+                      onClick={() => { if (requireAuth()) onChat(book.owner_id, book.id, book.mode); }}
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      {MODE_CTA[book.mode]}
+                    </button>
+                  )}
+
+                  {/* 위시 — 아웃라인 48px */}
+                  <button
+                    className={`w-12 h-12 shrink-0 rounded-full border flex items-center justify-center transition-colors ${
+                      isLiked
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border text-muted-foreground hover:text-primary hover:border-primary'
+                    }`}
+                    onClick={() => { if (requireAuth()) handleLike(); }}
+                    disabled={likeLoading}
+                    aria-label="위시리스트"
+                  >
+                    {likeLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+                    )}
+                  </button>
+
+                  {/* 신고 — 내 책에는 노출하지 않는다 */}
+                  {!isOwner && currentUserId && (
+                    <button
+                      className="w-12 h-12 shrink-0 rounded-full border border-border text-muted-foreground hover:text-destructive hover:border-destructive flex items-center justify-center transition-colors"
+                      onClick={() => { if (requireAuth()) setShowReport(true); }}
+                      aria-label="이 책 신고하기"
+                    >
+                      <Flag className="w-5 h-5" />
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -391,6 +459,16 @@ export const BookDetailWithActions = ({
         isOpen={showOwnerProfile}
         onClose={() => setShowOwnerProfile(false)}
         userId={book.owner_id}
+      />
+
+      <ReportModal
+        isOpen={showReport}
+        onClose={() => setShowReport(false)}
+        targetType="book"
+        targetId={book.id}
+        reportedUserId={book.owner_id}
+        targetLabel={book.title}
+        context={`${book.title} / ${book.author}${book.description ? ` — ${book.description}` : ''}`}
       />
     </>
   );

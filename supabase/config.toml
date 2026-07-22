@@ -1,1 +1,67 @@
-project_id = "txtfmiznhbcuupgoyhnv"
+project_id = "venrajnufandslcbehkz"
+
+# ⚠️ `supabase config push` 는 이 파일 전체를 원격에 덮어쓴다. 부분 적용이 아니다.
+#    여기 안 적은 설정은 CLI 기본값으로 되돌아간다. 그래서 지금 원격에 켜져 있는 값을
+#    빠짐없이 적어둔다. 하나라도 빠뜨리면 이메일 인증 같은 게 조용히 꺼진다.
+#
+#    푸시하기 전에 반드시 .env.local 에 SMTP 값이 채워져 있어야 한다 (아래 참고).
+
+[auth]
+enabled = true
+# 배포 주소. 인증 메일의 링크가 이 주소를 기준으로 만들어진다.
+# TODO: Vercel 배포 주소 또는 도메인으로 바꿀 것. 지금 값이면 메일 링크가 localhost로 간다.
+site_url = "http://localhost:8080"
+# 인증 메일·재설정 메일이 돌아올 수 있는 주소 목록
+additional_redirect_urls = [
+  "http://localhost:8080",
+  "http://localhost:8080/auth",
+  "http://localhost:8080/auth/reset",
+]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+enable_signup = true
+enable_anonymous_sign_ins = false
+
+[auth.email]
+enable_signup = true
+# 이메일 인증 필수. 이게 false면 아무 이메일로나 계정을 만들 수 있다.
+enable_confirmations = true
+double_confirm_changes = true
+# 재설정·인증 메일을 너무 자주 못 보내게 (같은 주소로 60초에 한 번)
+max_frequency = "60s"
+
+# ── 메일 본문 (한국어) ────────────────────────────────────────
+# Supabase 기본 템플릿은 영어다. 한국인 대상 서비스인데 영어 메일이 가면
+# 유저는 그걸 스팸으로 본다.
+[auth.email.template.confirmation]
+subject = "MOA Book 이메일 인증"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "MOA Book 비밀번호 재설정"
+content_path = "./supabase/templates/recovery.html"
+
+# ── 메일 발송 서버 ───────────────────────────────────────────
+# Supabase 기본 발송은 시간당 2통이다. 테스트용이지 실서비스용이 아니다.
+# 이걸 안 붙이면 가입자 대부분이 인증 메일을 못 받는다.
+#
+# 지금은 Gmail SMTP를 쓴다 (지인 대상 소규모, 도메인 없음).
+#   host=smtp.gmail.com  port=465  user=<내 gmail 주소>  pass=<앱 비밀번호 16자리>
+#
+# 왜 SendGrid Single Sender가 아니라 Gmail인가:
+#   Single Sender는 "gmail.com에서 보냈다"고 주장하면서 실제로는 SendGrid 서버에서 나간다.
+#   그래서 SPF·DKIM·DMARC가 전부 실패하고, 받는 쪽은 그걸 사칭으로 본다 → 스팸함.
+#   Gmail SMTP는 진짜로 Google 서버에서 나가므로 셋 다 통과한다.
+#
+# 나중에 공개 런칭할 때는 도메인을 사서 Resend로 옮긴다 (docs/EMAIL_SETUP.md 참고).
+#   Gmail SMTP는 하루 500통 한도 + 개인 계정 identity라 서비스 규모가 커지면 못 쓴다.
+#
+# 값은 .env.local 에서 읽는다 (이 파일은 git에 올라가므로 키를 직접 적지 않는다).
+[auth.email.smtp]
+enabled = false   # .env.local 을 채운 뒤 true로 바꾸고 `npm run config:push`
+host = "env(SMTP_HOST)"
+port = 465
+user = "env(SMTP_USER)"
+pass = "env(SMTP_PASS)"
+admin_email = "env(SMTP_SENDER)"
+sender_name = "MOA Book"

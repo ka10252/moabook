@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { BookMode } from '@/lib/bookMode';
+import { objectParticle } from '@/lib/korean';
 
 export interface Message {
   id: string;
@@ -193,30 +195,53 @@ export const useChat = () => {
       .select()
       .single();
 
-    if (!error) {
-      await fetchConversations();
+    if (error) {
+      // 위에서 "없다"고 읽은 뒤 INSERT 하기까지의 틈에 상대(또는 다른 탭)가 먼저 만들었을 수 있다.
+      // DB의 유일 제약이 두 번째 INSERT를 막아준다(23505). 이건 실패가 아니라
+      // "이미 있다"는 뜻이므로, 그 방을 찾아서 쓰면 된다.
+      if (error.code === '23505') {
+        const { data: raced } = await supabase
+          .from('conversations')
+          .select('*')
+          .or(
+            `and(participant_1.eq.${user.id},participant_2.eq.${otherUserId}),and(participant_1.eq.${otherUserId},participant_2.eq.${user.id})`
+          )
+          .limit(1)
+          .maybeSingle();
+        if (raced) {
+          await fetchConversations();
+          return { conversation: raced, error: null, isNew: false };
+        }
+      }
+      return { conversation: null, error, isNew: false };
     }
 
-    return { conversation: data, error, isNew: true };
+    await fetchConversations();
+    return { conversation: data, error: null, isNew: true };
   };
 
   // Start conversation with automatic request message including book info
   const startConversationWithRequest = async (
-    otherUserId: string, 
-    bookId: string, 
-    requestType: 'rent' | 'purchase',
+    otherUserId: string,
+    bookId: string,
+    /** 거래 기록상 나눔은 'purchase'지만, 유저에게는 "구매 요청"이 아니라 "나눔 요청"이어야 한다 */
+    bookMode: BookMode,
     requesterNickname: string
   ) => {
     const result = await startConversation(otherUserId);
-    
+
     if (result.conversation) {
       // Send request message with embedded BOOK_ID for dynamic rendering
-      const messageContent = requestType === 'rent' 
-        ? `[대여 요청] ${requesterNickname}님이 대여를 요청합니다. [BOOK_ID:${bookId}]`
-        : `[구매 요청] ${requesterNickname}님이 구매를 요청합니다. [BOOK_ID:${bookId}]`;
+      const REQUEST_LABEL: Record<BookMode, string> = {
+        rent: '대여',
+        sell: '구매',
+        give: '나눔',
+      };
+      const label = REQUEST_LABEL[bookMode];
+      const messageContent = `[${label} 요청] ${requesterNickname}님이 ${label}${objectParticle(label)} 요청합니다. [BOOK_ID:${bookId}]`;
       await sendMessage(result.conversation.id, messageContent);
     }
-    
+
     return result;
   };
 

@@ -25,18 +25,14 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
           const isActive = activeTab === item.id;
           
           return (
+            // 활성 표시는 색(코랄)과 굵기로 충분하다. 점을 더하면 중복 신호다.
             <button
               key={item.id}
-              className={`nav-item relative ${isActive ? 'active' : ''}`}
+              // 온보딩 스포트라이트가 이 버튼을 실제로 조준한다
+              data-onboarding={`nav-${item.id}`}
+              className={`nav-item ${isActive ? 'active' : ''}`}
               onClick={() => onTabChange(item.id)}
             >
-              {isActive && (
-                <motion.div
-                  className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary"
-                  layoutId="navIndicator"
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                />
-              )}
               <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
               <span className="text-[9px] font-medium">{item.label}</span>
             </button>

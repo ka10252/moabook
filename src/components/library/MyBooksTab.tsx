@@ -4,6 +4,7 @@ import { Edit2, Trash2, MoreVertical, BookOpen, Loader2 } from 'lucide-react';
 import { Book } from '@/types/book';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
+import { formatPrice, MODE_LABEL } from '@/lib/bookMode';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -136,7 +137,7 @@ export const MyBooksTab = ({ books, loading, onDelete, onEdit }: MyBooksTabProps
                     {book.status === 'available' ? 'Available' : book.status === 'rented' ? 'Rented Out' : 'Sold'}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {book.mode === 'rent' ? 'For Rent' : `$${book.price}`}
+                    {book.mode === 'sell' ? formatPrice(book.price) : MODE_LABEL[book.mode]}
                   </span>
                 </div>
 

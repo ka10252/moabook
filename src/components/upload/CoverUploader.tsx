@@ -1,25 +1,27 @@
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Camera, ImagePlus, Loader2, X } from 'lucide-react';
+import { Camera, Loader2, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface CoverUploaderProps {
   coverUrl: string;
-  title: string;
-  author: string;
   userId: string;
   onCoverChange: (url: string) => void;
   disabled?: boolean;
+  /** 판매 책은 상태를 눈으로 확인할 수 있어야 하므로 사진이 필수다 */
+  required?: boolean;
+  /** 제출을 시도했는데 필수 사진이 없을 때만 붉게 경고한다 */
+  invalid?: boolean;
 }
 
 export const CoverUploader = ({
   coverUrl,
-  title,
-  author,
   userId,
   onCoverChange,
   disabled = false,
+  required = false,
+  invalid = false,
 }: CoverUploaderProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -49,9 +51,9 @@ export const CoverUploader = ({
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('book-covers')
-        .getPublicUrl(fileName);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('book-covers').getPublicUrl(fileName);
 
       onCoverChange(publicUrl);
       toast.success('사진이 업로드되었습니다');
@@ -74,17 +76,6 @@ export const CoverUploader = ({
 
   return (
     <div className="space-y-2">
-      {/* Label */}
-      <div className="flex items-center gap-2">
-        <Camera className="w-4 h-4 text-primary" />
-        <span className="text-sm font-semibold text-foreground">내 책 사진</span>
-        <span className="text-xs text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">권장</span>
-      </div>
-      <p className="text-xs text-muted-foreground">
-        실제 책 상태가 보이는 사진을 올리면 대여·거래 신뢰도가 올라갑니다
-      </p>
-
-      {/* Upload Zone — always visible */}
       <input
         ref={fileInputRef}
         type="file"
@@ -98,59 +89,70 @@ export const CoverUploader = ({
         type="button"
         onClick={handleClick}
         disabled={disabled || isUploading}
-        whileTap={{ scale: 0.98 }}
-        className={`
-          w-full relative overflow-hidden rounded-2xl border-2 transition-colors
-          ${coverUrl
+        whileTap={{ scale: 0.99 }}
+        className={`w-full flex items-center gap-3 rounded-[14px] border p-3.5 text-left transition-colors ${
+          coverUrl
             ? 'border-primary/40 bg-primary/5'
-            : 'border-dashed border-border hover:border-primary/50 hover:bg-primary/5 bg-secondary/50'}
-          ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-        `}
+            : invalid
+              ? 'border-destructive border-dashed bg-destructive/5'
+              : 'border-dashed border-border bg-card hover:border-primary/50'
+        } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
       >
         {coverUrl ? (
-          /* Uploaded photo preview */
-          <div className="flex items-center gap-4 px-4 py-3">
-            <img
-              src={coverUrl}
-              alt="내 책 사진"
-              className="w-16 h-22 object-cover rounded-xl shadow-md flex-shrink-0"
-              style={{ height: '88px' }}
-            />
-            <div className="flex-1 text-left">
-              <p className="text-sm font-semibold text-foreground">사진 등록 완료</p>
-              <p className="text-xs text-muted-foreground mt-0.5">탭하면 다른 사진으로 변경</p>
-            </div>
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); handleRemove(); }}
-              className="p-1.5 rounded-full bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+          <img
+            src={coverUrl}
+            alt="내 책 사진"
+            className="w-[46px] h-16 object-cover rounded-[4px] shrink-0 shadow-md"
+          />
         ) : (
-          /* Empty state — prominent upload CTA */
-          <div className="flex flex-col items-center justify-center py-8 gap-3">
+          <div className="w-[46px] h-16 rounded-[4px] bg-muted flex items-center justify-center shrink-0 text-faint">
             {isUploading ? (
-              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
             ) : (
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
-                <ImagePlus className="w-7 h-7 text-primary" />
-              </div>
+              <Camera className="w-5 h-5" />
             )}
-            <div className="text-center">
-              <p className="text-sm font-semibold text-foreground">
-                {isUploading ? '업로드 중...' : '내 책 상태 사진 추가'}
-              </p>
-              {!isUploading && (
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  앞면·뒷면·손상 부위 등 실제 상태를 찍어주세요
-                </p>
-              )}
-            </div>
           </div>
         )}
+
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-bold text-foreground flex items-center gap-1.5">
+            {coverUrl ? '사진 등록 완료' : isUploading ? '업로드 중…' : '내 책 사진'}
+            {!coverUrl && (
+              <span
+                className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                  required ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
+                }`}
+              >
+                {required ? '필수' : '권장'}
+              </span>
+            )}
+          </p>
+          <p className="text-[11px] text-faint mt-0.5">
+            {coverUrl
+              ? '탭하면 다른 사진으로 변경'
+              : required
+                ? '판매 책은 상태를 확인할 수 있는 사진이 필요해요'
+                : '실제 상태가 보이는 사진이면 신뢰도가 올라가요'}
+          </p>
+        </div>
+
+        {coverUrl && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRemove();
+            }}
+            className="p-1.5 rounded-full bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </motion.button>
+
+      {invalid && (
+        <p className="text-[11px] text-destructive">판매하려면 책 상태 사진을 올려주세요.</p>
+      )}
     </div>
   );
 };

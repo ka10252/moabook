@@ -161,7 +161,7 @@ export const EditCommunityModal = ({
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-wood-medium to-wood-dark flex items-center justify-center">
+                      <div className="w-full h-full bg-gradient-to-br from-secondary to-muted flex items-center justify-center">
                         <Image className="w-8 h-8 text-white/50" />
                       </div>
                     )}

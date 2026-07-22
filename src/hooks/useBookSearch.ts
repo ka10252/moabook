@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface BookSearchResult {
   key: string;
@@ -17,15 +18,6 @@ interface OpenLibraryDoc {
   cover_i?: number;
   first_publish_year?: number;
   isbn?: string[];
-}
-
-interface AladinItem {
-  title: string;
-  author: string;
-  cover: string;
-  description: string;
-  isbn13: string;
-  pubDate: string;
 }
 
 export const useBookSearch = () => {
@@ -57,6 +49,17 @@ export const useBookSearch = () => {
       firstPublishYear: doc.first_publish_year,
       isbn: doc.isbn?.[0],
     }));
+  };
+
+  // 한국 책은 알라딘이 압도적으로 정확하다 (표지·저자·소개).
+  // CORS 때문에 브라우저에서 직접 못 부르므로 Edge Function을 거친다.
+  const searchAladin = async (query: string): Promise<BookSearchResult[]> => {
+    const { data, error } = await supabase.functions.invoke('aladin-search', {
+      body: { query },
+    });
+    if (error) throw error;
+    // Edge Function은 항상 { results: [...] } 를 준다 (실패해도 빈 배열).
+    return (data?.results ?? []) as BookSearchResult[];
   };
 
   // Search using Google Books API (has Korean book support)
@@ -103,12 +106,11 @@ export const useBookSearch = () => {
     try {
       let books: BookSearchResult[];
       
-      // Use Google Books for Korean queries, Open Library otherwise
+      // 한글 검색 → 알라딘 우선, 결과 없으면 Google Books로 보완
       if (containsKorean(query)) {
-        books = await searchGoogleBooks(query);
-        // If no Korean results, try Open Library as fallback
+        books = await searchAladin(query).catch(() => []);
         if (books.length === 0) {
-          books = await searchOpenLibrary(query);
+          books = await searchGoogleBooks(query).catch(() => []);
         }
       } else {
         // For non-Korean, search both and combine
@@ -133,6 +135,11 @@ export const useBookSearch = () => {
   }, []);
 
   const fetchBookDetails = useCallback(async (key: string): Promise<string | null> => {
+    // 알라딘 결과는 검색 단계에서 이미 소개를 함께 받았다. 추가 호출이 필요 없다.
+    if (key.startsWith('aladin:')) {
+      return null;
+    }
+
     // Check if it's a Google Books ID (not starting with /)
     if (!key.startsWith('/')) {
       try {

@@ -1,0 +1,75 @@
+<!--
+  비밀번호 재설정 메일.
+
+  이 메일은 "내가 요청하지 않았는데 왔다"는 상황이 실제로 생긴다 (남이 내 이메일을 잘못 입력).
+  그때 유저가 불안해하지 않도록, 링크를 누르지 않으면 아무 일도 안 일어난다는 걸 분명히 말한다.
+
+  {{ .ConfirmationURL }} 은 Supabase가 실제 재설정 링크로 바꿔준다.
+-->
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F4F1EA;padding:40px 16px;font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',Arial,sans-serif;">
+  <tr>
+    <td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;background-color:#ffffff;border-radius:16px;padding:40px 32px;">
+
+        <tr>
+          <td align="center" style="padding-bottom:28px;">
+            <div style="font-size:22px;font-weight:700;color:#2B2A28;letter-spacing:-0.5px;">MOA Book</div>
+            <div style="font-size:13px;color:#8A857D;margin-top:4px;">함께 읽는 책장</div>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding-bottom:12px;">
+            <div style="font-size:20px;font-weight:700;color:#2B2A28;line-height:1.5;">
+              비밀번호를 새로 정해주세요
+            </div>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding-bottom:28px;">
+            <div style="font-size:14px;color:#5C5852;line-height:1.7;word-break:keep-all;">
+              아래 버튼을 누르면 새 비밀번호를 정할 수 있어요.<br />
+              이 링크는 <b style="color:#2B2A28;">한 시간 동안, 한 번만</b> 쓸 수 있습니다.
+            </div>
+          </td>
+        </tr>
+
+        <tr>
+          <td align="center" style="padding-bottom:24px;">
+            <a href="{{ .ConfirmationURL }}"
+               style="display:inline-block;background-color:#F26A4B;color:#ffffff;text-decoration:none;
+                      font-size:15px;font-weight:700;padding:14px 36px;border-radius:12px;">
+              비밀번호 재설정하기
+            </a>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding-bottom:8px;">
+            <div style="font-size:12px;color:#8A857D;line-height:1.6;word-break:keep-all;">
+              버튼이 눌리지 않으면 아래 주소를 복사해 브라우저에 붙여넣어 주세요.
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-bottom:28px;">
+            <div style="font-size:11px;color:#B5B0A8;word-break:break-all;line-height:1.5;">
+              {{ .ConfirmationURL }}
+            </div>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="border-top:1px solid #EDE9E1;padding-top:20px;">
+            <div style="font-size:12px;color:#B5B0A8;line-height:1.7;word-break:keep-all;">
+              비밀번호 재설정을 요청하지 않으셨다면 이 메일을 무시하세요.
+              <b style="color:#8A857D;">링크를 누르지 않는 한 비밀번호는 그대로입니다.</b>
+            </div>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>

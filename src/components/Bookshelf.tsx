@@ -1,13 +1,12 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { track } from '@/lib/analytics';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { motion, AnimatePresence } from 'framer-motion';
-import { WoodenShelf } from './WoodenShelf';
+import { EditorialShelf } from './EditorialShelf';
 import { BookSpine } from './BookSpine';
-import { BookCover } from './BookCover';
 import { BookDetailWithActions } from './BookDetailWithActions';
 import { EditBookModal } from './library/EditBookModal';
 import { LikedBooksPopup } from './LikedBooksPopup';
-import { ViewToggle, ViewMode } from './ViewToggle';
 import { TransactionDashboard } from './transaction/TransactionDashboard';
 import { Book } from '@/types/book';
 import { useBooks } from '@/hooks/useBooks';
@@ -15,6 +14,8 @@ import { useTransactions } from '@/hooks/useTransactions';
 import { useCommunities } from '@/hooks/useCommunities';
 import { useLikedBooks } from '@/hooks/useLikedBooks';
 import { useAuth } from '@/hooks/useAuth';
+import { useGuestGate } from '@/hooks/useGuestGate';
+import { useBackClose } from '@/hooks/useBackClose';
 import { ChevronDown, Loader2, BookOpen, Heart, BookMarked, Search, X, MapPin, SlidersHorizontal } from 'lucide-react';
 
 import { toast } from 'sonner';
@@ -31,6 +32,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { BookMode } from '@/lib/bookMode';
 
 type ShelfBook = Book & { _isBorrowed?: boolean; _isDummy?: boolean };
 type ShelfGroup = { label?: string; books: ShelfBook[] };
@@ -41,21 +43,48 @@ const DUMMY_BOOKS: ShelfBook[] = [
   { id: 'dummy-3', title: '데미안', author: '헤르만 헤세', cover: null, status: 'available', mode: 'rent', owner_id: '', is_public: true, created_at: '', _isDummy: true } as ShelfBook,
   { id: 'dummy-4', title: '1984', author: '조지 오웰', cover: null, status: 'available', mode: 'rent', owner_id: '', is_public: true, created_at: '', _isDummy: true } as ShelfBook,
   { id: 'dummy-5', title: '소년이 온다', author: '한강', cover: null, status: 'available', mode: 'rent', owner_id: '', is_public: true, created_at: '', _isDummy: true } as ShelfBook,
+  // 긴 제목이 책등에서 어떻게 잘리는지(말줄임) 실제로 확인할 수 있는 표본
+  { id: 'dummy-6', title: '아주 긴 제목의 책은 책등에서 어떻게 보이는가에 관한 연구', author: '김서연', cover: null, status: 'available', mode: 'rent', owner_id: '', is_public: true, created_at: '', _isDummy: true } as ShelfBook,
 ];
-const DUMMY_THRESHOLD = 5;
-type StatusFilter = 'all' | 'available' | 'rented' | 'selling';
+const DUMMY_THRESHOLD = 6;
+type StatusFilter = 'all' | 'available' | 'giving' | 'selling' | 'rented';
+
+/** 예시 책은 아무 조건도 안 건 기본 화면(모두의 책장 · 전체 · 검색어 없음)에서만 채운다 */
+const canShowDummy = (
+  activeFilter: string,
+  statusFilter: StatusFilter,
+  searchQuery: string,
+  realCount: number
+) =>
+  activeFilter === 'everybody' &&
+  statusFilter === 'all' &&
+  !searchQuery.trim() &&
+  realCount < DUMMY_THRESHOLD;
 
 interface BookshelfProps {
-  onOpenChat: (userId: string, bookId: string, bookMode: 'rent' | 'sell') => void;
+  onOpenChat: (userId: string, bookId: string, bookMode: BookMode) => void;
   initialCommunityId?: string | null;
   onCommunityFilterClear?: () => void;
+  /** 알림에서 넘어온 딥링크 — 이 책의 상세를 연다 */
+  openBookId?: string | null;
+  /** 알림에서 넘어온 딥링크 — 거래 현황을 연다 */
+  openTransactions?: boolean;
+  /** 딥링크를 소비한 뒤 URL에서 지우도록 알린다 (뒤로가기가 같은 화면을 반복해 열지 않게) */
+  onDeepLinkConsumed?: () => void;
 }
 
 type FilterType = 'everybody' | 'mine' | string;
 
-export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterClear }: BookshelfProps) => {
+export const Bookshelf = ({
+  onOpenChat,
+  initialCommunityId,
+  onCommunityFilterClear,
+  openBookId,
+  openTransactions,
+  onDeepLinkConsumed,
+}: BookshelfProps) => {
   const { user } = useAuth();
-  const [viewMode, setViewMode] = useState<ViewMode>('spine');
+  const { isGuest, trackBrowse, requireAuth } = useGuestGate();
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [previewBook, setPreviewBook] = useState<string | null>(null);
@@ -67,6 +96,13 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
   const [showLikedBooks, setShowLikedBooks] = useState(false);
   const [showTransactionDashboard, setShowTransactionDashboard] = useState(false);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
+
+  // 뒤로가기는 "떠 있는 것부터" 닫는다 — 모달을 둔 채 뒤 페이지만 넘어가지 않도록.
+  useBackClose(!!selectedBook, () => setSelectedBook(null));
+  useBackClose(!!editingBook, () => setEditingBook(null));
+  useBackClose(showFilterSheet, () => setShowFilterSheet(false));
+  useBackClose(showLikedBooks, () => setShowLikedBooks(false));
+  useBackClose(showTransactionDashboard, () => setShowTransactionDashboard(false));
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'title' | 'author'>('newest');
 
@@ -78,10 +114,9 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
     // contentWidth = content-box width of the outer scroll container (inside px-6 padding)
     // On wide screens clamp to 520px so the shelf doesn't stretch beyond a readable width
     const effectiveWidth = Math.min(contentWidth, 520);
-    // subtract: wood-texture p-4 (32px) + WoodenShelf inner p-4 (32px) = 64px
-    const booksArea = effectiveWidth - 64;
-    // book spine min-w-[40px] + gap-1 (4px) = 44px per slot
-    const n = Math.max(2, Math.floor((booksArea + 4) / 44));
+    // EditorialShelf는 내부 패딩이 없다 (나무 서가의 p-4 x2 = 64px 보정은 이제 불필요).
+    // 책등 max-w 52px + gap 6px = 슬롯당 58px
+    const n = Math.max(2, Math.floor((effectiveWidth + 6) / 58));
     setBooksPerShelf(n);
   }, []);
 
@@ -103,6 +138,13 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
     if (initialCommunityId) setActiveFilter(initialCommunityId);
   }, [initialCommunityId]);
 
+  // 알림 딥링크 — 거래 현황 열기
+  useEffect(() => {
+    if (!openTransactions) return;
+    setShowTransactionDashboard(true);
+    onDeepLinkConsumed?.();
+  }, [openTransactions]);
+
   const { myCommunities } = useCommunities();
   const { books: allBooks, loading, error: booksError, deleteBook, updateBook, refresh } = useBooks({});
 
@@ -118,6 +160,23 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
     getBorrowedReturnDates,
   } = useTransactions();
   const { isLiked, toggleLike, likedBooks } = useLikedBooks();
+
+  /**
+   * 알림 딥링크 — 특정 책의 상세를 연다.
+   * 책 목록이 아직 로딩 중일 수 있어, 목록이 채워진 뒤에 찾는다.
+   * 못 찾으면(비공개·삭제됨) 조용히 넘기지 않고 이유를 알린다 — 알림을 눌렀는데
+   * 아무 반응이 없으면 유저는 앱이 고장났다고 생각한다.
+   */
+  useEffect(() => {
+    if (!openBookId || loading) return;
+    const found = allBooks.find((b) => b.id === openBookId);
+    if (found) {
+      setSelectedBook(found);
+    } else {
+      toast.info('이 책은 더 이상 볼 수 없어요 (삭제되었거나 비공개 책입니다)');
+    }
+    onDeepLinkConsumed?.();
+  }, [openBookId, loading, allBooks]);
 
   // Singapore planning areas — service region is SG only
   useEffect(() => {
@@ -146,16 +205,32 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
   // Derived from useTransactions (same data source, single load)
   const borrowedBooksInfo = useMemo(() => getRentedBooksInfo(), [getRentedBooksInfo]);
 
-  const rentedBookIds = useMemo(() => {
-    return new Set(allBooks.filter(book => book.status === 'rented').map(book => book.id));
-  }, [allBooks]);
 
   const applyStatusFilter = useCallback(<T extends Book>(books: T[]): T[] => {
     if (statusFilter === 'available') return books.filter(b => b.status === 'available' && b.mode === 'rent');
-    if (statusFilter === 'rented') return books.filter(b => b.status === 'rented');
+    if (statusFilter === 'giving') return books.filter(b => b.status === 'available' && b.mode === 'give');
     if (statusFilter === 'selling') return books.filter(b => b.mode === 'sell');
+    if (statusFilter === 'rented') return books.filter(b => b.status === 'rented');
     return books;
   }, [statusFilter]);
+
+  /**
+   * 책장 정렬 규칙 (우선순위 순):
+   *  1) 대여중인 책은 항상 맨 뒤 — 지금 빌릴 수 없으니 시선을 뺏으면 안 된다
+   *  2) 사용자가 고른 정렬 (제목/저자)
+   *  3) 기본은 최신 등록순 — 새로 올라온 책이 맨 앞(왼쪽 위)
+   */
+  const sortShelfBooks = useCallback(<T extends Book>(books: T[]): T[] => {
+    return [...books].sort((a, b) => {
+      const aOut = a.status === 'rented' ? 1 : 0;
+      const bOut = b.status === 'rented' ? 1 : 0;
+      if (aOut !== bOut) return aOut - bOut;
+
+      if (sortBy === 'title') return a.title.localeCompare(b.title);
+      if (sortBy === 'author') return a.author.localeCompare(b.author);
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  }, [sortBy]);
 
   const filteredBooks = useMemo(() => {
     let books = allBooks;
@@ -185,11 +260,22 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
       books = books.filter(b => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q));
     }
 
-    if (sortBy === 'title') books = [...books].sort((a, b) => a.title.localeCompare(b.title));
-    else if (sortBy === 'author') books = [...books].sort((a, b) => a.author.localeCompare(b.author));
+    return sortShelfBooks(applyStatusFilter(books));
+  }, [allBooks, activeFilter, user?.id, myCommunities, selectedDistricts, searchQuery, sortShelfBooks, applyStatusFilter]);
 
-    return applyStatusFilter(books);
-  }, [allBooks, activeFilter, user?.id, myCommunities, selectedDistricts, searchQuery, sortBy, applyStatusFilter]);
+  // 검색 로그는 타이핑 중이 아니라 "멈춘 뒤"에 한 번만 남긴다.
+  // 글자마다 찍으면 "책"을 치는 동안 ㅊ,채,책 3번이 남아 노이즈가 된다.
+  // 결과 0건은 공급 부족의 가장 직접적인 신호라 따로 표시한다.
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q) return;
+    const timer = setTimeout(() => {
+      const count = filteredBooks.length;
+      track('search_performed', { query: q, result_count: count });
+      if (count === 0) track('search_no_result', { query: q });
+    }, 900);
+    return () => clearTimeout(timer);
+  }, [searchQuery, filteredBooks]);
 
   const myBooksSection = useMemo((): ShelfBook[] => {
     if (!user) return [];
@@ -210,10 +296,8 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
       const q = searchQuery.trim().toLowerCase();
       books = books.filter(b => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q));
     }
-    if (sortBy === 'title') books = [...books].sort((a, b) => a.title.localeCompare(b.title));
-    else if (sortBy === 'author') books = [...books].sort((a, b) => a.author.localeCompare(b.author));
-    return books;
-  }, [myBooksSection, searchQuery, sortBy]);
+    return sortShelfBooks(books);
+  }, [myBooksSection, searchQuery, sortShelfBooks]);
 
   const communityBooks = useMemo((): ShelfBook[] => {
     if (activeFilter === 'mine') return [];
@@ -224,8 +308,13 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
     const books = filteredBooks.filter(
       b => !allOwnedIds.has(b.id) && !rentedInfo.has(b.id)
     ) as ShelfBook[];
-    // Liked books bubble to the top-left of the community section
-    return [...books].sort((a, b) => (isLiked(a.id) ? 0 : 1) - (isLiked(b.id) ? 0 : 1));
+    // 대여중은 항상 맨 뒤 → 그 다음 좋아요한 책이 앞으로 → 나머지는 기존 정렬(최신순) 유지
+    return [...books].sort((a, b) => {
+      const aOut = a.status === 'rented' ? 1 : 0;
+      const bOut = b.status === 'rented' ? 1 : 0;
+      if (aOut !== bOut) return aOut - bOut;
+      return (isLiked(a.id) ? 0 : 1) - (isLiked(b.id) ? 0 : 1);
+    });
   }, [filteredBooks, allBooks, getRentedBooksInfo, user?.id, activeFilter, isLiked]);
 
   // Deduplicate community books by title+author — keep only the first occurrence per pair
@@ -264,31 +353,33 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
     if (hasPersonal) addSection(filteredMySection, hasCommunity ? '나의 책장' : undefined);
     if (hasCommunity) addSection(dedupedCommunityBooks, hasPersonal ? getFilterLabel() : undefined);
 
-    // Fill with dummy books when everybody view has fewer than threshold real books
+    // 예시 책은 "아직 책이 없는 새 책장"을 덜 휑하게 보이려고 두는 것이다.
+    // 필터·검색으로 결과가 줄어든 건 빈 책장이 아니라 "조건에 맞는 책이 그것뿐"인 상태다.
+    // 거기에 예시 책을 채우면 필터가 고장난 것처럼 보인다 — 그래서 기본 화면에서만 채운다.
     const totalRealBooks = filteredMySection.length + dedupedCommunityBooks.length;
-    const showDummy = activeFilter === 'everybody' && totalRealBooks < DUMMY_THRESHOLD && !searchQuery.trim();
-    if (showDummy) {
-      const needed = DUMMY_THRESHOLD - totalRealBooks;
-      addSection(DUMMY_BOOKS.slice(0, needed));
+    if (canShowDummy(activeFilter, statusFilter, searchQuery, totalRealBooks)) {
+      addSection(DUMMY_BOOKS.slice(0, DUMMY_THRESHOLD - totalRealBooks));
     }
 
     return groups;
-  }, [filteredMySection, dedupedCommunityBooks, activeFilter, user, booksPerShelf, getFilterLabel, searchQuery]);
+  }, [filteredMySection, dedupedCommunityBooks, activeFilter, statusFilter, user, booksPerShelf, getFilterLabel, searchQuery]);
 
   const totalRealBooks = filteredMySection.length + dedupedCommunityBooks.length;
-  const showDummyBanner = activeFilter === 'everybody' && totalRealBooks < DUMMY_THRESHOLD && !searchQuery.trim();
+  const showDummyBanner = canShowDummy(activeFilter, statusFilter, searchQuery, totalRealBooks);
 
   const emptyShelvesNeeded = Math.max(0, 3 - shelfGroups.length);
 
   const statusFilterLabels: Record<StatusFilter, string> = {
     all: '전체',
     available: '대여 가능',
-    rented: '대여중',
+    giving: '나눔',
     selling: '판매중',
+    rented: '대여중',
   };
 
+  // 상태 필터는 헤더 칩으로 눈에 보이므로 뱃지에서 세지 않는다.
+  // 뱃지는 "시트 안에 숨어 있는 필터가 몇 개 켜져 있나"만 알려야 한다.
   const activeFilterCount =
-    (statusFilter !== 'all' ? 1 : 0) +
     (sortBy !== 'newest' ? 1 : 0) +
     (selectedDistricts.length > 0 ? 1 : 0);
 
@@ -296,18 +387,51 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
     <div className="flex flex-col h-full relative">
       {/* Header */}
       <header className="flex flex-col gap-3 px-5 pt-4 pb-3 bg-background/85 backdrop-blur-md sticky top-0 z-30 border-b border-border/40">
-        {/* Title block */}
+        {/* Title block — 제목 자체가 '책장 범위' 선택기다.
+            예전엔 제목과 드롭다운이 같은 값을 두 번 보여줬다(중복). 제목을 컨트롤로 만들면
+            드롭다운이 컨트롤 줄에서 빠지고, 그 자리를 상태 칩이 쓴다 → 줄 수는 그대로. */}
         <div className="flex items-end justify-between gap-2">
-          <div>
-            <p className="eyebrow">{activeFilter === 'everybody' ? 'BOOKSHELF' : getFilterLabel()}</p>
-            <h1 className="font-display text-[26px] font-medium leading-none tracking-tight text-foreground mt-1">
-              {activeFilter === 'mine' ? '나의 서가' : activeFilter === 'everybody' ? '모두의 책장' : activeFilter === 'nearby' ? '이웃 서가' : getFilterLabel()}
-            </h1>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="group text-left outline-none">
+              <p className="eyebrow">BOOKSHELF</p>
+              <h1 className="font-display text-[26px] leading-none text-foreground mt-1 flex items-center gap-1.5">
+                <span className="truncate max-w-[220px]">
+                  {activeFilter === 'mine' ? '나의 서가' : activeFilter === 'everybody' ? '모두의 책장' : getFilterLabel()}
+                </span>
+                <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0 transition-transform group-data-[state=open]:rotate-180" />
+              </h1>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-52 bg-popover border border-border shadow-lg z-50">
+              <DropdownMenuItem onClick={() => setActiveFilter('everybody')} className={activeFilter === 'everybody' ? 'bg-accent/15 text-foreground' : ''}>
+                모두의 책장
+              </DropdownMenuItem>
+              {user && (
+                <DropdownMenuItem onClick={() => setActiveFilter('mine')} className={activeFilter === 'mine' ? 'bg-accent/15 text-foreground' : ''}>
+                  나의 서가
+                </DropdownMenuItem>
+              )}
+              {myCommunities.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <div className="px-2 py-1.5 text-[10px] uppercase tracking-widest text-muted-foreground font-bold">내 커뮤니티</div>
+                  {myCommunities.map(c => (
+                    <DropdownMenuItem
+                      key={c.id}
+                      onClick={() => setActiveFilter(c.id)}
+                      className={activeFilter === c.id ? 'bg-accent/15 text-foreground' : ''}
+                    >
+                      {c.name}
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           {user && (
             <button
-              onClick={() => setShowTransactionDashboard(true)}
-              className="w-10 h-10 rounded-full bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors flex items-center justify-center"
+              onClick={() => { if (requireAuth()) setShowTransactionDashboard(true); }}
+              className="w-10 h-10 rounded-full bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors flex items-center justify-center shrink-0"
               title="거래 현황"
             >
               <BookMarked className="w-[18px] h-[18px]" />
@@ -315,75 +439,60 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
           )}
         </div>
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        {/* Search — 밑줄 스타일 (프로토타입 1a) */}
+        <div className="search-underline">
+          <Search className="w-[17px] h-[17px] text-foreground shrink-0" strokeWidth={1.75} />
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="제목 또는 저자 검색…"
+            placeholder="제목 또는 저자 검색"
             className="input-search"
           />
           {searchQuery && (
-            <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2">
-              <X className="w-4 h-4 text-muted-foreground" />
+            <button onClick={() => setSearchQuery('')} className="shrink-0" aria-label="검색어 지우기">
+              <X className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
             </button>
           )}
         </div>
 
-        {/* Controls row */}
-        <div className="flex items-center justify-between gap-2">
-          <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
-
-          <div className="flex items-center gap-2">
-            {/* Filter sheet trigger */}
-            <button
-              onClick={() => setShowFilterSheet(true)}
-              className={`pill relative gap-1.5 ${activeFilterCount > 0 ? 'pill-active' : ''}`}
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-              <span>필터</span>
-              {activeFilterCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
-
-            {/* Bookshelf filter dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger className="pill max-w-[140px] justify-between">
-                <span className="truncate">{getFilterLabel()}</span>
-                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52 bg-popover border border-border shadow-lg z-50">
-                <DropdownMenuItem onClick={() => setActiveFilter('everybody')} className={activeFilter === 'everybody' ? 'bg-accent/15 text-foreground' : ''}>
-                  모두의 책장
-                </DropdownMenuItem>
-                {user && (
-                  <DropdownMenuItem onClick={() => setActiveFilter('mine')} className={activeFilter === 'mine' ? 'bg-accent/15 text-foreground' : ''}>
-                    내 책장
-                  </DropdownMenuItem>
-                )}
-                {myCommunities.length > 0 && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <div className="px-2 py-1.5 text-[10px] uppercase tracking-widest text-muted-foreground font-bold">내 커뮤니티</div>
-                    {myCommunities.map(c => (
-                      <DropdownMenuItem
-                        key={c.id}
-                        onClick={() => setActiveFilter(c.id)}
-                        className={activeFilter === c.id ? 'bg-accent/15 text-foreground' : ''}
-                      >
-                        {c.name}
-                      </DropdownMenuItem>
-                    ))}
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+        {/* Controls row — 한 줄 유지.
+            자주 쓰는 상태 필터는 노출하고, 가끔 쓰는 정밀 필터(지역·정렬)와 뷰 전환은
+            아이콘으로 접어 오른쪽 끝에 고정한다. */}
+        <div className="flex items-center gap-2">
+          {/* 상태 칩 — 넘치면 가로 스크롤 */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-1 min-w-0">
+            {/* '대여중'은 칩에서 뺐다 — 대여중인 책은 어차피 서가 맨 뒤에 비활성으로 보인다 */}
+            {(['all', 'available', 'giving', 'selling'] as StatusFilter[]).map((key) => (
+              { key, label: statusFilterLabels[key] }
+            )).map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setStatusFilter(key)}
+                className={`chip ${statusFilter === key ? 'chip-active' : ''}`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
+
+          {/* 정밀 필터 (지역·정렬) */}
+          <button
+            onClick={() => setShowFilterSheet(true)}
+            className={`relative w-9 h-9 shrink-0 rounded-full border flex items-center justify-center transition-colors ${
+              activeFilterCount > 0
+                ? 'border-primary text-primary bg-primary/10'
+                : 'border-border text-muted-foreground hover:text-foreground'
+            }`}
+            aria-label="상세 필터"
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
         </div>
       </header>
 
@@ -426,9 +535,7 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : (
-          <AnimatePresence mode="wait">
-            {viewMode === 'spine' ? (
-              <motion.div
+          <motion.div
                 key="spine-view"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -436,63 +543,52 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
                 transition={{ duration: 0.3 }}
                 className="space-y-4 max-w-[520px] mx-auto w-full"
               >
-                <div className="wood-texture rounded-xl p-4 shadow-shelf">
-                  <div className="space-y-2">
-                    {shelfGroups.map((group, idx) => (
-                      <div key={idx}>
-                        {group.label && (
-                          <div className="section-divider">
-                            <span className="section-divider-label">— {group.label}</span>
-                            <span className="section-divider-rule" />
-                          </div>
-                        )}
-                        <WoodenShelf>
-                          <div className="flex items-end gap-1 h-[140px]">
-                            {group.books.map(book => {
-                              if (book._isDummy) {
-                                return (
-                                  <div
-                                    key={book.id}
-                                    className="opacity-30 pointer-events-none select-none"
-                                    style={{ minWidth: 40 }}
-                                  >
-                                    <BookSpine book={book} onClick={() => {}} isSelected={false} isLent={false} isBorrowed={false} />
-                                  </div>
-                                );
-                              }
-                              const isLentBook = !book._isBorrowed && lentBookIds.has(book.id);
-                              const isBorrowedBook = !!book._isBorrowed;
-                              const retDate = isLentBook
-                                ? lentReturnDates.get(book.id)
-                                : isBorrowedBook
-                                ? borrowedReturnDates.get(book.id)
-                                : undefined;
-                              return (
-                                <BookSpine
-                                  key={book.id}
-                                  book={book}
-                                  onClick={() => setSelectedBook(book)}
-                                  isSelected={previewBook === book.id}
-                                  isLent={isLentBook}
-                                  isBorrowed={isBorrowedBook}
-                                  borrowerNickname={lentBooksInfo.get(book.id)}
-                                  lenderNickname={borrowedBooksInfo.get(book.id)}
-                                  returnDate={retDate}
-                                  duplicateCount={communityDuplicateCounts.get(book.id)}
-                                />
-                              );
-                            })}
-                          </div>
-                        </WoodenShelf>
-                      </div>
-                    ))}
+                {/* shelf-vignette: 가상 도서관 몰입감 — 서가 가장자리를 은은히 어둡게 */}
+                {/* data-onboarding: 온보딩 스포트라이트가 실제 서가를 조준한다 */}
+                <div data-onboarding="shelf" className="relative shelf-vignette space-y-3">
+                  {shelfGroups.map((group, idx) => (
+                    <EditorialShelf key={idx} label={group.label || undefined}>
+                      {group.books.map(book => {
+                        if (book._isDummy) {
+                          return (
+                            <div
+                              key={book.id}
+                              className="opacity-30 pointer-events-none select-none flex-1 min-w-[26px] max-w-[52px] h-full flex items-end"
+                            >
+                              <BookSpine book={book} onClick={() => {}} isSelected={false} isLent={false} isBorrowed={false} />
+                            </div>
+                          );
+                        }
+                        const isLentBook = !book._isBorrowed && lentBookIds.has(book.id);
+                        const isBorrowedBook = !!book._isBorrowed;
+                        const retDate = isLentBook
+                          ? lentReturnDates.get(book.id)
+                          : isBorrowedBook
+                          ? borrowedReturnDates.get(book.id)
+                          : undefined;
+                        return (
+                          <BookSpine
+                            key={book.id}
+                            book={book}
+                            onClick={() => { trackBrowse(); track('book_viewed', { book_id: book.id, from: 'shelf' }); setSelectedBook(book); }}
+                            isSelected={previewBook === book.id}
+                            isLent={isLentBook}
+                            isBorrowed={isBorrowedBook}
+                            borrowerNickname={lentBooksInfo.get(book.id)}
+                            lenderNickname={borrowedBooksInfo.get(book.id)}
+                            returnDate={retDate}
+                            duplicateCount={communityDuplicateCounts.get(book.id)}
+                          />
+                        );
+                      })}
+                    </EditorialShelf>
+                  ))}
 
-                    {Array.from({ length: emptyShelvesNeeded }).map((_, i) => (
-                      <WoodenShelf key={`empty-${i}`} isEmpty>
-                        <div className="h-[140px]" />
-                      </WoodenShelf>
-                    ))}
-                  </div>
+                  {Array.from({ length: emptyShelvesNeeded }).map((_, i) => (
+                    <EditorialShelf key={`empty-${i}`}>
+                      <div className="h-full" />
+                    </EditorialShelf>
+                  ))}
                 </div>
 
                 {/* Dummy books banner */}
@@ -509,83 +605,12 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-foreground">예시 화면입니다</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        책이 5권 이상 쌓이면 예시 책들이 사라져요. 지금 첫 책을 등록해보세요!
+                        책이 6권 이상 쌓이면 예시 책들이 사라져요. 지금 첫 책을 등록해보세요!
                       </p>
                     </div>
                   </motion.div>
                 )}
               </motion.div>
-            ) : (
-              <motion.div
-                key="cover-view"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                className="max-w-[520px] mx-auto w-full"
-              >
-                {filteredMySection.length === 0 && dedupedCommunityBooks.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <BookOpen className="w-16 h-16 text-muted-foreground/30 mb-4" />
-                    <h3 className="text-lg font-semibold text-foreground mb-2">아직 책이 없습니다</h3>
-                    <p className="text-muted-foreground text-sm max-w-xs">
-                      {activeFilter === 'mine'
-                        ? '등록한 책이나 대여 중인 책이 없습니다.'
-                        : selectedDistricts.length > 0
-                        ? '선택한 지역에 책이 없습니다.'
-                        : '책장이 비어있습니다. 책을 등록해보세요!'}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {user && filteredMySection.length > 0 && (
-                      <div>
-                        {dedupedCommunityBooks.length > 0 && (
-                          <p className="text-[11px] font-semibold text-muted-foreground/60 tracking-widest uppercase mb-3">나의 책장</p>
-                        )}
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                          {filteredMySection.map((book, index) => (
-                            <motion.div key={book.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
-                              <BookCover
-                                book={book}
-                                onClick={() => setSelectedBook(book)}
-                                isRented={rentedBookIds.has(book.id)}
-                                isLent={!book._isBorrowed && lentBookIds.has(book.id)}
-                                isBorrowed={!!book._isBorrowed}
-                              />
-                            </motion.div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {activeFilter !== 'mine' && dedupedCommunityBooks.length > 0 && (
-                      <div>
-                        {user && filteredMySection.length > 0 && (
-                          <p className="text-[11px] font-semibold text-muted-foreground/60 tracking-widest uppercase mb-3">{getFilterLabel()}</p>
-                        )}
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                          {dedupedCommunityBooks.map((book, index) => {
-                            const dupeCount = communityDuplicateCounts.get(book.id) ?? 1;
-                            return (
-                              <motion.div key={book.id} className="relative" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
-                                <BookCover book={book} onClick={() => setSelectedBook(book)} isRented={rentedBookIds.has(book.id)} isLent={lentBookIds.has(book.id)} />
-                                {dupeCount > 1 && (
-                                  <div className="absolute top-1.5 right-1.5 z-10 bg-white/85 text-foreground text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-sm leading-none pointer-events-none">
-                                    ×{dupeCount}
-                                  </div>
-                                )}
-                              </motion.div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
         )}
       </div>
 
@@ -594,7 +619,7 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         className="fixed bottom-24 right-4 z-40 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors"
-        onClick={() => setShowLikedBooks(true)}
+        onClick={() => { if (requireAuth()) setShowLikedBooks(true); }}
       >
         <Heart className="w-6 h-6" />
         {likedBooks.length > 0 && (
@@ -606,7 +631,7 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
 
       {/* Filter Dialog */}
       <Dialog open={showFilterSheet} onOpenChange={v => { setShowFilterSheet(v); if (!v) setDistrictDropdownOpen(false); }}>
-        <DialogContent className="w-[calc(100%-2rem)] max-w-sm rounded-2xl mb-[10vh]">
+        <DialogContent className="w-[calc(100%-2rem)] max-w-sm rounded-2xl mb-[4vh]">
           <DialogHeader>
             <DialogTitle className="text-left text-base">필터 / 정렬</DialogTitle>
           </DialogHeader>
@@ -624,73 +649,72 @@ export const Bookshelf = ({ onOpenChat, initialCommunityId, onCommunityFilterCle
               </div>
             </div>
 
-            {/* Status */}
+            {/* 책 상태는 헤더 칩으로 상시 노출한다 — 시트에 두면 같은 필터가 두 곳에 생긴다 */}
+
+            {/* District multi-select — inline expand (no absolute, no overflow-clip issue) */}
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">책 상태</p>
-              <div className="flex gap-2 flex-wrap">
-                {(['all', 'available', 'rented', 'selling'] as StatusFilter[]).map(s => (
-                  <button key={s} onClick={() => setStatusFilter(s)} className={`pill ${statusFilter === s ? 'pill-active' : ''}`}>
-                    {statusFilterLabels[s]}
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">관심 지역</p>
+                {selectedDistricts.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDistricts([])}
+                    className="text-[11px] text-muted-foreground underline underline-offset-2"
+                  >
+                    선택 해제 ({selectedDistricts.length})
                   </button>
-                ))}
-              </div>
-            </div>
-
-            {/* District multi-select dropdown */}
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">관심 지역</p>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setDistrictDropdownOpen(v => !v)}
-                  className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-xl border border-border bg-background hover:bg-muted/50 transition-colors"
-                >
-                  <span className="flex items-center gap-1.5 text-left">
-                    <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                    {selectedDistricts.length === 0
-                      ? <span className="text-muted-foreground">지역 선택 (복수 가능)</span>
-                      : <span className="text-foreground font-medium truncate">{selectedDistricts.join(', ')}</span>
-                    }
-                  </span>
-                  <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${districtDropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {districtDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-background border border-border rounded-xl shadow-lg overflow-hidden">
-                    <div className="max-h-48 overflow-y-auto">
-                      {availableDistricts.map(d => {
-                        const checked = selectedDistricts.includes(d);
-                        return (
-                          <button
-                            key={d}
-                            type="button"
-                            onClick={() => setSelectedDistricts(prev =>
-                              checked ? prev.filter(x => x !== d) : [...prev, d]
-                            )}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left hover:bg-muted/60 transition-colors"
-                          >
-                            <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${checked ? 'bg-primary border-primary' : 'border-border'}`}>
-                              {checked && <svg className="w-2.5 h-2.5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>}
-                            </span>
-                            <span className={checked ? 'font-medium text-foreground' : 'text-foreground/80'}>{d}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {selectedDistricts.length > 0 && (
-                      <div className="border-t border-border px-3 py-2">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedDistricts([])}
-                          className="text-xs text-muted-foreground underline underline-offset-2"
-                        >
-                          선택 해제 ({selectedDistricts.length}개)
-                        </button>
-                      </div>
-                    )}
-                  </div>
                 )}
               </div>
+
+              {/* Trigger button */}
+              <button
+                type="button"
+                onClick={() => setDistrictDropdownOpen(v => !v)}
+                className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-xl border border-border bg-background hover:bg-muted/50 transition-colors"
+              >
+                <span className="flex items-center gap-1.5 text-left min-w-0">
+                  <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  {selectedDistricts.length === 0
+                    ? <span className="text-muted-foreground">지역 선택 (복수 가능)</span>
+                    : <span className="text-foreground font-medium truncate">{selectedDistricts.join(', ')}</span>
+                  }
+                </span>
+                <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200 ${districtDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Inline expanded list — in document flow so dialog can scroll */}
+              {districtDropdownOpen && (
+                <div className="rounded-xl border border-border bg-muted/30 overflow-hidden">
+                  <div className="grid grid-cols-2 gap-px bg-border">
+                    {availableDistricts.map(d => {
+                      const checked = selectedDistricts.includes(d);
+                      return (
+                        <button
+                          key={d}
+                          type="button"
+                          onClick={() => setSelectedDistricts(prev =>
+                            checked ? prev.filter(x => x !== d) : [...prev, d]
+                          )}
+                          className={`flex items-center gap-2 px-3 py-2.5 text-sm text-left transition-colors ${
+                            checked ? 'bg-primary/10 text-primary font-medium' : 'bg-background hover:bg-muted/60 text-foreground/80'
+                          }`}
+                        >
+                          <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                            checked ? 'bg-primary border-primary' : 'border-border'
+                          }`}>
+                            {checked && (
+                              <svg className="w-2 h-2 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+                              </svg>
+                            )}
+                          </span>
+                          <span className="truncate text-xs">{d}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Reset */}

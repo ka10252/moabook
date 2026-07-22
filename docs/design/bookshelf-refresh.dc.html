@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Nunito:wght@400;600;700;800&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body { margin:0; background:#E8E6E1; }
+  * { box-sizing:border-box; }
+  [data-lucide] { display:inline-flex; }
+</style>
+</helmet>
+
+<section style="padding:56px 48px 40px; font-family:'Space Grotesk',sans-serif;">
+  <div style="max-width:1240px; margin:0 auto 40px;">
+    <p style="font-size:12px; font-weight:700; letter-spacing:0.28em; text-transform:uppercase; color:#9a9488; margin:0 0 10px;">Turn 6 · 책 색상 팔레트 (톤 선택)</p>
+    <h1 style="font-family:'Instrument Serif',serif; font-size:52px; line-height:1.02; margin:0; color:#1a1813; font-weight:400;">조화로운 팔레트 3종</h1>
+    <p style="font-size:15px; color:#6b665c; margin:14px 0 0; max-width:720px; line-height:1.6;">동일 색이 아니라 <b>같은 계열의 유사한 톤</b>으로 묶어 눈이 편하게 배치했어요. 채도·명도를 비슷하게 맞춰 서가가 차분히 어우러집니다. 오른쪽 <b>Tweaks 패널의 "책 색상 팔레트"</b>에서 톤을 바꾸면 전체 시안(서가·책등·팝업)에 즉시 적용돼요. 현재 적용: <b>{{ paletteName }}</b>.</p>
+  </div>
+
+  <div style="display:flex; flex-wrap:wrap; gap:28px; justify-content:center; align-items:flex-start;">
+    <sc-for list="{{ palPreview }}" as="pal" hint-placeholder-count="3">
+      <div id="{{ pal.id }}" style="width:300px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+          <span style="background:#1a1813; color:#fff; font-size:13px; font-weight:700; padding:4px 12px; border-radius:20px;">{{ pal.id }}</span>
+          <p style="margin:0; font-size:15px; font-weight:700; color:#1a1813;">{{ pal.name }}</p>
+          <sc-if value="{{ pal.active }}" hint-placeholder-val="{{ false }}">
+            <span style="font-size:10px; font-weight:700; color:#fff; background:#FF5233; padding:3px 9px; border-radius:20px;">적용중</span>
+          </sc-if>
+        </div>
+        <div style="display:flex; gap:6px; margin-bottom:14px;">
+          <sc-for list="{{ pal.swatches }}" as="sw" hint-placeholder-count="6">
+            <span style="flex:1; height:26px; border-radius:5px; background:{{ sw }}; box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);"></span>
+          </sc-for>
+        </div>
+        <div style="background:#F4F1EA; border-radius:16px; padding:22px 16px 0; box-shadow:0 20px 44px -24px rgba(0,0,0,.4);">
+          <div style="display:flex; align-items:flex-end; gap:5px; height:120px; padding:0 4px;">
+            <sc-for list="{{ pal.spines }}" as="s" hint-placeholder-count="6">
+              <div style="flex:1; height:{{ s.h }}; background:{{ s.bg }}; border-radius:2px 2px 0 0; display:flex; align-items:center; justify-content:center; box-shadow:inset -3px 0 5px rgba(0,0,0,.18), inset 2px 0 2px rgba(255,255,255,.16);">
+                <span style="writing-mode:vertical-rl; font-family:'Instrument Serif',serif; font-size:10px; color:#F4EDE0;">{{ s.t }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="height:2px; background:#1a1813;"></div>
+          <div style="height:8px; background:linear-gradient(#ddd6c4,#efe9db); border-radius:0 0 8px 8px;"></div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section style="padding:56px 48px 40px; font-family:'Space Grotesk',sans-serif;">
+  <div style="max-width:1240px; margin:0 auto 40px;">
+    <p style="font-size:12px; font-weight:700; letter-spacing:0.28em; text-transform:uppercase; color:#9a9488; margin:0 0 10px;">Turn 5 · 빌려준 책 vs 빌려온 책 구분</p>
+    <h1 style="font-family:'Instrument Serif',serif; font-size:52px; line-height:1.02; margin:0; color:#1a1813; font-weight:400;">내 책장에서 상태 구분 — 두 방식</h1>
+    <p style="font-size:15px; color:#6b665c; margin:14px 0 0; max-width:720px; line-height:1.6;">확정: 탭 인터랙션 <b>3a(하단 팝업)</b> + 책갈피 <b>4c(리파인드 리본)</b>. 여기에 <b>빌려준 책(내 소유·지금 없음)</b>과 <b>빌려온 책(남의 책·지금 내게 있음)</b>을 시각적으로 더 명확히 나눈 두 안이에요. 리본 색(금색↑=빌려줌 / 남색↓=빌림)에 더해 <b>스파인 상태 자체</b>로 구분합니다. <b>5a·5b</b> 중 골라 주세요.</p>
+  </div>
+
+  <div style="display:flex; flex-wrap:wrap; gap:40px; justify-content:center; align-items:flex-start;">
+
+    <!-- ══════════════ 5a — GHOST IN PLACE ══════════════ -->
+    <div id="5a" style="width:340px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+        <span style="background:#1a1813; color:#fff; font-size:13px; font-weight:700; padding:4px 12px; border-radius:20px;">5a</span>
+        <div>
+          <p style="margin:0; font-size:14px; font-weight:700; color:#1a1813;">고스트 인 플레이스</p>
+          <p style="margin:2px 0 0; font-size:12px; color:#8a857a;">빌려준 책 = 자리 유지하되 희미하게</p>
+        </div>
+      </div>
+      <div style="width:340px; background:#111013; border-radius:46px; padding:11px; box-shadow:0 34px 80px -26px rgba(0,0,0,.5);">
+        <div style="border-radius:36px; overflow:hidden; height:704px; position:relative; display:flex; flex-direction:column; background:#F4F1EA; font-family:'Space Grotesk',sans-serif;">
+          <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:96px; height:26px; background:#111013; border-radius:16px; z-index:90;"></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 22px 4px; font-size:13px; font-weight:600; color:#1a1813;">
+            <span>9:41</span>
+            <span style="display:flex; gap:6px; align-items:center;"><i data-lucide="signal-high" width="15" height="15"></i><i data-lucide="wifi" width="15" height="15"></i><i data-lucide="battery-full" width="18" height="18"></i></span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 22px 0;">
+            <span style="font-family:'Instrument Serif',serif; font-size:26px; color:#1a1813;">moa</span>
+            <span style="display:flex; gap:16px; color:#57524a;"><i data-lucide="mail" width="20" height="20"></i><i data-lucide="bell" width="20" height="20"></i><i data-lucide="message-circle" width="20" height="20"></i></span>
+          </div>
+          <div style="padding:14px 22px 4px;">
+            <p style="font-size:10px; font-weight:700; letter-spacing:0.3em; color:#a39d90; margin:0;">MY LIBRARY</p>
+            <h2 style="font-family:'Instrument Serif',serif; font-weight:400; font-size:34px; line-height:0.98; margin:5px 0 0; color:#1a1813; letter-spacing:-0.02em;">나의 책장</h2>
+          </div>
+          <div style="flex:1; overflow:hidden; position:relative; padding:12px 20px 0;">
+            <div style="position:absolute; inset:0; z-index:20; pointer-events:none; background:radial-gradient(120% 70% at 50% 40%, rgba(0,0,0,0) 55%, rgba(60,45,25,.12) 100%);"></div>
+            <p style="font-family:'Instrument Serif',serif; font-style:italic; font-size:15px; color:#1a1813; margin:0 0 2px;">내 서가</p>
+            <div style="display:flex; align-items:flex-end; gap:6px; height:184px; padding-top:24px;">
+              <sc-for list="{{ myShelf }}" as="b" hint-placeholder-count="6">
+                <div style="position:relative; flex:1; height:{{ b.h }}; background:{{ b.bg }}; border-radius:2px 2px 0 0; display:flex; align-items:center; justify-content:center; outline:{{ b.ghostOutline }}; outline-offset:-2px; box-shadow:inset -3px 0 5px rgba(0,0,0,.2), inset 2px 0 2px rgba(255,255,255,.16);">
+                  <sc-if value="{{ b.lent }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute; inset:0; background:rgba(244,241,234,.6); z-index:2;"></div>
+                  </sc-if>
+                  <span style="writing-mode:vertical-rl; font-family:'Instrument Serif',serif; font-size:11px; color:{{ b.fg }}; margin-top:16px; position:relative; z-index:3; opacity:{{ b.titleOpacity }};">{{ b.title }}</span>
+                  <sc-if value="{{ b.marked }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute; top:0; left:50%; transform:translateX(-50%); width:64%; height:34px; background:{{ b.corner }}; clip-path:polygon(0 0,100% 0,100% 72%,50% 100%,0 72%); box-shadow:0 4px 9px rgba(0,0,0,.3); display:flex; align-items:flex-start; justify-content:center; padding-top:4px; z-index:5;"><span style="font-size:8px; font-weight:900; color:{{ b.ribFg }};">{{ b.dday }}</span></div>
+                    <div style="position:absolute; top:-15px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:3px; background:{{ b.chip }}; color:#fff; font-size:8px; font-weight:800; padding:2px 6px; border-radius:20px; white-space:nowrap; box-shadow:0 3px 7px rgba(0,0,0,.28); z-index:6;"><span style="opacity:.75;">{{ b.arrow }}</span>{{ b.who }}</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <div style="height:2px; background:#1a1813;"></div>
+            <div style="height:7px; background:linear-gradient(#ddd6c4,#efe9db); box-shadow:0 5px 9px -4px rgba(90,70,40,.4);"></div>
+            <div style="display:flex; gap:16px; margin-top:16px; font-size:11px; color:#57524a;">
+              <span style="display:flex; align-items:center; gap:6px;"><span style="width:11px; height:14px; background:#5B7453; opacity:.4; outline:1px dashed #a89e88; outline-offset:-2px;"></span>빌려줌 (희미)</span>
+              <span style="display:flex; align-items:center; gap:6px;"><span style="width:11px; height:14px; background:#3B576D;"></span>빌림 (선명)</span>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-around; align-items:center; padding:12px 14px 26px; background:#F4F1EA; border-top:1px solid #e2dccf;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#FF5233;"><i data-lucide="book-open" width="22" height="22"></i><span style="font-size:9px; font-weight:700;">책장</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="heart" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">위시</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="plus" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">등록</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="users" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">커뮤니티</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="user" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">프로필</span></div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:12px; color:#8a857a; line-height:1.55; margin:14px 2px 0; width:340px;">빌려준 책은 <b>실제로 내 손엔 없으니</b> 자리를 지키되 반투명·점선으로 "비어 있음"을 표현. 돌아올 자리가 보여 안심되고, 빌려온 책은 선명해 대비가 큼.</p>
+    </div>
+
+    <!-- ══════════════ 5b — EMPTY SLOT + GUEST ══════════════ -->
+    <div id="5b" style="width:340px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+        <span style="background:#1a1813; color:#fff; font-size:13px; font-weight:700; padding:4px 12px; border-radius:20px;">5b</span>
+        <div>
+          <p style="margin:0; font-size:14px; font-weight:700; color:#1a1813;">빈자리 + 게스트</p>
+          <p style="margin:2px 0 0; font-size:12px; color:#8a857a;">빌려준 책 = 빈 슬롯, 빌려온 책 = 기울인 손님</p>
+        </div>
+      </div>
+      <div style="width:340px; background:#111013; border-radius:46px; padding:11px; box-shadow:0 34px 80px -26px rgba(0,0,0,.5);">
+        <div style="border-radius:36px; overflow:hidden; height:704px; position:relative; display:flex; flex-direction:column; background:#F4F1EA; font-family:'Space Grotesk',sans-serif;">
+          <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:96px; height:26px; background:#111013; border-radius:16px; z-index:90;"></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 22px 4px; font-size:13px; font-weight:600; color:#1a1813;">
+            <span>9:41</span>
+            <span style="display:flex; gap:6px; align-items:center;"><i data-lucide="signal-high" width="15" height="15"></i><i data-lucide="wifi" width="15" height="15"></i><i data-lucide="battery-full" width="18" height="18"></i></span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 22px 0;">
+            <span style="font-family:'Instrument Serif',serif; font-size:26px; color:#1a1813;">moa</span>
+            <span style="display:flex; gap:16px; color:#57524a;"><i data-lucide="mail" width="20" height="20"></i><i data-lucide="bell" width="20" height="20"></i><i data-lucide="message-circle" width="20" height="20"></i></span>
+          </div>
+          <div style="padding:14px 22px 4px;">
+            <p style="font-size:10px; font-weight:700; letter-spacing:0.3em; color:#a39d90; margin:0;">MY LIBRARY</p>
+            <h2 style="font-family:'Instrument Serif',serif; font-weight:400; font-size:34px; line-height:0.98; margin:5px 0 0; color:#1a1813; letter-spacing:-0.02em;">나의 책장</h2>
+          </div>
+          <div style="flex:1; overflow:hidden; position:relative; padding:12px 20px 0;">
+            <div style="position:absolute; inset:0; z-index:20; pointer-events:none; background:radial-gradient(120% 70% at 50% 40%, rgba(0,0,0,0) 55%, rgba(60,45,25,.12) 100%);"></div>
+            <p style="font-family:'Instrument Serif',serif; font-style:italic; font-size:15px; color:#1a1813; margin:0 0 2px;">내 서가</p>
+            <div style="display:flex; align-items:flex-end; gap:6px; height:184px; padding-top:24px;">
+              <sc-for list="{{ myShelf }}" as="b" hint-placeholder-count="6">
+                <div style="position:relative; flex:{{ b.flex5b }}; display:flex; align-items:flex-end; justify-content:center; height:100%;">
+                  <sc-if value="{{ b.own }}" hint-placeholder-val="{{ false }}">
+                    <div style="width:100%; height:{{ b.h }}; background:{{ b.bg }}; border-radius:2px 2px 0 0; display:flex; align-items:center; justify-content:center; box-shadow:inset -3px 0 5px rgba(0,0,0,.2), inset 2px 0 2px rgba(255,255,255,.16);"><span style="writing-mode:vertical-rl; font-family:'Instrument Serif',serif; font-size:11px; color:{{ b.fg }};">{{ b.title }}</span></div>
+                  </sc-if>
+                  <sc-if value="{{ b.borrowed }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:relative; width:100%; height:{{ b.h }}; background:{{ b.bg }}; border-radius:2px 2px 0 0; transform:rotate(-4deg); transform-origin:bottom center; display:flex; align-items:center; justify-content:center; box-shadow:inset -3px 0 5px rgba(0,0,0,.2), inset 2px 0 2px rgba(255,255,255,.16), 0 6px 12px -6px rgba(0,0,0,.4);">
+                      <span style="writing-mode:vertical-rl; font-family:'Instrument Serif',serif; font-size:11px; color:{{ b.fg }}; margin-top:16px;">{{ b.title }}</span>
+                      <div style="position:absolute; top:0; left:50%; transform:translateX(-50%); width:64%; height:34px; background:{{ b.corner }}; clip-path:polygon(0 0,100% 0,100% 72%,50% 100%,0 72%); box-shadow:0 4px 9px rgba(0,0,0,.3); display:flex; align-items:flex-start; justify-content:center; padding-top:4px; z-index:5;"><span style="font-size:8px; font-weight:900; color:{{ b.ribFg }};">{{ b.dday }}</span></div>
+                      <div style="position:absolute; top:-15px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:3px; background:{{ b.chip }}; color:#fff; font-size:8px; font-weight:800; padding:2px 6px; border-radius:20px; white-space:nowrap; box-shadow:0 3px 7px rgba(0,0,0,.28); z-index:6;"><span style="opacity:.75;">{{ b.arrow }}</span>{{ b.who }}</div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ b.lent }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:relative; width:84%; height:{{ b.slotH }}; background:repeating-linear-gradient(90deg,#EAE3D4,#EAE3D4 5px,#e3dbc9 5px,#e3dbc9 10px); border:1.5px dashed #b8ae98; border-radius:3px; display:flex; align-items:center; justify-content:center; box-shadow:inset 0 3px 9px rgba(120,100,60,.2);">
+                      <span style="writing-mode:vertical-rl; font-family:'Instrument Serif',serif; font-size:10px; color:#a1977f; margin-top:6px;">{{ b.title }}</span>
+                      <span style="position:absolute; bottom:4px; left:50%; transform:translateX(-50%); font-size:7px; letter-spacing:0.14em; color:#b0a794; white-space:nowrap;">대여중</span>
+                      <div style="position:absolute; top:-15px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:3px; background:{{ b.chip }}; color:#fff; font-size:8px; font-weight:800; padding:2px 6px; border-radius:20px; white-space:nowrap; box-shadow:0 3px 7px rgba(0,0,0,.28);"><span style="opacity:.75;">↑</span>{{ b.who }}<span style="background:{{ b.ddayBg2 }}; padding:1px 4px; border-radius:20px; font-size:7px;">{{ b.dday }}</span></div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <div style="height:2px; background:#1a1813;"></div>
+            <div style="height:7px; background:linear-gradient(#ddd6c4,#efe9db); box-shadow:0 5px 9px -4px rgba(90,70,40,.4);"></div>
+            <div style="display:flex; gap:16px; margin-top:16px; font-size:11px; color:#57524a;">
+              <span style="display:flex; align-items:center; gap:6px;"><span style="width:9px; height:13px; background:#EAE3D4; border:1px dashed #b8ae98;"></span>빌려줌 (빈자리)</span>
+              <span style="display:flex; align-items:center; gap:6px;"><span style="width:11px; height:14px; background:#3B576D; transform:rotate(-6deg);"></span>빌림 (기울인 손님)</span>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-around; align-items:center; padding:12px 14px 26px; background:#F4F1EA; border-top:1px solid #e2dccf;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#FF5233;"><i data-lucide="book-open" width="22" height="22"></i><span style="font-size:9px; font-weight:700;">책장</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="heart" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">위시</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="plus" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">등록</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="users" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">커뮤니티</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="user" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">프로필</span></div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:12px; color:#8a857a; line-height:1.55; margin:14px 2px 0; width:340px;">빌려준 책은 <b>빈 슬롯</b>으로 실제 공백을 드러내 "지금 없음"이 직관적. 빌려온 책은 <b>살짝 기울여</b> 잠시 얹힌 손님처럼 표현해, 내 책과 즉시 구별됨.</p>
+    </div>
+
+  </div>
+</section>
+
+<section style="padding:56px 48px 40px; font-family:'Space Grotesk',sans-serif;">
+  <div style="max-width:1240px; margin:0 auto 40px;">
+    <p style="font-size:12px; font-weight:700; letter-spacing:0.28em; text-transform:uppercase; color:#9a9488; margin:0 0 10px;">Turn 4 · 책갈피(대여/대출) 표시 개선</p>
+    <h1 style="font-family:'Instrument Serif',serif; font-size:52px; line-height:1.02; margin:0; color:#1a1813; font-weight:400;">책갈피 표시 — 세 개선안</h1>
+    <p style="font-size:15px; color:#6b665c; margin:14px 0 0; max-width:700px; line-height:1.6;">현재는 책등 위로 리본이 드리워 <b>금색=빌려줌(↑)</b>, <b>남색=빌림(↓)</b>과 반납 D-day를 보여줘요. 아래 세 개선안(<b>4a·4b·4c</b>)을 비교해 골라 주세요. 색은 통일된 스파인 팔레트를 그대로 씁니다.</p>
+    <div style="display:flex; gap:16px; margin-top:16px; font-size:12px; color:#57524a; align-items:center;">
+      <span style="display:flex; align-items:center; gap:6px;"><span style="width:13px; height:13px; border-radius:3px; background:linear-gradient(180deg,#D4A827,#8F5A05);"></span> 빌려줌 (lent)</span>
+      <span style="display:flex; align-items:center; gap:6px;"><span style="width:13px; height:13px; border-radius:3px; background:linear-gradient(180deg,#7478B8,#313468);"></span> 빌림 (borrowed)</span>
+      <span style="display:flex; align-items:center; gap:6px;"><span style="width:13px; height:13px; border-radius:3px; background:#D01E1E;"></span> 반납 임박</span>
+    </div>
+  </div>
+
+  <div style="display:flex; flex-wrap:wrap; gap:32px; justify-content:center; align-items:flex-start;">
+
+    <!-- ══════════════ 4a — CORNER FOLD TAG ══════════════ -->
+    <div id="4a" style="width:300px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+        <span style="background:#1a1813; color:#fff; font-size:13px; font-weight:700; padding:4px 12px; border-radius:20px;">4a</span>
+        <div>
+          <p style="margin:0; font-size:14px; font-weight:700; color:#1a1813;">코너 폴드 태그</p>
+          <p style="margin:2px 0 0; font-size:11.5px; color:#8a857a;">모서리 접힘 + 항상 보이는 이름칩</p>
+        </div>
+      </div>
+      <div style="background:#F4F1EA; border-radius:16px; padding:26px 18px 0; box-shadow:0 20px 44px -24px rgba(0,0,0,.4);">
+        <div style="display:flex; align-items:flex-end; gap:6px; height:172px; padding:0 4px;">
+          <sc-for list="{{ sampleSpines }}" as="b" hint-placeholder-count="5">
+            <div style="position:relative; flex:1; height:{{ b.h }}; background:{{ b.bg }}; border-radius:2px 2px 0 0; display:flex; align-items:center; justify-content:center; box-shadow:inset -3px 0 5px rgba(0,0,0,.2), inset 2px 0 2px rgba(255,255,255,.16);">
+              <sc-if value="{{ b.mark }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute; top:0; right:0; width:0; height:0; border-top:22px solid {{ b.corner }}; border-left:22px solid transparent;"></div>
+                <span style="position:absolute; top:2px; right:2px; font-size:9px; font-weight:900; color:#fff; z-index:3;">{{ b.arrow }}</span>
+                <div style="position:absolute; top:-15px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:3px; background:{{ b.chip }}; color:#fff; font-size:8.5px; font-weight:800; padding:2px 6px; border-radius:20px; white-space:nowrap; box-shadow:0 3px 7px rgba(0,0,0,.28);">{{ b.who }}<span style="background:{{ b.ddayBg }}; color:{{ b.ddayFg }}; padding:1px 4px; border-radius:20px; font-size:7.5px;">{{ b.dday }}</span></div>
+              </sc-if>
+              <span style="writing-mode:vertical-rl; font-family:'Instrument Serif',serif; font-size:11px; color:{{ b.fg }};">{{ b.title }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="height:3px; background:#1a1813;"></div>
+        <div style="height:9px; background:linear-gradient(#ddd6c4,#efe9db); border-radius:0 0 8px 8px;"></div>
+      </div>
+      <p style="font-size:11.5px; color:#8a857a; line-height:1.55; margin:14px 2px 0;">모서리 삼각 접힘으로 방향(↑↓)을, 위 칩으로 상대 이름과 D-day를 항상 노출. 책등 텍스트를 가리지 않아 깔끔.</p>
+    </div>
+
+    <!-- ══════════════ 4b — BASE LABEL BAR ══════════════ -->
+    <div id="4b" style="width:300px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+        <span style="background:#1a1813; color:#fff; font-size:13px; font-weight:700; padding:4px 12px; border-radius:20px;">4b</span>
+        <div>
+          <p style="margin:0; font-size:14px; font-weight:700; color:#1a1813;">베이스 라벨 바</p>
+          <p style="margin:2px 0 0; font-size:11.5px; color:#8a857a;">하단 색 띠 + 아바타 도트 · 상단 클린</p>
+        </div>
+      </div>
+      <div style="background:#F4F1EA; border-radius:16px; padding:26px 18px 0; box-shadow:0 20px 44px -24px rgba(0,0,0,.4);">
+        <div style="display:flex; align-items:flex-end; gap:6px; height:172px; padding:0 4px;">
+          <sc-for list="{{ sampleSpines }}" as="b" hint-placeholder-count="5">
+            <div style="position:relative; flex:1; height:{{ b.h }}; background:{{ b.bg }}; border-radius:2px 2px 0 0; display:flex; align-items:center; justify-content:center; overflow:hidden; box-shadow:inset -3px 0 5px rgba(0,0,0,.2), inset 2px 0 2px rgba(255,255,255,.16);">
+              <span style="writing-mode:vertical-rl; font-family:'Instrument Serif',serif; font-size:11px; color:{{ b.fg }}; margin-top:-14px;">{{ b.title }}</span>
+              <sc-if value="{{ b.mark }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute; bottom:0; left:0; right:0; background:{{ b.corner }}; display:flex; flex-direction:column; align-items:center; gap:2px; padding:5px 2px 6px;">
+                  <span style="width:17px; height:17px; border-radius:50%; background:rgba(255,255,255,.9); color:#1a1813; font-size:9px; font-weight:800; display:flex; align-items:center; justify-content:center;">{{ b.initial }}</span>
+                  <span style="font-size:7.5px; font-weight:900; color:{{ b.ddayFg2 }};">{{ b.dday }}</span>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div style="height:3px; background:#1a1813;"></div>
+        <div style="height:9px; background:linear-gradient(#ddd6c4,#efe9db); border-radius:0 0 8px 8px;"></div>
+      </div>
+      <p style="font-size:11.5px; color:#8a857a; line-height:1.55; margin:14px 2px 0;">책등 밑동에 색 띠를 둘러 상대 아바타와 D-day를 표시. 상단은 비워 제목 가독성 최고, 서가 하단 라인이 정돈돼 보임.</p>
+    </div>
+
+    <!-- ══════════════ 4c — REFINED RIBBON ══════════════ -->
+    <div id="4c" style="width:300px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+        <span style="background:#1a1813; color:#fff; font-size:13px; font-weight:700; padding:4px 12px; border-radius:20px;">4c</span>
+        <div>
+          <p style="margin:0; font-size:14px; font-weight:700; color:#1a1813;">리파인드 리본</p>
+          <p style="margin:2px 0 0; font-size:11.5px; color:#8a857a;">현재 리본 개선 · 이름칩 상시 노출</p>
+        </div>
+      </div>
+      <div style="background:#F4F1EA; border-radius:16px; padding:34px 18px 0; box-shadow:0 20px 44px -24px rgba(0,0,0,.4);">
+        <div style="display:flex; align-items:flex-end; gap:6px; height:172px; padding:0 4px;">
+          <sc-for list="{{ sampleSpines }}" as="b" hint-placeholder-count="5">
+            <div style="position:relative; flex:1; height:{{ b.h }}; background:{{ b.bg }}; border-radius:2px 2px 0 0; display:flex; align-items:center; justify-content:center; box-shadow:inset -3px 0 5px rgba(0,0,0,.2), inset 2px 0 2px rgba(255,255,255,.16);">
+              <sc-if value="{{ b.mark }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute; top:0; left:50%; transform:translateX(-50%); width:62%; height:42px; background:{{ b.corner }}; clip-path:polygon(0 0,100% 0,100% 72%,50% 100%,0 72%); box-shadow:0 4px 9px rgba(0,0,0,.3); display:flex; align-items:flex-start; justify-content:center; padding-top:4px;">
+                  <span style="font-size:8px; font-weight:900; color:{{ b.ribFg }};">{{ b.dday }}</span>
+                </div>
+                <div style="position:absolute; top:-16px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:3px; background:{{ b.chip }}; color:#fff; font-size:8.5px; font-weight:800; padding:2px 7px; border-radius:20px; white-space:nowrap; box-shadow:0 3px 7px rgba(0,0,0,.28);"><span style="opacity:.75;">{{ b.arrow }}</span>{{ b.who }}</div>
+              </sc-if>
+              <span style="writing-mode:vertical-rl; font-family:'Instrument Serif',serif; font-size:11px; color:{{ b.fg }}; margin-top:18px;">{{ b.title }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="height:3px; background:#1a1813;"></div>
+        <div style="height:9px; background:linear-gradient(#ddd6c4,#efe9db); border-radius:0 0 8px 8px;"></div>
+      </div>
+      <p style="font-size:11.5px; color:#8a857a; line-height:1.55; margin:14px 2px 0;">기존 새틴 리본을 다듬고, hover에만 뜨던 이름칩을 상시 노출. 익숙한 은유는 유지하되 정보 접근성을 높인 안전한 선택.</p>
+    </div>
+
+  </div>
+</section>
+
+<section style="padding:56px 48px 40px; font-family:'Space Grotesk',sans-serif;">
+  <div style="max-width:1240px; margin:0 auto 44px;">
+    <p style="font-size:12px; font-weight:700; letter-spacing:0.28em; text-transform:uppercase; color:#9a9488; margin:0 0 10px;">Turn 3 · 책 상세 인터랙션 비교</p>
+    <h1 style="font-family:'Instrument Serif',serif; font-size:52px; line-height:1.02; margin:0; color:#1a1813; font-weight:400;">책을 탭하면 — 두 방식</h1>
+    <p style="font-size:15px; color:#6b665c; margin:14px 0 0; max-width:680px; line-height:1.6;">2a 라이브러리 스택스에서 <b>책등을 직접 탭</b>해 보세요. <b>3a</b>는 하단 팝업(모달)로, <b>3b</b>는 서가 상단 인라인 패널로 책 정보를 보여줍니다. 책등 텍스트는 뒤집힘 없이 바로 세워 배치했어요.</p>
+  </div>
+
+  <div style="display:flex; flex-wrap:wrap; gap:40px; justify-content:center; align-items:flex-start;">
+
+    <!-- ══════════════ 3a — POPUP MODAL ══════════════ -->
+    <div id="3a" style="width:340px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+        <span style="background:#1a1813; color:#fff; font-size:13px; font-weight:700; padding:4px 12px; border-radius:20px;">3a</span>
+        <div>
+          <p style="margin:0; font-size:14px; font-weight:700; color:#1a1813;">팝업(모달) 방식</p>
+          <p style="margin:2px 0 0; font-size:12px; color:#8a857a;">탭 → 하단 시트로 상세 표시</p>
+        </div>
+      </div>
+      <div style="width:340px; background:#111013; border-radius:46px; padding:11px; box-shadow:0 34px 80px -26px rgba(0,0,0,.5);">
+        <div style="border-radius:36px; overflow:hidden; height:704px; position:relative; display:flex; flex-direction:column; background:#F4F1EA; font-family:'Space Grotesk',sans-serif;">
+          <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:96px; height:26px; background:#111013; border-radius:16px; z-index:90;"></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 22px 4px; font-size:13px; font-weight:600; color:#1a1813;">
+            <span>9:41</span>
+            <span style="display:flex; gap:6px; align-items:center;"><i data-lucide="signal-high" width="15" height="15"></i><i data-lucide="wifi" width="15" height="15"></i><i data-lucide="battery-full" width="18" height="18"></i></span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 22px 0;">
+            <span style="font-family:'Instrument Serif',serif; font-size:26px; color:#1a1813;">moa</span>
+            <span style="display:flex; gap:16px; color:#57524a;"><i data-lucide="mail" width="20" height="20"></i><i data-lucide="bell" width="20" height="20"></i><i data-lucide="message-circle" width="20" height="20"></i></span>
+          </div>
+          <div style="padding:14px 22px 6px;">
+            <p style="font-size:10px; font-weight:700; letter-spacing:0.3em; color:#a39d90; margin:0;">VIRTUAL LIBRARY</p>
+            <h2 style="font-family:'Instrument Serif',serif; font-weight:400; font-size:36px; line-height:0.98; margin:5px 0 0; color:#1a1813; letter-spacing:-0.02em;">모두의 책장</h2>
+            <p style="font-size:11px; color:#b0a794; margin:8px 0 0;">📖 책등을 탭하면 정보가 열려요</p>
+          </div>
+          <div style="flex:1; overflow:hidden; position:relative; padding:8px 0 0;">
+            <div style="position:absolute; inset:0; z-index:20; pointer-events:none; background:radial-gradient(120% 70% at 50% 40%, rgba(0,0,0,0) 55%, rgba(60,45,25,.14) 100%);"></div>
+            <div style="display:flex; flex-direction:column; padding:0 16px;">
+              <sc-for list="{{ rows3a }}" as="row" hint-placeholder-count="3">
+                <div>
+                  <div style="display:flex; align-items:flex-end; gap:4px; height:100px; padding:0 2px;">
+                    <sc-for list="{{ row.books }}" as="book" hint-placeholder-count="6">
+                      <div style="flex:{{ book.flex }}; height:{{ book.h }}; background:{{ book.bg }}; border-radius:2px 2px 0 0; display:flex; align-items:center; justify-content:center; cursor:pointer; transform:translateY({{ book.shift }}); outline:{{ book.ring }}; outline-offset:2px; box-shadow:inset -3px 0 5px rgba(0,0,0,.18), inset 2px 0 2px rgba(255,255,255,.16);" onClick="{{ book.onClick }}">
+                        <span style="writing-mode:vertical-rl; font-family:'Instrument Serif',serif; font-size:11px; color:{{ book.fg }}; white-space:nowrap; overflow:hidden; max-height:86%; letter-spacing:0.02em;">{{ book.title }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <div style="height:2px; background:#1a1813;"></div>
+                  <div style="height:7px; background:linear-gradient(#ddd6c4,#efe9db); box-shadow:0 5px 9px -4px rgba(90,70,40,.4); margin-bottom:9px;"></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-around; align-items:center; padding:12px 14px 26px; background:#F4F1EA; border-top:1px solid #e2dccf;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#FF5233;"><i data-lucide="book-open" width="22" height="22"></i><span style="font-size:9px; font-weight:700;">책장</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="heart" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">위시</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="plus" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">등록</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="users" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">커뮤니티</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="user" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">프로필</span></div>
+          </div>
+
+          <sc-if value="{{ sel3a }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute; inset:0; z-index:80; background:rgba(20,18,15,.45); display:flex; align-items:flex-end;" onClick="{{ close3a }}">
+              <div style="width:100%; background:#F4F1EA; border-radius:26px 26px 36px 36px; padding:22px 22px 30px; box-shadow:0 -20px 50px -20px rgba(0,0,0,.4);" onClick="{{ stopProp }}">
+                <div style="width:38px; height:4px; border-radius:4px; background:#d3ccbc; margin:0 auto 18px;"></div>
+                <div style="display:flex; gap:16px;">
+                  <div style="width:92px; aspect-ratio:2/3; border-radius:3px; background:{{ sel3a.bg }}; box-shadow:0 12px 24px -10px rgba(0,0,0,.5); display:flex; flex-direction:column; justify-content:flex-end; padding:10px; flex-shrink:0;">
+                    <p style="font-family:'Instrument Serif',serif; font-size:18px; line-height:1.02; margin:0; color:{{ sel3a.fg }};">{{ sel3a.title }}</p>
+                    <p style="font-size:8px; letter-spacing:0.08em; text-transform:uppercase; margin:5px 0 0; color:{{ sel3a.fg }}; opacity:.7;">{{ sel3a.author }}</p>
+                  </div>
+                  <div style="flex:1; padding-top:2px;">
+                    <p style="font-family:'Instrument Serif',serif; font-size:22px; line-height:1.05; margin:0; color:#1a1813;">{{ sel3a.title }}</p>
+                    <p style="font-size:11px; color:#8a857a; margin:3px 0 0;">{{ sel3a.author }}</p>
+                    <div style="display:flex; gap:6px; align-items:center; margin-top:9px; flex-wrap:wrap;">
+                      <span style="font-size:10px; font-weight:700; color:#FF5233; border:1px solid #FF5233; padding:3px 9px; border-radius:20px;">{{ sel3a.avail }}</span>
+                      <span style="font-size:10px; font-weight:700; color:#57524a; background:#e8e1d2; padding:3px 8px; border-radius:20px;">{{ sel3a.condLabel }}</span>
+                      <span style="font-size:10px; font-weight:700; color:#57524a; background:#e8e1d2; padding:3px 8px; border-radius:20px;">{{ sel3a.modeLabel }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:11px; margin-top:16px; padding:11px 13px; background:#efe9db; border-radius:12px;">
+                  <span style="width:38px; height:38px; border-radius:50%; background:{{ sel3a.bg }}; color:{{ sel3a.fg }}; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; flex-shrink:0;">{{ sel3a.ownerInitial }}</span>
+                  <div style="flex:1; min-width:0;">
+                    <p style="font-size:9px; letter-spacing:0.14em; text-transform:uppercase; color:#a39d90; margin:0; font-weight:700;">빌려주는 이웃</p>
+                    <p style="font-size:14px; font-weight:700; color:#1a1813; margin:2px 0 0;">{{ sel3a.owner }}</p>
+                  </div>
+                  <sc-if value="{{ sel3a.community }}" hint-placeholder-val="{{ false }}">
+                    <span style="font-size:10px; font-weight:600; color:#6E5B9E; background:#efeaf6; padding:5px 10px; border-radius:20px; white-space:nowrap;">📚 {{ sel3a.community }}</span>
+                  </sc-if>
+                  <span style="color:#a39d90; flex-shrink:0;"><i data-lucide="chevron-right" width="18" height="18"></i></span>
+                </div>
+                <p style="font-size:13px; line-height:1.6; color:#57524a; margin:14px 0 0;">{{ sel3a.blurb }}</p>
+                <div style="display:flex; gap:10px; margin-top:18px;">
+                  <span style="flex:1; text-align:center; background:#FF5233; color:#fff; font-size:13px; font-weight:700; padding:13px; border-radius:3px;">{{ sel3a.ctaLabel }}</span>
+                  <span style="width:48px; display:flex; align-items:center; justify-content:center; border:1.5px solid #d3ccbc; border-radius:3px; color:#57524a;"><i data-lucide="heart" width="19" height="19"></i></span>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ 3b — TOP INLINE PANEL ══════════════ -->
+    <div id="3b" style="width:340px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+        <span style="background:#1a1813; color:#fff; font-size:13px; font-weight:700; padding:4px 12px; border-radius:20px;">3b</span>
+        <div>
+          <p style="margin:0; font-size:14px; font-weight:700; color:#1a1813;">상단 인라인 방식</p>
+          <p style="margin:2px 0 0; font-size:12px; color:#8a857a;">탭 → 서가 위 패널에 상세 고정</p>
+        </div>
+      </div>
+      <div style="width:340px; background:#111013; border-radius:46px; padding:11px; box-shadow:0 34px 80px -26px rgba(0,0,0,.5);">
+        <div style="border-radius:36px; overflow:hidden; height:704px; position:relative; display:flex; flex-direction:column; background:#F4F1EA; font-family:'Space Grotesk',sans-serif;">
+          <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:96px; height:26px; background:#111013; border-radius:16px; z-index:90;"></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 22px 4px; font-size:13px; font-weight:600; color:#1a1813;">
+            <span>9:41</span>
+            <span style="display:flex; gap:6px; align-items:center;"><i data-lucide="signal-high" width="15" height="15"></i><i data-lucide="wifi" width="15" height="15"></i><i data-lucide="battery-full" width="18" height="18"></i></span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 22px 0;">
+            <span style="font-family:'Instrument Serif',serif; font-size:26px; color:#1a1813;">moa</span>
+            <span style="display:flex; gap:16px; color:#57524a;"><i data-lucide="mail" width="20" height="20"></i><i data-lucide="bell" width="20" height="20"></i><i data-lucide="message-circle" width="20" height="20"></i></span>
+          </div>
+          <div style="padding:12px 22px 4px;">
+            <p style="font-size:10px; font-weight:700; letter-spacing:0.3em; color:#a39d90; margin:0;">VIRTUAL LIBRARY</p>
+            <h2 style="font-family:'Instrument Serif',serif; font-weight:400; font-size:30px; line-height:0.98; margin:4px 0 0; color:#1a1813; letter-spacing:-0.02em;">모두의 책장</h2>
+          </div>
+          <div style="margin:10px 20px 4px; background:#fff; border:1px solid #e6dfce; border-radius:14px; padding:14px; box-shadow:0 10px 24px -14px rgba(90,70,40,.5); display:flex; gap:14px; align-items:center;">
+            <div style="width:56px; aspect-ratio:2/3; border-radius:3px; background:{{ sel3b.bg }}; box-shadow:0 8px 16px -8px rgba(0,0,0,.5); display:flex; flex-direction:column; justify-content:flex-end; padding:6px; flex-shrink:0;">
+              <p style="font-family:'Instrument Serif',serif; font-size:11px; line-height:1; margin:0; color:{{ sel3b.fg }};">{{ sel3b.title }}</p>
+            </div>
+            <div style="flex:1; min-width:0;">
+              <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                <p style="font-family:'Instrument Serif',serif; font-size:19px; line-height:1.05; margin:0; color:#1a1813;">{{ sel3b.title }}</p>
+                <span style="font-size:10px; color:#a39d90; flex-shrink:0; margin-left:8px;">{{ sel3b.author }}</span>
+              </div>
+              <p style="font-size:11.5px; line-height:1.45; color:#6b665c; margin:5px 0 0; overflow:hidden;">{{ sel3b.blurb }}</p>
+              <div style="display:flex; align-items:center; gap:8px; margin-top:9px;">
+                <span style="font-size:10px; font-weight:700; color:#FF5233;">{{ sel3b.avail }}</span>
+                <span style="font-size:10px; font-weight:700; color:#fff; background:#FF5233; padding:4px 11px; border-radius:2px;">대여 신청</span>
+              </div>
+            </div>
+          </div>
+          <div style="flex:1; overflow:hidden; position:relative; padding:6px 0 0;">
+            <div style="position:absolute; inset:0; z-index:20; pointer-events:none; background:radial-gradient(120% 70% at 50% 40%, rgba(0,0,0,0) 55%, rgba(60,45,25,.14) 100%);"></div>
+            <div style="display:flex; flex-direction:column; padding:0 16px;">
+              <sc-for list="{{ rows3b }}" as="row" hint-placeholder-count="3">
+                <div>
+                  <div style="display:flex; align-items:flex-end; gap:4px; height:92px; padding:0 2px;">
+                    <sc-for list="{{ row.books }}" as="book" hint-placeholder-count="6">
+                      <div style="flex:{{ book.flex }}; height:{{ book.h }}; background:{{ book.bg }}; border-radius:2px 2px 0 0; display:flex; align-items:center; justify-content:center; cursor:pointer; transform:translateY({{ book.shift }}); outline:{{ book.ring }}; outline-offset:2px; box-shadow:inset -3px 0 5px rgba(0,0,0,.18), inset 2px 0 2px rgba(255,255,255,.16);" onClick="{{ book.onClick }}">
+                        <span style="writing-mode:vertical-rl; font-family:'Instrument Serif',serif; font-size:10.5px; color:{{ book.fg }}; white-space:nowrap; overflow:hidden; max-height:86%; letter-spacing:0.02em;">{{ book.title }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <div style="height:2px; background:#1a1813;"></div>
+                  <div style="height:7px; background:linear-gradient(#ddd6c4,#efe9db); box-shadow:0 5px 9px -4px rgba(90,70,40,.4); margin-bottom:9px;"></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-around; align-items:center; padding:12px 14px 26px; background:#F4F1EA; border-top:1px solid #e2dccf;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#FF5233;"><i data-lucide="book-open" width="22" height="22"></i><span style="font-size:9px; font-weight:700;">책장</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="heart" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">위시</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="plus" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">등록</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="users" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">커뮤니티</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="user" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">프로필</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section style="padding:56px 48px 40px; font-family:'Space Grotesk',sans-serif;">
+  <div style="max-width:1240px; margin:0 auto 44px;">
+    <p style="font-size:12px; font-weight:700; letter-spacing:0.28em; text-transform:uppercase; color:#9a9488; margin:0 0 10px;">Turn 2 · 에디토리얼 미니멀 + 책꽂이</p>
+    <h1 style="font-family:'Instrument Serif',serif; font-size:52px; line-height:1.02; margin:0; color:#1a1813; font-weight:400;">1a 무드로 — 책꽂이는 유지</h1>
+    <p style="font-size:15px; color:#6b665c; margin:14px 0 0; max-width:660px; line-height:1.6;">1a의 크림 배경·Instrument Serif·코랄 포인트를 유지하되, 책등이 빼곡히 꽂힌 <b>가상 도서관에 들어선 듯한 인상</b>으로 재해석했어요. 여러 단의 서가 벽과 공간 깊이감으로 몰입감을 줍니다. <b>2a·2b·2c</b> 중 골라 주세요.</p>
+  </div>
+
+  <div style="display:flex; flex-wrap:wrap; gap:40px; justify-content:center; align-items:flex-start;">
+
+    <!-- ══════════════ 2a — LINE SHELF ══════════════ -->
+    <div id="2a" style="width:340px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+        <span style="background:#FF5233; color:#fff; font-size:13px; font-weight:700; padding:4px 12px; border-radius:20px;">2a</span>
+        <div>
+          <p style="margin:0; font-size:14px; font-weight:700; color:#1a1813;">라이브러리 스택스</p>
+          <p style="margin:2px 0 0; font-size:12px; color:#8a857a;">여러 단 서가 벽 · 몰입형 · 코랄</p>
+        </div>
+      </div>
+      <div style="width:340px; background:#111013; border-radius:46px; padding:11px; box-shadow:0 34px 80px -26px rgba(0,0,0,.5);">
+        <div style="border-radius:36px; overflow:hidden; height:704px; position:relative; display:flex; flex-direction:column; background:#F4F1EA; font-family:'Space Grotesk',sans-serif;">
+          <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:96px; height:26px; background:#111013; border-radius:16px; z-index:50;"></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 22px 4px; font-size:13px; font-weight:600; color:#1a1813;">
+            <span>9:41</span>
+            <span style="display:flex; gap:6px; align-items:center;"><i data-lucide="signal-high" width="15" height="15"></i><i data-lucide="wifi" width="15" height="15"></i><i data-lucide="battery-full" width="18" height="18"></i></span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 22px 0;">
+            <span style="font-family:'Instrument Serif',serif; font-size:26px; color:#1a1813; letter-spacing:-0.01em;">moa</span>
+            <span style="display:flex; gap:16px; color:#57524a;"><i data-lucide="mail" width="20" height="20"></i><i data-lucide="bell" width="20" height="20"></i><i data-lucide="message-circle" width="20" height="20"></i></span>
+          </div>
+          <div style="padding:14px 22px 6px;">
+            <p style="font-size:10px; font-weight:700; letter-spacing:0.3em; color:#a39d90; margin:0;">VIRTUAL LIBRARY</p>
+            <h2 style="font-family:'Instrument Serif',serif; font-weight:400; font-size:36px; line-height:0.98; margin:5px 0 0; color:#1a1813; letter-spacing:-0.02em;">모두의 책장</h2>
+            <div style="display:flex; align-items:center; gap:8px; border-bottom:1.5px solid #1a1813; padding:10px 2px 7px; margin-top:12px;">
+              <i data-lucide="search" width="16" height="16"></i>
+              <span style="font-size:13px; color:#9a9488;">서가에서 찾아보기</span>
+            </div>
+          </div>
+          <div style="flex:1; overflow:hidden; position:relative; padding:10px 0 0;">
+            <div style="position:absolute; inset:0; z-index:20; pointer-events:none; background:radial-gradient(120% 70% at 50% 40%, rgba(0,0,0,0) 55%, rgba(60,45,25,.14) 100%);"></div>
+            <div style="position:absolute; top:0; left:0; right:0; height:26px; z-index:20; pointer-events:none; background:linear-gradient(#efe9db,rgba(239,233,219,0));"></div>
+            <div style="display:flex; flex-direction:column; gap:0; padding:0 16px;">
+              <sc-for list="{{ stacks }}" as="row" hint-placeholder-count="4">
+                <div>
+                  <div style="display:flex; align-items:flex-end; gap:4px; height:{{ row.height }}; padding:0 2px;">
+                    <sc-for list="{{ row.books }}" as="book" hint-placeholder-count="8">
+                      <div style="flex:{{ book.flex }}; height:{{ book.h }}; background:{{ book.bg }}; border-radius:2px 2px 0 0; display:flex; align-items:center; justify-content:center; box-shadow:inset -3px 0 5px rgba(0,0,0,.18), inset 2px 0 2px rgba(255,255,255,.16);">
+                        <span style="writing-mode:vertical-rl; font-family:'Instrument Serif',serif; font-size:10.5px; color:{{ book.fg }}; white-space:nowrap; overflow:hidden; max-height:86%; letter-spacing:0.02em;">{{ book.title }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <div style="height:2px; background:#1a1813;"></div>
+                  <div style="height:7px; background:linear-gradient(#ddd6c4,#efe9db); box-shadow:0 5px 9px -4px rgba(90,70,40,.4); margin-bottom:9px;"></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-around; align-items:center; padding:12px 14px 26px; background:#F4F1EA; border-top:1px solid #e2dccf;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#FF5233;"><i data-lucide="book-open" width="22" height="22"></i><span style="font-size:9px; font-weight:700;">책장</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="heart" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">위시</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="plus" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">등록</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="users" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">커뮤니티</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="user" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">프로필</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ 2b — SPINE + FEATURED FACE-OUT ══════════════ -->
+    <div id="2b" style="width:340px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+        <span style="background:#FF5233; color:#fff; font-size:13px; font-weight:700; padding:4px 12px; border-radius:20px;">2b</span>
+        <div>
+          <p style="margin:0; font-size:14px; font-weight:700; color:#1a1813;">면출 하이라이트</p>
+          <p style="margin:2px 0 0; font-size:12px; color:#8a857a;">책등 + 대표 1권 면출 · 서점 진열</p>
+        </div>
+      </div>
+      <div style="width:340px; background:#111013; border-radius:46px; padding:11px; box-shadow:0 34px 80px -26px rgba(0,0,0,.5);">
+        <div style="border-radius:36px; overflow:hidden; height:704px; position:relative; display:flex; flex-direction:column; background:#F4F1EA; font-family:'Space Grotesk',sans-serif;">
+          <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:96px; height:26px; background:#111013; border-radius:16px; z-index:50;"></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 22px 4px; font-size:13px; font-weight:600; color:#1a1813;">
+            <span>9:41</span>
+            <span style="display:flex; gap:6px; align-items:center;"><i data-lucide="signal-high" width="15" height="15"></i><i data-lucide="wifi" width="15" height="15"></i><i data-lucide="battery-full" width="18" height="18"></i></span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 22px 0;">
+            <span style="font-family:'Instrument Serif',serif; font-size:26px; color:#1a1813; letter-spacing:-0.01em;">moa</span>
+            <span style="display:flex; gap:16px; color:#57524a;"><i data-lucide="mail" width="20" height="20"></i><i data-lucide="bell" width="20" height="20"></i><i data-lucide="message-circle" width="20" height="20"></i></span>
+          </div>
+          <div style="padding:16px 22px 8px;">
+            <p style="font-size:10px; font-weight:700; letter-spacing:0.3em; color:#a39d90; margin:0;">BOOKSHELF</p>
+            <h2 style="font-family:'Instrument Serif',serif; font-weight:400; font-size:40px; line-height:0.98; margin:6px 0 0; color:#1a1813; letter-spacing:-0.02em;">모두의 책장</h2>
+          </div>
+          <div style="flex:1; overflow:hidden; padding:6px 22px 0;">
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;">
+              <span style="font-family:'Instrument Serif',serif; font-style:italic; font-size:16px; color:#1a1813;">이 주의 책</span>
+              <span style="font-size:10px; color:#FF5233; letter-spacing:0.08em; font-weight:700;">EDITOR'S PICK</span>
+            </div>
+            <div style="display:flex; gap:14px; padding-bottom:16px; border-bottom:1px dashed #d3ccbc;">
+              <div style="width:88px; aspect-ratio:2/3; border-radius:3px; background:#B0452F; box-shadow:0 12px 24px -10px rgba(0,0,0,.5); display:flex; flex-direction:column; justify-content:flex-end; padding:10px; flex-shrink:0;">
+                <p style="font-family:'Instrument Serif',serif; font-size:18px; line-height:1.02; margin:0; color:#F4EDE0;">채식주의자</p>
+                <p style="font-size:8px; letter-spacing:0.08em; text-transform:uppercase; margin:5px 0 0; color:#F4EDE0; opacity:.65;">한강</p>
+              </div>
+              <div style="flex:1; padding-top:4px;">
+                <p style="font-size:12.5px; line-height:1.55; color:#57524a; margin:0;">상처 입은 영혼의 서늘한 기록. 지금 <b style="color:#1a1813;">3명</b>이 대여할 수 있어요.</p>
+                <span style="display:inline-flex; align-items:center; gap:5px; margin-top:12px; background:#FF5233; color:#fff; font-size:11px; font-weight:700; padding:8px 14px; border-radius:2px;">대여 신청 <i data-lucide="arrow-right" width="13" height="13"></i></span>
+              </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin:14px 0 10px;">
+              <span style="font-family:'Instrument Serif',serif; font-style:italic; font-size:16px; color:#1a1813;">나의 책장</span>
+              <span style="font-size:10px; color:#a39d90; letter-spacing:0.08em;">12권</span>
+            </div>
+            <div style="display:flex; align-items:flex-end; gap:6px; height:120px; padding:0 2px;">
+              <sc-for list="{{ featSpines }}" as="book" hint-placeholder-count="7">
+                <div style="flex:1; height:{{ book.h }}; background:{{ book.bg }}; border-radius:2px 2px 0 0; display:flex; align-items:center; justify-content:center; box-shadow:inset -3px 0 5px rgba(0,0,0,.16), inset 2px 0 2px rgba(255,255,255,.18);">
+                  <span style="writing-mode:vertical-rl; font-family:'Instrument Serif',serif; font-size:11px; color:{{ book.fg }}; white-space:nowrap; overflow:hidden; max-height:88%;">{{ book.title }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="height:2px; background:#1a1813; border-radius:2px;"></div>
+            <div style="height:6px; background:linear-gradient(#e0dac9,#efe9db);"></div>
+          </div>
+          <div style="display:flex; justify-content:space-around; align-items:center; padding:12px 14px 26px; background:#F4F1EA; border-top:1px solid #e2dccf;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#FF5233;"><i data-lucide="book-open" width="22" height="22"></i><span style="font-size:9px; font-weight:700;">책장</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="heart" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">위시</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="plus" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">등록</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="users" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">커뮤니티</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="user" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">프로필</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ 2c — WARM PAPER SHELF ══════════════ -->
+    <div id="2c" style="width:340px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+        <span style="background:#FF5233; color:#fff; font-size:13px; font-weight:700; padding:4px 12px; border-radius:20px;">2c</span>
+        <div>
+          <p style="margin:0; font-size:14px; font-weight:700; color:#1a1813;">웜 서가실</p>
+          <p style="margin:2px 0 0; font-size:12px; color:#8a857a;">종이질감 선반 · 공간 조명 · 도서관 깊이감</p>
+        </div>
+      </div>
+      <div style="width:340px; background:#111013; border-radius:46px; padding:11px; box-shadow:0 34px 80px -26px rgba(0,0,0,.5);">
+        <div style="border-radius:36px; overflow:hidden; height:704px; position:relative; display:flex; flex-direction:column; background:#EFE7D6; font-family:'Space Grotesk',sans-serif;">
+          <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:96px; height:26px; background:#111013; border-radius:16px; z-index:50;"></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 22px 4px; font-size:13px; font-weight:600; color:#1a1813;">
+            <span>9:41</span>
+            <span style="display:flex; gap:6px; align-items:center;"><i data-lucide="signal-high" width="15" height="15"></i><i data-lucide="wifi" width="15" height="15"></i><i data-lucide="battery-full" width="18" height="18"></i></span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 22px 0;">
+            <span style="font-family:'Instrument Serif',serif; font-size:26px; color:#1a1813; letter-spacing:-0.01em;">moa</span>
+            <span style="display:flex; gap:16px; color:#57524a;"><i data-lucide="mail" width="20" height="20"></i><i data-lucide="bell" width="20" height="20"></i><i data-lucide="message-circle" width="20" height="20"></i></span>
+          </div>
+          <div style="padding:16px 22px 8px;">
+            <p style="font-size:10px; font-weight:700; letter-spacing:0.3em; color:#b0a68f; margin:0;">BOOKSHELF</p>
+            <h2 style="font-family:'Instrument Serif',serif; font-weight:400; font-size:40px; line-height:0.98; margin:6px 0 0; color:#1a1813; letter-spacing:-0.02em;">모두의 책장</h2>
+            <div style="display:flex; gap:7px; margin-top:16px; align-items:center;">
+              <span style="font-size:11px; font-weight:700; padding:7px 14px; border-radius:2px; background:#FF5233; color:#fff;">전체</span>
+              <span style="font-size:11px; font-weight:600; padding:7px 14px; border-radius:2px; border:1px solid #cfc4ac; color:#57524a;">대여 가능</span>
+              <span style="font-size:11px; font-weight:600; padding:7px 14px; border-radius:2px; border:1px solid #cfc4ac; color:#57524a;">판매중</span>
+            </div>
+          </div>
+          <div style="flex:1; overflow:hidden; position:relative; padding:12px 20px 0;">
+            <div style="position:absolute; inset:0; z-index:15; pointer-events:none; background:radial-gradient(130% 55% at 50% 0%, rgba(255,246,224,.55) 0%, rgba(255,246,224,0) 45%), radial-gradient(120% 75% at 50% 45%, rgba(0,0,0,0) 58%, rgba(70,52,28,.15) 100%);"></div>
+            <div style="margin-bottom:22px;">
+              <div style="background:#DFD4BC; border-radius:6px 6px 0 0; padding:14px 14px 0; box-shadow:inset 0 3px 8px rgba(120,100,60,.12);">
+                <div style="display:flex; align-items:flex-end; gap:5px; height:122px;">
+                  <sc-for list="{{ warmTop }}" as="book" hint-placeholder-count="6">
+                    <div style="flex:1; height:{{ book.h }}; background:{{ book.bg }}; border-radius:2px 2px 0 0; display:flex; align-items:center; justify-content:center; box-shadow:inset -3px 0 6px rgba(0,0,0,.2), inset 2px 0 2px rgba(255,255,255,.2);">
+                      <span style="writing-mode:vertical-rl; font-family:'Instrument Serif',serif; font-size:11px; color:{{ book.fg }}; white-space:nowrap; overflow:hidden; max-height:88%;">{{ book.title }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="height:12px; background:linear-gradient(#c3b590,#a8996f); border-radius:0 0 4px 4px; box-shadow:0 8px 14px -6px rgba(120,100,60,.5);"></div>
+            </div>
+            <div>
+              <div style="background:#DFD4BC; border-radius:6px 6px 0 0; padding:14px 14px 0; box-shadow:inset 0 3px 8px rgba(120,100,60,.12);">
+                <div style="display:flex; align-items:flex-end; gap:5px; height:108px;">
+                  <sc-for list="{{ warmBottom }}" as="book" hint-placeholder-count="6">
+                    <div style="flex:1; height:{{ book.h }}; background:{{ book.bg }}; border-radius:2px 2px 0 0; display:flex; align-items:center; justify-content:center; box-shadow:inset -3px 0 6px rgba(0,0,0,.2), inset 2px 0 2px rgba(255,255,255,.2);">
+                      <span style="writing-mode:vertical-rl; font-family:'Instrument Serif',serif; font-size:11px; color:{{ book.fg }}; white-space:nowrap; overflow:hidden; max-height:88%;">{{ book.title }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="height:12px; background:linear-gradient(#c3b590,#a8996f); border-radius:0 0 4px 4px; box-shadow:0 8px 14px -6px rgba(120,100,60,.5);"></div>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-around; align-items:center; padding:12px 14px 26px; background:#EFE7D6; border-top:1px solid #ddd0b6;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#FF5233;"><i data-lucide="book-open" width="22" height="22"></i><span style="font-size:9px; font-weight:700;">책장</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#b0a68f;"><i data-lucide="heart" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">위시</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#b0a68f;"><i data-lucide="plus" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">등록</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#b0a68f;"><i data-lucide="users" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">커뮤니티</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#b0a68f;"><i data-lucide="user" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">프로필</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section style="padding:20px 48px 90px; font-family:'Space Grotesk',sans-serif;">
+  <div style="max-width:1240px; margin:0 auto 44px; border-top:1px solid #cfcabf; padding-top:40px;">
+    <p style="font-size:12px; font-weight:700; letter-spacing:0.28em; text-transform:uppercase; color:#9a9488; margin:0 0 10px;">Turn 1 · 세 방향 (참고)</p>
+    <h1 style="font-family:'Instrument Serif',serif; font-size:40px; line-height:1.02; margin:0; color:#8a857a; font-weight:400;">첫 탐색 — 1a·1b·1c</h1>
+  </div>
+
+  <div style="display:flex; flex-wrap:wrap; gap:40px; justify-content:center; align-items:flex-start;">
+
+    <!-- ══════════════ 1a — EDITORIAL MINIMAL ══════════════ -->
+    <div id="1a" style="width:340px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+        <span style="background:#1a1813; color:#fff; font-size:13px; font-weight:700; padding:4px 12px; border-radius:20px;">1a</span>
+        <div>
+          <p style="margin:0; font-size:14px; font-weight:700; color:#1a1813;">에디토리얼 미니멀</p>
+          <p style="margin:2px 0 0; font-size:12px; color:#8a857a;">메타포 제거 · 커버 그리드 · 코랄 포인트</p>
+        </div>
+      </div>
+      <div style="width:340px; background:#111013; border-radius:46px; padding:11px; box-shadow:0 34px 80px -26px rgba(0,0,0,.5);">
+        <div style="border-radius:36px; overflow:hidden; height:704px; position:relative; display:flex; flex-direction:column; background:#F4F1EA; font-family:'Space Grotesk',sans-serif;">
+          <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:96px; height:26px; background:#111013; border-radius:16px; z-index:50;"></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 22px 4px; font-size:13px; font-weight:600; color:#1a1813;">
+            <span>9:41</span>
+            <span style="display:flex; gap:6px; align-items:center;"><i data-lucide="signal-high" width="15" height="15"></i><i data-lucide="wifi" width="15" height="15"></i><i data-lucide="battery-full" width="18" height="18"></i></span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 22px 0;">
+            <span style="font-family:'Instrument Serif',serif; font-size:26px; color:#1a1813; letter-spacing:-0.01em;">moa</span>
+            <span style="display:flex; gap:16px; color:#57524a;"><i data-lucide="mail" width="20" height="20"></i><i data-lucide="bell" width="20" height="20"></i><i data-lucide="message-circle" width="20" height="20"></i></span>
+          </div>
+          <div style="padding:16px 22px 10px;">
+            <p style="font-size:10px; font-weight:700; letter-spacing:0.3em; color:#a39d90; margin:0;">BOOKSHELF</p>
+            <h2 style="font-family:'Instrument Serif',serif; font-weight:400; font-size:40px; line-height:0.98; margin:6px 0 0; color:#1a1813; letter-spacing:-0.02em;">모두의 책장</h2>
+            <div style="display:flex; align-items:center; gap:8px; border-bottom:1.5px solid #1a1813; padding:12px 2px 8px; margin-top:16px;">
+              <i data-lucide="search" width="17" height="17"></i>
+              <span style="font-size:13px; color:#9a9488;">제목 또는 저자 검색</span>
+            </div>
+            <div style="display:flex; gap:8px; margin-top:14px; align-items:center;">
+              <span style="font-size:11px; font-weight:700; letter-spacing:0.04em; padding:7px 14px; border-radius:2px; background:#FF5233; color:#fff;">전체</span>
+              <span style="font-size:11px; font-weight:600; padding:7px 14px; border-radius:2px; border:1px solid #d8d2c4; color:#57524a;">대여 가능</span>
+              <span style="font-size:11px; font-weight:600; padding:7px 14px; border-radius:2px; border:1px solid #d8d2c4; color:#57524a;">판매중</span>
+            </div>
+          </div>
+          <div style="flex:1; overflow:hidden; padding:4px 22px 0;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px 14px;">
+              <sc-for list="{{ edBooks }}" as="book" hint-placeholder-count="6">
+                <div style="position:relative;">
+                  <div style="aspect-ratio:2/3; border-radius:3px; background:{{ book.bg }}; box-shadow:0 10px 22px -12px rgba(0,0,0,.45); display:flex; flex-direction:column; justify-content:flex-end; padding:12px; position:relative; overflow:hidden; border:{{ book.border }};">
+                    <div style="position:absolute; top:11px; left:11px; width:14px; height:1px; background:{{ book.fg }}; opacity:.5;"></div>
+                    <p style="font-family:'Instrument Serif',serif; font-size:19px; line-height:1.05; margin:0; color:{{ book.fg }};">{{ book.title }}</p>
+                    <p style="font-size:9px; letter-spacing:0.08em; text-transform:uppercase; margin:6px 0 0; color:{{ book.fg }}; opacity:.65;">{{ book.author }}</p>
+                  </div>
+                  <sc-if value="{{ book.isNew }}" hint-placeholder-val="{{ false }}">
+                    <span style="position:absolute; top:-6px; right:-6px; background:#FF5233; color:#fff; font-size:9px; font-weight:700; letter-spacing:0.1em; padding:3px 7px; border-radius:20px;">NEW</span>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-around; align-items:center; padding:12px 14px 26px; background:#F4F1EA; border-top:1px solid #e2dccf;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#FF5233;"><i data-lucide="book-open" width="22" height="22"></i><span style="font-size:9px; font-weight:700;">책장</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="heart" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">위시</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="plus" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">등록</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="users" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">커뮤니티</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#a39d90;"><i data-lucide="user" width="22" height="22"></i><span style="font-size:9px; font-weight:600;">프로필</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ 1b — NEO / Y2K GEN-Z ══════════════ -->
+    <div id="1b" style="width:340px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+        <span style="background:#4B49F5; color:#fff; font-size:13px; font-weight:700; padding:4px 12px; border-radius:20px;">1b</span>
+        <div>
+          <p style="margin:0; font-size:14px; font-weight:700; color:#1a1813;">뉴트로 / Y2K 젠지</p>
+          <p style="margin:2px 0 0; font-size:12px; color:#8a857a;">책장 재해석 · 그레인 · 스티커 · 비비드</p>
+        </div>
+      </div>
+      <div style="width:340px; background:#111013; border-radius:46px; padding:11px; box-shadow:0 34px 80px -26px rgba(0,0,0,.5);">
+        <div style="border-radius:36px; overflow:hidden; height:704px; position:relative; display:flex; flex-direction:column; background:#FBF6EA; font-family:'Space Grotesk',sans-serif;">
+          <div style="position:absolute; inset:0; z-index:60; pointer-events:none; mix-blend-mode:multiply; opacity:.05; background-image:url(&quot;data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>&quot;);"></div>
+          <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:96px; height:26px; background:#111013; border-radius:16px; z-index:50;"></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 22px 4px; font-size:13px; font-weight:700; color:#1a1206;">
+            <span>9:41</span>
+            <span style="display:flex; gap:6px; align-items:center;"><i data-lucide="signal-high" width="15" height="15"></i><i data-lucide="wifi" width="15" height="15"></i><i data-lucide="battery-full" width="18" height="18"></i></span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 20px 0;">
+            <span style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:24px; color:#1a1206; letter-spacing:-0.03em;">moa<span style="color:#FF5B4A;">!</span></span>
+            <span style="display:flex; gap:14px; color:#1a1206;"><i data-lucide="mail" width="20" height="20"></i><i data-lucide="bell" width="20" height="20"></i><i data-lucide="message-circle" width="20" height="20"></i></span>
+          </div>
+          <div style="padding:14px 20px 8px;">
+            <span style="display:inline-block; font-size:11px; font-weight:800; letter-spacing:0.04em; background:#C6F833; color:#1a1206; padding:4px 10px; border-radius:20px; border:1.5px solid #1a1206; transform:rotate(-2deg); white-space:nowrap;">📚 다 같이 읽는 책장</span>
+            <h2 style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:38px; line-height:0.95; margin:12px 0 0; color:#1a1206; letter-spacing:-0.03em;">모두의<br>책장</h2>
+            <div style="display:flex; align-items:center; gap:8px; background:#fff; border:2px solid #1a1206; border-radius:30px; padding:9px 14px; margin-top:14px; box-shadow:3px 3px 0 #1a1206;">
+              <i data-lucide="search" width="17" height="17" style="color:#1a1206;"></i>
+              <span style="font-size:13px; color:#8a8578; font-weight:500;">뭐 읽지?</span>
+            </div>
+            <div style="display:flex; gap:7px; margin-top:12px; align-items:center;">
+              <span style="font-size:11px; font-weight:800; padding:6px 13px; border-radius:20px; background:#FF5B4A; color:#fff; border:1.5px solid #1a1206;">전체</span>
+              <span style="font-size:11px; font-weight:700; padding:6px 13px; border-radius:20px; background:#fff; color:#1a1206; border:1.5px solid #1a1206;">대여 가능</span>
+              <span style="font-size:11px; font-weight:700; padding:6px 13px; border-radius:20px; background:#fff; color:#1a1206; border:1.5px solid #1a1206;">판매중</span>
+            </div>
+          </div>
+          <div style="flex:1; overflow:hidden; padding:6px 20px 0;">
+            <p style="font-size:12px; font-weight:800; color:#8A5CFF; margin:0 0 8px; font-style:italic;">✦ 나의 책장</p>
+            <div style="display:flex; align-items:flex-end; gap:5px; height:132px; background:#1a1206; border-radius:14px 14px 4px 4px; padding:10px 12px 0; position:relative;">
+              <sc-for list="{{ y2kTop }}" as="book" hint-placeholder-count="5">
+                <div style="position:relative; flex:1; height:{{ book.h }}; background:{{ book.bg }}; border-radius:5px 5px 2px 2px; display:flex; align-items:center; justify-content:center; transform:rotate({{ book.rot }}); box-shadow:inset -2px 0 4px rgba(0,0,0,.18), inset 2px 0 3px rgba(255,255,255,.25);">
+                  <span style="writing-mode:vertical-rl; font-family:'Bricolage Grotesque',sans-serif; font-weight:600; font-size:11px; color:{{ book.fg }}; white-space:nowrap; overflow:hidden; max-height:90%;">{{ book.title }}</span>
+                  <sc-if value="{{ book.star }}" hint-placeholder-val="{{ false }}">
+                    <span style="position:absolute; top:-7px; left:50%; transform:translateX(-50%); font-size:12px;">⭐</span>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <div style="height:9px; background:linear-gradient(#3a2f1c,#241b0e); border-radius:0 0 5px 5px; margin-bottom:14px;"></div>
+            <p style="font-size:12px; font-weight:800; color:#4B49F5; margin:0 0 8px; font-style:italic;">✦ 이웃 서가</p>
+            <div style="display:flex; align-items:flex-end; gap:5px; height:112px; background:#1a1206; border-radius:14px 14px 4px 4px; padding:10px 12px 0;">
+              <sc-for list="{{ y2kBottom }}" as="book" hint-placeholder-count="5">
+                <div style="position:relative; flex:1; height:{{ book.h }}; background:{{ book.bg }}; border-radius:5px 5px 2px 2px; display:flex; align-items:center; justify-content:center; transform:rotate({{ book.rot }}); box-shadow:inset -2px 0 4px rgba(0,0,0,.18), inset 2px 0 3px rgba(255,255,255,.25);">
+                  <span style="writing-mode:vertical-rl; font-family:'Bricolage Grotesque',sans-serif; font-weight:600; font-size:11px; color:{{ book.fg }}; white-space:nowrap; overflow:hidden; max-height:90%;">{{ book.title }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-around; align-items:center; padding:10px 12px 24px; background:#fff; border-top:2px solid #1a1206;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:3px; color:#FF5B4A;"><i data-lucide="book-open" width="22" height="22"></i><span style="font-size:9px; font-weight:800;">책장</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:3px; color:#1a1206;"><i data-lucide="heart" width="22" height="22"></i><span style="font-size:9px; font-weight:700;">위시</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:3px; margin-top:-14px;"><span style="width:46px; height:46px; border-radius:50%; background:#C6F833; border:2px solid #1a1206; display:flex; align-items:center; justify-content:center; box-shadow:2px 3px 0 #1a1206; color:#1a1206;"><i data-lucide="plus" width="24" height="24"></i></span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:3px; color:#1a1206;"><i data-lucide="users" width="22" height="22"></i><span style="font-size:9px; font-weight:700;">커뮤니티</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:3px; color:#1a1206;"><i data-lucide="user" width="22" height="22"></i><span style="font-size:9px; font-weight:700;">프로필</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ 1c — PASTEL SOFT ══════════════ -->
+    <div id="1c" style="width:340px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+        <span style="background:#FF8E9E; color:#fff; font-size:13px; font-weight:700; padding:4px 12px; border-radius:20px;">1c</span>
+        <div>
+          <p style="margin:0; font-size:14px; font-weight:700; color:#1a1813;">파스텔 소프트</p>
+          <p style="margin:2px 0 0; font-size:12px; color:#8a857a;">부드러운 책장 · 라운드 · 젠틀 셰도우</p>
+        </div>
+      </div>
+      <div style="width:340px; background:#111013; border-radius:46px; padding:11px; box-shadow:0 34px 80px -26px rgba(0,0,0,.5);">
+        <div style="border-radius:36px; overflow:hidden; height:704px; position:relative; display:flex; flex-direction:column; background:linear-gradient(180deg,#FBF5FB 0%,#F3F0FB 100%); font-family:'Nunito',sans-serif;">
+          <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:96px; height:26px; background:#111013; border-radius:16px; z-index:50;"></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 22px 4px; font-size:13px; font-weight:700; color:#5a5470;">
+            <span>9:41</span>
+            <span style="display:flex; gap:6px; align-items:center;"><i data-lucide="signal-high" width="15" height="15"></i><i data-lucide="wifi" width="15" height="15"></i><i data-lucide="battery-full" width="18" height="18"></i></span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 22px 0;">
+            <span style="font-family:'Fredoka',sans-serif; font-weight:600; font-size:23px; color:#6E5B9E;">moa</span>
+            <span style="display:flex; gap:14px; color:#8f88a3;"><i data-lucide="mail" width="20" height="20"></i><i data-lucide="bell" width="20" height="20"></i><i data-lucide="message-circle" width="20" height="20"></i></span>
+          </div>
+          <div style="padding:16px 22px 8px;">
+            <p style="font-size:10px; font-weight:800; letter-spacing:0.22em; color:#b3aac6; margin:0;">BOOKSHELF</p>
+            <h2 style="font-family:'Fredoka',sans-serif; font-weight:600; font-size:32px; line-height:1; margin:6px 0 0; color:#4A4458;">모두의 책장</h2>
+            <div style="display:flex; align-items:center; gap:9px; background:#fff; border-radius:22px; padding:12px 16px; margin-top:14px; box-shadow:0 8px 20px -10px rgba(110,91,158,.4);">
+              <i data-lucide="search" width="17" height="17" style="color:#b3aac6;"></i>
+              <span style="font-size:13px; color:#a79fb5; font-weight:600;">제목 또는 저자 검색</span>
+            </div>
+            <div style="display:flex; gap:8px; margin-top:13px; align-items:center;">
+              <span style="font-size:11px; font-weight:700; padding:8px 15px; border-radius:20px; background:#FF8E9E; color:#fff;">전체</span>
+              <span style="font-size:11px; font-weight:700; padding:8px 15px; border-radius:20px; background:#fff; color:#7d7591;">대여 가능</span>
+              <span style="font-size:11px; font-weight:700; padding:8px 15px; border-radius:20px; background:#fff; color:#7d7591;">판매중</span>
+            </div>
+          </div>
+          <div style="flex:1; overflow:hidden; padding:6px 22px 0;">
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px 12px;">
+              <sc-for list="{{ pastelBooks }}" as="book" hint-placeholder-count="6">
+                <div style="position:relative;">
+                  <div style="aspect-ratio:2/3; border-radius:14px; background:{{ book.bg }}; box-shadow:0 10px 20px -10px rgba(90,84,112,.35); display:flex; flex-direction:column; justify-content:flex-end; padding:9px; overflow:hidden;">
+                    <div style="width:20px; height:20px; border-radius:50%; background:rgba(255,255,255,.55); position:absolute; top:9px; left:9px;"></div>
+                    <p style="font-family:'Fredoka',sans-serif; font-weight:600; font-size:12px; line-height:1.1; margin:0; color:#4A4458;">{{ book.title }}</p>
+                    <p style="font-size:8.5px; margin:3px 0 0; color:#4A4458; opacity:.6; font-weight:600;">{{ book.author }}</p>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-around; align-items:center; padding:12px 14px 26px; background:rgba(255,255,255,.7); backdrop-filter:blur(8px); border-top:1px solid #ece7f3;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#FF8E9E;"><i data-lucide="book-open" width="22" height="22"></i><span style="font-size:9px; font-weight:800;">책장</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#b3aac6;"><i data-lucide="heart" width="22" height="22"></i><span style="font-size:9px; font-weight:700;">위시</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#b3aac6;"><i data-lucide="plus" width="22" height="22"></i><span style="font-size:9px; font-weight:700;">등록</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#b3aac6;"><i data-lucide="users" width="22" height="22"></i><span style="font-size:9px; font-weight:700;">커뮤니티</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#b3aac6;"><i data-lucide="user" width="22" height="22"></i><span style="font-size:9px; font-weight:700;">프로필</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;palette&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;더스티 주얼&quot;,&quot;더스티 로즈&quot;,&quot;쿨 세이지&quot;],&quot;default&quot;:&quot;더스티 주얼&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;책 색상 팔레트&quot;}}">
+class Component extends DCLogic {
+  state = { sel3aTitle: null, sel3bTitle: '채식주의자' };
+  pick3a(t){ this.setState(s => ({ sel3aTitle: s.sel3aTitle === t ? null : t })); }
+  close3a(){ this.setState({ sel3aTitle: null }); }
+  pick3b(t){ this.setState({ sel3bTitle: t }); }
+  stopProp(e){ e.stopPropagation(); }
+  renderVals() {
+    const edBooks = [
+      { title:'채식주의자', author:'한강', bg:'#B0452F', fg:'#F4EDE0', border:'none', isNew:true },
+      { title:'소년이 온다', author:'한강', bg:'#EDE7D8', fg:'#1a1813', border:'1px solid #ddd6c6', isNew:false },
+      { title:'데미안', author:'헤르만 헤세', bg:'#35503F', fg:'#EAF0E6', border:'none', isNew:false },
+      { title:'1984', author:'조지 오웰', bg:'#1E3247', fg:'#E4ECF2', border:'none', isNew:false },
+      { title:'아몬드', author:'손원평', bg:'#C98A2E', fg:'#1b1305', border:'none', isNew:false },
+      { title:'불편한 편의점', author:'김호연', bg:'#5C4F69', fg:'#EFE9F2', border:'none', isNew:false },
+    ];
+    const y2kTop = [
+      { title:'채식주의자', bg:'#FF5B4A', fg:'#fff',    h:'126px', rot:'-2deg', star:true },
+      { title:'소년이 온다', bg:'#C6F833', fg:'#1a1206', h:'118px', rot:'1deg',  star:false },
+      { title:'데미안',     bg:'#4B49F5', fg:'#fff',    h:'132px', rot:'-1deg', star:true },
+      { title:'어린 왕자',  bg:'#FF8A2B', fg:'#1a1206', h:'112px', rot:'2deg',  star:false },
+      { title:'1984',      bg:'#8A5CFF', fg:'#fff',    h:'128px', rot:'-2deg', star:false },
+    ];
+    const y2kBottom = [
+      { title:'아몬드',       bg:'#2ED3E0', fg:'#08343A', h:'100px', rot:'1deg' },
+      { title:'불편한 편의점', bg:'#FF56C6', fg:'#fff',    h:'108px', rot:'-2deg' },
+      { title:'코스모스',     bg:'#C6F833', fg:'#1a1206', h:'96px',  rot:'2deg' },
+      { title:'노르웨이의 숲', bg:'#4B49F5', fg:'#fff',    h:'104px', rot:'-1deg' },
+      { title:'데미안',       bg:'#FF8A2B', fg:'#1a1206', h:'92px',  rot:'1deg' },
+    ];
+    const pastelBooks = [
+      { title:'채식주의자', author:'한강', bg:'#DBCFFF' },
+      { title:'소년이 온다', author:'한강', bg:'#BEE9D2' },
+      { title:'데미안', author:'헤르만 헤세', bg:'#FFD6C1' },
+      { title:'어린 왕자', author:'생텍쥐페리', bg:'#F8E6A6' },
+      { title:'1984', author:'조지 오웰', bg:'#C6E2FF' },
+      { title:'아몬드', author:'손원평', bg:'#FFCBDF' },
+    ];
+    // Three harmonious spine palettes — similar tone within each family, easy on the eyes.
+    const PALETTES = {
+      '더스티 주얼': ['#9E524A','#4E627B','#63795B','#B98C55','#7B6A83','#4F767A'],
+      '더스티 로즈': ['#A86E6A','#8C7092','#B39070','#6E6A8A','#A07C86','#5F7080'],
+      '쿨 세이지':   ['#5F7C6E','#6C8B92','#5E7186','#82907A','#8CA1A0','#54697A'],
+    };
+    const paletteKey = this.props.palette && PALETTES[this.props.palette] ? this.props.palette : '더스티 주얼';
+    const pc = PALETTES[paletteKey];
+    const P = { red:pc[0], navy:pc[1], green:pc[2], ochre:pc[3], plum:pc[4], teal:pc[5] };
+    P.cream=P.ochre; P.rust=P.red; P.sage=P.teal; P.ink=P.navy; P.clay=P.plum;
+    const WHITE = '#F4EDE0';
+    const palPreview = Object.entries(PALETTES).map(([name, c], i) => ({
+      id: '6' + 'abc'[i], name, active: name === paletteKey, swatches: c,
+      spines: [
+        { t:'채식주의자', bg:c[0], h:'96px' }, { t:'데미안', bg:c[2], h:'82px' },
+        { t:'1984', bg:c[1], h:'102px' }, { t:'아몬드', bg:c[3], h:'76px' },
+        { t:'사피엔스', bg:c[5], h:'90px' }, { t:'연금술사', bg:c[4], h:'86px' },
+      ],
+    }));
+    const spine = (title, bg, h, fg) => ({ title, bg, h, fg: fg || WHITE });
+    const lineTop = [
+      spine('채식주의자', P.red, '112px'), spine('데미안', P.green, '100px'), spine('1984', P.navy, '116px'),
+      spine('아몬드', P.ochre, '96px'), spine('불편한 편의점', P.plum, '108px'), spine('소년이 온다', P.cream, '104px'),
+    ];
+    const lineBottom = [
+      spine('코스모스', P.navy, '96px'), spine('노르웨이의 숲', P.rust, '104px'), spine('사피엔스', P.sage, '92px'),
+      spine('연금술사', P.clay, '100px'), spine('총 균 쇠', P.ink, '94px'), spine('멋진 신세계', P.ochre, '88px'),
+    ];
+    const featSpines = [
+      spine('데미안', P.green, '110px'), spine('1984', P.navy, '120px'), spine('아몬드', P.ochre, '104px'),
+      spine('사피엔스', P.sage, '96px'), spine('연금술사', P.clay, '112px'), spine('코스모스', P.navy, '100px'), spine('총 균 쇠', P.ink, '108px'),
+    ];
+    const warmTop = [
+      spine('채식주의자', P.red, '116px'), spine('데미안', P.green, '104px'), spine('1984', P.navy, '120px'),
+      spine('아몬드', P.ochre, '98px'), spine('불편한 편의점', P.plum, '110px'), spine('소년이 온다', P.cream, '106px'),
+    ];
+    const warmBottom = [
+      spine('코스모스', P.navy, '100px'), spine('노르웨이의 숲', P.rust, '106px'), spine('사피엔스', P.sage, '94px'),
+      spine('연금술사', P.clay, '102px'), spine('총 균 쇠', P.ink, '96px'), spine('멋진 신세계', P.ochre, '90px'),
+    ];
+    const s = (title, bg, h, flex) => ({ title, bg, h, flex: flex || 1, fg: (bg===P.cream||bg===P.ochre||bg===P.sage||bg===P.clay ? '#1a1813' : '#F4EDE0') });
+    const stacks = [
+      { height:'96px', books:[ s('채식주의자',P.red,'88px'), s('데미안',P.green,'80px'), s('1984',P.navy,'94px'), s('아몬드',P.ochre,'74px',0.7), s('불편한 편의점',P.plum,'86px'), s('소년이 온다',P.cream,'82px'), s('연금술사',P.clay,'78px',0.8) ] },
+      { height:'96px', books:[ s('코스모스',P.navy,'84px'), s('사피엔스',P.sage,'76px'), s('총 균 쇠',P.ink,'90px'), s('노르웨이의 숲',P.rust,'82px'), s('멋진 신세계',P.ochre,'72px',0.7), s('호밀밭',P.green,'88px'), s('데미안',P.clay,'80px') ] },
+      { height:'96px', books:[ s('안나 카레니나',P.plum,'92px'), s('토지',P.red,'80px'), s('설국',P.cream,'86px',0.8), s('1Q84',P.navy,'88px'), s('상실의 시대',P.sage,'74px'), s('바깥은 여름',P.ochre,'84px'), s('여름',P.ink,'78px',0.7) ] },
+      { height:'96px', books:[ s('파친코',P.rust,'86px'), s('종의 기원',P.green,'78px'), s('시선으로부터',P.clay,'90px'), s('달러구트',P.navy,'82px',0.9), s('아몬드',P.ochre,'72px',0.7), s('완득이',P.red,'88px'), s('나미야',P.plum,'80px') ] },
+    ];
+    const B = (title, author, bg, h, flex, blurb, avail) => ({ title, author, bg, h, flex: flex||1, blurb, avail, fg: WHITE });
+    const base3 = [
+      { books:[ B('채식주의자','한강',P.red,'90px',1,'상처 입은 영혼의 서늘한 기록.','대여 가능 · 3명'), B('데미안','헤세',P.green,'82px',1,'자기 자신에게 이르는 길.','대여 가능 · 1명'), B('1984','조지 오웰',P.navy,'96px',1,'감시 사회의 서늘한 예언.','판매중 · S$8'), B('아몬드','손원평',P.ochre,'76px',0.8,'감정을 못 느끼는 소년의 성장기.','대여 가능 · 2명'), B('불편한 편의점','김호연',P.plum,'88px',1,'밤의 편의점에서 피어나는 온기.','대여 가능 · 4명'), B('소년이 온다','한강',P.cream,'84px',1,'그 봄, 남겨진 이들의 목소리.','대여중') ] },
+      { books:[ B('코스모스','칼 세이건',P.navy,'86px',1,'우주로 떠나는 경이의 여정.','판매중 · S$12'), B('사피엔스','유발 하라리',P.sage,'78px',1,'인류라는 종의 대담한 연대기.','대여 가능 · 1명'), B('총 균 쇠','재레드 다이아몬드',P.ink,'92px',1,'문명 격차의 지리적 기원.','대여중'), B('노르웨이의 숲','무라카미 하루키',P.rust,'84px',1,'상실의 계절을 통과하는 청춘.','대여 가능 · 2명'), B('멋진 신세계','헉슬리',P.ochre,'74px',0.8,'행복이 강요된 유토피아.','판매중 · S$7'), B('연금술사','파울로 코엘료',P.clay,'88px',1,'자아의 신화를 찾는 여행.','대여 가능 · 5명') ] },
+      { books:[ B('파친코','이민진',P.rust,'88px',1,'네 세대를 잇는 이민의 서사.','대여 가능 · 2명'), B('설국','가와바타',P.cream,'80px',0.9,'눈의 고장에서의 덧없는 사랑.','대여중'), B('1Q84','무라카미 하루키',P.navy,'90px',1,'두 개의 달이 뜬 세계.','판매중 · S$15'), B('시선으로부터','정세랑',P.clay,'86px',1,'한 가족의 다정한 연대기.','대여 가능 · 3명'), B('종의 기원','정유정',P.green,'78px',1,'서늘한 심연을 들여다보는 스릴러.','대여 가능 · 1명'), B('달러구트 꿈 백화점','이미예',P.ochre,'84px',1,'꿈을 사고파는 상점의 밤.','대여 가능 · 4명') ] },
+    ];
+    // Attach real-model fields the code exposes: owner.nickname, condition(S/A/B), mode, community, D-day
+    const OWNERS = ['제이든','민서','Aria','도윤','소피아','현우','유나','Ethan','지호','채원','Lucas','서아','하준','예린','Noah','수아','건우','다인'];
+    const CONDS = ['S','A','B'];
+    const COMMUNITIES = [null,'홀랜드빌리지 북클럽',null,'클레멘티 한인맘',null,'탄종파가 독서회'];
+    base3.flatMap(r=>r.books).forEach((b,i) => {
+      b.owner = OWNERS[i % OWNERS.length];
+      b.cond = CONDS[i % CONDS.length];
+      b.mode = b.avail.startsWith('판매') ? 'sell' : 'rent';
+      b.rented = b.avail.startsWith('대여중');
+      b.community = COMMUNITIES[i % COMMUNITIES.length];
+      b.dday = b.rented ? ['D-2','D-5','반납예정 D-1'][i % 3] : null;
+    });
+    const flat3 = base3.flatMap(r => r.books);
+    const enrich = (b) => b && ({ ...b, ownerInitial: b.owner ? b.owner[0] : '',
+      condLabel: '상태 ' + b.cond, modeLabel: b.mode === 'sell' ? '판매' : '대여',
+      ctaLabel: b.rented ? '대기 신청' : (b.mode === 'sell' ? '구매 문의' : '대여 신청') });
+    const sel3a = enrich(flat3.find(b => b.title === this.state.sel3aTitle)) || null;
+    const sel3b = flat3.find(b => b.title === this.state.sel3bTitle) || flat3[0];
+    const decorate = (picker, selTitle) => base3.map(r => ({ books: r.books.map(b => {
+      const on = selTitle === b.title;
+      return { ...b, onClick: () => picker(b.title), shift: on ? '-7px' : '0px', ring: on ? '2px solid #FF5233' : '0px solid transparent' };
+    }) }));
+    const GOLD = 'linear-gradient(180deg,#D4A827 0%,#A87010 55%,#7A4E08 100%)';
+    const GOLD_URGENT = 'linear-gradient(180deg,#C87828 0%,#A04E10 55%,#7A3008 100%)';
+    const NAVY = 'linear-gradient(180deg,#7478B8 0%,#484B8C 55%,#313468 100%)';
+    const sampleSpines = [
+      { title:'데미안', bg:P.green, fg:WHITE, h:'150px', mark:true, kind:'lent', who:'민서', initial:'민', dday:'D-2', urgent:false, corner:GOLD, chip:'linear-gradient(135deg,#C68510,#8F5A05)', arrow:'↑', ribFg:'rgba(255,235,180,.9)', ddayBg:'rgba(255,255,255,.22)', ddayFg:'#fff', ddayFg2:'rgba(255,240,200,.95)' },
+      { title:'1984', bg:P.navy, fg:WHITE, h:'166px', mark:true, kind:'borrowed', who:'도윤', initial:'도', dday:'D-5', urgent:false, corner:NAVY, chip:'linear-gradient(135deg,#5658A0,#383A7E)', arrow:'↓', ribFg:'rgba(200,210,255,.85)', ddayBg:'rgba(255,255,255,.22)', ddayFg:'#fff', ddayFg2:'rgba(220,228,255,.95)' },
+      { title:'코스모스', bg:P.teal, fg:WHITE, h:'138px', mark:false },
+      { title:'아몬드', bg:P.ochre, fg:WHITE, h:'158px', mark:true, kind:'lent', who:'지호', initial:'지', dday:'D-day', urgent:true, corner:GOLD_URGENT, chip:'linear-gradient(135deg,#C0431E,#8A2810)', arrow:'↑', ribFg:'rgba(255,240,200,.98)', ddayBg:'rgba(220,30,30,.9)', ddayFg:'#fff', ddayFg2:'#ffd9d9' },
+      { title:'사피엔스', bg:P.plum, fg:WHITE, h:'148px', mark:true, kind:'borrowed', who:'Aria', initial:'A', dday:'D-1', urgent:true, corner:NAVY, chip:'linear-gradient(135deg,#5658A0,#383A7E)', arrow:'↓', ribFg:'rgba(220,228,255,.95)', ddayBg:'rgba(220,30,30,.9)', ddayFg:'#fff', ddayFg2:'#ffd9d9' },
+    ];
+    const mk5 = (title, bg, h, status, who, dday, urgent) => {
+      const lent = status==='lent', borrowed = status==='borrowed';
+      return { title, bg, h, fg:WHITE, status, own:status==='own', lent, borrowed, marked: lent||borrowed, who, dday,
+        corner: lent ? GOLD : NAVY,
+        chip: lent ? 'linear-gradient(135deg,#C68510,#8F5A05)' : 'linear-gradient(135deg,#5658A0,#383A7E)',
+        arrow: lent ? '↑' : '↓',
+        ribFg: lent ? 'rgba(255,235,180,.9)' : 'rgba(200,210,255,.85)',
+        ghostOutline: lent ? '1px dashed #a89e88' : 'none',
+        titleOpacity: lent ? '0.5' : '1',
+        flex5b: lent ? 0.62 : 1,
+        slotH: '92px',
+        ddayBg2: 'rgba(255,255,255,.22)' };
+    };
+    const myShelf = [
+      mk5('데미안', P.green, '150px', 'lent', '민서', 'D-2', false),
+      mk5('코스모스', P.teal, '138px', 'own'),
+      mk5('1984', P.navy, '160px', 'borrowed', '도윤', 'D-5', false),
+      mk5('아몬드', P.ochre, '150px', 'lent', '지호', 'D-day', true),
+      mk5('사피엔스', P.plum, '146px', 'own'),
+      mk5('노르웨이의 숲', P.red, '158px', 'borrowed', 'Aria', 'D-1', true),
+    ];
+    const rows3a = decorate(t => this.pick3a(t), this.state.sel3aTitle);
+    const rows3b = decorate(t => this.pick3b(t), this.state.sel3bTitle);
+    return { edBooks, y2kTop, y2kBottom, pastelBooks, lineTop, lineBottom, featSpines, warmTop, warmBottom, stacks,
+      rows3a, rows3b, sel3a, sel3b, sampleSpines, myShelf, palPreview, paletteName: paletteKey, WHITE,
+      close3a: () => this.close3a(), stopProp: (e) => this.stopProp(e) };
+  }
+  _drawIcons() {
+    if (window.lucide && window.lucide.createIcons) { window.lucide.createIcons(); return true; }
+    return false;
+  }
+  componentDidMount() {
+    if (!this._drawIcons()) {
+      this._iv = setInterval(() => { if (this._drawIcons()) clearInterval(this._iv); }, 120);
+    }
+  }
+  componentDidUpdate() { this._drawIcons(); }
+  componentWillUnmount() { if (this._iv) clearInterval(this._iv); }
+}
+</script>
+</body>
+</html>

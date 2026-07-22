@@ -92,6 +92,15 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
         displayText: cleanContent.replace(/^\[구매 요청\]\s*/, ''),
       };
     }
+    // 나눔은 거래 기록상 소유권 이전(purchase)이지만, 유저에게는 '나눔'으로 보여야 한다
+    if (content.startsWith('[나눔 요청]')) {
+      return {
+        category: 'request',
+        transactionType: 'purchase',
+        bookId,
+        displayText: cleanContent.replace(/^\[나눔 요청\]\s*/, ''),
+      };
+    }
     
     // Check for acceptance messages
     if (content.startsWith('[대여 수락]')) {
@@ -256,7 +265,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     toast.success('대여 요청을 보냈습니다');
   };
 
-  const RESERVED_PREFIXES = ['[대여 요청]', '[구매 요청]', '[대여 수락]', '[판매 완료]', '[반납 완료]', '[반납 요청]'];
+  const RESERVED_PREFIXES = ['[대여 요청]', '[구매 요청]', '[나눔 요청]', '[대여 수락]', '[판매 완료]', '[나눔 완료]', '[반납 완료]', '[반납 요청]'];
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -778,6 +787,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
       <TransactionDashboard
         isOpen={showTransactionDashboard}
         onClose={() => setShowTransactionDashboard(false)}
+        partnerId={conversation.other_user?.id}
       />
     </div>
   );

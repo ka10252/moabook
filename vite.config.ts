@@ -24,8 +24,8 @@ export default defineConfig({
         name: "MOA | 함께 읽는 책장",
         short_name: "MOA",
         description: "커뮤니티와 함께 책을 대여하고 공유하는 MOA 서비스입니다.",
-        theme_color: "#ffffff",
-        background_color: "#ffffff",
+        theme_color: "#F4F1EA",      // 크림 — 앱 배경과 맞춰 상태바 이질감 제거
+        background_color: "#F4F1EA", // 스플래시 배경
         display: "standalone",
         orientation: "portrait",
         scope: "/",
@@ -44,6 +44,13 @@ export default defineConfig({
       },
       injectManifest: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+      },
+      // 이게 없으면 개발 서버에는 서비스 워커가 아예 없다.
+      // 푸시는 SW 위에서만 동작하므로, 켜두지 않으면 로컬에서 알림을 한 번도 테스트할 수 없다.
+      devOptions: {
+        enabled: true,
+        type: "module",
+        navigateFallback: "index.html",
       },
     }),
   ],

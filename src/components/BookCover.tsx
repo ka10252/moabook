@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { formatPrice } from '@/lib/bookMode';
 import { Book } from '@/types/book';
 import { DefaultBookCover } from './DefaultBookCover';
 
@@ -72,11 +73,11 @@ export const BookCover = ({ book, onClick, isRented = false, isLent = false, isB
           </span>
         </div>
         
-        {/* Mode badge */}
-        {book.mode === 'sell' && (
+        {/* Mode badge — 판매는 가격(S$), 나눔은 '무료'. 대여는 배지 없음(기본값이라). */}
+        {book.mode !== 'rent' && (
           <div className="absolute top-2 left-2">
             <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-primary text-primary-foreground">
-              ${book.price}
+              {book.mode === 'sell' ? formatPrice(book.price) : '무료 나눔'}
             </span>
           </div>
         )}

@@ -94,6 +94,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
+          invite_token: string | null
           member_count: number | null
           member_visibility: Database["public"]["Enums"]["member_visibility"]
           name: string
@@ -105,6 +106,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          invite_token?: string | null
           member_count?: number | null
           member_visibility?: Database["public"]["Enums"]["member_visibility"]
           name: string
@@ -116,6 +118,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          invite_token?: string | null
           member_count?: number | null
           member_visibility?: Database["public"]["Enums"]["member_visibility"]
           name?: string
@@ -231,6 +234,225 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      announcement_history: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          message: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message?: string
+        }
+        Relationships: []
+      }
+      book_waitlist: {
+        Row: {
+          book_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      community_posts: {
+        Row: {
+          author_id: string
+          book_id: string | null
+          community_id: string
+          content: string
+          created_at: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          author_id: string
+          book_id?: string | null
+          community_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string
+          book_id?: string | null
+          community_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_posts_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_comments: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string | null
+          id: string
+          post_id: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          post_id: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          created_at: string | null
+          endpoint: string
+          id: string
+          subscription: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          subscription: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          subscription?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
+      blocked_users: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          admin_note: string | null
+          context: string | null
+          created_at: string
+          detail: string | null
+          id: string
+          reason: string
+          reported_user_id: string | null
+          reporter_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: Database["public"]["Enums"]["report_status"]
+          target_id: string | null
+          target_type: Database["public"]["Enums"]["report_target_type"]
+        }
+        Insert: {
+          admin_note?: string | null
+          context?: string | null
+          created_at?: string
+          detail?: string | null
+          id?: string
+          reason: string
+          reported_user_id?: string | null
+          reporter_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+          target_id?: string | null
+          target_type: Database["public"]["Enums"]["report_target_type"]
+        }
+        Update: {
+          admin_note?: string | null
+          context?: string | null
+          created_at?: string
+          detail?: string | null
+          id?: string
+          reason?: string
+          reported_user_id?: string | null
+          reporter_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+          target_id?: string | null
+          target_type?: Database["public"]["Enums"]["report_target_type"]
+        }
+        Relationships: []
       }
       liked_books: {
         Row: {
@@ -593,10 +815,12 @@ export type Database = {
     Enums: {
       app_role: "admin" | "moderator" | "user"
       book_condition: "S" | "A" | "B"
-      book_mode: "rent" | "sell"
+      book_mode: "give" | "rent" | "sell"
       book_status: "available" | "rented" | "sold"
       community_role: "admin" | "member"
       member_visibility: "public" | "members_only" | "private"
+      report_status: "pending" | "reviewing" | "resolved" | "dismissed"
+      report_target_type: "book" | "message" | "post" | "comment" | "user"
       transaction_status: "pending" | "active" | "completed" | "cancelled"
       transaction_type: "rent" | "purchase"
     }
@@ -728,7 +952,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "moderator", "user"],
       book_condition: ["S", "A", "B"],
-      book_mode: ["rent", "sell"],
+      book_mode: ["give", "rent", "sell"],
       book_status: ["available", "rented", "sold"],
       community_role: ["admin", "member"],
       member_visibility: ["public", "members_only", "private"],

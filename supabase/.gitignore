@@ -1,0 +1,4 @@
+# Supabase local temp/link state (contains DB connection info)
+.branches
+.temp
+.env

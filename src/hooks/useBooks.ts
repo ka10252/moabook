@@ -16,6 +16,7 @@ export const useBooks = (options: UseBooksOptions = {}) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const channelIdRef = useRef(Math.random().toString(36).slice(2, 10));
 
   const fetchBooks = useCallback(async () => {
     setLoading(true);
@@ -65,15 +66,24 @@ export const useBooks = (options: UseBooksOptions = {}) => {
   }, [fetchBooks]);
 
   // Realtime subscription — refresh on any books change
+  //
+  // 주의할 점 두 가지:
+  //  1) 채널 토픽이 고정 문자열이면 useBooks를 쓰는 화면(책장/내 서재)이 동시에 뜰 때 충돌한다.
+  //  2) books 테이블의 모든 변경이 전체 목록 재조회를 부른다. 유저가 늘면 한 명이 책을 올릴 때마다
+  //     접속자 전원이 조인 걸린 풀 쿼리를 다시 던진다. 짧은 시간의 연속 이벤트는 한 번으로 합친다.
   useEffect(() => {
+    let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
     channelRef.current = supabase
-      .channel('books-changes')
+      .channel(`books-changes:${channelIdRef.current}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'books' }, () => {
-        fetchBooks();
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => fetchBooks(), 300);
       })
       .subscribe();
 
     return () => {
+      clearTimeout(debounceTimer);
       if (channelRef.current) supabase.removeChannel(channelRef.current);
     };
   }, [fetchBooks]);

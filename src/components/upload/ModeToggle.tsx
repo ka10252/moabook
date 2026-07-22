@@ -1,45 +1,54 @@
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-
-type Mode = 'rent' | 'sell';
+import { BookMode, MODE_LABEL } from '@/lib/bookMode';
 
 interface ModeToggleProps {
-  value: Mode;
-  onChange: (mode: Mode) => void;
+  value: BookMode;
+  onChange: (mode: BookMode) => void;
 }
+
+/** 대여·나눔은 무료, 판매만 돈이 오간다 — 그 차이를 한 줄로 붙여 보여준다 */
+const MODES: { value: BookMode; hint: string }[] = [
+  { value: 'rent', hint: '무료 · 돌려받음' },
+  { value: 'give', hint: '무료 · 그냥 드림' },
+  { value: 'sell', hint: 'S$ · 판매' },
+];
 
 export const ModeToggle = ({ value, onChange }: ModeToggleProps) => {
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-foreground">거래 유형</label>
-      <div className="relative flex p-1 bg-muted rounded-xl">
-        <motion.div
-          className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-card rounded-lg shadow-sm"
-          animate={{ left: value === 'rent' ? '4px' : 'calc(50% + 2px)' }}
-          transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
-        />
-        
-        <button
-          type="button"
-          onClick={() => onChange('rent')}
-          className={cn(
-            "relative flex-1 py-3 text-sm font-semibold rounded-lg transition-colors z-10",
-            value === 'rent' ? "text-foreground" : "text-muted-foreground"
-          )}
-        >
-          📖 대여
-        </button>
-        
-        <button
-          type="button"
-          onClick={() => onChange('sell')}
-          className={cn(
-            "relative flex-1 py-3 text-sm font-semibold rounded-lg transition-colors z-10",
-            value === 'sell' ? "text-foreground" : "text-muted-foreground"
-          )}
-        >
-          💰 판매
-        </button>
+      <p className="text-[10px] font-bold tracking-wide text-muted-foreground">거래 방식</p>
+      <div className="flex bg-muted rounded-[11px] p-[3px]">
+        {MODES.map((mode) => {
+          const isActive = value === mode.value;
+          return (
+            <button
+              key={mode.value}
+              type="button"
+              onClick={() => onChange(mode.value)}
+              className={cn(
+                'flex-1 py-2 rounded-[9px] transition-colors',
+                isActive ? 'bg-primary' : ''
+              )}
+            >
+              <span
+                className={cn(
+                  'block text-xs',
+                  isActive ? 'text-primary-foreground font-bold' : 'text-muted-foreground font-semibold'
+                )}
+              >
+                {MODE_LABEL[mode.value]}
+              </span>
+              <span
+                className={cn(
+                  'block text-[9px] mt-0.5',
+                  isActive ? 'text-primary-foreground/85' : 'text-faint'
+                )}
+              >
+                {mode.hint}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

@@ -1,11 +1,26 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, BookOpen, Loader2, User } from 'lucide-react';
+import { X, BookOpen, Loader2, User, Flag, Ban, ShieldOff } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { BookCover } from '@/components/BookCover';
+import { ReportModal } from '@/components/report/ReportModal';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
+import { toast } from 'sonner';
 import { Book, transformDbBook } from '@/types/book';
 
 interface Profile {
@@ -32,9 +47,28 @@ export const MemberProfileModal = ({
   userId,
   onBookClick,
 }: MemberProfileModalProps) => {
+  const { user } = useAuth();
+  const { isBlocked, blockUser, unblockUser } = useBlockedUsers();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+
+  const isSelf = user?.id === userId;
+  const blocked = userId ? isBlocked(userId) : false;
+
+  const handleToggleBlock = async () => {
+    if (!userId) return;
+    const { error} = blocked ? await unblockUser(userId) : await blockUser(userId);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    toast.success(blocked ? '차단을 해제했습니다' : '차단했습니다. 서로의 책과 메시지가 보이지 않습니다.');
+    setShowBlockConfirm(false);
+    if (!blocked) onClose();
+  };
 
   useEffect(() => {
     if (isOpen && userId) {
@@ -154,6 +188,39 @@ export const MemberProfileModal = ({
                         </Badge>
                       )}
                     </div>
+
+                    {/* 신고 / 차단 — 본인 프로필에는 노출하지 않는다 */}
+                    {!isSelf && user && (
+                      <div className="flex items-center justify-center gap-2 mt-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowReport(true)}
+                          className="rounded-full h-8 text-xs gap-1.5"
+                        >
+                          <Flag className="w-3.5 h-3.5" />
+                          신고
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => (blocked ? handleToggleBlock() : setShowBlockConfirm(true))}
+                          className="rounded-full h-8 text-xs gap-1.5"
+                        >
+                          {blocked ? (
+                            <>
+                              <ShieldOff className="w-3.5 h-3.5" />
+                              차단 해제
+                            </>
+                          ) : (
+                            <>
+                              <Ban className="w-3.5 h-3.5" />
+                              차단
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Books Section */}
@@ -195,6 +262,36 @@ export const MemberProfileModal = ({
               )}
             </div>
           </motion.div>
+
+          <ReportModal
+            isOpen={showReport}
+            onClose={() => setShowReport(false)}
+            targetType="user"
+            targetId={userId}
+            reportedUserId={userId}
+            targetLabel={profile?.nickname}
+          />
+
+          <AlertDialog open={showBlockConfirm} onOpenChange={setShowBlockConfirm}>
+            <AlertDialogContent className="rounded-2xl">
+              <AlertDialogHeader>
+                <AlertDialogTitle>{profile?.nickname}님을 차단할까요?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  차단하면 서로의 책이 목록에서 사라지고, 메시지를 주고받을 수 없습니다.
+                  언제든 차단을 해제할 수 있습니다.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="rounded-full">취소</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleToggleBlock}
+                  className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  차단하기
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </motion.div>
       )}
     </AnimatePresence>

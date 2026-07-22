@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { differenceInCalendarDays } from 'date-fns';
 import { Book } from '@/types/book';
 
@@ -15,6 +15,25 @@ interface BookSpineProps {
   duplicateCount?: number;
 }
 
+/**
+ * 세로쓰기 제목을 숫자 덩어리 기준으로 쪼갠다.
+ *
+ * 세로쓰기(vertical-rl)의 기본값은 숫자를 옆으로 눕힌다. 그런데 한 자리 숫자까지 눕히면
+ * "현자의 질주 2"의 2만 혼자 누워 어색하다. 반대로 "1984", "82년생"처럼 여러 자리는
+ * 세워서 한 글자씩 쌓으면 세로로 길어져 읽기 나쁘다.
+ *   → 한 자리 숫자는 세우고(upright), 두 자리 이상은 눕힌다(기본값).
+ */
+const splitForVertical = (title: string) =>
+  (title || '').split(/(\d+)/).filter(Boolean).map((part) => ({
+    text: part,
+    /** 한 자리 숫자만 세운다 */
+    upright: /^\d$/.test(part),
+  }));
+
+/** 지금 빌릴 수 없는 책 (남이 이미 빌려간 상태) — 제목은 읽히되 비활성으로 보인다 */
+const isUnavailable = (book: Book, isLent: boolean, isBorrowed: boolean) =>
+  book.status === 'rented' && !isLent && !isBorrowed;
+
 const spineColors = [
   'bg-book-1',
   'bg-book-2',
@@ -24,18 +43,44 @@ const spineColors = [
   'bg-book-6',
 ];
 
-const BOOKMARK_WIDTH = 26;
-const BOOKMARK_HEIGHT = 38;
-const BOOKMARK_CLIP = 'polygon(0 0, 100% 0, 100% 78%, 50% 100%, 0 78%)';
-
-function getDDayLabel(returnDate: string | null | undefined): { label: string; urgent: boolean } | null {
+/**
+ * 반납일 라벨.
+ * `urgent`는 라벨 계산에만 남아 있고 색에는 쓰지 않는다 —
+ * 반납이 임박해도 리본을 빨강으로 바꾸지 않는 것이 디자인 원칙이다(색으로 재촉하지 않는다).
+ */
+function getDDayLabel(returnDate: string | null | undefined): { label: string } | null {
   if (!returnDate) return null;
   const diff = differenceInCalendarDays(new Date(returnDate), new Date());
-  if (diff > 7) return null; // only show badge when ≤7 days left or overdue
-  if (diff < 0) return { label: `D+${Math.abs(diff)}`, urgent: true };
-  if (diff === 0) return { label: 'D-day', urgent: true };
-  return { label: `D-${diff}`, urgent: diff <= 3 };
+  if (diff > 7) return null;
+  if (diff < 0) return { label: `D+${Math.abs(diff)}` };
+  if (diff === 0) return { label: 'D-day' };
+  return { label: `D-${diff}` };
 }
+
+/** 리본은 금색(빌려줌↑)/남색(빌림↓) 2종뿐. 상태별 색 분기는 없다. */
+const RIBBON = {
+  lent: {
+    gradient: 'linear-gradient(180deg, #D4A827 0%, #A87010 55%, #7A4E08 100%)',
+    chip: 'linear-gradient(135deg, #C68510, #8F5A05)',
+    textColor: 'rgba(255,235,180,0.82)',
+    arrow: '↑',
+  },
+  borrowed: {
+    gradient: 'linear-gradient(180deg, #7478B8 0%, #484B8C 55%, #313468 100%)',
+    chip: 'linear-gradient(135deg, #5658A0, #383A7E)',
+    textColor: 'rgba(200,210,255,0.75)',
+    arrow: '↓',
+  },
+};
+
+/**
+ * 책마다 높이가 다르다 — 실제 서가처럼 보이는 핵심.
+ * 색과 마찬가지로 제목 해시로 결정론적으로 정해, 새로고침해도 같은 책은 같은 높이를 유지한다.
+ */
+const heightFromTitle = (title: string) => {
+  const hash = (title || '').split('').reduce((acc, ch) => (acc * 31 + ch.charCodeAt(0)) >>> 0, 11);
+  return 74 + (hash % 6) * 5; // 74% ~ 99%
+};
 
 export const BookSpine = ({
   book,
@@ -50,157 +95,127 @@ export const BookSpine = ({
 }: BookSpineProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const colorClass = spineColors[(book.spineColor - 1) % spineColors.length];
+  const heightPct = useMemo(() => heightFromTitle(book.title), [book.title]);
 
-  const hasBookmark = (isLent && borrowerNickname) || (isBorrowed && lenderNickname);
+  const hasBookmark = (isLent && !!borrowerNickname) || (isBorrowed && !!lenderNickname);
   const chipName = isLent ? borrowerNickname : lenderNickname;
-
   const dday = useMemo(() => getDDayLabel(returnDate), [returnDate]);
+
+  const r = isLent ? RIBBON.lent : RIBBON.borrowed;
+  const unavailable = isUnavailable(book, isLent, isBorrowed);
+  const titleParts = useMemo(() => splitForVertical(book.title), [book.title]);
 
   return (
     <motion.div
-      className={`book-spine cursor-pointer h-full min-w-[40px] max-w-[50px] flex-shrink-0 ${colorClass} rounded-sm flex items-center justify-center px-2 py-3 relative overflow-visible`}
+      className={`cursor-pointer flex-1 min-w-[26px] max-w-[52px] ${colorClass} flex items-center justify-center relative`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      whileHover={{
-        x: -8,
-        rotate: 0,
-        transition: { duration: 0.2 },
-      }}
-      animate={
-        isSelected
-          ? { x: -20, rotateY: -15, scale: 1.02, rotate: 0 }
-          : { x: 0, rotateY: 0, scale: 1, rotate: isBorrowed ? -5 : 0 }
-      }
+      whileHover={{ y: unavailable ? -2 : -6, transition: { duration: 0.2 } }}
+      animate={isSelected ? { y: -10, scale: 1.03 } : { y: 0, scale: 1 }}
       transition={{ type: 'spring', stiffness: 300, damping: 25 }}
       onClick={onClick}
-      style={{ perspective: '1000px', transformOrigin: 'bottom center' }}
+      title={unavailable ? `${book.title} — 대여중` : undefined}
+      style={{
+        height: `${heightPct}%`,
+        // 책은 바닥에 붙어 서 있다 — 위쪽만 둥글다
+        borderRadius: '2px 2px 0 0',
+        boxShadow: 'inset -3px 0 5px rgba(0,0,0,.2), inset 2px 0 2px rgba(255,255,255,.16)',
+        outline: isLent ? '1px dashed #A89E88' : undefined,
+        outlineOffset: isLent ? -2 : undefined,
+        // 남이 빌려간 책 = 지금 빌릴 수 없음. 비활성으로 낮춰 보여준다(제목은 계속 읽힌다).
+        opacity: unavailable ? 0.45 : 1,
+        filter: unavailable ? 'saturate(0.6)' : undefined,
+      }}
     >
-      {/* ── D-day badge ────────────────────────────────────────── */}
-      {dday && !isHovered && (
+      {/* ── Ghost in place ────────────────────────────────────────
+          빌려준 책은 "자리를 지키되 비어 있음"으로 보인다.
+          리본·이름칩은 이 오버레이보다 위(z-5/z-6)라 선명하게 남는다 —
+          책은 비었어도 누가 가져갔는지, 돌아올 자리가 어딘지는 또렷해야 한다. */}
+      {isLent && (
         <div
-          className={`absolute top-1 left-1/2 -translate-x-1/2 z-30 px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none whitespace-nowrap pointer-events-none ${
-            dday.urgent
-              ? 'bg-red-500 text-white'
-              : 'bg-yellow-400 text-yellow-900'
-          }`}
-        >
-          {dday.label}
-        </div>
+          className="absolute inset-0 z-[2] pointer-events-none"
+          style={{ background: 'rgba(244, 241, 234, 0.6)' }}
+        />
       )}
 
-      {/* ── Floating name chip (shown on hover) ───────────────── */}
-      <AnimatePresence>
-        {isHovered && hasBookmark && chipName && (
-          <motion.div
-            className="absolute left-1/2 z-30 pointer-events-none"
-            style={{ top: `-${BOOKMARK_HEIGHT + 28}px`, x: '-50%' }}
-            initial={{ opacity: 0, y: 6, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 4, scale: 0.9 }}
-            transition={{ duration: 0.15, ease: 'easeOut' }}
-          >
-            <div
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-full shadow-lg whitespace-nowrap text-white text-[10px] font-bold ${
-                isLent
-                  ? 'bg-gradient-to-r from-amber-400 to-amber-500'
-                  : 'bg-gradient-to-r from-indigo-400 to-indigo-600'
-              }`}
-            >
-              <span className="opacity-80">{isLent ? '↑' : '↓'}</span>
-              <span>{chipName}</span>
-              {dday && (
-                <span className={`ml-1 px-1 rounded text-[9px] ${dday.urgent ? 'bg-red-500/80' : 'bg-yellow-400/80 text-yellow-900'}`}>
-                  {dday.label}
-                </span>
-              )}
-            </div>
-            <div
-              className="mx-auto mt-0.5"
-              style={{
-                width: 8,
-                height: 5,
-                background: isLent ? '#f59e0b' : '#6366f1',
-                clipPath: 'polygon(0 0, 100% 0, 50% 100%)',
-              }}
-            />
-          </motion.div>
+      {/* ── 책등 제목 — 세로쓰기 ───────────────────────────────
+          긴 제목은 잘리지 않고 말줄임(…)으로 끝난다.
+          세로쓰기에서는 인라인 축이 세로라, text-overflow가 아래쪽 끝에 적용된다. */}
+      <span
+        title={book.title}
+        className="relative z-[3] mt-4 text-[12px] whitespace-nowrap overflow-hidden text-spine-text"
+        style={{
+          fontFamily: "'Noto Sans KR', sans-serif",
+          fontWeight: 700,
+          writingMode: 'vertical-rl',
+          maxHeight: '90%',
+          textOverflow: 'ellipsis',
+          letterSpacing: '0.02em',
+          opacity: isLent ? 0.5 : 1,
+        }}
+      >
+        {titleParts.map((part, i) =>
+          part.upright ? (
+            // 한 자리 숫자는 다른 글자처럼 똑바로 세운다
+            <span key={i} style={{ textOrientation: 'upright' }}>
+              {part.text}
+            </span>
+          ) : (
+            <span key={i}>{part.text}</span>
+          )
         )}
-      </AnimatePresence>
+      </span>
 
-      {/* ── Lent bookmark (amber) ──────────────────────────────── */}
-      {isLent && borrowerNickname && (
+      {/* ── Ribbon bookmark ───────────────────────────────────── */}
+      {hasBookmark && (
         <motion.div
-          className="absolute left-1/2 -translate-x-1/2 z-20"
-          style={{ top: -BOOKMARK_HEIGHT + 10, width: BOOKMARK_WIDTH }}
-          animate={{ y: isHovered ? -5 : 0 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+          className="absolute top-0 left-1/2 z-[5] pointer-events-none flex items-start justify-center"
+          style={{
+            x: '-50%',
+            width: '64%',
+            height: 34,
+            background: r.gradient,
+            clipPath: 'polygon(0 0, 100% 0, 100% 72%, 50% 100%, 0 72%)',
+            boxShadow: '0 4px 9px rgba(0,0,0,0.3)',
+            paddingTop: 4,
+          }}
+          animate={{ y: isHovered ? -3 : 0 }}
+          transition={{ type: 'spring', stiffness: 360, damping: 26 }}
         >
-          <div
-            className="relative shadow-md"
-            style={{
-              width: '100%',
-              height: BOOKMARK_HEIGHT,
-              background: 'linear-gradient(160deg, #fcd34d 0%, #f59e0b 60%, #d97706 100%)',
-              clipPath: BOOKMARK_CLIP,
-            }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-black/10" />
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-white/40 rounded-t-sm" />
-            <div className="absolute inset-0 flex items-center justify-center" style={{ paddingBottom: BOOKMARK_HEIGHT * 0.22 }}>
-              <span className="font-black text-amber-900/60 select-none" style={{ fontSize: 11, lineHeight: 1 }}>↑</span>
-            </div>
-          </div>
+          {/* D-day — 색이 아니라 텍스트로만 알린다 */}
+          {dday && (
+            <span className="text-[8px] font-black leading-none" style={{ color: r.textColor }}>
+              {dday.label}
+            </span>
+          )}
         </motion.div>
       )}
 
-      {/* ── Borrowed bookmark (indigo) ─────────────────────────── */}
-      {isBorrowed && lenderNickname && (
+      {/* ── Name chip — 상시 노출 ─────────────────────────────── */}
+      {hasBookmark && chipName && (
         <motion.div
-          className="absolute left-1/2 -translate-x-1/2 z-20"
-          style={{ top: -BOOKMARK_HEIGHT + 10, width: BOOKMARK_WIDTH }}
-          animate={{ y: isHovered ? -5 : 0 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+          className="absolute left-1/2 z-[6] pointer-events-none flex items-center gap-[3px] rounded-full whitespace-nowrap text-white text-[8px] font-extrabold"
+          style={{
+            top: -15,
+            x: '-50%',
+            padding: '2px 6px',
+            background: r.chip,
+            boxShadow: '0 3px 7px rgba(0,0,0,0.28)',
+          }}
+          animate={{ scale: isHovered ? 1.08 : 1 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 26 }}
         >
-          <div
-            className="relative shadow-md"
-            style={{
-              width: '100%',
-              height: BOOKMARK_HEIGHT,
-              background: 'linear-gradient(160deg, #a5b4fc 0%, #6366f1 60%, #4f46e5 100%)',
-              clipPath: BOOKMARK_CLIP,
-            }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-transparent to-black/15" />
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-white/35 rounded-t-sm" />
-            <div className="absolute inset-0 flex items-center justify-center" style={{ paddingBottom: BOOKMARK_HEIGHT * 0.22 }}>
-              <span className="font-black text-indigo-900/50 select-none" style={{ fontSize: 11, lineHeight: 1 }}>↓</span>
-            </div>
-          </div>
+          <span className="opacity-75">{r.arrow}</span>
+          {chipName}
         </motion.div>
       )}
 
-      {/* ── Duplicate count badge ─────────────────────────── */}
+      {/* ── Duplicate count badge ─────────────────────────────── */}
       {(duplicateCount ?? 1) > 1 && !isHovered && (
-        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 z-30 px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none whitespace-nowrap pointer-events-none bg-white/85 text-foreground shadow-sm">
+        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 z-[6] px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none whitespace-nowrap pointer-events-none bg-white/85 text-foreground shadow-sm">
           ×{duplicateCount}
         </div>
       )}
-
-      {/* Spine texture */}
-      <div className="absolute inset-0 opacity-20 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-
-      {/* Book title */}
-      <motion.span
-        className="text-white font-semibold text-xs tracking-wide truncate text-shadow-sm relative z-10"
-        animate={{ opacity: hasBookmark && !isHovered ? 0.65 : 1 }}
-        transition={{ duration: 0.2 }}
-      >
-        {book.title}
-      </motion.span>
-
-      {/* Edge highlights */}
-      <div className="absolute right-0 top-0 bottom-0 w-[2px] bg-white/20" />
-      <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-black/30" />
     </motion.div>
   );
 };

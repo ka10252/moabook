@@ -10,11 +10,21 @@ import { ko } from 'date-fns/locale';
 interface TransactionDashboardProps {
   isOpen: boolean;
   onClose: () => void;
+  /** When provided, only show transactions between the current user and this partner */
+  partnerId?: string;
 }
 
-export const TransactionDashboard = ({ isOpen, onClose }: TransactionDashboardProps) => {
-  const { transactions, loading, updateTransaction, refresh } = useTransactions();
-  const { history, loading: historyLoading } = useTransactionHistory();
+export const TransactionDashboard = ({ isOpen, onClose, partnerId }: TransactionDashboardProps) => {
+  const { transactions: allTransactions, loading, updateTransaction, refresh } = useTransactions();
+  const { history: allHistory, loading: historyLoading } = useTransactionHistory();
+
+  const transactions = partnerId
+    ? allTransactions.filter(t => t.counterparty?.id === partnerId)
+    : allTransactions;
+
+  const history = partnerId
+    ? allHistory.filter(t => t.counterparty?.id === partnerId)
+    : allHistory;
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [tab, setTab] = useState<'active' | 'history'>('active');
 
