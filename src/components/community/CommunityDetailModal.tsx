@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Users, Crown, Trash2, UserMinus, Loader2, Pencil, BookOpen, Lock, LayoutList, Link2, Check } from 'lucide-react';
+import { X, Users, Crown, Trash2, UserMinus, Loader2, Pencil, BookOpen, Lock, LayoutList, Link2, Check, Bell } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -79,6 +80,21 @@ export const CommunityDetailModal = ({
   const [pinError, setPinError] = useState(false);
   const [canViewMembers, setCanViewMembers] = useState(false);
   const [isMember, setIsMember] = useState(false);
+  const [notifEnabled, setNotifEnabled] = useState(true);
+
+  const toggleCommunityNotif = async (next: boolean) => {
+    if (!community || !user) return;
+    setNotifEnabled(next); // 낙관적 업데이트
+    const { error } = await supabase
+      .from('community_members')
+      .update({ notifications_enabled: next })
+      .eq('community_id', community.id)
+      .eq('user_id', user.id);
+    if (error) {
+      setNotifEnabled(!next);
+      toast.error('알림 설정을 바꾸지 못했어요');
+    }
+  };
   const [communityPinHash, setCommunityPinHash] = useState<string | null>(null);
   const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [inviteCopied, setInviteCopied] = useState(false);
@@ -106,6 +122,20 @@ export const CommunityDetailModal = ({
 
     const userIsMember = !!membership;
     setIsMember(userIsMember);
+
+    // 알림 설정은 별도로 조회한다. notifications_enabled 컬럼 마이그레이션이 아직 안 됐어도
+    // 멤버십 확인(위)이 깨지지 않도록 분리하고, 컬럼이 없으면 기본값(켜짐)으로 둔다.
+    if (userIsMember) {
+      const { data: notifRow, error: notifErr } = await supabase
+        .from('community_members')
+        .select('notifications_enabled')
+        .eq('community_id', community.id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (!notifErr && notifRow) {
+        setNotifEnabled((notifRow as { notifications_enabled?: boolean }).notifications_enabled ?? true);
+      }
+    }
 
     // Fetch community with pin_hash and member_visibility
     const { data: fullCommunity } = await supabase
@@ -366,6 +396,17 @@ export const CommunityDetailModal = ({
                   </Button>
                 )}
               </div>
+
+              {/* 이 커뮤니티 알림 토글 — 멤버만 */}
+              {(isMember || isOwner) && (
+                <div className="px-4 py-3 border-b border-border shrink-0 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-foreground">이 커뮤니티 새 책 알림</span>
+                  </div>
+                  <Switch checked={notifEnabled} onCheckedChange={toggleCommunityNotif} />
+                </div>
+              )}
 
               {/* Community Info */}
               {community.description && (

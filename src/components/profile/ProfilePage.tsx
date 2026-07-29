@@ -21,6 +21,8 @@ import {
   Plus,
   ChevronRight,
   ChevronLeft,
+  MessageSquare,
+  Send,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,7 +64,14 @@ interface ProfilePageProps {
   onSignOut: () => void;
 }
 
-type View = 'overview' | 'edit' | 'notifications';
+type View = 'overview' | 'edit' | 'notifications' | 'feedback';
+
+/** 의견 분류 — 안 고르면 null로 저장 */
+const FEEDBACK_CATEGORIES = [
+  { key: 'bug', label: '버그' },
+  { key: 'idea', label: '아이디어' },
+  { key: 'etc', label: '그 외' },
+] as const;
 
 interface Stats {
   registered: number;
@@ -94,6 +103,38 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDeleteFallback, setShowDeleteFallback] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+
+  // 의견 보내기
+  const [feedbackText, setFeedbackText] = useState('');
+  const [feedbackCategory, setFeedbackCategory] = useState<string | null>(null);
+  const [sendingFeedback, setSendingFeedback] = useState(false);
+
+  const submitFeedback = async () => {
+    const message = feedbackText.trim();
+    if (!message) {
+      toast.error('내용을 입력해주세요');
+      return;
+    }
+    if (!user) {
+      toast.error('로그인이 필요해요');
+      return;
+    }
+    setSendingFeedback(true);
+    const { error } = await supabase.from('feedback').insert({
+      user_id: user.id,
+      category: feedbackCategory,
+      message,
+    });
+    setSendingFeedback(false);
+    if (error) {
+      toast.error('전송에 실패했어요. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+    toast.success('잘 전해졌어요, 고마워요 📮');
+    setFeedbackText('');
+    setFeedbackCategory(null);
+    setView('overview');
+  };
 
   // Profile fields
   const [nickname, setNickname] = useState('');
@@ -419,6 +460,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
             <div className="mt-4">
               <MenuRow icon={User} label="프로필 편집" onClick={() => setView('edit')} />
               <MenuRow icon={Bell} label="알림 설정" onClick={() => setView('notifications')} />
+              <MenuRow icon={MessageSquare} label="의견 보내기" onClick={() => setView('feedback')} />
               <MenuRow
                 icon={theme === 'dark' ? Moon : Sun}
                 label={theme === 'dark' ? '다크 모드' : '라이트 모드'}
@@ -460,6 +502,20 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
             <SubHeader title="프로필 편집" onBack={() => setView('overview')} />
 
             <div className="space-y-5 mt-4">
+              {/* 로그인 이메일 — 계정 식별자라 수정 불가, 확인용으로만 보여준다 */}
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold tracking-wide text-muted-foreground">
+                  로그인 이메일
+                </Label>
+                <Input
+                  value={user?.email ?? ''}
+                  readOnly
+                  disabled
+                  className="h-11 text-[13px] bg-muted border-border rounded-xl text-muted-foreground cursor-not-allowed"
+                />
+                <p className="text-[10px] text-faint">이메일은 변경할 수 없어요.</p>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="nickname" className="text-[10px] font-bold tracking-wide text-muted-foreground">
                   닉네임 *
@@ -676,6 +732,73 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
             </div>
           </motion.div>
         )}
+
+        {view === 'feedback' && (
+          <motion.div
+            key="feedback"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+          >
+            <SubHeader title="의견 보내기" onBack={() => setView('overview')} />
+
+            <div className="mt-4 space-y-4">
+              <p className="text-[13px] text-muted-foreground leading-relaxed">
+                바라는 점, 불편한 점, 새 기능 아이디어 — 무엇이든 편하게 들려주세요.
+                MOA를 더 좋게 만드는 데 큰 힘이 돼요.
+              </p>
+
+              {/* 분류 (선택) */}
+              <div className="flex gap-2">
+                {FEEDBACK_CATEGORIES.map((c) => {
+                  const active = feedbackCategory === c.key;
+                  return (
+                    <button
+                      key={c.key}
+                      type="button"
+                      onClick={() => setFeedbackCategory(active ? null : c.key)}
+                      className={`flex-1 h-10 rounded-xl text-[13px] font-semibold border transition-colors ${
+                        active
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border bg-card text-muted-foreground hover:bg-muted'
+                      }`}
+                    >
+                      {c.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <Textarea
+                value={feedbackText}
+                onChange={(e) => setFeedbackText(e.target.value)}
+                placeholder="여기에 자유롭게 적어주세요…"
+                rows={6}
+                maxLength={1000}
+                className="text-[13px] bg-card border-border rounded-xl resize-none"
+              />
+
+              <Button
+                onClick={submitFeedback}
+                disabled={sendingFeedback || !feedbackText.trim()}
+                className="w-full h-12 rounded-xl text-[14px] font-bold"
+              >
+                {sendingFeedback ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Send className="w-4 h-4 mr-2" />
+                    보내기
+                  </>
+                )}
+              </Button>
+
+              <p className="text-[11px] text-faint text-center">
+                답장이 필요한 문의는 프로필 하단의 문의 채널을 이용해주세요.
+              </p>
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Sign Out Dialog */}
@@ -690,9 +813,11 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
           <AlertDialogFooter>
             <AlertDialogCancel>취소</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
+              onClick={async () => {
                 setShowSignOutDialog(false);
-                onSignOut();
+                await onSignOut();
+                toast.success('로그아웃되었습니다');
+                navigate('/', { replace: true });
               }}
             >
               로그아웃

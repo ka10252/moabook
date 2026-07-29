@@ -737,7 +737,7 @@ export const Bookshelf = ({
         book={selectedBook}
         onClose={() => setSelectedBook(null)}
         onChat={onOpenChat}
-        onEdit={(book) => { setSelectedBook(null); setEditingBook(book); }}
+        onEdit={(book) => setEditingBook(book)}
         onDelete={async (bookId) => {
           const { error } = await deleteBook(bookId);
           if (error) toast.error('책 삭제에 실패했습니다');

@@ -418,6 +418,10 @@ const Index = () => {
           setShowNotifications(false);
           patchParams({ tab: 'community', book: null, tx: null, chat: null, board: null });
         }}
+        onOpenAnnouncement={() => {
+          setShowNotifications(false);
+          setShowAnnouncement(true);
+        }}
       />
 
       <AnnouncementPopup

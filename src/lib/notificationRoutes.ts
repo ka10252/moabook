@@ -13,7 +13,8 @@ export type NotificationDestination =
   | 'chat' // 그 대화방을 연다
   | 'book' // 그 책의 상세를 연다
   | 'transactions' // 거래 현황을 연다
-  | 'community'; // 커뮤니티 탭을 연다
+  | 'community' // 커뮤니티 탭을 연다
+  | 'announcement'; // 공지 팝업을 연다
 
 export interface NotificationRoute {
   destination: NotificationDestination;
@@ -43,9 +44,17 @@ export const NOTIFICATION_ROUTES: Record<string, NotificationRoute> = {
   // ── 거래 현황
   return_due: { destination: 'transactions', label: '반납 임박' },
   return_overdue: { destination: 'transactions', label: '반납 연체' },
+  return_completed: { destination: 'transactions', label: '반납 완료' },
+  first_transaction: { destination: 'transactions', label: '첫 거래 축하' },
+
+  // ── 특정 책 (판매·나눔 완료)
+  purchase_completed: { destination: 'book', label: '판매·나눔 완료', requires: 'book_id' },
 
   // ── 커뮤니티
   community_join: { destination: 'community', label: '커뮤니티 새 멤버', requires: 'community_id' },
+
+  // ── 공지
+  announcement: { destination: 'announcement', label: '공지사항' },
 };
 
 export const routeFor = (type: string): NotificationRoute | undefined =>

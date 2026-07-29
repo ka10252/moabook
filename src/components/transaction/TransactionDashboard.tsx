@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, User, Book, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,16 @@ interface TransactionDashboardProps {
 
 export const TransactionDashboard = ({ isOpen, onClose, partnerId }: TransactionDashboardProps) => {
   const { transactions: allTransactions, loading, updateTransaction, refresh } = useTransactions();
-  const { history: allHistory, loading: historyLoading } = useTransactionHistory();
+  const { history: allHistory, loading: historyLoading, refresh: refreshHistory } = useTransactionHistory();
+
+  // 이 훅 인스턴스는 부모(책장/채팅)가 마운트될 때 한 번 가져온 뒤 갱신되지 않는다.
+  // 그래서 그 사이 새로 생긴 거래가 안 보였다. 열 때마다 최신으로 다시 불러온다.
+  useEffect(() => {
+    if (isOpen) {
+      refresh();
+      refreshHistory();
+    }
+  }, [isOpen, refresh, refreshHistory]);
 
   const transactions = partnerId
     ? allTransactions.filter(t => t.counterparty?.id === partnerId)

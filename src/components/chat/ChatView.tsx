@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Send, Loader2, Plus, Book as BookPickIcon, X, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Send, Loader2, Plus, Book as BookPickIcon, X, ChevronRight, Camera, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useMessages, Conversation } from '@/hooks/useChat';
@@ -22,6 +22,7 @@ interface BookInfo {
   author?: string;
   cover_url: string | null;
   status?: 'available' | 'rented' | 'sold';
+  mode?: 'rent' | 'sell' | 'give';
 }
 
 interface ChatViewProps {
@@ -31,11 +32,13 @@ interface ChatViewProps {
 }
 
 // Message type detection
-type MessageCategory = 'request' | 'accepted' | 'returned' | 'return_request' | 'regular';
+type MessageCategory = 'request' | 'accepted' | 'returned' | 'return_request' | 'image' | 'regular';
 
 interface ParsedMessage {
   category: MessageCategory;
   transactionType: TransactionType;
+  /** 유저에게 보이는 실제 모드. 나눔·판매는 거래상 둘 다 purchase지만 화면 표기는 달라야 한다. */
+  mode: 'rent' | 'sell' | 'give';
   bookId: string | null;
   displayText: string;
 }
@@ -63,6 +66,39 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
   const [showBookPicker, setShowBookPicker] = useState(false);
   const [otherUserBooks, setOtherUserBooks] = useState<BookInfo[]>([]);
   const [loadingBooks, setLoadingBooks] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [showAttachSheet, setShowAttachSheet] = useState(false);
+
+  // + 버튼 → 이미지(PayNow·PayLah QR 등) 첨부. book-covers 버킷의 chat/ 경로에 올린다.
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // 같은 파일을 다시 골라도 onChange가 뜨도록 초기화
+    if (!file || !user) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('이미지 파일만 보낼 수 있어요');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('이미지는 5MB 이하여야 해요');
+      return;
+    }
+    setUploadingImage(true);
+    try {
+      const ext = file.name.split('.').pop() || 'jpg';
+      const path = `chat/${user.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('book-covers').upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from('book-covers').getPublicUrl(path);
+      await sendMessage(`[IMAGE:${publicUrl}]`);
+    } catch (err) {
+      console.error('이미지 전송 실패:', err);
+      toast.error('이미지를 보내지 못했어요');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   // Extract book ID from message content
   const extractBookId = (content: string): string | null => {
@@ -74,12 +110,24 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
   const parseMessage = (content: string): ParsedMessage => {
     const bookId = extractBookId(content);
     const cleanContent = content.replace(/\s*\[BOOK_ID:[^\]]+\]/, '');
-    
+
+    // 이미지(PayNow·PayLah QR 등) — displayText에 이미지 URL을 담는다
+    if (content.startsWith('[IMAGE:')) {
+      return {
+        category: 'image',
+        transactionType: 'rent',
+        mode: 'rent',
+        bookId: null,
+        displayText: content.match(/^\[IMAGE:([^\]]+)\]/)?.[1] ?? '',
+      };
+    }
+
     // Check for request messages
     if (content.startsWith('[대여 요청]')) {
       return {
         category: 'request',
         transactionType: 'rent',
+        mode: 'rent',
         bookId,
         displayText: cleanContent.replace(/^\[대여 요청\]\s*/, ''),
       };
@@ -88,6 +136,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
       return {
         category: 'request',
         transactionType: 'purchase',
+        mode: 'sell',
         bookId,
         displayText: cleanContent.replace(/^\[구매 요청\]\s*/, ''),
       };
@@ -97,16 +146,18 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
       return {
         category: 'request',
         transactionType: 'purchase',
+        mode: 'give',
         bookId,
         displayText: cleanContent.replace(/^\[나눔 요청\]\s*/, ''),
       };
     }
-    
+
     // Check for acceptance messages
     if (content.startsWith('[대여 수락]')) {
       return {
         category: 'accepted',
         transactionType: 'rent',
+        mode: 'rent',
         bookId,
         displayText: cleanContent,
       };
@@ -115,16 +166,27 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
       return {
         category: 'accepted',
         transactionType: 'purchase',
+        mode: 'sell',
         bookId,
         displayText: cleanContent,
       };
     }
-    
+    if (content.startsWith('[나눔 완료]')) {
+      return {
+        category: 'accepted',
+        transactionType: 'purchase',
+        mode: 'give',
+        bookId,
+        displayText: cleanContent,
+      };
+    }
+
     // Check for return messages
     if (content.startsWith('[반납 완료]')) {
       return {
         category: 'returned',
         transactionType: 'rent',
+        mode: 'rent',
         bookId,
         displayText: cleanContent,
       };
@@ -134,6 +196,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
       return {
         category: 'return_request',
         transactionType: 'rent',
+        mode: 'rent',
         bookId,
         displayText: cleanContent.replace(/^\[반납 요청\]\s*/, ''),
       };
@@ -142,6 +205,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     return {
       category: 'regular',
       transactionType: 'rent',
+      mode: 'rent',
       bookId: null,
       displayText: content,
     };
@@ -163,7 +227,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     const fetchBookInfo = async () => {
       const { data } = await supabase
         .from('books')
-        .select('id, title, author, cover_url')
+        .select('id, title, author, cover_url, mode')
         .in('id', Array.from(bookIdsToFetch));
       
       if (data) {
@@ -255,7 +319,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     }
     const msg = `[반납 요청] 책: ${borrowedTx.book?.title || '책'} 을 반납하겠습니다. [BOOK_ID:${borrowedTx.book_id}]`;
     await sendMessage(msg);
-    toast.success('반납 요청을 보냈습니다');
+    toast.success('반납했다고 알렸어요');
   };
 
   const handleBookPickerSelect = async (book: BookInfo) => {
@@ -411,6 +475,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
             
             const parsed = parseMessage(msg.content);
             const isSpecialMessage = parsed.category !== 'regular';
+            const isImage = parsed.category === 'image';
             const bookInfo = parsed.bookId ? bookInfoCache[parsed.bookId] : null;
             
             // Find transaction for this book
@@ -467,6 +532,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
                         <RentalMessageCard
                           type={parsed.category as RentalMessageType}
                           transactionType={parsed.transactionType}
+                          mode={parsed.mode}
                           book={{
                             title: bookInfo.title,
                             author: bookInfo.author || '',
@@ -489,7 +555,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
                             if (!bookInfo) return;
                             const msg = `[반납 요청] 책: ${bookInfo.title} 을 반납하겠습니다. [BOOK_ID:${bookInfo.id}]`;
                             await sendMessage(msg);
-                            toast.success('반납 요청을 보냈습니다');
+                            toast.success('반납했다고 알렸어요');
                           }}
                           showAcceptReturnButton={canAcceptReturn}
                           onAcceptReturnClick={() => {
@@ -522,6 +588,27 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
                       </div>
                     )}
                     
+                    {/* Image Message (PayNow·PayLah QR 등) */}
+                    {isImage && (
+                      <div className={`flex items-end gap-1 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+                        {isOwn && !msg.is_read && (
+                          <span className="text-[11px] font-bold text-primary leading-none mb-1 shrink-0">1</span>
+                        )}
+                        <div className="flex flex-col gap-1">
+                          <a href={parsed.displayText} target="_blank" rel="noopener noreferrer">
+                            <img
+                              src={parsed.displayText}
+                              alt="첨부 이미지"
+                              className="max-w-[220px] w-full rounded-2xl border border-border shadow-sm"
+                            />
+                          </a>
+                          <p className={`text-xs ${isOwn ? 'text-right text-muted-foreground' : 'text-muted-foreground'}`}>
+                            {format(new Date(msg.created_at), 'a h:mm', { locale: ko })}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Regular Message Bubble */}
                     {!isSpecialMessage && (
                       <div className={`flex items-end gap-1 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -559,33 +646,34 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
       <form onSubmit={handleSend} className="p-4 border-t border-border bg-card shrink-0">
         <div className="flex gap-2 items-center">
           {/* More actions button */}
-          <div className="relative shrink-0" ref={showMoreRef}>
+          {/* + 버튼 → 카메라/앨범 선택 (PayNow·PayLah QR 등) */}
+          <div className="relative shrink-0">
+            {/* 앨범에서 선택 — capture 없음 */}
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageSelect}
+            />
+            {/* 카메라로 촬영 — capture로 후면 카메라를 바로 연다 (모바일) */}
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleImageSelect}
+            />
             <button
               type="button"
-              onClick={() => setShowMore(v => !v)}
-              className="w-9 h-9 flex items-center justify-center rounded-xl bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
+              onClick={() => setShowAttachSheet(true)}
+              disabled={uploadingImage}
+              className="w-9 h-9 flex items-center justify-center rounded-xl bg-muted hover:bg-muted/80 transition-colors text-muted-foreground disabled:opacity-50"
+              aria-label="사진 첨부"
             >
-              <Plus className="w-5 h-5" />
+              {uploadingImage ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
             </button>
-            {showMore && (
-              <div className="absolute bottom-full left-0 mb-2 bg-card border border-border rounded-xl shadow-lg overflow-hidden min-w-[140px] z-10">
-                <button
-                  type="button"
-                  onClick={handleRentFromMenu}
-                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors text-foreground"
-                >
-                  대여 요청
-                </button>
-                <div className="h-px bg-border" />
-                <button
-                  type="button"
-                  onClick={handleReturnRequestFromMenu}
-                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors text-foreground"
-                >
-                  반납 요청
-                </button>
-              </div>
-            )}
           </div>
 
           <Input
@@ -605,6 +693,37 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
           </Button>
         </div>
       </form>
+
+      {/* 사진 첨부 방식 선택 시트 */}
+      {showAttachSheet && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[60] flex items-end justify-center"
+          onClick={() => setShowAttachSheet(false)}
+        >
+          <div
+            className="w-full max-w-[520px] bg-card rounded-t-2xl p-3 pb-6 space-y-1"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto w-9 h-1 rounded-full bg-border mb-2" />
+            <button
+              type="button"
+              onClick={() => { setShowAttachSheet(false); cameraInputRef.current?.click(); }}
+              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-muted transition-colors text-left"
+            >
+              <Camera className="w-5 h-5 text-primary" />
+              <span className="text-sm font-medium text-foreground">카메라로 촬영</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowAttachSheet(false); imageInputRef.current?.click(); }}
+              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-muted transition-colors text-left"
+            >
+              <ImageIcon className="w-5 h-5 text-primary" />
+              <span className="text-sm font-medium text-foreground">앨범에서 선택</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Book Picker Modal */}
       {showBookPicker && (
@@ -709,22 +828,28 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
                 ? format(new Date(startDate), 'yyyy년 M월 d일', { locale: ko })
                 : format(new Date(), 'yyyy년 M월 d일', { locale: ko });
               
+              // 나눔·판매는 거래상 둘 다 purchase지만, 화면 문구는 책의 실제 모드로 구분한다
+              const bookMode = bookInfoCache[selectedBookId!].mode;
               let confirmMessage: string;
               if (acceptRequestType === 'rent') {
-                const returnDateStr = returnDate 
+                const returnDateStr = returnDate
                   ? format(new Date(returnDate), 'yyyy년 M월 d일', { locale: ko })
                   : '미정';
                 confirmMessage = `[대여 수락] 책: ${bookInfoCache[selectedBookId!].title} | 대여일: ${startDateStr} | 반납예정일: ${returnDateStr} [BOOK_ID:${selectedBookId}]`;
+              } else if (bookMode === 'give') {
+                confirmMessage = `[나눔 완료] 책: ${bookInfoCache[selectedBookId!].title} | 거래일: ${startDateStr} [BOOK_ID:${selectedBookId}]`;
               } else {
                 confirmMessage = `[판매 완료] 책: ${bookInfoCache[selectedBookId!].title} | 거래일: ${startDateStr} [BOOK_ID:${selectedBookId}]`;
               }
               await sendMessage(confirmMessage);
-              
+
               await refreshTransactions();
-              
+
               toast.success(
-                acceptRequestType === 'rent' 
-                  ? '대여가 수락되었습니다!' 
+                acceptRequestType === 'rent'
+                  ? '대여가 수락되었습니다!'
+                  : bookMode === 'give'
+                  ? '나눔이 완료되었습니다!'
                   : '판매가 완료되었습니다!'
               );
             } catch (error) {

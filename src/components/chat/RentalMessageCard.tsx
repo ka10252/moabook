@@ -10,6 +10,8 @@ export type TransactionType = 'rent' | 'purchase';
 interface RentalMessageCardProps {
   type: RentalMessageType;
   transactionType?: TransactionType;
+  /** 유저에게 보이는 실제 모드 — 나눔·판매를 구분해 문구를 다르게 낸다 */
+  mode?: 'rent' | 'sell' | 'give';
   book: {
     title: string;
     author: string;
@@ -35,6 +37,7 @@ interface RentalMessageCardProps {
 export const RentalMessageCard = ({
   type,
   transactionType = 'rent',
+  mode,
   book,
   startDate,
   returnDate,
@@ -49,13 +52,15 @@ export const RentalMessageCard = ({
   onAcceptReturnClick,
 }: RentalMessageCardProps) => {
   const isPurchase = transactionType === 'purchase';
-  
+  // mode가 있으면 그걸 우선한다 (나눔·판매 구분). 없으면 기존 transactionType로 폴백.
+  const isGive = mode === 'give';
+
   // Header configuration based on type
   const getHeaderConfig = () => {
     switch (type) {
       case 'request':
         return {
-          text: isPurchase ? '구매를 요청합니다' : '대여를 요청합니다',
+          text: isGive ? '나눔을 요청합니다' : isPurchase ? '구매를 요청합니다' : '대여를 요청합니다',
           icon: Clock,
           bgColor: 'bg-amber-100 dark:bg-amber-900/50',
           textColor: 'text-amber-700 dark:text-amber-300',
@@ -65,7 +70,7 @@ export const RentalMessageCard = ({
         };
       case 'accepted':
         return {
-          text: isPurchase ? '판매가 완료되었습니다' : '대여가 수락되었습니다',
+          text: isGive ? '나눔이 완료되었습니다' : isPurchase ? '판매가 완료되었습니다' : '대여가 수락되었습니다',
           icon: CheckCircle2,
           bgColor: 'bg-green-100 dark:bg-green-900/50',
           textColor: 'text-green-700 dark:text-green-300',
@@ -85,7 +90,7 @@ export const RentalMessageCard = ({
         };
       case 'return_request':
         return {
-          text: '반납을 요청합니다',
+          text: '책을 반납했어요',
           icon: PackageCheck,
           bgColor: 'bg-orange-100 dark:bg-orange-900/50',
           textColor: 'text-orange-700 dark:text-orange-300',
@@ -160,7 +165,7 @@ export const RentalMessageCard = ({
             className="w-full rounded-xl"
             onClick={onAcceptClick}
           >
-            {isPurchase ? '판매 수락' : '대여 수락'}
+            {isGive ? '나눔 수락' : isPurchase ? '판매 수락' : '대여 수락'}
           </Button>
         )}
         
@@ -179,7 +184,7 @@ export const RentalMessageCard = ({
             className="w-full rounded-xl"
             onClick={onRequestReturnClick}
           >
-            반납 요청하기
+            반납했어요
           </Button>
         )}
 
@@ -192,10 +197,10 @@ export const RentalMessageCard = ({
               className="w-full rounded-xl border-green-300 text-green-700 hover:bg-green-100 dark:border-green-700 dark:text-green-300 dark:hover:bg-green-900/50"
               onClick={onReturnClick}
             >
-              반납 수락
+              반납 확인
             </Button>
             <span className="text-[10px] text-muted-foreground">
-              반납을 진행하려면 클릭해주세요
+              반납받았으면 눌러주세요
             </span>
           </div>
         )}
@@ -209,10 +214,10 @@ export const RentalMessageCard = ({
               className="w-full rounded-xl border-green-300 text-green-700 hover:bg-green-100 dark:border-green-700 dark:text-green-300 dark:hover:bg-green-900/50"
               onClick={onAcceptReturnClick}
             >
-              반납 수락
+              반납 확인
             </Button>
             <span className="text-[10px] text-muted-foreground">
-              반납을 진행하려면 클릭해주세요
+              반납받았으면 눌러주세요
             </span>
           </div>
         )}

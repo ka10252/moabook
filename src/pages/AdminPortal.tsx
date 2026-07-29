@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, BookOpen, Building2, ArrowLeftRight, Shield, Loader2, Home, Mail, LayoutDashboard, Flag } from 'lucide-react';
+import { Users, BookOpen, Building2, ArrowLeftRight, Shield, Loader2, Home, Mail, LayoutDashboard, Flag, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { AdminUserManagement } from '@/components/admin/AdminUserManagement';
@@ -12,6 +12,7 @@ import { AdminCommunityManagement } from '@/components/admin/AdminCommunityManag
 import { AdminTransactionMonitoring } from '@/components/admin/AdminTransactionMonitoring';
 import { AdminAnnouncementManagement } from '@/components/admin/AdminAnnouncementManagement';
 import { AdminReportManagement } from '@/components/admin/AdminReportManagement';
+import { AdminFeedbackManagement } from '@/components/admin/AdminFeedbackManagement';
 
 const AdminPortal = () => {
   const navigate = useNavigate();
@@ -65,7 +66,7 @@ const AdminPortal = () => {
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid grid-cols-7 w-full max-w-3xl">
+          <TabsList className="grid grid-cols-8 w-full max-w-4xl">
             <TabsTrigger value="dashboard" className="flex items-center gap-1.5">
               <LayoutDashboard className="w-4 h-4" />
               <span className="hidden sm:inline">대시보드</span>
@@ -93,6 +94,10 @@ const AdminPortal = () => {
             <TabsTrigger value="announcements" className="flex items-center gap-1.5">
               <Mail className="w-4 h-4" />
               <span className="hidden sm:inline">공지</span>
+            </TabsTrigger>
+            <TabsTrigger value="feedback" className="flex items-center gap-1.5">
+              <MessageSquare className="w-4 h-4" />
+              <span className="hidden sm:inline">의견</span>
             </TabsTrigger>
           </TabsList>
 
@@ -122,6 +127,10 @@ const AdminPortal = () => {
 
           <TabsContent value="announcements">
             <AdminAnnouncementManagement />
+          </TabsContent>
+
+          <TabsContent value="feedback">
+            <AdminFeedbackManagement />
           </TabsContent>
         </Tabs>
       </main>

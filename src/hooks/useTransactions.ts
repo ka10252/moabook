@@ -116,7 +116,10 @@ export const useTransactions = () => {
         owner_id: ownerId,
         borrower_id: borrowerId,
         type,
-        status: 'active',
+        // 대여는 반납이 남아 있어 '진행 중'(active)이지만,
+        // 판매·나눔(purchase)은 수락하는 순간 거래가 끝나므로 바로 '완료'(히스토리)로 넣는다.
+        // 예전엔 둘 다 active로 넣어서 판매·나눔이 진행 중에 영영 남아 있었다.
+        status: type === 'rent' ? 'active' : 'completed',
         start_date: new Date().toISOString(),
         return_date: returnDate || null,
       })
@@ -199,48 +202,47 @@ export const useTransactionHistory = () => {
   const [history, setHistory] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchHistory = useCallback(async () => {
     if (!user) { setHistory([]); setLoading(false); return; }
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select(`*, book:books(id, title, author, cover_url)`)
+        .or(`owner_id.eq.${user.id},borrower_id.eq.${user.id}`)
+        .in('status', ['completed', 'cancelled'])
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-    const fetch = async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('transactions')
-          .select(`*, book:books(id, title, author, cover_url)`)
-          .or(`owner_id.eq.${user.id},borrower_id.eq.${user.id}`)
-          .in('status', ['completed', 'cancelled'])
-          .order('created_at', { ascending: false })
-          .limit(50);
+      if (error) throw error;
 
-        if (error) throw error;
+      const counterpartyIds = (data || []).map(t =>
+        t.owner_id === user.id ? t.borrower_id : t.owner_id
+      );
+      const { data: profiles } = await supabase
+        .from('profiles').select('id, nickname').in('id', counterpartyIds);
+      const profileMap = new Map((profiles || []).map(p => [p.id, p]));
 
-        const counterpartyIds = (data || []).map(t =>
-          t.owner_id === user.id ? t.borrower_id : t.owner_id
-        );
-        const { data: profiles } = await supabase
-          .from('profiles').select('id, nickname').in('id', counterpartyIds);
-        const profileMap = new Map((profiles || []).map(p => [p.id, p]));
-
-        setHistory(
-          (data || []).map(t => {
-            const cpId = t.owner_id === user.id ? t.borrower_id : t.owner_id;
-            return {
-              ...t,
-              counterparty: profileMap.get(cpId) || { id: cpId, nickname: '알 수 없음' },
-              isMine: t.owner_id === user.id,
-            };
-          })
-        );
-      } catch (e) {
-        console.error('Failed to fetch history:', e);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetch();
+      setHistory(
+        (data || []).map(t => {
+          const cpId = t.owner_id === user.id ? t.borrower_id : t.owner_id;
+          return {
+            ...t,
+            counterparty: profileMap.get(cpId) || { id: cpId, nickname: '알 수 없음' },
+            isMine: t.owner_id === user.id,
+          };
+        })
+      );
+    } catch (e) {
+      console.error('Failed to fetch history:', e);
+    } finally {
+      setLoading(false);
+    }
   }, [user?.id]);
 
-  return { history, loading };
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
+
+  return { history, loading, refresh: fetchHistory };
 };

@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { toast } from 'sonner';
+
+// 이 훅은 헤더 배지·알림 패널 등 여러 곳에서 동시에 마운트된다.
+// 각 인스턴스가 같은 INSERT 이벤트를 받으므로, 토스트를 그냥 띄우면 같은 알림이 여러 번 뜬다.
+// 이미 토스트로 보여준 알림 id를 모듈 전역에 기록해 한 번만 띄운다.
+const toastedNotificationIds = new Set<string>();
 
 export interface Notification {
   id: string;
@@ -76,14 +82,28 @@ export const useNotifications = () => {
         },
         (payload) => {
           const newNotification = payload.new as Notification;
-          setNotifications(prev => [newNotification, ...prev]);
+          setNotifications(prev => {
+            // 중복 인스턴스가 같은 이벤트를 받아 목록에 두 번 넣지 않도록 막는다
+            if (prev.some(n => n.id === newNotification.id)) return prev;
+            return [newNotification, ...prev];
+          });
           setUnreadCount(prev => prev + 1);
 
-          // Show browser push notification if tab is not focused
-          if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
-            new window.Notification(newNotification.title, {
-              body: newNotification.body ?? undefined,
-              icon: '/moa-logo.png',
+          if (document.hidden) {
+            // 탭이 안 보일 때 — OS/브라우저 알림
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new window.Notification(newNotification.title, {
+                body: newNotification.body ?? undefined,
+                icon: '/moa-logo.png',
+              });
+            }
+          } else if (!toastedNotificationIds.has(newNotification.id)) {
+            // 앱을 보고 있을 때 — 브라우저가 OS 알림을 억제하므로 인앱 토스트로 알린다.
+            // (여러 인스턴스가 동시에 받아도 id로 한 번만 띄운다)
+            toastedNotificationIds.add(newNotification.id);
+            toast(newNotification.title, {
+              description: newNotification.body ?? undefined,
+              duration: 5000,
             });
           }
         }

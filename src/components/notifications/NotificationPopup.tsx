@@ -18,6 +18,8 @@ interface NotificationPopupProps {
   onOpenTransactions?: () => void;
   /** 커뮤니티 새 멤버 → 커뮤니티 탭을 연다 */
   onOpenCommunity?: (communityId: string) => void;
+  /** 공지 알림 → 공지 팝업을 연다 */
+  onOpenAnnouncement?: () => void;
 }
 
 export const NotificationPopup = ({
@@ -27,6 +29,7 @@ export const NotificationPopup = ({
   onOpenBook,
   onOpenTransactions,
   onOpenCommunity,
+  onOpenAnnouncement,
 }: NotificationPopupProps) => {
   const { notifications, loading, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
 
@@ -73,6 +76,11 @@ export const NotificationPopup = ({
         if (!communityId) return;
         onClose();
         onOpenCommunity?.(communityId);
+        return;
+      }
+      case 'announcement': {
+        onClose();
+        onOpenAnnouncement?.();
         return;
       }
     }
