@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, lazy, Suspense } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, LayoutList } from 'lucide-react';
 import Phaser from 'phaser';
 import { LibraryScene, type RoomManifest } from '@/components/virtual/LibraryScene';
 import { supabase } from '@/integrations/supabase/client';
@@ -96,9 +96,13 @@ export default function VirtualSpacePage() {
       </div>
 
       {isCommunity && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 px-3 py-1.5 rounded-full bg-black/55 text-white text-xs">
-벽의 게시판을 탭하면 커뮤니티 게시판이 열려요
-        </div>
+        <button
+          onClick={() => setBoardOpen(true)}
+          className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-5 py-3 rounded-full bg-primary text-primary-foreground shadow-lg text-sm font-semibold active:scale-95 transition-transform"
+        >
+          <LayoutList className="w-4 h-4" />
+          게시판 열기
+        </button>
       )}
 
       {loading && !error && (
