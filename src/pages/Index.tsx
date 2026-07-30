@@ -127,6 +127,8 @@ const Index = () => {
 
   const showChatModal = searchParams.get('chat') === '1';
   const boardId = searchParams.get('board');
+  // 커뮤니티 책장 필터를 URL로 (버추얼 커뮤니티룸의 책장 클릭에서도 열 수 있게)
+  const communityParam = searchParams.get('community');
 
   /** URL의 다른 파라미터(?onboarding 등)는 건드리지 않고 일부만 바꾼다 */
   const patchParams = useCallback(
@@ -259,9 +261,13 @@ const Index = () => {
     setChatBookMode(null);
   };
 
+  // URL의 community 파라미터를 책장 필터에 반영 (외부/버추얼룸에서 진입 가능)
+  useEffect(() => {
+    setSelectedCommunityId(communityParam);
+  }, [communityParam]);
+
   const handleNavigateToBookshelf = (communityId: string) => {
-    setSelectedCommunityId(communityId);
-    goToTab('shelf');
+    patchParams({ tab: 'shelf', community: communityId, board: null, chat: null });
   };
 
   const contentKey = boardPage
@@ -285,7 +291,7 @@ const Index = () => {
           <Bookshelf
             onOpenChat={handleOpenChat}
             initialCommunityId={selectedCommunityId}
-            onCommunityFilterClear={() => setSelectedCommunityId(null)}
+            onCommunityFilterClear={() => patchParams({ community: null })}
             openBookId={searchParams.get('book')}
             openTransactions={searchParams.get('tx') === '1'}
             onDeepLinkConsumed={() => patchParams({ book: null, tx: null }, { replace: true })}
@@ -312,7 +318,7 @@ const Index = () => {
           <Bookshelf
             onOpenChat={handleOpenChat}
             initialCommunityId={selectedCommunityId}
-            onCommunityFilterClear={() => setSelectedCommunityId(null)}
+            onCommunityFilterClear={() => patchParams({ community: null })}
             openBookId={searchParams.get('book')}
             openTransactions={searchParams.get('tx') === '1'}
             onDeepLinkConsumed={() => patchParams({ book: null, tx: null }, { replace: true })}

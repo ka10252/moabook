@@ -41,6 +41,7 @@ export default function VirtualSpacePage() {
       avatar,
       onAction: (action: string) => {
         if (action === 'board') setBoardOpen(true);
+        else if (action === 'shelf' && communityId) navigate(`/?tab=shelf&community=${communityId}`);
       },
       onOpenProfile: (uid: string) => setProfileUserId(uid),
       presence: user

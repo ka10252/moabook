@@ -140,7 +140,8 @@
     {
       "name": "low_shelf",
       "col": 0,
-      "rowBottom": 4
+      "rowBottom": 4,
+      "action": "shelf"
     },
     {
       "name": "sofa",
