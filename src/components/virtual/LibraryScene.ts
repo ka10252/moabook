@@ -74,6 +74,7 @@ export class LibraryScene extends Phaser.Scene {
   private layerKeys: string[] = [];                      // 이 아바타의 레이어 텍스처 키 (몸→…→액세서리)
   private player!: Phaser.Physics.Arcade.Sprite;         // 몸(물리 바디) — 나머지 레이어는 여기에 붙음
   private layers: Phaser.GameObjects.Sprite[] = [];      // 눈·옷·헤어·액세서리 (몸 위에 동기화)
+  private playerLabel?: Phaser.GameObjects.Text;         // 내 이름표(하단)
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: Record<string, Phaser.Input.Keyboard.Key>;
   private facing: Dir = 'down';
@@ -239,6 +240,10 @@ export class LibraryScene extends Phaser.Scene {
       s.play(`${tex}_idle_down`);
       return s;
     });
+    // 내 이름표 (하단, 픽셀 폰트)
+    if (this.presenceCfg?.me.nickname) {
+      this.playerLabel = this.makeNameLabel(startX, startY, this.presenceCfg.me.nickname);
+    }
 
     // ---- 카메라 ----
     this.physics.world.setBounds(0, wallH * T, W, H - wallH * T);
@@ -304,6 +309,15 @@ export class LibraryScene extends Phaser.Scene {
     return key;
   }
 
+  /** 캐릭터 하단 이름표 (픽셀 폰트 Galmuri11) */
+  private makeNameLabel(x: number, y: number, name: string, faded = false) {
+    return this.add.text(x, y + 32, name, {
+      fontFamily: 'Galmuri11, monospace', fontSize: '11px',
+      color: faded ? '#8a8276' : '#3a2d22',
+      backgroundColor: '#ffffffcc', padding: { x: 3, y: 1 }, resolution: 2,
+    }).setOrigin(0.5, 0).setDepth(y + 1);
+  }
+
   private myState() {
     return {
       userId: this.presenceCfg!.me.userId,
@@ -346,9 +360,7 @@ export class LibraryScene extends Phaser.Scene {
           sprite.setInteractive({ useHandCursor: true });
           sprite.setData('remoteUser', meta.userId);
           sprite.on('pointerdown', () => this.onOpenProfile?.(meta.userId));
-          const label = this.add.text(meta.x, meta.y - 40, meta.nickname, {
-            fontSize: '10px', color: '#3a2d22', backgroundColor: '#ffffffcc', padding: { x: 3, y: 1 },
-          }).setOrigin(0.5, 1).setDepth(meta.y + 1);
+          const label = this.makeNameLabel(meta.x, meta.y, meta.nickname);
           this.remotes.set(meta.userId, { sprite, label, texKey, tx: meta.x, ty: meta.y, dir: meta.dir, moving: meta.moving });
         });
       }
@@ -393,10 +405,8 @@ export class LibraryScene extends Phaser.Scene {
         sprite.setInteractive({ useHandCursor: true });
         sprite.setData('remoteUser', m.userId);
         sprite.on('pointerdown', () => this.onOpenProfile?.(m.userId));
-        const zzz = this.add.text(x + 12, y - 42, '💤', { fontSize: '13px' }).setOrigin(0.5, 1).setDepth(y + 2);
-        const label = this.add.text(x, y - 40, m.nickname, {
-          fontSize: '10px', color: '#7a7266', backgroundColor: '#ffffffcc', padding: { x: 3, y: 1 },
-        }).setOrigin(0.5, 1).setDepth(y + 1);
+        const zzz = this.add.text(x + 11, y - 30, '💤', { fontSize: '13px' }).setOrigin(0.5, 1).setDepth(y + 2);
+        const label = this.makeNameLabel(x, y, m.nickname, true);
         this.offline.set(m.userId, { sprite, label, zzz });
       });
     });
@@ -441,6 +451,7 @@ export class LibraryScene extends Phaser.Scene {
     const state = moving ? 'walk' : 'idle';
     this.player.play(`av_body_${state}_${this.facing}`, true);
     this.player.setDepth(this.player.y);
+    this.playerLabel?.setPosition(this.player.x, this.player.y + 32).setDepth(this.player.y + 1);
     // 눈·옷·헤어·액세서리 레이어를 몸에 맞춰 위치·깊이·애니메이션 동기화
     for (const s of this.layers) {
       s.setPosition(this.player.x, this.player.y);
@@ -462,7 +473,7 @@ export class LibraryScene extends Phaser.Scene {
       rp.sprite.x = Phaser.Math.Linear(rp.sprite.x, rp.tx, 0.25);
       rp.sprite.y = Phaser.Math.Linear(rp.sprite.y, rp.ty, 0.25);
       rp.sprite.setDepth(rp.sprite.y);
-      rp.label.setPosition(rp.sprite.x, rp.sprite.y - 40).setDepth(rp.sprite.y + 1);
+      rp.label.setPosition(rp.sprite.x, rp.sprite.y + 32).setDepth(rp.sprite.y + 1);
       const near = Math.abs(rp.sprite.x - rp.tx) < 1.5 && Math.abs(rp.sprite.y - rp.ty) < 1.5;
       const st = rp.moving && !near ? 'walk' : 'idle';
       rp.sprite.play(`${rp.texKey}_${st}_${rp.dir}`, true);
