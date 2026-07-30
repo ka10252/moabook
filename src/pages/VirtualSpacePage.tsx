@@ -70,7 +70,10 @@ export default function VirtualSpacePage() {
         if (user) {
           try {
             const { data } = await supabase.from('profiles').select('pixel_avatar').eq('id', user.id).maybeSingle();
-            avatar = normalizeAvatar((data as { pixel_avatar?: unknown } | null)?.pixel_avatar);
+            const raw = (data as { pixel_avatar?: unknown } | null)?.pixel_avatar;
+            avatar = normalizeAvatar(raw);
+            // 아직 캐릭터를 안 만든 유저 → 첫 입장 시 에디터를 먼저 띄운다
+            if (data && (raw === null || raw === undefined) && !cancelled) setEditorOpen(true);
           } catch { /* 컬럼 미생성 시 기본값 */ }
         }
         if (cancelled || !containerRef.current) return;
