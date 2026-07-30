@@ -31,6 +31,12 @@ export interface PresenceConfig {
   me: { userId: string; nickname: string; avatar: AvatarConfig };
 }
 
+export interface RoomMember {
+  userId: string;
+  nickname: string;
+  avatar: AvatarConfig;
+}
+
 export interface SceneInitData {
   manifest: RoomManifest;
   assetBase?: string;
@@ -38,6 +44,7 @@ export interface SceneInitData {
   onOpenProfile?: (userId: string) => void;
   avatar?: AvatarConfig;
   presence?: PresenceConfig;
+  members?: RoomMember[];   // 커뮤니티룸: 멤버 전원(미접속자는 zzz로 표시)
 }
 
 interface RemotePlayer {
@@ -76,6 +83,9 @@ export class LibraryScene extends Phaser.Scene {
   private channel?: RealtimeChannel;
   private remotes = new Map<string, RemotePlayer>();
   private pendingRemotes = new Set<string>();
+  private members: RoomMember[] = [];
+  private offline = new Map<string, { sprite: Phaser.GameObjects.Sprite; label: Phaser.GameObjects.Text; zzz: Phaser.GameObjects.Text }>();
+  private pendingOffline = new Set<string>();
   private lastBroadcast = 0;
   private lastSent = { x: 0, y: 0, dir: 'down' as Dir, moving: false };
 
@@ -90,9 +100,12 @@ export class LibraryScene extends Phaser.Scene {
     this.onOpenProfile = data.onOpenProfile;
     if (data.avatar) this.avatar = data.avatar;
     this.presenceCfg = data.presence;
+    this.members = data.members ?? [];
     // 씬 재시작 시 상태 초기화
     this.remotes = new Map();
     this.pendingRemotes = new Set();
+    this.offline = new Map();
+    this.pendingOffline = new Set();
   }
 
   preload() {
@@ -258,6 +271,7 @@ export class LibraryScene extends Phaser.Scene {
 
     // ---- 멀티플레이어(Presence) ----
     if (this.presenceCfg) this.setupPresence();
+    this.refreshOffline(); // 커뮤니티룸: 멤버 전원 표시(미접속 zzz)
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       if (this.channel) { supabase.removeChannel(this.channel); this.channel = undefined; }
     });
@@ -343,6 +357,49 @@ export class LibraryScene extends Phaser.Scene {
     for (const [uid, rp] of this.remotes) {
       if (!seen.has(uid)) { rp.sprite.destroy(); rp.label.destroy(); this.remotes.delete(uid); }
     }
+    this.refreshOffline();
+  }
+
+  // 오프라인 멤버 배치 슬롯 (타일 좌표)
+  private static OFFLINE_SLOTS: [number, number][] = [
+    [3, 9], [6, 10], [9, 10], [12, 9], [2, 7], [13, 7], [7, 3], [10, 3], [5, 6], [11, 6], [1, 9], [14, 9],
+  ];
+
+  /** 커뮤니티룸: 접속 안 한 멤버를 zzz와 함께 그 자리에 둔다. 접속 중이거나 나면 제거. */
+  private refreshOffline() {
+    if (!this.members.length) return;
+    const T = this.manifest.tile;
+    const present = new Set<string>();
+    if (this.presenceCfg) present.add(this.presenceCfg.me.userId);
+    if (this.channel) {
+      const state = this.channel.presenceState() as Record<string, Array<{ userId?: string }>>;
+      for (const k of Object.keys(state)) { const uid = state[k][0]?.userId; if (uid) present.add(uid); }
+    }
+    // 접속했거나 나(=제거 대상)
+    for (const [uid, o] of this.offline) {
+      if (present.has(uid)) { o.sprite.destroy(); o.label.destroy(); o.zzz.destroy(); this.offline.delete(uid); }
+    }
+    // 오프라인 멤버 추가
+    this.members.forEach((m, idx) => {
+      if (present.has(m.userId) || this.offline.has(m.userId) || this.pendingOffline.has(m.userId)) return;
+      const slot = LibraryScene.OFFLINE_SLOTS[idx % LibraryScene.OFFLINE_SLOTS.length];
+      const x = slot[0] * T + 16, y = slot[1] * T + 32;
+      this.pendingOffline.add(m.userId);
+      this.ensureAvatarTexture(m.avatar).then((texKey) => {
+        this.pendingOffline.delete(m.userId);
+        if (this.offline.has(m.userId)) return;
+        const sprite = this.add.sprite(x, y, texKey).setDepth(y).setAlpha(0.75);
+        sprite.play(`${texKey}_idle_down`);
+        sprite.setInteractive({ useHandCursor: true });
+        sprite.setData('remoteUser', m.userId);
+        sprite.on('pointerdown', () => this.onOpenProfile?.(m.userId));
+        const zzz = this.add.text(x + 12, y - 42, '💤', { fontSize: '13px' }).setOrigin(0.5, 1).setDepth(y + 2);
+        const label = this.add.text(x, y - 40, m.nickname, {
+          fontSize: '10px', color: '#7a7266', backgroundColor: '#ffffffcc', padding: { x: 3, y: 1 },
+        }).setOrigin(0.5, 1).setDepth(y + 1);
+        this.offline.set(m.userId, { sprite, label, zzz });
+      });
+    });
   }
 
   update() {

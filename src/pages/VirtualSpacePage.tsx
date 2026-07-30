@@ -29,6 +29,7 @@ export default function VirtualSpacePage() {
   const gameRef = useRef<Phaser.Game | null>(null);
   const manifestRef = useRef<RoomManifest | null>(null);
   const nicknameRef = useRef<string>('익명');
+  const membersRef = useRef<{ userId: string; nickname: string; avatar: AvatarConfig }[]>([]);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -47,6 +48,7 @@ export default function VirtualSpacePage() {
       presence: user
         ? { channelName, me: { userId: user.id, nickname: nicknameRef.current, avatar } }
         : undefined,
+      members: isCommunity ? membersRef.current : undefined,
     });
   };
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +73,17 @@ export default function VirtualSpacePage() {
             setCommunityName(data.name);
             setTitle(`${data.name} · 버추얼 커뮤니티룸`);
           }
+          // 멤버 전원(미접속자는 zzz로 방에 표시)
+          const { data: mem } = await supabase
+            .from('community_members')
+            .select('user_id, profile:profiles(nickname, pixel_avatar)')
+            .eq('community_id', communityId)
+            .eq('is_banned', false);
+          membersRef.current = ((mem ?? []) as Array<{ user_id: string; profile: { nickname?: string; pixel_avatar?: unknown } | null }>).map((r) => ({
+            userId: r.user_id,
+            nickname: r.profile?.nickname ?? '멤버',
+            avatar: normalizeAvatar(r.profile?.pixel_avatar),
+          }));
         }
         const res = await fetch(`${assetBase}/manifest.json`);
         if (!res.ok) throw new Error('manifest 로드 실패');
