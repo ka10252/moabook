@@ -50,6 +50,15 @@ export function TelegramSettings() {
     if (error) { setOptIn(!v); toast.error('설정을 바꾸지 못했어요'); }
   };
 
+  const disconnect = async () => {
+    if (!user) return;
+    const { error } = await supabase.from('profiles')
+      .update({ telegram_chat_id: null, telegram_opt_in: false, telegram_link_code: null }).eq('id', user.id);
+    if (error) { toast.error('연결 해제에 실패했어요'); return; }
+    setLinked(false); setOptIn(false);
+    toast.success('텔레그램 연결을 해제했어요');
+  };
+
   if (loading) return null;
 
   return (
@@ -65,8 +74,13 @@ export function TelegramSettings() {
         앱 알림을 못 받아도, 대여 요청·수락·반납 임박 같은 중요한 소식을 텔레그램으로 받아보세요.
       </p>
       {linked ? (
-        <div className="flex items-center gap-1.5 text-[12px] font-medium text-primary">
-          <Check className="w-4 h-4" /> 연결됨 {optIn ? '' : '(알림 꺼짐)'}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-[12px] font-medium text-primary">
+            <Check className="w-4 h-4" /> 연결됨 {optIn ? '' : '(알림 꺼짐)'}
+          </div>
+          <button onClick={disconnect} className="text-[12px] text-muted-foreground underline underline-offset-2">
+            연결 해제
+          </button>
         </div>
       ) : (
         <button
