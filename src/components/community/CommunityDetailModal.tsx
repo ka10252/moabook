@@ -357,64 +357,80 @@ export const CommunityDetailModal = ({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="bg-card rounded-2xl flex flex-col shadow-xl overflow-hidden max-h-[80vh]">
-              {/* Header */}
-              <header className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <Users className="w-5 h-5 text-primary shrink-0" />
-                  <h2 className="font-bold text-foreground truncate">{community.name}</h2>
-                </div>
+              {/* Hero — 커뮤니티 정체성 (커버 있으면 배경, 없으면 코랄 그라데이션) */}
+              <div
+                className="relative shrink-0 px-5 pt-5 pb-4 text-primary-foreground bg-gradient-to-br from-primary to-primary/70"
+                style={
+                  community.cover_url
+                    ? {
+                        backgroundImage: `linear-gradient(to bottom right, rgba(20,12,8,.35), rgba(20,12,8,.55)), url(${community.cover_url})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                      }
+                    : undefined
+                }
+              >
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-xl hover:bg-muted transition-colors shrink-0"
+                  className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-white/20 transition-colors text-primary-foreground/90"
+                  aria-label="닫기"
                 >
-                  <X className="w-5 h-5 text-muted-foreground" />
+                  <X className="w-5 h-5" />
                 </button>
-              </header>
+                <h2 className="text-xl font-bold tracking-tight pr-8 truncate">{community.name}</h2>
+                <p className="text-xs opacity-90 mt-1 flex items-center gap-1">
+                  <Users className="w-3.5 h-3.5" />
+                  멤버 {community.member_count ?? members.length}명
+                  {isOwner ? ' · 내가 방장' : isMember ? ' · 멤버' : ''}
+                </p>
+                {community.description && (
+                  <p className="text-xs opacity-90 mt-2.5 leading-relaxed line-clamp-2">{community.description}</p>
+                )}
+              </div>
 
-              {/* Navigation buttons */}
-              <div className="px-4 py-3 border-b border-border shrink-0 space-y-2">
-                <Button
-                  onClick={handleNavigateToBookshelf}
-                  className="w-full h-11 rounded-xl gap-2"
-                  variant="outline"
-                >
-                  <BookOpen className="w-4 h-4" />
-                  {community.name} 책장으로 이동
-                  {requiresPin && !isMember && !isOwner && (
-                    <Lock className="w-3 h-3 ml-1" />
+              {/* 액션 타일 — 책장 · 게시판 · 커뮤니티룸(최우측). flex-1로 개수에 맞춰 자동 정렬 */}
+              <div className="px-4 pt-4 pb-1 shrink-0">
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleNavigateToBookshelf}
+                    className="flex-1 flex flex-col items-center gap-1.5 py-3.5 rounded-xl bg-muted/60 hover:bg-muted transition-colors relative"
+                  >
+                    <BookOpen className="w-[22px] h-[22px] text-primary" />
+                    <span className="text-xs font-medium text-foreground">책장</span>
+                    {requiresPin && !isMember && !isOwner && (
+                      <Lock className="w-3 h-3 text-muted-foreground absolute top-2 right-2" />
+                    )}
+                  </button>
+                  {(isMember || isOwner) && (
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onOpenBoard?.(community.id, community.name);
+                      }}
+                      className="flex-1 flex flex-col items-center gap-1.5 py-3.5 rounded-xl bg-muted/60 hover:bg-muted transition-colors"
+                    >
+                      <LayoutList className="w-[22px] h-[22px] text-primary" />
+                      <span className="text-xs font-medium text-foreground">게시판</span>
+                    </button>
                   )}
-                </Button>
-                {(isMember || isOwner) && (
-                  <Button
-                    onClick={() => {
-                      onClose();
-                      navigate(`/space/community/${community.id}`);
-                    }}
-                    className="w-full h-11 rounded-xl gap-2"
-                    variant="outline"
-                  >
-                    <Home className="w-4 h-4" />
-                    버추얼 커뮤니티룸
-                  </Button>
-                )}
-                {(isMember || isOwner) && (
-                  <Button
-                    onClick={() => {
-                      onClose();
-                      onOpenBoard?.(community.id, community.name);
-                    }}
-                    className="w-full h-11 rounded-xl gap-2"
-                    variant="outline"
-                  >
-                    <LayoutList className="w-4 h-4" />
-                    커뮤니티 게시판
-                  </Button>
-                )}
+                  {(isMember || isOwner) && (
+                    <button
+                      onClick={() => {
+                        onClose();
+                        navigate(`/space/community/${community.id}`);
+                      }}
+                      className="flex-1 flex flex-col items-center gap-1.5 py-3.5 rounded-xl bg-muted/60 hover:bg-muted transition-colors"
+                    >
+                      <Home className="w-[22px] h-[22px] text-primary" />
+                      <span className="text-xs font-medium text-foreground">커뮤니티룸</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* 이 커뮤니티 알림 토글 — 멤버만 */}
               {(isMember || isOwner) && (
-                <div className="px-4 py-3 border-b border-border shrink-0 flex items-center justify-between">
+                <div className="px-4 py-3 shrink-0 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Bell className="w-4 h-4 text-muted-foreground" />
                     <span className="text-sm font-medium text-foreground">이 커뮤니티 새 책 알림</span>
@@ -423,15 +439,8 @@ export const CommunityDetailModal = ({
                 </div>
               )}
 
-              {/* Community Info */}
-              {community.description && (
-                <div className="px-4 py-3 border-b border-border shrink-0">
-                  <p className="text-sm text-muted-foreground line-clamp-2">{community.description}</p>
-                </div>
-              )}
-
               {/* Members Header */}
-              <div className="px-4 py-3 flex items-center justify-between border-b border-border shrink-0">
+              <div className="px-4 py-3 flex items-center justify-between border-y border-border shrink-0">
                 <span className="text-sm font-medium text-foreground">
                   멤버 ({members.length})
                 </span>
