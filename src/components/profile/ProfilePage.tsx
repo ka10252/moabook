@@ -56,6 +56,7 @@ import { CountrySelector } from '@/components/auth/CountrySelector';
 import { ALLOWED_COUNTRY } from '@/data/countries';
 import { SINGAPORE_DISTRICTS } from '@/data/singaporeDistricts';
 import { spineClassFrom } from '@/lib/spineColor';
+import { TelegramSettings } from '@/components/profile/TelegramSettings';
 
 /** 탈퇴·문의 접수 채널. 자동 탈퇴가 실패해도 이 경로는 항상 열려 있어야 한다. */
 const SUPPORT_EMAIL = 'admin@moabook.app';
@@ -730,6 +731,8 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                 </p>
               ) : null}
             </div>
+
+            <TelegramSettings />
           </motion.div>
         )}
 
