@@ -21,6 +21,8 @@ const TermsPage = lazy(() => import("./pages/TermsPage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 // 임시: 미채택 기능("나의 도서관") 미리보기. 채택 여부 결정 후 제거.
 const LibraryPreview = lazy(() => import("./pages/LibraryPreview"));
+// 가상 도서관 (Phaser). 무거운 게임 엔진이라 lazy 로드.
+const VirtualSpacePage = lazy(() => import("./pages/VirtualSpacePage"));
 
 const queryClient = new QueryClient();
 
@@ -51,6 +53,7 @@ const App = () => (
                   <Route path="/terms" element={<TermsPage />} />
                   <Route path="/privacy" element={<PrivacyPage />} />
                   <Route path="/library" element={<LibraryPreview />} />
+                  <Route path="/space" element={<VirtualSpacePage />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

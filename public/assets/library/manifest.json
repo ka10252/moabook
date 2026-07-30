@@ -1,0 +1,257 @@
+{
+  "tile": 32,
+  "cols": 22,
+  "rows": 15,
+  "floor": "floor.png",
+  "wall_body": "wall_body.png",
+  "wall_base": "wall_base.png",
+  "wall_rows": 2,
+  "rug": {
+    "img": "rug.png",
+    "x": 1,
+    "y": 11,
+    "maxTiles": [
+      6,
+      3
+    ]
+  },
+  "furniture_sizes": {
+    "shelf_big_a": [
+      122,
+      100
+    ],
+    "shelf_big_b": [
+      122,
+      100
+    ],
+    "shelf_big_c": [
+      97,
+      100
+    ],
+    "shelf_big_d": [
+      122,
+      100
+    ],
+    "shelf_big_e": [
+      97,
+      100
+    ],
+    "shelf_tall_a": [
+      56,
+      82
+    ],
+    "shelf_tall_b": [
+      56,
+      82
+    ],
+    "shelf_tall_c": [
+      56,
+      82
+    ],
+    "long_table": [
+      130,
+      48
+    ],
+    "reading_desk": [
+      58,
+      46
+    ],
+    "chair": [
+      30,
+      34
+    ],
+    "chair_green": [
+      30,
+      48
+    ],
+    "armchair_a": [
+      50,
+      72
+    ],
+    "armchair_b": [
+      50,
+      72
+    ],
+    "table_book": [
+      58,
+      52
+    ],
+    "reception": [
+      118,
+      78
+    ],
+    "globe": [
+      28,
+      44
+    ],
+    "ladder": [
+      25,
+      42
+    ],
+    "lectern": [
+      36,
+      62
+    ],
+    "books_pile": [
+      42,
+      50
+    ],
+    "bulletin": [
+      64,
+      44
+    ]
+  },
+  "furniture": [
+    {
+      "name": "shelf_big_a",
+      "col": 0,
+      "rowBottom": 4
+    },
+    {
+      "name": "shelf_big_b",
+      "col": 4,
+      "rowBottom": 4
+    },
+    {
+      "name": "shelf_big_c",
+      "col": 9,
+      "rowBottom": 4
+    },
+    {
+      "name": "shelf_big_d",
+      "col": 13,
+      "rowBottom": 4
+    },
+    {
+      "name": "shelf_big_e",
+      "col": 17,
+      "rowBottom": 4
+    },
+    {
+      "name": "bulletin",
+      "col": 10,
+      "rowBottom": 1
+    },
+    {
+      "name": "shelf_tall_a",
+      "col": 7,
+      "rowBottom": 7
+    },
+    {
+      "name": "shelf_tall_b",
+      "col": 10,
+      "rowBottom": 7
+    },
+    {
+      "name": "shelf_tall_c",
+      "col": 13,
+      "rowBottom": 7
+    },
+    {
+      "name": "long_table",
+      "col": 15,
+      "rowBottom": 8
+    },
+    {
+      "name": "chair",
+      "col": 15,
+      "rowBottom": 9
+    },
+    {
+      "name": "chair",
+      "col": 17,
+      "rowBottom": 9
+    },
+    {
+      "name": "chair",
+      "col": 19,
+      "rowBottom": 9
+    },
+    {
+      "name": "chair_green",
+      "col": 15,
+      "rowBottom": 7
+    },
+    {
+      "name": "chair_green",
+      "col": 17,
+      "rowBottom": 7
+    },
+    {
+      "name": "chair_green",
+      "col": 19,
+      "rowBottom": 7
+    },
+    {
+      "name": "reading_desk",
+      "col": 7,
+      "rowBottom": 12
+    },
+    {
+      "name": "chair",
+      "col": 7,
+      "rowBottom": 13
+    },
+    {
+      "name": "reading_desk",
+      "col": 10,
+      "rowBottom": 12
+    },
+    {
+      "name": "chair",
+      "col": 10,
+      "rowBottom": 13
+    },
+    {
+      "name": "reading_desk",
+      "col": 13,
+      "rowBottom": 12
+    },
+    {
+      "name": "chair",
+      "col": 13,
+      "rowBottom": 13
+    },
+    {
+      "name": "armchair_a",
+      "col": 1,
+      "rowBottom": 12
+    },
+    {
+      "name": "armchair_b",
+      "col": 4,
+      "rowBottom": 12
+    },
+    {
+      "name": "table_book",
+      "col": 2,
+      "rowBottom": 13,
+      "dx": 8
+    },
+    {
+      "name": "reception",
+      "col": 18,
+      "rowBottom": 13
+    },
+    {
+      "name": "globe",
+      "col": 20,
+      "rowBottom": 7
+    },
+    {
+      "name": "ladder",
+      "col": 21,
+      "rowBottom": 4
+    },
+    {
+      "name": "lectern",
+      "col": 20,
+      "rowBottom": 11
+    },
+    {
+      "name": "books_pile",
+      "col": 16,
+      "rowBottom": 12
+    }
+  ]
+}
