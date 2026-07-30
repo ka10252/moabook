@@ -107,6 +107,8 @@ export function CharacterEditor({ isOpen, onClose, onSaved }: CharacterEditorPro
   const [config, setConfig] = useState<AvatarConfig>(defaultAvatar());
   const [saving, setSaving] = useState(false);
   const [asProfile, setAsProfile] = useState(true);
+  const [readingBookId, setReadingBookId] = useState<string | null>(null);
+  const [myBooks, setMyBooks] = useState<{ id: string; title: string }[]>([]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -116,8 +118,24 @@ export function CharacterEditor({ isOpen, onClose, onSaved }: CharacterEditorPro
       if (cancelled) return;
       setManifest(m);
       if (user) {
-        const { data } = await supabase.from('profiles').select('pixel_avatar').eq('id', user.id).maybeSingle();
-        if (!cancelled) setConfig(clampToManifest(normalizeAvatar((data as { pixel_avatar?: unknown } | null)?.pixel_avatar), m));
+        const { data } = await supabase.from('profiles').select('pixel_avatar, reading_book_id').eq('id', user.id).maybeSingle();
+        if (!cancelled) {
+          const row = data as { pixel_avatar?: unknown; reading_book_id?: string | null } | null;
+          setConfig(clampToManifest(normalizeAvatar(row?.pixel_avatar), m));
+          setReadingBookId(row?.reading_book_id ?? null);
+        }
+        // 내 책 + 대여 중인 책 (지금 읽는 책 후보)
+        const [owned, borrowed] = await Promise.all([
+          supabase.from('books').select('id, title').eq('owner_id', user.id),
+          supabase.from('transactions').select('book:books(id, title)').eq('borrower_id', user.id).eq('status', 'active'),
+        ]);
+        if (!cancelled) {
+          const list: { id: string; title: string }[] = [
+            ...((owned.data ?? []) as { id: string; title: string }[]).map((b) => ({ id: b.id, title: b.title })),
+            ...((borrowed.data ?? []) as Array<{ book: { id: string; title: string } | null }>).map((t) => t.book).filter(Boolean).map((b) => ({ id: b!.id, title: b!.title })),
+          ];
+          setMyBooks(Array.from(new Map(list.map((b) => [b.id, b])).values()));
+        }
       }
     })();
     return () => { cancelled = true; };
@@ -150,7 +168,7 @@ export function CharacterEditor({ isOpen, onClose, onSaved }: CharacterEditorPro
     if (!user) { toast.error('로그인이 필요해요'); return; }
     setSaving(true);
     try {
-      const { error } = await supabase.from('profiles').update({ pixel_avatar: config } as never).eq('id', user.id);
+      const { error } = await supabase.from('profiles').update({ pixel_avatar: config, reading_book_id: readingBookId } as never).eq('id', user.id);
       if (error) throw error;
       if (asProfile) {
         const blob = await renderAvatarBlob(config);
@@ -243,7 +261,26 @@ export function CharacterEditor({ isOpen, onClose, onSaved }: CharacterEditorPro
           {!manifest ? (
             <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
           ) : (
-            sections.map((sec) => (
+            <>
+            {/* 지금 읽는 책 — 캐릭터 머리 위 말풍선으로 표시됨 */}
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground mb-2">지금 읽는 책</p>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                <button
+                  onClick={() => setReadingBookId(null)}
+                  className={`shrink-0 px-3 h-9 rounded-full border text-xs font-medium ${!readingBookId ? 'border-primary text-primary bg-primary/10' : 'border-border text-muted-foreground bg-muted/40'}`}
+                >없음</button>
+                {myBooks.map((b) => (
+                  <button
+                    key={b.id}
+                    onClick={() => setReadingBookId(b.id)}
+                    className={`shrink-0 px-3 h-9 rounded-full border text-xs font-medium max-w-[160px] truncate ${readingBookId === b.id ? 'border-primary text-primary bg-primary/10' : 'border-border text-foreground bg-muted/40'}`}
+                  >📖 {b.title}</button>
+                ))}
+                {myBooks.length === 0 && <span className="text-xs text-muted-foreground self-center px-1">내 책·대여 중인 책이 없어요</span>}
+              </div>
+            </div>
+            {sections.map((sec) => (
               <div key={sec.label}>
                 <p className="text-xs font-semibold text-muted-foreground mb-2">{sec.label}</p>
                 <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
@@ -262,7 +299,8 @@ export function CharacterEditor({ isOpen, onClose, onSaved }: CharacterEditorPro
                   ))}
                 </div>
               </div>
-            ))
+            ))}
+            </>
           )}
         </div>
       </div>

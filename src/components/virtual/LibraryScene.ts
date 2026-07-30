@@ -28,7 +28,7 @@ export interface RoomManifest {
 
 export interface PresenceConfig {
   channelName: string;                 // 예: space:global, space:community:{id}
-  me: { userId: string; nickname: string; avatar: AvatarConfig };
+  me: { userId: string; nickname: string; avatar: AvatarConfig; readingTitle?: string | null };
 }
 
 export interface RoomMember {
@@ -50,6 +50,8 @@ export interface SceneInitData {
 interface RemotePlayer {
   sprite: Phaser.GameObjects.Sprite;
   label: Phaser.GameObjects.Text;
+  readingBubble?: Phaser.GameObjects.Text;
+  readingTitle?: string | null;
   texKey: string;
   tx: number; ty: number;            // 목표 위치 (보간용)
   dir: Dir; moving: boolean;
@@ -75,6 +77,7 @@ export class LibraryScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite;         // 몸(물리 바디) — 나머지 레이어는 여기에 붙음
   private layers: Phaser.GameObjects.Sprite[] = [];      // 눈·옷·헤어·액세서리 (몸 위에 동기화)
   private playerLabel?: Phaser.GameObjects.Text;         // 내 이름표(하단)
+  private playerReading?: Phaser.GameObjects.Text;       // 내 "지금 읽는 책" 말풍선(상단)
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: Record<string, Phaser.Input.Keyboard.Key>;
   private facing: Dir = 'down';
@@ -241,9 +244,12 @@ export class LibraryScene extends Phaser.Scene {
       s.play(`${tex}_idle_down`);
       return s;
     });
-    // 내 이름표 (하단, 픽셀 폰트)
+    // 내 이름표 (하단, 픽셀 폰트) + 지금 읽는 책 말풍선(상단)
     if (this.presenceCfg?.me.nickname) {
       this.playerLabel = this.makeNameLabel(startX, startY, this.presenceCfg.me.nickname);
+    }
+    if (this.presenceCfg?.me.readingTitle) {
+      this.playerReading = this.makeReadingBubble(startX, startY, this.presenceCfg.me.readingTitle);
     }
 
     // ---- 카메라 ----
@@ -319,11 +325,21 @@ export class LibraryScene extends Phaser.Scene {
     }).setOrigin(0.5, 0).setDepth(y + 1);
   }
 
+  /** "📖 제목" 읽는 책 말풍선 (머리 위, 은은하게 항상 표시) */
+  private makeReadingBubble(x: number, y: number, title: string) {
+    const t = title.length > 12 ? title.slice(0, 12) + '…' : title;
+    return this.add.text(x, y - 44, `📖 ${t}`, {
+      fontFamily: 'Galmuri11, monospace', fontSize: '10px',
+      color: '#5a4a38', backgroundColor: '#fff7e6ee', padding: { x: 4, y: 2 }, resolution: 2,
+    }).setOrigin(0.5, 1).setDepth(y + 2);
+  }
+
   private myState() {
     return {
       userId: this.presenceCfg!.me.userId,
       nickname: this.presenceCfg!.me.nickname,
       avatar: this.presenceCfg!.me.avatar,
+      readingTitle: this.presenceCfg!.me.readingTitle ?? null,
       x: Math.round(this.player.x), y: Math.round(this.player.y),
       dir: this.facing, moving: (this.player.body as Phaser.Physics.Arcade.Body).velocity.length() > 1,
     };
@@ -374,12 +390,17 @@ export class LibraryScene extends Phaser.Scene {
     const state = this.channel.presenceState() as Record<string, Array<Record<string, unknown>>>;
     const seen = new Set<string>();
     for (const key of Object.keys(state)) {
-      const meta = state[key][0] as unknown as { userId: string; nickname: string; avatar: AvatarConfig; x: number; y: number; dir: Dir; moving: boolean };
+      const meta = state[key][0] as unknown as { userId: string; nickname: string; avatar: AvatarConfig; x: number; y: number; dir: Dir; moving: boolean; readingTitle?: string | null };
       if (!meta || meta.userId === this.presenceCfg.me.userId) continue;
       seen.add(meta.userId);
       const existing = this.remotes.get(meta.userId);
       if (existing) {
         existing.tx = meta.x; existing.ty = meta.y; existing.dir = meta.dir; existing.moving = meta.moving;
+        if (existing.readingTitle !== (meta.readingTitle ?? null)) {
+          existing.readingBubble?.destroy();
+          existing.readingBubble = meta.readingTitle ? this.makeReadingBubble(existing.sprite.x, existing.sprite.y, meta.readingTitle) : undefined;
+          existing.readingTitle = meta.readingTitle ?? null;
+        }
       } else if (!this.pendingRemotes.has(meta.userId)) {
         this.pendingRemotes.add(meta.userId);
         this.ensureAvatarTexture(meta.avatar).then((texKey) => {
@@ -392,13 +413,14 @@ export class LibraryScene extends Phaser.Scene {
           sprite.setData('remoteUser', meta.userId);
           sprite.on('pointerdown', () => this.onOpenProfile?.(meta.userId));
           const label = this.makeNameLabel(meta.x, meta.y, meta.nickname);
-          this.remotes.set(meta.userId, { sprite, label, texKey, tx: meta.x, ty: meta.y, dir: meta.dir, moving: meta.moving });
+          const readingBubble = meta.readingTitle ? this.makeReadingBubble(meta.x, meta.y, meta.readingTitle) : undefined;
+          this.remotes.set(meta.userId, { sprite, label, readingBubble, readingTitle: meta.readingTitle ?? null, texKey, tx: meta.x, ty: meta.y, dir: meta.dir, moving: meta.moving });
         });
       }
     }
     // 나간 사람 제거
     for (const [uid, rp] of this.remotes) {
-      if (!seen.has(uid)) { rp.sprite.destroy(); rp.label.destroy(); this.remotes.delete(uid); }
+      if (!seen.has(uid)) { rp.sprite.destroy(); rp.label.destroy(); rp.readingBubble?.destroy(); this.remotes.delete(uid); }
     }
     this.refreshOffline();
   }
@@ -486,6 +508,7 @@ export class LibraryScene extends Phaser.Scene {
     this.player.play(`av_body_${state}_${this.facing}`, true);
     this.player.setDepth(this.player.y);
     this.playerLabel?.setPosition(this.player.x, this.player.y + 32).setDepth(this.player.y + 1);
+    this.playerReading?.setPosition(this.player.x, this.player.y - 44).setDepth(this.player.y + 2);
     // 눈·옷·헤어·액세서리 레이어를 몸에 맞춰 위치·깊이·애니메이션 동기화
     for (const s of this.layers) {
       s.setPosition(this.player.x, this.player.y);
@@ -508,6 +531,7 @@ export class LibraryScene extends Phaser.Scene {
       rp.sprite.y = Phaser.Math.Linear(rp.sprite.y, rp.ty, 0.25);
       rp.sprite.setDepth(rp.sprite.y);
       rp.label.setPosition(rp.sprite.x, rp.sprite.y + 32).setDepth(rp.sprite.y + 1);
+      rp.readingBubble?.setPosition(rp.sprite.x, rp.sprite.y - 44).setDepth(rp.sprite.y + 2);
       const near = Math.abs(rp.sprite.x - rp.tx) < 1.5 && Math.abs(rp.sprite.y - rp.ty) < 1.5;
       const st = rp.moving && !near ? 'walk' : 'idle';
       rp.sprite.play(`${rp.texKey}_${st}_${rp.dir}`, true);

@@ -29,7 +29,17 @@ export default function VirtualSpacePage() {
   const gameRef = useRef<Phaser.Game | null>(null);
   const manifestRef = useRef<RoomManifest | null>(null);
   const nicknameRef = useRef<string>('익명');
+  const readingTitleRef = useRef<string | null>(null);
   const membersRef = useRef<{ userId: string; nickname: string; avatar: AvatarConfig }[]>([]);
+
+  const fetchReadingTitle = async (): Promise<string | null> => {
+    if (!user) return null;
+    const { data } = await supabase.from('profiles').select('reading_book_id').eq('id', user.id).maybeSingle();
+    const rbid = (data as { reading_book_id?: string | null } | null)?.reading_book_id;
+    if (!rbid) return null;
+    const { data: bk } = await supabase.from('books').select('title').eq('id', rbid).maybeSingle();
+    return (bk as { title?: string } | null)?.title ?? null;
+  };
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -46,7 +56,7 @@ export default function VirtualSpacePage() {
       },
       onOpenProfile: (uid: string) => setProfileUserId(uid),
       presence: user
-        ? { channelName, me: { userId: user.id, nickname: nicknameRef.current, avatar } }
+        ? { channelName, me: { userId: user.id, nickname: nicknameRef.current, avatar, readingTitle: readingTitleRef.current } }
         : undefined,
       members: isCommunity ? membersRef.current : undefined,
     });
@@ -110,6 +120,7 @@ export default function VirtualSpacePage() {
             avatar = normalizeAvatar(raw);
             const nick = (data as { nickname?: string } | null)?.nickname;
             if (nick) nicknameRef.current = nick;
+            readingTitleRef.current = await fetchReadingTitle();
             // 아직 캐릭터를 안 만든 유저 → 첫 입장 시 에디터를 먼저 띄운다
             if (data && (raw === null || raw === undefined) && !cancelled) setEditorOpen(true);
           } catch { /* 컬럼 미생성 시 기본값 */ }
@@ -178,7 +189,8 @@ export default function VirtualSpacePage() {
       <CharacterEditor
         isOpen={editorOpen}
         onClose={() => setEditorOpen(false)}
-        onSaved={(config) => {
+        onSaved={async (config) => {
+          readingTitleRef.current = await fetchReadingTitle();
           if (manifestRef.current) startScene(manifestRef.current, config);
         }}
       />
