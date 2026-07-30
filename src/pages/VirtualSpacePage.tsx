@@ -117,17 +117,25 @@ export default function VirtualSpacePage() {
       )}
 
       {/* CommunityBoard 루트는 h-full 컨테이너(부모를 채움)라, 캔버스 위에 뜨도록
-          fixed 전체화면 오버레이로 감싼다. boardOpen일 때만 렌더해 캔버스를 막지 않는다. */}
+          fixed 오버레이로 감싼다. 앱 기본 콘텐츠 폭(max-w-520)에 맞춰 중앙 폰 크기로 연다. */}
       {isCommunity && communityId && boardOpen && (
-        <div className="fixed inset-0 z-[60] bg-background">
-          <Suspense fallback={null}>
-            <CommunityBoard
-              isOpen
-              onClose={() => setBoardOpen(false)}
-              communityId={communityId}
-              communityName={communityName}
-            />
-          </Suspense>
+        <div
+          className="fixed inset-0 z-[60] bg-black/40 flex justify-center"
+          onClick={() => setBoardOpen(false)}
+        >
+          <div
+            className="w-full max-w-[520px] h-full bg-background shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Suspense fallback={null}>
+              <CommunityBoard
+                isOpen
+                onClose={() => setBoardOpen(false)}
+                communityId={communityId}
+                communityName={communityName}
+              />
+            </Suspense>
+          </div>
         </div>
       )}
     </div>
