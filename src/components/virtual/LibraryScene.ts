@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { type AvatarConfig, avatarLayerUrls, defaultAvatar } from '@/lib/avatar';
+import { type AvatarConfig, avatarLayers, defaultAvatar } from '@/lib/avatar';
 
 /**
  * 가상 도서관 씬.
@@ -38,8 +38,6 @@ const WALK_ROW = 1;
 // 방향 순서(행 안에서): 오른쪽·위·왼쪽·아래
 const DIR_ORDER = { right: 0, up: 1, left: 2, down: 3 } as const;
 type Dir = keyof typeof DIR_ORDER;
-// 합성 순서대로 레이어 텍스처 키 (몸→눈→옷→헤어)
-const LAYER_KEYS = ['av_body', 'av_eyes', 'av_outfit', 'av_hair'] as const;
 
 const SPEED = 130;
 
@@ -48,8 +46,9 @@ export class LibraryScene extends Phaser.Scene {
   private assetBase = '/assets/library';
   private onAction?: (action: string, name: string) => void;
   private avatar: AvatarConfig = defaultAvatar();
+  private layerKeys: string[] = [];                      // 이 아바타의 레이어 텍스처 키 (몸→…→액세서리)
   private player!: Phaser.Physics.Arcade.Sprite;         // 몸(물리 바디) — 나머지 레이어는 여기에 붙음
-  private layers: Phaser.GameObjects.Sprite[] = [];      // 눈·옷·헤어 (몸 위에 동기화)
+  private layers: Phaser.GameObjects.Sprite[] = [];      // 눈·옷·헤어·액세서리 (몸 위에 동기화)
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: Record<string, Phaser.Input.Keyboard.Key>;
   private facing: Dir = 'down';
@@ -75,12 +74,15 @@ export class LibraryScene extends Phaser.Scene {
     Object.keys(this.manifest.furniture_sizes).forEach((name) => {
       this.load.image(`f_${name}`, `${b}/furniture/${name}.png`);
     });
-    // 아바타 4레이어를 각각 스프라이트시트로 로드 (24열 × 2행, 32x64)
+    // 아바타 레이어(몸·눈·옷·헤어·액세서리)를 스프라이트시트로 로드 (24열 × 2행, 32x64)
     // 아바타가 바뀌어 씬을 재시작할 때 같은 키로 새 URL을 받으려면 기존 텍스처를 지운다.
-    const urls = avatarLayerUrls(this.avatar);
-    LAYER_KEYS.forEach((key, i) => {
+    const layers = avatarLayers(this.avatar);
+    this.layerKeys = layers.map((l) => l.key);
+    // 이전 액세서리 텍스처가 남아있을 수 있으니 정리
+    if (this.textures.exists('av_acc') && !this.layerKeys.includes('av_acc')) this.textures.remove('av_acc');
+    layers.forEach(({ key, url }) => {
       if (this.textures.exists(key)) this.textures.remove(key);
-      this.load.spritesheet(key, urls[i], { frameWidth: 32, frameHeight: 64 });
+      this.load.spritesheet(key, url, { frameWidth: 32, frameHeight: 64 });
     });
   }
 
@@ -88,6 +90,14 @@ export class LibraryScene extends Phaser.Scene {
     const T = this.manifest.tile;
     const W = this.manifest.cols * T;
     const H = this.manifest.rows * T;
+
+    // 예전에 저장된 아바타가 이제 없는 에셋(교체·삭제된 헤어/옷)을 가리킬 수 있다.
+    // 로드에 실패한 레이어는 건너뛰어 씬이 깨지지 않게 한다. (몸 텍스처가 없으면 기본 몸으로 대체)
+    this.layerKeys = this.layerKeys.filter((k) => this.textures.exists(k));
+    if (!this.textures.exists('av_body')) {
+      // 몸까지 실패한 극단적 경우 → 기본 몸을 즉시 로드해 깨짐 방지 (동기 불가하므로 최소한 필터 유지)
+      this.layerKeys = this.layerKeys.filter((k) => k !== 'av_body');
+    }
 
     // ---- 바닥 (타일 반복) ----
     this.add.tileSprite(0, 0, W, H, 'floor').setOrigin(0, 0).setDepth(-1000);
@@ -153,7 +163,7 @@ export class LibraryScene extends Phaser.Scene {
 
     // ---- 캐릭터 애니메이션 (레이어별로 동일 프레임 정의) ----
     // 씬 재시작 시 중복 생성되지 않도록 기존 것은 지우고 다시 만든다(텍스처가 바뀌었을 수 있음).
-    LAYER_KEYS.forEach((tex) => {
+    this.layerKeys.forEach((tex) => {
       (['down', 'up', 'left', 'right'] as Dir[]).forEach((dir) => {
         const walkKey = `${tex}_walk_${dir}`;
         const idleKey = `${tex}_idle_${dir}`;
@@ -180,8 +190,8 @@ export class LibraryScene extends Phaser.Scene {
     this.player.body!.setSize(18, 14);
     this.player.body!.setOffset(7, 46);
     this.physics.add.collider(this.player, solids);
-    // 눈·옷·헤어 레이어
-    this.layers = LAYER_KEYS.slice(1).map((tex) => {
+    // 눈·옷·헤어·액세서리 레이어
+    this.layers = this.layerKeys.slice(1).map((tex) => {
       const s = this.add.sprite(startX, startY, tex).setOrigin(0.5, 0.5);
       s.play(`${tex}_idle_down`);
       return s;
