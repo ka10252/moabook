@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, lazy, Suspense } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, LayoutList, UserRound } from 'lucide-react';
+import { ArrowLeft, Loader2, LayoutList, UserRound, Smile, Send } from 'lucide-react';
 import Phaser from 'phaser';
 import { LibraryScene, type RoomManifest } from '@/components/virtual/LibraryScene';
 import { CharacterEditor } from '@/components/virtual/CharacterEditor';
@@ -56,6 +56,17 @@ export default function VirtualSpacePage() {
   const [boardOpen, setBoardOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
+  const [chatText, setChatText] = useState('');
+  const [showEmotes, setShowEmotes] = useState(false);
+
+  const EMOTES = ['👍', '❤️', '😆', '👋', '📚', '✨'];
+  const sceneApi = () => gameRef.current?.scene.getScene('LibraryScene') as LibraryScene | undefined;
+  const sendChat = () => {
+    const t = chatText.trim();
+    if (!t) return;
+    sceneApi()?.sendBubble(t, false);
+    setChatText('');
+  };
   const [communityName, setCommunityName] = useState('');
   const [title, setTitle] = useState(isCommunity ? '버추얼 커뮤니티룸' : '버추얼 도서관');
 
@@ -147,12 +158,22 @@ export default function VirtualSpacePage() {
         {title}
       </div>
 
-      <button
-        onClick={() => setEditorOpen(true)}
-        className="absolute top-4 right-4 z-10 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 shadow-md text-sm font-medium text-gray-800 hover:bg-white"
-      >
-        <UserRound className="w-4 h-4" /> 캐릭터
-      </button>
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+        {isCommunity && (
+          <button
+            onClick={() => setBoardOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 shadow-md text-sm font-medium text-gray-800 hover:bg-white"
+          >
+            <LayoutList className="w-4 h-4" /> 게시판
+          </button>
+        )}
+        <button
+          onClick={() => setEditorOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 shadow-md text-sm font-medium text-gray-800 hover:bg-white"
+        >
+          <UserRound className="w-4 h-4" /> 캐릭터
+        </button>
+      </div>
 
       <CharacterEditor
         isOpen={editorOpen}
@@ -169,14 +190,45 @@ export default function VirtualSpacePage() {
       )}
 
 
-      {isCommunity && (
-        <button
-          onClick={() => setBoardOpen(true)}
-          className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-5 py-3 rounded-full bg-primary text-primary-foreground shadow-lg text-sm font-semibold active:scale-95 transition-transform"
-        >
-          <LayoutList className="w-4 h-4" />
-          게시판 열기
-        </button>
+      {/* 하단 채팅/이모트 바 (근접 대화·이모트 → 머리 위 말풍선) */}
+      {user && !loading && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 w-[calc(100%-2rem)] max-w-[460px]">
+          {showEmotes && (
+            <div className="absolute bottom-14 left-0 flex gap-1 bg-white/95 rounded-2xl shadow-lg p-2">
+              {EMOTES.map((e) => (
+                <button
+                  key={e}
+                  onClick={() => { sceneApi()?.sendBubble(e, true); setShowEmotes(false); }}
+                  className="text-xl w-9 h-9 rounded-lg hover:bg-gray-100 leading-none"
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+          )}
+          <button
+            onClick={() => setShowEmotes((v) => !v)}
+            className="shrink-0 w-11 h-11 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:bg-white"
+            aria-label="이모트"
+          >
+            <Smile className="w-5 h-5 text-gray-700" />
+          </button>
+          <input
+            value={chatText}
+            onChange={(e) => setChatText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') sendChat(); }}
+            placeholder="메시지 보내기…"
+            maxLength={60}
+            className="flex-1 h-11 px-4 rounded-full bg-white/95 shadow-md text-sm text-gray-800 outline-none focus:ring-2 focus:ring-primary/40"
+          />
+          <button
+            onClick={sendChat}
+            className="shrink-0 w-11 h-11 rounded-full bg-primary text-primary-foreground shadow-md flex items-center justify-center active:scale-95"
+            aria-label="전송"
+          >
+            <Send className="w-5 h-5" />
+          </button>
+        </div>
       )}
 
       {loading && !error && (

@@ -87,6 +87,7 @@ export class LibraryScene extends Phaser.Scene {
   private members: RoomMember[] = [];
   private offline = new Map<string, { sprite: Phaser.GameObjects.Sprite; label: Phaser.GameObjects.Text; zzz: Phaser.GameObjects.Text }>();
   private pendingOffline = new Set<string>();
+  private bubbles: { bubble: Phaser.GameObjects.Text; getPos: () => { x: number; y: number } | null; expire: number }[] = [];
   private lastBroadcast = 0;
   private lastSent = { x: 0, y: 0, dir: 'down' as Dir, moving: false };
 
@@ -332,9 +333,39 @@ export class LibraryScene extends Phaser.Scene {
     const { channelName, me } = this.presenceCfg!;
     this.channel = supabase.channel(channelName, { config: { presence: { key: me.userId } } });
     this.channel.on('presence', { event: 'sync' }, () => this.refreshRemotes());
+    this.channel.on('broadcast', { event: 'bubble' }, ({ payload }) => {
+      const p = payload as { from: string; kind: 'emote' | 'chat'; text: string };
+      if (p.from !== me.userId) this.showBubble(p.from, p.text, p.kind === 'emote');
+    });
     this.channel.subscribe((status) => {
       if (status === 'SUBSCRIBED') this.channel!.track(this.myState());
     });
+  }
+
+  /** userId의 현재 캐릭터 위치 (나/원격/오프라인) */
+  private charPos(userId: string): { x: number; y: number } | null {
+    if (this.presenceCfg && userId === this.presenceCfg.me.userId && this.player) return { x: this.player.x, y: this.player.y };
+    const r = this.remotes.get(userId); if (r) return { x: r.sprite.x, y: r.sprite.y };
+    const o = this.offline.get(userId); if (o) return { x: o.sprite.x, y: o.sprite.y };
+    return null;
+  }
+
+  /** 머리 위 말풍선 (이모트/채팅). 몇 초 뒤 사라지고 캐릭터를 따라다닌다. */
+  private showBubble(userId: string, text: string, isEmote: boolean) {
+    const pos = this.charPos(userId); if (!pos) return;
+    const bubble = this.add.text(pos.x, pos.y - 42, text, {
+      fontFamily: 'Galmuri11, monospace', fontSize: isEmote ? '22px' : '11px',
+      color: '#2c2621', backgroundColor: '#ffffffee', padding: { x: 6, y: 3 },
+      align: 'center', resolution: 2, wordWrap: { width: 130 },
+    }).setOrigin(0.5, 1).setDepth(100000);
+    this.bubbles.push({ bubble, getPos: () => this.charPos(userId), expire: this.time.now + 4000 });
+  }
+
+  /** React UI에서 호출: 채팅/이모트 전송 (브로드캐스트 + 내 머리 위에도 표시) */
+  sendBubble(text: string, isEmote: boolean) {
+    if (!this.channel || !this.presenceCfg) return;
+    this.channel.send({ type: 'broadcast', event: 'bubble', payload: { from: this.presenceCfg.me.userId, kind: isEmote ? 'emote' : 'chat', text } });
+    this.showBubble(this.presenceCfg.me.userId, text, isEmote);
   }
 
   /** presenceState를 읽어 원격 캐릭터를 추가/갱신/제거한다. */
@@ -418,10 +449,13 @@ export class LibraryScene extends Phaser.Scene {
     let vx = 0;
     let vy = 0;
 
-    const left = this.cursors.left.isDown || this.wasd.A.isDown;
-    const right = this.cursors.right.isDown || this.wasd.D.isDown;
-    const up = this.cursors.up.isDown || this.wasd.W.isDown;
-    const down = this.cursors.down.isDown || this.wasd.S.isDown;
+    // 채팅 입력창에 포커스가 있으면 WASD로 캐릭터가 움직이지 않게 한다
+    const ae = document.activeElement;
+    const typing = !!ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA');
+    const left = !typing && (this.cursors.left.isDown || this.wasd.A.isDown);
+    const right = !typing && (this.cursors.right.isDown || this.wasd.D.isDown);
+    const up = !typing && (this.cursors.up.isDown || this.wasd.W.isDown);
+    const down = !typing && (this.cursors.down.isDown || this.wasd.S.isDown);
     const keyboardActive = left || right || up || down;
 
     if (keyboardActive) {
@@ -477,6 +511,17 @@ export class LibraryScene extends Phaser.Scene {
       const near = Math.abs(rp.sprite.x - rp.tx) < 1.5 && Math.abs(rp.sprite.y - rp.ty) < 1.5;
       const st = rp.moving && !near ? 'walk' : 'idle';
       rp.sprite.play(`${rp.texKey}_${st}_${rp.dir}`, true);
+    }
+
+    // 말풍선: 캐릭터 따라다니기 + 만료 제거
+    if (this.bubbles.length) {
+      const now = this.time.now;
+      this.bubbles = this.bubbles.filter((b) => {
+        const p = b.getPos();
+        if (!p || now > b.expire) { b.bubble.destroy(); return false; }
+        b.bubble.setPosition(p.x, p.y - 42).setDepth(100000);
+        return true;
+      });
     }
   }
 }
