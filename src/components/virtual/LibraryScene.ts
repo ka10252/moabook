@@ -1,12 +1,14 @@
 import Phaser from 'phaser';
+import { type AvatarConfig, avatarLayerUrls, defaultAvatar } from '@/lib/avatar';
 
 /**
  * 가상 도서관 씬.
  * manifest.json(방 레이아웃)을 읽어 바닥·벽·가구를 배치하고,
  * 내 픽셀 캐릭터가 걸어다니게 한다 (이동 + 충돌 + 카메라 추적).
  *
- * 캐릭터 스프라이트시트: 32x64 프레임, 한 행 56프레임.
- * 행 1 = idle, 행 2 = walk. 각 행에서 방향별 6프레임(오른쪽/위/왼쪽/아래 순, 추정 → 스크린샷으로 보정).
+ * 캐릭터: 몸·눈·옷·헤어 4레이어를 겹쳐 그린다 (pixel_avatar).
+ * 잘라낸 레이어 시트: 32x64 프레임, 24열 × 2행(0=idle, 1=walk).
+ * 방향별 6프레임(오른쪽·위·왼쪽·아래 순).
  */
 
 export interface RoomManifest {
@@ -26,15 +28,18 @@ export interface SceneInitData {
   manifest: RoomManifest;
   assetBase?: string;
   onAction?: (action: string, name: string) => void;
+  avatar?: AvatarConfig;
 }
 
-const CHAR_COLS = 56;      // 시트 한 행의 프레임 수 (1792/32)
+const CHAR_COLS = 24;      // 잘라낸 아바타 시트 한 행의 프레임 수
 const PER_DIR = 6;         // 방향당 프레임 수
-const IDLE_ROW = 1;
-const WALK_ROW = 2;
+const IDLE_ROW = 0;
+const WALK_ROW = 1;
 // 방향 순서(행 안에서): 오른쪽·위·왼쪽·아래
 const DIR_ORDER = { right: 0, up: 1, left: 2, down: 3 } as const;
 type Dir = keyof typeof DIR_ORDER;
+// 합성 순서대로 레이어 텍스처 키 (몸→눈→옷→헤어)
+const LAYER_KEYS = ['av_body', 'av_eyes', 'av_outfit', 'av_hair'] as const;
 
 const SPEED = 130;
 
@@ -42,7 +47,9 @@ export class LibraryScene extends Phaser.Scene {
   private manifest!: RoomManifest;
   private assetBase = '/assets/library';
   private onAction?: (action: string, name: string) => void;
-  private player!: Phaser.Physics.Arcade.Sprite;
+  private avatar: AvatarConfig = defaultAvatar();
+  private player!: Phaser.Physics.Arcade.Sprite;         // 몸(물리 바디) — 나머지 레이어는 여기에 붙음
+  private layers: Phaser.GameObjects.Sprite[] = [];      // 눈·옷·헤어 (몸 위에 동기화)
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: Record<string, Phaser.Input.Keyboard.Key>;
   private facing: Dir = 'down';
@@ -56,6 +63,7 @@ export class LibraryScene extends Phaser.Scene {
     this.manifest = data.manifest;
     if (data.assetBase) this.assetBase = data.assetBase;
     this.onAction = data.onAction;
+    if (data.avatar) this.avatar = data.avatar;
   }
 
   preload() {
@@ -67,9 +75,12 @@ export class LibraryScene extends Phaser.Scene {
     Object.keys(this.manifest.furniture_sizes).forEach((name) => {
       this.load.image(`f_${name}`, `${b}/furniture/${name}.png`);
     });
-    this.load.spritesheet('char', `${b}/character/premade_01.png`, {
-      frameWidth: 32,
-      frameHeight: 64,
+    // 아바타 4레이어를 각각 스프라이트시트로 로드 (24열 × 2행, 32x64)
+    // 아바타가 바뀌어 씬을 재시작할 때 같은 키로 새 URL을 받으려면 기존 텍스처를 지운다.
+    const urls = avatarLayerUrls(this.avatar);
+    LAYER_KEYS.forEach((key, i) => {
+      if (this.textures.exists(key)) this.textures.remove(key);
+      this.load.spritesheet(key, urls[i], { frameWidth: 32, frameHeight: 64 });
     });
   }
 
@@ -140,27 +151,41 @@ export class LibraryScene extends Phaser.Scene {
       }
     });
 
-    // ---- 캐릭터 애니메이션 ----
-    const mkFrames = (row: number, dir: Dir, count = PER_DIR) => {
-      const base = row * CHAR_COLS + DIR_ORDER[dir] * PER_DIR;
-      return this.anims.generateFrameNumbers('char', { start: base, end: base + count - 1 });
-    };
-    (['down', 'up', 'left', 'right'] as Dir[]).forEach((dir) => {
-      this.anims.create({ key: `walk_${dir}`, frames: mkFrames(WALK_ROW, dir), frameRate: 8, repeat: -1 });
-      const idleBase = IDLE_ROW * CHAR_COLS + DIR_ORDER[dir] * PER_DIR;
-      this.anims.create({ key: `idle_${dir}`, frames: [{ key: 'char', frame: idleBase }], frameRate: 1 });
+    // ---- 캐릭터 애니메이션 (레이어별로 동일 프레임 정의) ----
+    // 씬 재시작 시 중복 생성되지 않도록 기존 것은 지우고 다시 만든다(텍스처가 바뀌었을 수 있음).
+    LAYER_KEYS.forEach((tex) => {
+      (['down', 'up', 'left', 'right'] as Dir[]).forEach((dir) => {
+        const walkKey = `${tex}_walk_${dir}`;
+        const idleKey = `${tex}_idle_${dir}`;
+        if (this.anims.exists(walkKey)) this.anims.remove(walkKey);
+        if (this.anims.exists(idleKey)) this.anims.remove(idleKey);
+        const walkBase = WALK_ROW * CHAR_COLS + DIR_ORDER[dir] * PER_DIR;
+        this.anims.create({
+          key: walkKey,
+          frames: this.anims.generateFrameNumbers(tex, { start: walkBase, end: walkBase + PER_DIR - 1 }),
+          frameRate: 8,
+          repeat: -1,
+        });
+        const idleFrame = IDLE_ROW * CHAR_COLS + DIR_ORDER[dir] * PER_DIR;
+        this.anims.create({ key: idleKey, frames: [{ key: tex, frame: idleFrame }], frameRate: 1 });
+      });
     });
 
-    // ---- 플레이어 ----
+    // ---- 플레이어 (몸=물리 바디, 나머지 레이어는 매 프레임 위치 동기화) ----
     const startX = 11 * T;
     const startY = 11 * T;
-    this.player = this.physics.add.sprite(startX, startY, 'char');
+    this.player = this.physics.add.sprite(startX, startY, 'av_body');
     this.player.setDepth(startY);
-    this.player.play('idle_down');
-    // 물리 바디 = 발 부분(작게)
+    this.player.play('av_body_idle_down');
     this.player.body!.setSize(18, 14);
     this.player.body!.setOffset(7, 46);
     this.physics.add.collider(this.player, solids);
+    // 눈·옷·헤어 레이어
+    this.layers = LAYER_KEYS.slice(1).map((tex) => {
+      const s = this.add.sprite(startX, startY, tex).setOrigin(0.5, 0.5);
+      s.play(`${tex}_idle_down`);
+      return s;
+    });
 
     // ---- 카메라 ----
     this.physics.world.setBounds(0, wallH * T, W, H - wallH * T);
@@ -223,13 +248,19 @@ export class LibraryScene extends Phaser.Scene {
 
     body.setVelocity(vx, vy);
 
-    if (vx !== 0 || vy !== 0) {
+    const moving = vx !== 0 || vy !== 0;
+    if (moving) {
       if (Math.abs(vx) > Math.abs(vy)) this.facing = vx < 0 ? 'left' : 'right';
       else this.facing = vy < 0 ? 'up' : 'down';
-      this.player.play(`walk_${this.facing}`, true);
-    } else {
-      this.player.play(`idle_${this.facing}`, true);
     }
+    const state = moving ? 'walk' : 'idle';
+    this.player.play(`av_body_${state}_${this.facing}`, true);
     this.player.setDepth(this.player.y);
+    // 눈·옷·헤어 레이어를 몸에 맞춰 위치·깊이·애니메이션 동기화
+    for (const s of this.layers) {
+      s.setPosition(this.player.x, this.player.y);
+      s.setDepth(this.player.y + 0.1);
+      s.play(`${s.texture.key}_${state}_${this.facing}`, true);
+    }
   }
 }

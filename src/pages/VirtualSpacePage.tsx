@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState, lazy, Suspense } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, LayoutList } from 'lucide-react';
+import { ArrowLeft, Loader2, LayoutList, UserRound } from 'lucide-react';
 import Phaser from 'phaser';
 import { LibraryScene, type RoomManifest } from '@/components/virtual/LibraryScene';
+import { CharacterEditor } from '@/components/virtual/CharacterEditor';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { type AvatarConfig, defaultAvatar, normalizeAvatar } from '@/lib/avatar';
 
 const CommunityBoard = lazy(() =>
   import('@/components/community/CommunityBoard').then((m) => ({ default: m.CommunityBoard }))
@@ -21,10 +24,24 @@ export default function VirtualSpacePage() {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
+  const manifestRef = useRef<RoomManifest | null>(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const startScene = (manifest: RoomManifest, avatar: AvatarConfig) => {
+    gameRef.current?.scene.start('LibraryScene', {
+      manifest,
+      assetBase,
+      avatar,
+      onAction: (action: string) => {
+        if (action === 'board') setBoardOpen(true);
+      },
+    });
+  };
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [boardOpen, setBoardOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
   const [communityName, setCommunityName] = useState('');
   const [title, setTitle] = useState(isCommunity ? '버추얼 커뮤니티룸' : '버추얼 도서관');
 
@@ -46,6 +63,16 @@ export default function VirtualSpacePage() {
         const res = await fetch(`${assetBase}/manifest.json`);
         if (!res.ok) throw new Error('manifest 로드 실패');
         const manifest: RoomManifest = await res.json();
+        manifestRef.current = manifest;
+
+        // 내 아바타 불러오기 (pixel_avatar 컬럼이 없으면 기본값)
+        let avatar = defaultAvatar();
+        if (user) {
+          try {
+            const { data } = await supabase.from('profiles').select('pixel_avatar').eq('id', user.id).maybeSingle();
+            avatar = normalizeAvatar((data as { pixel_avatar?: unknown } | null)?.pixel_avatar);
+          } catch { /* 컬럼 미생성 시 기본값 */ }
+        }
         if (cancelled || !containerRef.current) return;
 
         gameRef.current = new Phaser.Game({
@@ -59,13 +86,7 @@ export default function VirtualSpacePage() {
           scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
           scene: LibraryScene,
         });
-        gameRef.current.scene.start('LibraryScene', {
-          manifest,
-          assetBase,
-          onAction: (action: string) => {
-            if (action === 'board') setBoardOpen(true);
-          },
-        });
+        startScene(manifest, avatar);
         setLoading(false);
       } catch (e) {
         console.error(e);
@@ -78,7 +99,8 @@ export default function VirtualSpacePage() {
       gameRef.current?.destroy(true);
       gameRef.current = null;
     };
-  }, [assetBase, communityId, isCommunity]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assetBase, communityId, isCommunity, user]);
 
   return (
     <div className="fixed inset-0 bg-[#e9e2d0] overflow-hidden">
@@ -91,9 +113,25 @@ export default function VirtualSpacePage() {
         <ArrowLeft className="w-4 h-4" /> 나가기
       </button>
 
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 px-3 py-1.5 rounded-full bg-white/85 shadow-sm text-sm font-semibold text-gray-800 max-w-[60vw] truncate">
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 px-3 py-1.5 rounded-full bg-white/85 shadow-sm text-sm font-semibold text-gray-800 max-w-[45vw] truncate">
         {title}
       </div>
+
+      <button
+        onClick={() => setEditorOpen(true)}
+        className="absolute top-4 right-4 z-10 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 shadow-md text-sm font-medium text-gray-800 hover:bg-white"
+      >
+        <UserRound className="w-4 h-4" /> 캐릭터
+      </button>
+
+      <CharacterEditor
+        isOpen={editorOpen}
+        onClose={() => setEditorOpen(false)}
+        onSaved={(config) => {
+          if (manifestRef.current) startScene(manifestRef.current, config);
+        }}
+      />
+
 
       {isCommunity && (
         <button
