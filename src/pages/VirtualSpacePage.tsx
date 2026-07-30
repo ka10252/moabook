@@ -116,15 +116,19 @@ export default function VirtualSpacePage() {
         </div>
       )}
 
-      {isCommunity && communityId && (
-        <Suspense fallback={null}>
-          <CommunityBoard
-            isOpen={boardOpen}
-            onClose={() => setBoardOpen(false)}
-            communityId={communityId}
-            communityName={communityName}
-          />
-        </Suspense>
+      {/* CommunityBoard 루트는 h-full 컨테이너(부모를 채움)라, 캔버스 위에 뜨도록
+          fixed 전체화면 오버레이로 감싼다. boardOpen일 때만 렌더해 캔버스를 막지 않는다. */}
+      {isCommunity && communityId && boardOpen && (
+        <div className="fixed inset-0 z-[60] bg-background">
+          <Suspense fallback={null}>
+            <CommunityBoard
+              isOpen
+              onClose={() => setBoardOpen(false)}
+              communityId={communityId}
+              communityName={communityName}
+            />
+          </Suspense>
+        </div>
       )}
     </div>
   );
