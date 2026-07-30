@@ -25,8 +25,11 @@ export default function VirtualSpacePage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
   const manifestRef = useRef<RoomManifest | null>(null);
+  const nicknameRef = useRef<string>('익명');
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  const channelName = isCommunity ? `space:community:${communityId}` : 'space:global';
 
   const startScene = (manifest: RoomManifest, avatar: AvatarConfig) => {
     gameRef.current?.scene.start('LibraryScene', {
@@ -36,6 +39,9 @@ export default function VirtualSpacePage() {
       onAction: (action: string) => {
         if (action === 'board') setBoardOpen(true);
       },
+      presence: user
+        ? { channelName, me: { userId: user.id, nickname: nicknameRef.current, avatar } }
+        : undefined,
     });
   };
   const [error, setError] = useState<string | null>(null);
@@ -69,9 +75,11 @@ export default function VirtualSpacePage() {
         let avatar = defaultAvatar();
         if (user) {
           try {
-            const { data } = await supabase.from('profiles').select('pixel_avatar').eq('id', user.id).maybeSingle();
+            const { data } = await supabase.from('profiles').select('pixel_avatar, nickname').eq('id', user.id).maybeSingle();
             const raw = (data as { pixel_avatar?: unknown } | null)?.pixel_avatar;
             avatar = normalizeAvatar(raw);
+            const nick = (data as { nickname?: string } | null)?.nickname;
+            if (nick) nicknameRef.current = nick;
             // 아직 캐릭터를 안 만든 유저 → 첫 입장 시 에디터를 먼저 띄운다
             if (data && (raw === null || raw === undefined) && !cancelled) setEditorOpen(true);
           } catch { /* 컬럼 미생성 시 기본값 */ }

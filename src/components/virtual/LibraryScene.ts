@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
-import { type AvatarConfig, avatarLayers, defaultAvatar } from '@/lib/avatar';
+import type { RealtimeChannel } from '@supabase/supabase-js';
+import { type AvatarConfig, avatarLayers, defaultAvatar, loadImage } from '@/lib/avatar';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * 가상 도서관 씬.
@@ -24,11 +26,25 @@ export interface RoomManifest {
   furniture: { name: string; col: number; rowBottom: number; dx?: number; dy?: number; action?: string }[];
 }
 
+export interface PresenceConfig {
+  channelName: string;                 // 예: space:global, space:community:{id}
+  me: { userId: string; nickname: string; avatar: AvatarConfig };
+}
+
 export interface SceneInitData {
   manifest: RoomManifest;
   assetBase?: string;
   onAction?: (action: string, name: string) => void;
   avatar?: AvatarConfig;
+  presence?: PresenceConfig;
+}
+
+interface RemotePlayer {
+  sprite: Phaser.GameObjects.Sprite;
+  label: Phaser.GameObjects.Text;
+  texKey: string;
+  tx: number; ty: number;            // 목표 위치 (보간용)
+  dir: Dir; moving: boolean;
 }
 
 const CHAR_COLS = 24;      // 잘라낸 아바타 시트 한 행의 프레임 수
@@ -53,6 +69,13 @@ export class LibraryScene extends Phaser.Scene {
   private wasd!: Record<string, Phaser.Input.Keyboard.Key>;
   private facing: Dir = 'down';
   private moveTarget: Phaser.Math.Vector2 | null = null;
+  // 멀티플레이어(Presence)
+  private presenceCfg?: PresenceConfig;
+  private channel?: RealtimeChannel;
+  private remotes = new Map<string, RemotePlayer>();
+  private pendingRemotes = new Set<string>();
+  private lastBroadcast = 0;
+  private lastSent = { x: 0, y: 0, dir: 'down' as Dir, moving: false };
 
   constructor() {
     super('LibraryScene');
@@ -63,6 +86,10 @@ export class LibraryScene extends Phaser.Scene {
     if (data.assetBase) this.assetBase = data.assetBase;
     this.onAction = data.onAction;
     if (data.avatar) this.avatar = data.avatar;
+    this.presenceCfg = data.presence;
+    // 씬 재시작 시 상태 초기화
+    this.remotes = new Map();
+    this.pendingRemotes = new Set();
   }
 
   preload() {
@@ -225,6 +252,90 @@ export class LibraryScene extends Phaser.Scene {
       const wp = this.cameras.main.getWorldPoint(p.x, p.y);
       this.moveTarget = new Phaser.Math.Vector2(wp.x, wp.y);
     });
+
+    // ---- 멀티플레이어(Presence) ----
+    if (this.presenceCfg) this.setupPresence();
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      if (this.channel) { supabase.removeChannel(this.channel); this.channel = undefined; }
+    });
+  }
+
+  /** 아바타 config를 하나의 캔버스 텍스처로 합성하고 애니메이션을 준비한다 (원격 캐릭터용). */
+  private async ensureAvatarTexture(cfg: AvatarConfig): Promise<string> {
+    const key = `av:${cfg.body}_${cfg.eyes}_${cfg.hairShape}_${cfg.hairColor}_${cfg.outfitStyle}_${cfg.outfitColor}_${cfg.accessory}`;
+    if (this.textures.exists(key)) return key;
+    const imgs = (await Promise.all(avatarLayers(cfg).map((l) => loadImage(l.url).catch(() => null)))).filter(Boolean) as HTMLImageElement[];
+    if (this.textures.exists(key)) return key; // 동시 요청 방지
+    const canvas = document.createElement('canvas');
+    canvas.width = CHAR_COLS * 32; canvas.height = 2 * 64;
+    const ctx = canvas.getContext('2d')!;
+    ctx.imageSmoothingEnabled = false;
+    for (const im of imgs) ctx.drawImage(im, 0, 0);
+    const tex = this.textures.addCanvas(key, canvas)!;
+    let i = 0;
+    for (let r = 0; r < 2; r++) for (let c = 0; c < CHAR_COLS; c++) { tex.add(i, 0, c * 32, r * 64, 32, 64); i++; }
+    (['down', 'up', 'left', 'right'] as Dir[]).forEach((dir) => {
+      const walkBase = WALK_ROW * CHAR_COLS + DIR_ORDER[dir] * PER_DIR;
+      const idleBase = IDLE_ROW * CHAR_COLS + DIR_ORDER[dir] * PER_DIR;
+      if (!this.anims.exists(`${key}_walk_${dir}`)) {
+        this.anims.create({ key: `${key}_walk_${dir}`, frames: Array.from({ length: PER_DIR }, (_, f) => ({ key, frame: walkBase + f })), frameRate: 8, repeat: -1 });
+      }
+      if (!this.anims.exists(`${key}_idle_${dir}`)) {
+        this.anims.create({ key: `${key}_idle_${dir}`, frames: [{ key, frame: idleBase }], frameRate: 1 });
+      }
+    });
+    return key;
+  }
+
+  private myState() {
+    return {
+      userId: this.presenceCfg!.me.userId,
+      nickname: this.presenceCfg!.me.nickname,
+      avatar: this.presenceCfg!.me.avatar,
+      x: Math.round(this.player.x), y: Math.round(this.player.y),
+      dir: this.facing, moving: (this.player.body as Phaser.Physics.Arcade.Body).velocity.length() > 1,
+    };
+  }
+
+  private setupPresence() {
+    const { channelName, me } = this.presenceCfg!;
+    this.channel = supabase.channel(channelName, { config: { presence: { key: me.userId } } });
+    this.channel.on('presence', { event: 'sync' }, () => this.refreshRemotes());
+    this.channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') this.channel!.track(this.myState());
+    });
+  }
+
+  /** presenceState를 읽어 원격 캐릭터를 추가/갱신/제거한다. */
+  private refreshRemotes() {
+    if (!this.channel || !this.presenceCfg) return;
+    const state = this.channel.presenceState() as Record<string, Array<Record<string, unknown>>>;
+    const seen = new Set<string>();
+    for (const key of Object.keys(state)) {
+      const meta = state[key][0] as unknown as { userId: string; nickname: string; avatar: AvatarConfig; x: number; y: number; dir: Dir; moving: boolean };
+      if (!meta || meta.userId === this.presenceCfg.me.userId) continue;
+      seen.add(meta.userId);
+      const existing = this.remotes.get(meta.userId);
+      if (existing) {
+        existing.tx = meta.x; existing.ty = meta.y; existing.dir = meta.dir; existing.moving = meta.moving;
+      } else if (!this.pendingRemotes.has(meta.userId)) {
+        this.pendingRemotes.add(meta.userId);
+        this.ensureAvatarTexture(meta.avatar).then((texKey) => {
+          this.pendingRemotes.delete(meta.userId);
+          if (this.remotes.has(meta.userId)) return;
+          const sprite = this.add.sprite(meta.x, meta.y, texKey).setDepth(meta.y);
+          sprite.play(`${texKey}_idle_${meta.dir}`);
+          const label = this.add.text(meta.x, meta.y - 40, meta.nickname, {
+            fontSize: '10px', color: '#3a2d22', backgroundColor: '#ffffffcc', padding: { x: 3, y: 1 },
+          }).setOrigin(0.5, 1).setDepth(meta.y + 1);
+          this.remotes.set(meta.userId, { sprite, label, texKey, tx: meta.x, ty: meta.y, dir: meta.dir, moving: meta.moving });
+        });
+      }
+    }
+    // 나간 사람 제거
+    for (const [uid, rp] of this.remotes) {
+      if (!seen.has(uid)) { rp.sprite.destroy(); rp.label.destroy(); this.remotes.delete(uid); }
+    }
   }
 
   update() {
@@ -266,11 +377,31 @@ export class LibraryScene extends Phaser.Scene {
     const state = moving ? 'walk' : 'idle';
     this.player.play(`av_body_${state}_${this.facing}`, true);
     this.player.setDepth(this.player.y);
-    // 눈·옷·헤어 레이어를 몸에 맞춰 위치·깊이·애니메이션 동기화
+    // 눈·옷·헤어·액세서리 레이어를 몸에 맞춰 위치·깊이·애니메이션 동기화
     for (const s of this.layers) {
       s.setPosition(this.player.x, this.player.y);
       s.setDepth(this.player.y + 0.1);
       s.play(`${s.texture.key}_${state}_${this.facing}`, true);
+    }
+
+    // ---- 멀티플레이어: 내 위치 브로드캐스트(스로틀) + 원격 캐릭터 보간 ----
+    if (this.channel) {
+      const now = this.time.now;
+      const changed = moving || this.lastSent.moving || this.facing !== this.lastSent.dir;
+      if (now - this.lastBroadcast > 120 && changed) {
+        this.lastBroadcast = now;
+        this.lastSent = { x: this.player.x, y: this.player.y, dir: this.facing, moving };
+        this.channel.track(this.myState());
+      }
+    }
+    for (const rp of this.remotes.values()) {
+      rp.sprite.x = Phaser.Math.Linear(rp.sprite.x, rp.tx, 0.25);
+      rp.sprite.y = Phaser.Math.Linear(rp.sprite.y, rp.ty, 0.25);
+      rp.sprite.setDepth(rp.sprite.y);
+      rp.label.setPosition(rp.sprite.x, rp.sprite.y - 40).setDepth(rp.sprite.y + 1);
+      const near = Math.abs(rp.sprite.x - rp.tx) < 1.5 && Math.abs(rp.sprite.y - rp.ty) < 1.5;
+      const st = rp.moving && !near ? 'walk' : 'idle';
+      rp.sprite.play(`${rp.texKey}_${st}_${rp.dir}`, true);
     }
   }
 }
