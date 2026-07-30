@@ -54,6 +54,7 @@ const App = () => (
                   <Route path="/privacy" element={<PrivacyPage />} />
                   <Route path="/library" element={<LibraryPreview />} />
                   <Route path="/space" element={<VirtualSpacePage />} />
+                  <Route path="/space/community/:communityId" element={<VirtualSpacePage />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

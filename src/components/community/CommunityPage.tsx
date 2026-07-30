@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, LibraryBig, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -33,6 +34,7 @@ interface CommunityPageProps {
 
 export const CommunityPage = ({ onNavigateToBookshelf, onOpenBoard }: CommunityPageProps = {}) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [view, setView] = useState<View>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [communities, setCommunities] = useState<Community[]>([]);
@@ -184,6 +186,21 @@ export const CommunityPage = ({ onNavigateToBookshelf, onOpenBoard }: CommunityP
               {/* Scrollable Content */}
               <ScrollArea className="flex-1 min-h-0">
                 <div className="space-y-5 px-5 pb-24">
+                  {/* 가상 도서관 입장 — 모두를 위한 공개 공간 */}
+                  <button
+                    onClick={() => navigate('/space')}
+                    className="w-full flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-primary/15 to-primary/5 border border-primary/20 hover:from-primary/20 transition-colors text-left"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+                      <LibraryBig className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-sm text-foreground">🏛 가상 도서관 입장</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">캐릭터로 돌아다니며 이웃의 서재를 구경해요</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                  </button>
+
                   {/* My Communities */}
                   <MyCommunities
                     communities={myCommunities}

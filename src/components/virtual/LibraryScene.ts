@@ -17,9 +17,15 @@ export interface RoomManifest {
   wall_body: string;
   wall_base: string;
   wall_rows: number;
-  rug?: { img: string; x: number; y: number; maxTiles: [number, number] };
+  rug?: { img: string; x: number; y: number; maxTiles?: [number, number]; tiles?: [number, number] };
   furniture_sizes: Record<string, [number, number]>;
-  furniture: { name: string; col: number; rowBottom: number; dx?: number }[];
+  furniture: { name: string; col: number; rowBottom: number; dx?: number; dy?: number; action?: string }[];
+}
+
+export interface SceneInitData {
+  manifest: RoomManifest;
+  assetBase?: string;
+  onAction?: (action: string, name: string) => void;
 }
 
 const CHAR_COLS = 56;      // 시트 한 행의 프레임 수 (1792/32)
@@ -35,6 +41,7 @@ const SPEED = 130;
 export class LibraryScene extends Phaser.Scene {
   private manifest!: RoomManifest;
   private assetBase = '/assets/library';
+  private onAction?: (action: string, name: string) => void;
   private player!: Phaser.Physics.Arcade.Sprite;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: Record<string, Phaser.Input.Keyboard.Key>;
@@ -45,8 +52,10 @@ export class LibraryScene extends Phaser.Scene {
     super('LibraryScene');
   }
 
-  init(data: { manifest: RoomManifest }) {
+  init(data: SceneInitData) {
     this.manifest = data.manifest;
+    if (data.assetBase) this.assetBase = data.assetBase;
+    this.onAction = data.onAction;
   }
 
   preload() {
@@ -82,9 +91,18 @@ export class LibraryScene extends Phaser.Scene {
     // ---- 러그 ----
     if (this.manifest.rug) {
       const r = this.manifest.rug;
-      const tex = this.textures.get('rug').getSourceImage() as HTMLImageElement;
-      const rw = Math.min(tex.width, r.maxTiles[0] * T);
-      const rh = Math.min(tex.height, r.maxTiles[1] * T);
+      let rw: number;
+      let rh: number;
+      if (r.tiles) {
+        // 카펫 타일을 영역만큼 반복 (커뮤니티 방)
+        rw = r.tiles[0] * T;
+        rh = r.tiles[1] * T;
+      } else {
+        // 단일 러그 이미지 (도서관)
+        const tex = this.textures.get('rug').getSourceImage() as HTMLImageElement;
+        rw = Math.min(tex.width, (r.maxTiles?.[0] ?? 4) * T);
+        rh = Math.min(tex.height, (r.maxTiles?.[1] ?? 3) * T);
+      }
       this.add.tileSprite(r.x * T, r.y * T, rw, rh, 'rug').setOrigin(0, 0).setDepth(-800);
     }
 
@@ -95,15 +113,28 @@ export class LibraryScene extends Phaser.Scene {
     this.manifest.furniture.forEach((item) => {
       const [w, h] = this.manifest.furniture_sizes[item.name];
       const x = item.col * T + (item.dx ?? 0);
-      const y = (item.rowBottom + 1) * T;
+      const y = (item.rowBottom + 1) * T + (item.dy ?? 0);
       const img = this.add.image(x, y, `f_${item.name}`).setOrigin(0, 1);
       img.setDepth(y); // 아래에 있을수록 앞에 그려져 캐릭터와 겹침 처리
-      // 발밑 충돌 박스: 가구 하단 일부
-      const footH = Math.min(h * 0.4, 22);
-      const rect = this.add.rectangle(x + w / 2, y - footH / 2, w * 0.9, footH);
-      solids.add(rect);
-      (rect.body as Phaser.Physics.Arcade.StaticBody).updateFromGameObject();
-      rect.setVisible(false);
+
+      // 상호작용 가구(예: 게시판) → 클릭 시 액션 발생, 반짝이는 힌트
+      if (item.action) {
+        img.setInteractive({ useHandCursor: true });
+        img.setData('action', item.action);
+        img.on('pointerdown', () => this.onAction?.(item.action!, item.name));
+        // 눈에 띄도록 은은한 펄스
+        this.tweens.add({ targets: img, alpha: 0.75, duration: 900, yoyo: true, repeat: -1 });
+      } else {
+        // 발밑 충돌 박스 (상호작용 벽면 게시판/포스터는 벽쪽이라 충돌 불필요)
+        const isWallDecor = item.rowBottom < this.manifest.wall_rows;
+        if (!isWallDecor) {
+          const footH = Math.min(h * 0.4, 22);
+          const rect = this.add.rectangle(x + w / 2, y - footH / 2, w * 0.9, footH);
+          solids.add(rect);
+          (rect.body as Phaser.Physics.Arcade.StaticBody).updateFromGameObject();
+          rect.setVisible(false);
+        }
+      }
     });
 
     // ---- 캐릭터 애니메이션 ----
@@ -131,16 +162,28 @@ export class LibraryScene extends Phaser.Scene {
     // ---- 카메라 ----
     this.physics.world.setBounds(0, wallH * T, W, H - wallH * T);
     this.player.setCollideWorldBounds(true);
-    this.cameras.main.setBounds(0, 0, W, H);
-    this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
-    this.cameras.main.setZoom(2);
-    this.cameras.main.setBackgroundColor('#e9e2d0');
+    const cam = this.cameras.main;
+    const zoom = 2;
+    cam.setZoom(zoom);
+    cam.setBackgroundColor('#e9e2d0');
+    cam.startFollow(this.player, true, 0.1, 0.1);
+    // 방이 화면보다 좁으면 카메라를 방 가운데에 고정(좌측 쏠림/여백 방지),
+    // 넓으면 캐릭터를 따라가며 경계까지만.
+    const viewW = this.scale.width / zoom;
+    const viewH = this.scale.height / zoom;
+    if (W <= viewW && H <= viewH) {
+      cam.stopFollow();
+      cam.centerOn(W / 2, H / 2);
+    } else {
+      cam.setBounds(0, 0, W, H);
+    }
 
     // ---- 입력 ----
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as Record<string, Phaser.Input.Keyboard.Key>;
-    // 탭한 곳으로 걷기
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+    // 탭한 곳으로 걷기 (상호작용 가구를 탭한 경우는 이동하지 않음)
+    this.input.on('pointerdown', (p: Phaser.Input.Pointer, currentlyOver: Phaser.GameObjects.GameObject[]) => {
+      if (currentlyOver.some((o) => o.getData && o.getData('action'))) return;
       const wp = this.cameras.main.getWorldPoint(p.x, p.y);
       this.moveTarget = new Phaser.Math.Vector2(wp.x, wp.y);
     });

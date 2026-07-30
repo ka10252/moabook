@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Users, Crown, Trash2, UserMinus, Loader2, Pencil, BookOpen, Lock, LayoutList, Link2, Check, Bell } from 'lucide-react';
+import { X, Users, Crown, Trash2, UserMinus, Loader2, Pencil, BookOpen, Lock, LayoutList, Link2, Check, Bell, Home } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -67,6 +68,7 @@ export const CommunityDetailModal = ({
   onOpenBoard,
 }: CommunityDetailModalProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -382,6 +384,19 @@ export const CommunityDetailModal = ({
                     <Lock className="w-3 h-3 ml-1" />
                   )}
                 </Button>
+                {(isMember || isOwner) && (
+                  <Button
+                    onClick={() => {
+                      onClose();
+                      navigate(`/space/community/${community.id}`);
+                    }}
+                    className="w-full h-11 rounded-xl gap-2"
+                    variant="outline"
+                  >
+                    <Home className="w-4 h-4" />
+                    🏠 우리 방 (가상 공간)
+                  </Button>
+                )}
                 {(isMember || isOwner) && (
                   <Button
                     onClick={() => {

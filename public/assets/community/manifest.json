@@ -1,0 +1,205 @@
+{
+  "tile": 32,
+  "cols": 16,
+  "rows": 11,
+  "floor": "floor.png",
+  "wall_body": "wall_body.png",
+  "wall_base": "wall_base.png",
+  "wall_rows": 2,
+  "rug": {
+    "img": "rug.png",
+    "x": 3,
+    "y": 5,
+    "tiles": [
+      9,
+      5
+    ]
+  },
+  "furniture_sizes": {
+    "sofa": [
+      78,
+      76
+    ],
+    "low_table": [
+      32,
+      26
+    ],
+    "cushion_a": [
+      28,
+      28
+    ],
+    "cushion_b": [
+      28,
+      28
+    ],
+    "cushion_c": [
+      28,
+      28
+    ],
+    "bench": [
+      62,
+      32
+    ],
+    "floor_lamp": [
+      28,
+      68
+    ],
+    "plant_a": [
+      38,
+      64
+    ],
+    "palm": [
+      48,
+      63
+    ],
+    "plant_b": [
+      30,
+      48
+    ],
+    "snack_table": [
+      34,
+      46
+    ],
+    "low_shelf": [
+      193,
+      70
+    ],
+    "poster_a": [
+      28,
+      32
+    ],
+    "poster_b": [
+      28,
+      32
+    ],
+    "string_lights": [
+      56,
+      22
+    ],
+    "noticeboard": [
+      54,
+      28
+    ],
+    "chalkboard": [
+      58,
+      48
+    ]
+  },
+  "furniture": [
+    {
+      "name": "string_lights",
+      "col": 0,
+      "rowBottom": 0,
+      "dy": 6
+    },
+    {
+      "name": "string_lights",
+      "col": 3,
+      "rowBottom": 0,
+      "dy": 6
+    },
+    {
+      "name": "string_lights",
+      "col": 6,
+      "rowBottom": 0,
+      "dy": 6
+    },
+    {
+      "name": "string_lights",
+      "col": 9,
+      "rowBottom": 0,
+      "dy": 6
+    },
+    {
+      "name": "string_lights",
+      "col": 12,
+      "rowBottom": 0,
+      "dy": 6
+    },
+    {
+      "name": "poster_a",
+      "col": 1,
+      "rowBottom": 1
+    },
+    {
+      "name": "noticeboard",
+      "col": 7,
+      "rowBottom": 1,
+      "action": "board"
+    },
+    {
+      "name": "chalkboard",
+      "col": 11,
+      "rowBottom": 1
+    },
+    {
+      "name": "poster_b",
+      "col": 14,
+      "rowBottom": 1
+    },
+    {
+      "name": "low_shelf",
+      "col": 0,
+      "rowBottom": 4
+    },
+    {
+      "name": "sofa",
+      "col": 4,
+      "rowBottom": 7
+    },
+    {
+      "name": "low_table",
+      "col": 6,
+      "rowBottom": 8,
+      "dx": 6
+    },
+    {
+      "name": "cushion_a",
+      "col": 6,
+      "rowBottom": 9,
+      "dx": 4
+    },
+    {
+      "name": "cushion_b",
+      "col": 8,
+      "rowBottom": 8,
+      "dx": 2
+    },
+    {
+      "name": "cushion_c",
+      "col": 4,
+      "rowBottom": 9,
+      "dx": 6
+    },
+    {
+      "name": "bench",
+      "col": 9,
+      "rowBottom": 8
+    },
+    {
+      "name": "floor_lamp",
+      "col": 2,
+      "rowBottom": 8
+    },
+    {
+      "name": "plant_a",
+      "col": 0,
+      "rowBottom": 10
+    },
+    {
+      "name": "palm",
+      "col": 14,
+      "rowBottom": 10
+    },
+    {
+      "name": "plant_b",
+      "col": 13,
+      "rowBottom": 6
+    },
+    {
+      "name": "snack_table",
+      "col": 12,
+      "rowBottom": 9
+    }
+  ]
+}
