@@ -35,6 +35,7 @@ export interface SceneInitData {
   manifest: RoomManifest;
   assetBase?: string;
   onAction?: (action: string, name: string) => void;
+  onOpenProfile?: (userId: string) => void;
   avatar?: AvatarConfig;
   presence?: PresenceConfig;
 }
@@ -61,6 +62,7 @@ export class LibraryScene extends Phaser.Scene {
   private manifest!: RoomManifest;
   private assetBase = '/assets/library';
   private onAction?: (action: string, name: string) => void;
+  private onOpenProfile?: (userId: string) => void;
   private avatar: AvatarConfig = defaultAvatar();
   private layerKeys: string[] = [];                      // 이 아바타의 레이어 텍스처 키 (몸→…→액세서리)
   private player!: Phaser.Physics.Arcade.Sprite;         // 몸(물리 바디) — 나머지 레이어는 여기에 붙음
@@ -85,6 +87,7 @@ export class LibraryScene extends Phaser.Scene {
     this.manifest = data.manifest;
     if (data.assetBase) this.assetBase = data.assetBase;
     this.onAction = data.onAction;
+    this.onOpenProfile = data.onOpenProfile;
     if (data.avatar) this.avatar = data.avatar;
     this.presenceCfg = data.presence;
     // 씬 재시작 시 상태 초기화
@@ -248,7 +251,7 @@ export class LibraryScene extends Phaser.Scene {
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as Record<string, Phaser.Input.Keyboard.Key>;
     // 탭한 곳으로 걷기 (상호작용 가구를 탭한 경우는 이동하지 않음)
     this.input.on('pointerdown', (p: Phaser.Input.Pointer, currentlyOver: Phaser.GameObjects.GameObject[]) => {
-      if (currentlyOver.some((o) => o.getData && o.getData('action'))) return;
+      if (currentlyOver.some((o) => o.getData && (o.getData('action') || o.getData('remoteUser')))) return;
       const wp = this.cameras.main.getWorldPoint(p.x, p.y);
       this.moveTarget = new Phaser.Math.Vector2(wp.x, wp.y);
     });
@@ -325,6 +328,10 @@ export class LibraryScene extends Phaser.Scene {
           if (this.remotes.has(meta.userId)) return;
           const sprite = this.add.sprite(meta.x, meta.y, texKey).setDepth(meta.y);
           sprite.play(`${texKey}_idle_${meta.dir}`);
+          // 클릭 → 프로필 보기
+          sprite.setInteractive({ useHandCursor: true });
+          sprite.setData('remoteUser', meta.userId);
+          sprite.on('pointerdown', () => this.onOpenProfile?.(meta.userId));
           const label = this.add.text(meta.x, meta.y - 40, meta.nickname, {
             fontSize: '10px', color: '#3a2d22', backgroundColor: '#ffffffcc', padding: { x: 3, y: 1 },
           }).setOrigin(0.5, 1).setDepth(meta.y + 1);

@@ -11,6 +11,9 @@ import { type AvatarConfig, defaultAvatar, normalizeAvatar } from '@/lib/avatar'
 const CommunityBoard = lazy(() =>
   import('@/components/community/CommunityBoard').then((m) => ({ default: m.CommunityBoard }))
 );
+const MemberProfileModal = lazy(() =>
+  import('@/components/profile/MemberProfileModal').then((m) => ({ default: m.MemberProfileModal }))
+);
 
 /**
  * 가상 공간 페이지 (Phaser).
@@ -39,6 +42,7 @@ export default function VirtualSpacePage() {
       onAction: (action: string) => {
         if (action === 'board') setBoardOpen(true);
       },
+      onOpenProfile: (uid: string) => setProfileUserId(uid),
       presence: user
         ? { channelName, me: { userId: user.id, nickname: nicknameRef.current, avatar } }
         : undefined,
@@ -48,6 +52,7 @@ export default function VirtualSpacePage() {
   const [loading, setLoading] = useState(true);
   const [boardOpen, setBoardOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [communityName, setCommunityName] = useState('');
   const [title, setTitle] = useState(isCommunity ? '버추얼 커뮤니티룸' : '버추얼 도서관');
 
@@ -142,6 +147,12 @@ export default function VirtualSpacePage() {
           if (manifestRef.current) startScene(manifestRef.current, config);
         }}
       />
+
+      {profileUserId && (
+        <Suspense fallback={null}>
+          <MemberProfileModal isOpen={!!profileUserId} onClose={() => setProfileUserId(null)} userId={profileUserId} />
+        </Suspense>
+      )}
 
 
       {isCommunity && (
