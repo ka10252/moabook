@@ -119,11 +119,14 @@ export class LibraryScene extends Phaser.Scene {
 
       // 상호작용 가구(예: 게시판) → 클릭 시 액션 발생, 반짝이는 힌트
       if (item.action) {
-        img.setInteractive({ useHandCursor: true });
-        img.setData('action', item.action);
-        img.on('pointerdown', () => this.onAction?.(item.action!, item.name));
+        // 모바일에서 정확히 안 눌러도 되도록 넉넉한 탭 영역(Zone)을 얹는다
+        const zoneW = Math.max(w + T, T * 2);
+        const zoneH = Math.max(h + T, T * 2.5);
+        const zone = this.add.zone(x + w / 2, y - h / 2, zoneW, zoneH).setInteractive({ useHandCursor: true });
+        zone.setData('action', item.action);
+        zone.on('pointerdown', () => this.onAction?.(item.action!, item.name));
         // 눈에 띄도록 은은한 펄스
-        this.tweens.add({ targets: img, alpha: 0.75, duration: 900, yoyo: true, repeat: -1 });
+        this.tweens.add({ targets: img, alpha: 0.7, duration: 900, yoyo: true, repeat: -1 });
       } else {
         // 발밑 충돌 박스 (상호작용 벽면 게시판/포스터는 벽쪽이라 충돌 불필요)
         const isWallDecor = item.rowBottom < this.manifest.wall_rows;

@@ -394,7 +394,7 @@ export const CommunityDetailModal = ({
                     variant="outline"
                   >
                     <Home className="w-4 h-4" />
-                    🏠 우리 방 (가상 공간)
+                    버추얼 커뮤니티룸
                   </Button>
                 )}
                 {(isMember || isOwner) && (

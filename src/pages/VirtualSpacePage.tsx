@@ -26,7 +26,7 @@ export default function VirtualSpacePage() {
   const [loading, setLoading] = useState(true);
   const [boardOpen, setBoardOpen] = useState(false);
   const [communityName, setCommunityName] = useState('');
-  const [title, setTitle] = useState(isCommunity ? '우리 커뮤니티 방' : '가상 도서관');
+  const [title, setTitle] = useState(isCommunity ? '버추얼 커뮤니티룸' : '버추얼 도서관');
 
   useEffect(() => {
     let cancelled = false;
@@ -40,7 +40,7 @@ export default function VirtualSpacePage() {
             .maybeSingle();
           if (!cancelled && data?.name) {
             setCommunityName(data.name);
-            setTitle(`${data.name} 방`);
+            setTitle(`${data.name} · 버추얼 커뮤니티룸`);
           }
         }
         const res = await fetch(`${assetBase}/manifest.json`);
@@ -97,7 +97,7 @@ export default function VirtualSpacePage() {
 
       {isCommunity && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 px-3 py-1.5 rounded-full bg-black/55 text-white text-xs">
-          벽의 게시판을 탭하면 커뮤니티 게시판이 열려요
+벽의 게시판을 탭하면 커뮤니티 게시판이 열려요
         </div>
       )}
 
