@@ -51,7 +51,7 @@ async function fetchLikedBooks() {
       .select(`
         id, title, author, cover_url, condition, mode, price, description,
         is_public, community_id, owner_id, status, created_at, updated_at,
-        owner:profiles(id, nickname), community:communities(id, name)
+        profile:profiles!books_owner_id_fkey(nickname, avatar_url), community:communities(name)
       `)
       .in('id', bookIds);
     if (booksError) throw booksError;
