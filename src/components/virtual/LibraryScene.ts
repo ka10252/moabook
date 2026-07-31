@@ -92,6 +92,7 @@ export class LibraryScene extends Phaser.Scene {
   private playerLabel?: Phaser.GameObjects.Text;         // 내 이름표(하단)
   private playerReading?: Phaser.GameObjects.Container;  // 내 "지금 읽는 책" 말풍선(상단, 표지)
   private coverLoads = new Map<string, Promise<string | null>>();  // 표지 텍스처 로딩 캐시
+  private readingBubbles = new Set<Phaser.GameObjects.Container>();  // 읽는 책 말풍선(씬 레벨 클릭 판정)
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: Record<string, Phaser.Input.Keyboard.Key>;
   private facing: Dir = 'down';
@@ -126,6 +127,7 @@ export class LibraryScene extends Phaser.Scene {
     this.pendingRemotes = new Set();
     this.offline = new Map();
     this.pendingOffline = new Set();
+    this.readingBubbles = new Set();
   }
 
   preload() {
@@ -299,8 +301,19 @@ export class LibraryScene extends Phaser.Scene {
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as Record<string, Phaser.Input.Keyboard.Key>;
     // 탭한 곳으로 걷기 (상호작용 가구를 탭한 경우는 이동하지 않음)
     this.input.on('pointerdown', (p: Phaser.Input.Pointer, currentlyOver: Phaser.GameObjects.GameObject[]) => {
-      if (currentlyOver.some((o) => o.getData && (o.getData('action') || o.getData('remoteUser') || o.getData('reading')))) return;
+      if (currentlyOver.some((o) => o.getData && (o.getData('action') || o.getData('remoteUser')))) return;
       const wp = this.cameras.main.getWorldPoint(p.x, p.y);
+      // 읽는 책 말풍선(표지) 클릭 → 책 상세. 컨테이너 자식 입력이 불안정해 씬에서 직접 판정한다.
+      for (const c of this.readingBubbles) {
+        if (!c.active) continue;
+        const b = c.getData('hit') as { left: number; top: number; w: number; h: number } | undefined;
+        const book = c.getData('book') as ReadingBook | undefined;
+        if (!b || !book) continue;
+        if (wp.x >= c.x + b.left && wp.x <= c.x + b.left + b.w && wp.y >= c.y + b.top && wp.y <= c.y + b.top + b.h) {
+          this.onOpenReadingBook?.(book);
+          return;
+        }
+      }
       this.moveTarget = new Phaser.Math.Vector2(wp.x, wp.y);
     });
 
@@ -353,16 +366,19 @@ export class LibraryScene extends Phaser.Scene {
    */
   private makeReadingBubble(x: number, y: number, book: ReadingBook) {
     const c = this.add.container(x, y - 20).setDepth(y + 2);
+    // 클릭 판정은 씬 레벨에서 직접 한다(컨테이너 자식 입력이 불안정) → 책 정보를 컨테이너에 심어둔다
+    c.setData('book', book);
+    this.readingBubbles.add(c);
+    c.once('destroy', () => this.readingBubbles.delete(c));
+
     const t = book.title.length > 12 ? book.title.slice(0, 12) + '…' : book.title;
     const fallback = this.add.text(0, 0, `📖 ${t}`, {
       fontFamily: 'Galmuri11, monospace', fontSize: '10px',
       color: '#5a4a38', backgroundColor: '#fff7e6ee', padding: { x: 4, y: 2 }, resolution: 2,
     }).setOrigin(0.5, 1);
     c.add(fallback);
-
-    const openDetail = () => this.onOpenReadingBook?.(book);
-    // 텍스트 대체본도 클릭 가능하게(표지 없거나 로딩 중일 때)
-    fallback.setInteractive({ useHandCursor: true }).setData('reading', true).on('pointerdown', openDetail);
+    // 표지 로딩 전에도(또는 표지 없을 때) 텍스트 영역을 클릭 가능하게 대략의 히트 박스 등록
+    c.setData('hit', { left: -fallback.width / 2, top: -fallback.height, w: fallback.width, h: fallback.height });
 
     if (book.coverUrl) {
       this.loadCover(readingKey(book), book.coverUrl).then((key) => {
@@ -398,13 +414,11 @@ export class LibraryScene extends Phaser.Scene {
         // 고해상도(슈퍼샘플)로 만들고 논리 크기로 축소 표시 → pixelArt/줌에서도 모자이크 없이 또렷.
         const clipKey = this.roundedCover(key, w, H, r - p);
         const cover = this.add.image(0, top + bh / 2, clipKey).setOrigin(0.5).setDisplaySize(w, H);
-        // 클릭 타겟은 말풍선 전체를 덮는 Zone으로(축소된 이미지의 히트영역 문제 회피)
-        const hit = this.add.zone(0, top + bh / 2, bw, bh).setOrigin(0.5)
-          .setInteractive({ useHandCursor: true }).setData('reading', true);
-        hit.on('pointerdown', openDetail);
 
         fallback.destroy();
-        c.add([g, cover, hit]);
+        c.add([g, cover]);
+        // 표지가 뜬 뒤 정확한 히트 박스(말풍선 몸통)로 갱신 — 씬 pointerdown에서 이 영역을 검사한다
+        c.setData('hit', { left, top, w: bw, h: bh });
       });
     }
     return c;
