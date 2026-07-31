@@ -212,7 +212,7 @@ export class LibraryScene extends Phaser.Scene {
         // 눈에 띄도록 은은한 펄스
         this.tweens.add({ targets: img, alpha: 0.7, duration: 900, yoyo: true, repeat: -1 });
         // 무엇인지 알 수 있게 픽셀 폰트 라벨(게시판처럼) — 가구 위에 표시
-        const FURNITURE_LABELS: Record<string, string> = { shelf: '책장' };
+        const FURNITURE_LABELS: Record<string, string> = { shelf: '책장', board: '게시판' };
         const labelText = FURNITURE_LABELS[item.action];
         if (labelText) {
           this.add.text(x + w / 2, y - h - 3, labelText, {
@@ -504,34 +504,17 @@ export class LibraryScene extends Phaser.Scene {
       return true;
     });
 
-    // 불투명 픽셀 말풍선(둥근 사각형 + 아래 꼬리) 안에 텍스트를 넣는다.
-    // (반투명 텍스트배경은 위의 책표지 말풍선과 겹쳐 잘려 보였음)
-    const c = this.add.container(pos.x, pos.y - 56).setDepth(100001);
-    const label = this.add.text(0, 0, text, {
-      fontFamily: 'Galmuri11, monospace', fontSize: '8px', color: '#2c2621',
-      align: 'center', resolution: 3, lineSpacing: 3, wordWrap: { width: 120 },
+    // 불투명 흰 배경 텍스트 — 배경을 Phaser가 렌더 시 텍스트에 정확히 맞춰 그려서
+    // 수동 측정 불일치로 글자가 잘려 보이던 문제를 없앤다. 아래 꼬리는 작은 삼각형으로.
+    const c = this.add.container(pos.x, pos.y - 52).setDepth(100001);
+    const label = this.add.text(0, -5, text, {
+      fontFamily: 'Galmuri11, monospace', fontSize: '9px', color: '#2c2621',
+      backgroundColor: '#ffffff', padding: { x: 7, y: 5 },
+      align: 'center', resolution: 3, wordWrap: { width: 150 },
     }).setOrigin(0.5, 1);
-
-    const padX = 8, padY = 6, r = 7, tailW = 8, tailH = 7;
-    const bw = Math.ceil(label.width) + padX * 2;
-    const bh = Math.ceil(label.height) + padY * 2;
-    const bottom = -tailH, top = bottom - bh, left = -bw / 2;
-    const border = 0x2c2621;
-
     const g = this.add.graphics();
-    g.fillStyle(0xffffff, 1);                                        // 불투명 흰색
-    g.fillTriangle(-tailW / 2, bottom, tailW / 2, bottom, 0, 0);     // 꼬리
-    g.fillRoundedRect(left, top, bw, bh, r);                         // 몸통
-    g.lineStyle(1.5, border, 1);
-    g.strokeRoundedRect(left, top, bw, bh, r);
     g.fillStyle(0xffffff, 1);
-    g.fillRect(-tailW / 2 + 1, bottom - 1, tailW - 1, 2);            // 꼬리 연결부 테두리 지우기
-    g.lineStyle(1.5, border, 1);
-    g.beginPath();
-    g.moveTo(-tailW / 2, bottom); g.lineTo(0, 0); g.lineTo(tailW / 2, bottom);
-    g.strokePath();
-
-    label.setPosition(0, bottom - padY);   // 몸통 안에 세로 중앙 정렬(origin 0.5,1)
+    g.fillTriangle(-5, -5, 5, -5, 0, 1);   // 텍스트 박스 하단(y=-5)에서 캐릭터 쪽으로
     c.add([g, label]);
     this.bubbles.push({ bubble: c, userId, getPos: () => this.charPos(userId), expire: this.time.now + 4000 });
   }

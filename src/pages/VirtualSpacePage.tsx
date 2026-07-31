@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, Suspense } from 'react';
 import { lazyRetry } from '@/lib/lazyRetry';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, LayoutList, UserRound, Smile, Send } from 'lucide-react';
+import { ArrowLeft, Loader2, UserRound, Smile, Send } from 'lucide-react';
 import Phaser from 'phaser';
 import { LibraryScene, type RoomManifest, type ReadingBook } from '@/components/virtual/LibraryScene';
 import { CharacterEditor } from '@/components/virtual/CharacterEditor';
@@ -184,14 +184,7 @@ export default function VirtualSpacePage() {
       </div>
 
       <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
-        {isCommunity && (
-          <button
-            onClick={() => setBoardOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 shadow-md text-sm font-medium text-gray-800 hover:bg-white"
-          >
-            <LayoutList className="w-4 h-4" /> 게시판
-          </button>
-        )}
+        {/* 게시판 버튼 제거 — 방 안의 게시판 가구를 눌러 접근 */}
         <button
           onClick={() => setEditorOpen(true)}
           className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 shadow-md text-sm font-medium text-gray-800 hover:bg-white"

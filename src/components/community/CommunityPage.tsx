@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Plus, LibraryBig, ChevronRight } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -186,20 +186,8 @@ export const CommunityPage = ({ onNavigateToBookshelf, onOpenBoard }: CommunityP
               {/* Scrollable Content */}
               <ScrollArea className="flex-1 min-h-0">
                 <div className="space-y-5 px-5 pb-24">
-                  {/* 버추얼 도서관 입장 — 모두를 위한 공개 공간 */}
-                  <button
-                    onClick={() => navigate('/space')}
-                    className="group w-full flex items-center gap-3.5 p-4 rounded-2xl bg-primary text-primary-foreground shadow-sm hover:brightness-105 active:scale-[0.99] transition-all text-left"
-                  >
-                    <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-                      <LibraryBig className="w-[22px] h-[22px]" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-[15px] leading-tight">버추얼 도서관</p>
-                      <p className="text-xs text-primary-foreground/80 mt-1 leading-snug">캐릭터로 돌아다니며 이웃의 서재를 구경해요</p>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-primary-foreground/70 shrink-0 group-hover:translate-x-0.5 transition-transform" />
-                  </button>
+                  {/* 전역 버추얼 도서관 진입은 숨김 — 커뮤니티룸 중심으로 전환.
+                      (커뮤니티룸은 커뮤니티 상세에서 입장) 되돌리려면 이 버튼 복구. */}
 
                   {/* My Communities */}
                   <MyCommunities
