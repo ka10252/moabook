@@ -89,10 +89,15 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
     toast.success('메일을 다시 보냈어요');
   };
 
-  // 로그인/가입이 끝나면 둘러보던 홈으로 돌려보낸다
+  // 로그인/가입이 끝나면 원래 있던 화면으로 돌려보낸다 (딥링크 복귀).
+  // redirect 파라미터가 없으면 홈으로. 오픈 리다이렉트 방지를 위해 우리 앱 내부 경로만 허용한다.
   useEffect(() => {
-    if (user) navigate('/', { replace: true });
-  }, [user, navigate]);
+    if (!user) return;
+    const raw = searchParams.get('redirect');
+    // 반드시 '/'로 시작하고 '//'(외부 도메인)로는 시작하지 않아야 내부 경로다
+    const safe = raw && /^\/(?!\/)/.test(raw) ? raw : '/';
+    navigate(safe, { replace: true });
+  }, [user, navigate, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

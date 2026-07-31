@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, BookOpen, MessageCircle, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { useBackClose } from '@/hooks/useBackClose';
 
@@ -12,13 +12,18 @@ import { useBackClose } from '@/hooks/useBackClose';
 export const AuthPromptModal = () => {
   const { showAuthPrompt, promptReason, closeAuthPrompt } = useGuestGate();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // 뒤로가기로도 닫힌다
   useBackClose(showAuthPrompt, closeAuthPrompt);
 
   const goAuth = (mode: 'signup' | 'signin') => {
     closeAuthPrompt();
-    navigate(`/auth?mode=${mode}`);
+    // 텔레그램/알림 딥링크(?chat=1 등)로 들어와 로그인을 요구받은 경우,
+    // 지금 있던 화면을 기억해뒀다 로그인 후 그대로 돌려보낸다. (/auth 자신은 제외)
+    const here = location.pathname + location.search;
+    const redirect = location.pathname === '/auth' ? '' : `&redirect=${encodeURIComponent(here)}`;
+    navigate(`/auth?mode=${mode}${redirect}`);
   };
 
   return (
