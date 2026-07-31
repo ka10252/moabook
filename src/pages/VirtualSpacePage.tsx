@@ -99,26 +99,31 @@ export default function VirtualSpacePage() {
     (async () => {
       try {
         if (isCommunity && communityId) {
-          const { data } = await supabase
-            .from('communities')
-            .select('name')
-            .eq('id', communityId)
-            .maybeSingle();
-          if (!cancelled && data?.name) {
-            setCommunityName(data.name);
-            setTitle(`${data.name} · 버추얼 커뮤니티룸`);
+          // 커뮤니티 정보/멤버 조회 실패는 방 로딩을 막지 않는다(비필수). 실패해도 방은 뜬다.
+          try {
+            const { data } = await supabase
+              .from('communities')
+              .select('name')
+              .eq('id', communityId)
+              .maybeSingle();
+            if (!cancelled && data?.name) {
+              setCommunityName(data.name);
+              setTitle(`${data.name} · 버추얼 커뮤니티룸`);
+            }
+            // 멤버 전원(미접속자는 zzz로 방에 표시)
+            const { data: mem } = await supabase
+              .from('community_members')
+              .select('user_id, profile:profiles(nickname, pixel_avatar)')
+              .eq('community_id', communityId)
+              .eq('is_banned', false);
+            membersRef.current = ((mem ?? []) as Array<{ user_id: string; profile: { nickname?: string; pixel_avatar?: unknown } | null }>).map((r) => ({
+              userId: r.user_id,
+              nickname: r.profile?.nickname ?? '멤버',
+              avatar: normalizeAvatar(r.profile?.pixel_avatar),
+            }));
+          } catch (e) {
+            console.error('community info load failed (non-fatal):', e);
           }
-          // 멤버 전원(미접속자는 zzz로 방에 표시)
-          const { data: mem } = await supabase
-            .from('community_members')
-            .select('user_id, profile:profiles(nickname, pixel_avatar)')
-            .eq('community_id', communityId)
-            .eq('is_banned', false);
-          membersRef.current = ((mem ?? []) as Array<{ user_id: string; profile: { nickname?: string; pixel_avatar?: unknown } | null }>).map((r) => ({
-            userId: r.user_id,
-            nickname: r.profile?.nickname ?? '멤버',
-            avatar: normalizeAvatar(r.profile?.pixel_avatar),
-          }));
         }
         const res = await fetch(`${assetBase}/manifest.json`);
         if (!res.ok) throw new Error('manifest 로드 실패');

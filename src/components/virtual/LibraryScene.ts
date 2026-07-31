@@ -322,8 +322,12 @@ export class LibraryScene extends Phaser.Scene {
     // ---- 멀티플레이어(Presence) ----
     if (this.presenceCfg) this.setupPresence();
     this.refreshOffline(); // 커뮤니티룸: 멤버 전원 표시(미접속 zzz)
-    // 커뮤니티룸(게시판 가구가 있는 방)에만 사서 NPC 배치
-    if (this.manifest.furniture.some((f) => f.action === 'board')) this.spawnLibrarian();
+    // 커뮤니티룸(게시판 가구가 있는 방)에만 사서 NPC 배치 (실패해도 방은 정상 동작)
+    try {
+      if (this.manifest.furniture.some((f) => f.action === 'board')) this.spawnLibrarian();
+    } catch (e) {
+      console.error('librarian spawn failed (non-fatal):', e);
+    }
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       if (this.channel) { supabase.removeChannel(this.channel); this.channel = undefined; }
     });
