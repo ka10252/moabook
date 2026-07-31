@@ -177,10 +177,10 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
       ),
     },
 
-    // ⑤ 알림 — 코랄 카드로 강조. 메인=혜택+옵션 2개 / install=홈화면 추가 안내 / telegram=봇 연동 안내
+    // ⑤ 알림 — 코랄 카드로 강조. 항상 화면 중앙에 띄운다(카드가 커서 종 옆에 붙이면 잘림).
     {
       key: 'push',
-      target: pushView === 'main' ? '[data-onboarding="bell"]' : undefined,
+      target: undefined,
       render: () => {
         // ── 홈 화면 추가 안내 (iOS) : 흰 카드, 문장은 볼드 섞지 않고 기본체로 통일 ──
         if (pushView === 'install') {
@@ -267,25 +267,36 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
               아래 옵션 중 한 개는 설정하는 걸 추천해요
             </p>
 
-            {isPushSupported && !isBlocked ? (
+            {/* iOS는 권한 상태와 무관하게 "홈 화면에 추가"부터 안내한다(설치해야 푸시 가능) */}
+            {iosNeedsInstall ? (
               <button
                 onClick={handlePrimaryPush}
-                disabled={pushLoading || pushDone}
+                className="w-full h-11 rounded-full bg-white text-primary text-[13.5px] font-bold flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4" /> 홈 화면에 추가하고 알림 받기
+              </button>
+            ) : pushDone ? (
+              <button
+                disabled
+                className="w-full h-11 rounded-full bg-white text-primary text-[13.5px] font-bold flex items-center justify-center gap-2 opacity-70"
+              >
+                <Check className="w-4 h-4" /> 알림이 켜졌어요
+              </button>
+            ) : isBlocked ? (
+              <div className="w-full rounded-xl bg-white/15 p-3 text-[12px] text-primary-foreground leading-relaxed text-left">
+                브라우저에서 알림이 차단돼 있어요. 주소창 자물쇠 → 알림 → 허용으로 바꿔주세요.
+              </div>
+            ) : isPushSupported ? (
+              <button
+                onClick={handleEnablePush}
+                disabled={pushLoading}
                 className="w-full h-11 rounded-full bg-white text-primary text-[13.5px] font-bold flex items-center justify-center gap-2 disabled:opacity-70"
               >
-                {pushDone ? (
-                  <><Check className="w-4 h-4" /> 알림이 켜졌어요</>
-                ) : iosNeedsInstall ? (
-                  <><Plus className="w-4 h-4" /> 홈 화면에 추가하고 알림 받기</>
-                ) : (
-                  <><Bell className="w-4 h-4" /> 알림 허용하기</>
-                )}
+                <Bell className="w-4 h-4" /> 알림 허용하기
               </button>
             ) : (
               <div className="w-full rounded-xl bg-white/15 p-3 text-[12px] text-primary-foreground leading-relaxed text-left">
-                {isBlocked
-                  ? '브라우저에서 알림이 차단돼 있어요. 주소창 자물쇠 → 알림 → 허용으로 바꿔주세요.'
-                  : '이 브라우저는 알림을 지원하지 않아요. 아래 텔레그램으로 받아보세요.'}
+                이 브라우저는 알림을 지원하지 않아요. 아래 텔레그램으로 받아보세요.
               </div>
             )}
 
