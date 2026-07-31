@@ -1,5 +1,6 @@
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Bell, Check, Trash2, Loader2 } from 'lucide-react';
+import { X, Bell, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNotifications, Notification } from '@/hooks/useNotifications';
@@ -31,17 +32,29 @@ export const NotificationPopup = ({
   onOpenCommunity,
   onOpenAnnouncement,
 }: NotificationPopupProps) => {
-  const { notifications, loading, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
+  const { notifications, loading, markAllAsRead, deleteNotification } = useNotifications();
+
+  // 알림창을 열면(로딩 완료 후) 쌓인 알림을 자동으로 읽음 처리 → 헤더 배지 개수 0으로.
+  // 단, 방금까지 미확인이던 항목은 창이 열려 있는 동안 하이라이트를 유지해 "새 알림"을 알 수 있게 스냅샷한다.
+  const [justUnread, setJustUnread] = useState<Set<string>>(new Set());
+  const markedRef = useRef(false);
+  useEffect(() => {
+    if (!isOpen) { markedRef.current = false; return; }
+    if (loading || markedRef.current) return;
+    markedRef.current = true;
+    const unread = notifications.filter((n) => !n.is_read).map((n) => n.id);
+    if (unread.length) {
+      setJustUnread(new Set(unread));
+      markAllAsRead();
+    }
+  }, [isOpen, loading, notifications, markAllAsRead]);
 
   /**
    * 알림을 눌렀는데 아무 일도 안 일어나면, 유저는 다음부터 알림을 안 누른다.
    * 모든 알림은 "그래서 뭘 보라는 건데?"에 답하는 화면으로 이어져야 한다.
    */
   const handleNotificationClick = async (notification: Notification) => {
-    if (!notification.is_read) {
-      await markAsRead(notification.id);
-    }
-
+    // 읽음 처리는 창을 열 때 이미 일괄로 했다(위 useEffect). 여기선 이동만.
     // 연결표는 notificationRoutes.ts 한 곳에만 있다. 여기서 타입을 나열하기 시작하면
     // 새 알림이 추가될 때마다 한쪽만 고쳐지고 다른 쪽은 죽은 링크로 남는다.
     const route = routeFor(notification.type);
@@ -157,14 +170,14 @@ export const NotificationPopup = ({
                         animate={{ opacity: 1, x: 0 }}
                         className={cn(
                           "relative p-3 rounded-xl cursor-pointer transition-colors group",
-                          notification.is_read
+                          !justUnread.has(notification.id)
                             ? "bg-transparent hover:bg-muted/50"
                             : "bg-primary/5 hover:bg-primary/10"
                         )}
                         onClick={() => handleNotificationClick(notification)}
                       >
                         {/* Unread indicator */}
-                        {!notification.is_read && (
+                        {justUnread.has(notification.id) && (
                           <div className="absolute left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-primary rounded-full" />
                         )}
 

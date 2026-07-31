@@ -29,6 +29,30 @@
 
 ---
 
+## 최근 변경 (2026-07-31 세션)
+이번 세션 추가/수정 기능 요약. 상세는 각 P섹션 참고.
+
+### 가상공간(P2 #13) 인터랙션 보강 ✅
+- **이모트**: 흰 말풍선 → 캐릭터 주변 파티클(투명 배경).
+- **읽는 책 말풍선**: 표지를 만화 말풍선(둥근사각+꼬리)에 둥근 클립(누끼)로 채움. 표지는 4x 슈퍼샘플+LINEAR 필터로 모자이크 방지. 클릭 → ReadingBookModal(책 소개).
+  - **불변식**: 말풍선 클릭 판정은 **씬 레벨 pointerdown에서 직접** 한다(Phaser 컨테이너 자식 입력이 불안정). 컨테이너에 `book`+`hit`(월드 히트박스) 데이터를 심고 `readingBubbles` Set으로 추적, 파괴 시 제거. 컨테이너 자식 `setInteractive`로 되돌리면 클릭이 깨진다.
+- **읽는 책 지정**: 보유/대여 책 + **검색으로 아무 책이나**(useBookSearch). `profiles.reading_book` jsonb 스냅샷 `{id?,title,author,coverUrl,description}`. ⚠️ 마이그레이션 `20260731000002` 필요.
+- **오프라인 멤버 배치**: 고정 슬롯 → **방 바닥 영역 안 userId-해시 무작위**(화면 밖 이탈 수정, 깜빡임 없음).
+- **책장 라벨**: 커뮤니티룸 low_shelf 위 '책장' 픽셀 라벨. 이름표·라벨은 배경 없이 텍스트만.
+- **프로필 책 클릭 → 요청**: MemberProfileModal `onBookClick` → `/?tab=shelf&book=<id>`로 메인 앱 책 상세(요청·채팅 배선 재사용).
+
+### 알림 자동 읽음·동기화(#6) ✅
+- 알림창을 열면(로딩 후) **자동 일괄 읽음** → 헤더 배지 0. 창이 열린 동안엔 방금-미확인 항목 하이라이트 유지(스냅샷).
+- `useNotifications`의 `unreadCount`를 **목록에서 파생**(항상 일관) + realtime **UPDATE/DELETE 구독 추가** → 헤더 배지↔팝업 등 여러 인스턴스가 읽음/삭제를 즉시 공유.
+  - **불변식**: 인스턴스마다 별도 hook이라 크로스-인스턴스 동기화는 realtime UPDATE/DELETE에 의존 → 이 핸들러 제거 금지.
+
+### PWA 배포 안정성(#7 인접) ✅
+- `sw.ts`에 `skipWaiting`+`clientsClaim` → 홈스크린 PWA가 새 배포 즉시 반영.
+- 새 배포로 옛 청크 404 시 하얀 화면 방지: `lazyRetry`(1회 자동 새로고침)·`RouteErrorBoundary`·`vite:preloadError` 핸들러.
+- **로그인 후 딥링크 복귀**: AuthPromptModal→`redirect` 파라미터→AuthPage 복귀(내부 경로만 허용).
+
+---
+
 # P0 — 마비되면 서비스 정지
 
 ## 1. 회원가입 / 로그인 / 세션  ✅

@@ -22,14 +22,15 @@ export interface Notification {
 export const useNotifications = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  // 미확인 개수는 목록에서 파생한다 → 읽음/삭제/실시간 변경이 항상 배지에 즉시 반영된다.
   const [loading, setLoading] = useState(true);
   const channelIdRef = useRef(Math.random().toString(36).slice(2, 10));
+
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   const fetchNotifications = useCallback(async () => {
     if (!user) {
       setNotifications([]);
-      setUnreadCount(0);
       setLoading(false);
       return;
     }
@@ -47,7 +48,6 @@ export const useNotifications = () => {
 
       const items = (data || []) as Notification[];
       setNotifications(items);
-      setUnreadCount(items.filter(n => !n.is_read).length);
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
     } finally {
@@ -87,7 +87,6 @@ export const useNotifications = () => {
             if (prev.some(n => n.id === newNotification.id)) return prev;
             return [newNotification, ...prev];
           });
-          setUnreadCount(prev => prev + 1);
 
           if (document.hidden) {
             // 탭이 안 보일 때 — OS/브라우저 알림
@@ -108,6 +107,23 @@ export const useNotifications = () => {
           }
         }
       )
+      // 다른 인스턴스(헤더 배지↔알림 팝업)에서 읽음 처리하면 여기서도 반영 → 배지 개수 즉시 동기화
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const updated = payload.new as Notification;
+          setNotifications(prev => prev.map(n => (n.id === updated.id ? updated : n)));
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const removed = payload.old as { id?: string };
+          if (removed?.id) setNotifications(prev => prev.filter(n => n.id !== removed.id));
+        }
+      )
       .subscribe();
 
     return () => {
@@ -125,7 +141,6 @@ export const useNotifications = () => {
       setNotifications(prev =>
         prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
       );
-      setUnreadCount(prev => Math.max(0, prev - 1));
     }
   };
 
@@ -140,7 +155,6 @@ export const useNotifications = () => {
 
     if (!error) {
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-      setUnreadCount(0);
     }
   };
 
