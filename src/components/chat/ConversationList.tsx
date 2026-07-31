@@ -83,12 +83,12 @@ export const ConversationList = ({ conversations, loading, selectedId, onSelect 
                   {conv.other_user?.nickname || 'Unknown'}
                 </h3>
                 {conv.book && (
-                  <p className="text-[11px] text-primary/80 truncate mt-0.5 font-medium">
+                  <p className="text-[13px] text-primary/80 truncate mt-0.5 font-medium">
                     📖 {conv.book.title}
                   </p>
                 )}
               </div>
-              <span className="text-[11px] text-muted-foreground shrink-0 mt-0.5">
+              <span className="text-[13px] text-muted-foreground shrink-0 mt-0.5">
                 {formatDistanceToNow(new Date(conv.last_message_at), { addSuffix: false, locale: ko })}
               </span>
             </div>

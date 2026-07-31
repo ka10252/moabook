@@ -105,7 +105,7 @@ export const BookTitleSearch = ({
             value={title}
             onChange={(e) => onTitleChange(e.target.value)}
             onFocus={() => results.length > 0 && setIsOpen(true)}
-            className="pl-9 pr-9 h-11 text-[13px] bg-card border-border rounded-xl"
+            className="pl-9 pr-9 h-11 text-[15px] bg-card border-border rounded-xl"
           />
           {isSearching && (
             <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin" />
@@ -144,8 +144,8 @@ export const BookTitleSearch = ({
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground text-[13px] truncate">{book.title}</p>
-                      <p className="text-[12px] text-muted-foreground truncate">
+                      <p className="font-medium text-foreground text-[15px] truncate">{book.title}</p>
+                      <p className="text-[14px] text-muted-foreground truncate">
                         {book.author}
                         {book.firstPublishYear && ` · ${book.firstPublishYear}`}
                       </p>

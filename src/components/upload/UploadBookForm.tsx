@@ -206,7 +206,7 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
         {/* 제목 입력 = 검색. 결과를 고르면 저자·설명이 자동으로 채워지고,
             결과가 없으면 입력한 텍스트가 그대로 제목이 된다. */}
         <div className="space-y-2">
-          <p className="text-[10px] font-bold tracking-wide text-muted-foreground">책 제목</p>
+          <p className="text-[12px] font-bold tracking-wide text-muted-foreground">책 제목</p>
           <BookTitleSearch
             title={formData.title}
             onTitleChange={handleTitleChange}
@@ -214,11 +214,11 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
             matched={!!matched}
             matchedCover={matched?.cover}
           />
-          <p className="text-[11px] text-faint">
+          <p className="text-[13px] text-faint">
             입력하면 책을 검색해요. 목록에서 고르면 저자·설명이 자동으로 채워집니다.
           </p>
           {isFetchingDetails && (
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+            <p className="text-[13px] text-muted-foreground flex items-center gap-1">
               <Loader2 className="w-3 h-3 animate-spin" />
               책 정보를 가져오는 중…
             </p>
@@ -226,23 +226,23 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
         </div>
 
         <div className="space-y-2">
-          <p className="text-[10px] font-bold tracking-wide text-muted-foreground">저자</p>
+          <p className="text-[12px] font-bold tracking-wide text-muted-foreground">저자</p>
           <Input
             value={formData.author}
             onChange={(e) => setFormData((prev) => ({ ...prev, author: e.target.value }))}
             placeholder="저자 이름"
-            className="h-11 text-[13px] bg-card border-border rounded-xl"
+            className="h-11 text-[15px] bg-card border-border rounded-xl"
           />
         </div>
 
         <div className="space-y-2">
-          <p className="text-[10px] font-bold tracking-wide text-muted-foreground">설명 (선택)</p>
+          <p className="text-[12px] font-bold tracking-wide text-muted-foreground">설명 (선택)</p>
           <Textarea
             value={formData.description}
             onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
             placeholder="책에 대한 간단한 설명…"
             rows={3}
-            className="text-[13px] bg-card border-border rounded-xl resize-none"
+            className="text-[15px] bg-card border-border rounded-xl resize-none"
           />
         </div>
       </div>
@@ -270,7 +270,7 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
             exit={{ opacity: 0, height: 0 }}
             className="space-y-2 overflow-hidden"
           >
-            <p className="text-[10px] font-bold tracking-wide text-muted-foreground">판매 가격 ({CURRENCY})</p>
+            <p className="text-[12px] font-bold tracking-wide text-muted-foreground">판매 가격 ({CURRENCY})</p>
             <Input
               type="number"
               min="0"
@@ -278,7 +278,7 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
               value={formData.price}
               onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
               placeholder="0"
-              className="h-11 text-[13px] bg-card border-border rounded-xl"
+              className="h-11 text-[15px] bg-card border-border rounded-xl"
             />
           </motion.div>
         )}

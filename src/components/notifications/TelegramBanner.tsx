@@ -42,8 +42,8 @@ export function TelegramBanner() {
           <Send className="w-4 h-4 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-semibold text-foreground leading-tight">텔레그램으로 알림 받기</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">앱 알림을 못 봐도 대여 요청·반납 소식을 놓치지 마세요</p>
+          <p className="text-[15px] font-semibold text-foreground leading-tight">텔레그램으로 알림 받기</p>
+          <p className="text-[13px] text-muted-foreground mt-0.5">앱 알림을 못 봐도 대여 요청·반납 소식을 놓치지 마세요</p>
         </div>
         <button onClick={connect} className="shrink-0 px-3 h-9 rounded-xl bg-primary text-primary-foreground text-xs font-semibold">연동</button>
         <button onClick={dismiss} className="shrink-0 p-1.5 rounded-lg hover:bg-muted" aria-label="닫기">

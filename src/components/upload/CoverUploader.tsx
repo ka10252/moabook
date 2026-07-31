@@ -115,11 +115,11 @@ export const CoverUploader = ({
         )}
 
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-bold text-foreground flex items-center gap-1.5">
+          <p className="text-[15px] font-bold text-foreground flex items-center gap-1.5">
             {coverUrl ? '사진 등록 완료' : isUploading ? '업로드 중…' : '내 책 사진'}
             {!coverUrl && (
               <span
-                className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${
                   required ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
                 }`}
               >
@@ -127,7 +127,7 @@ export const CoverUploader = ({
               </span>
             )}
           </p>
-          <p className="text-[11px] text-faint mt-0.5">
+          <p className="text-[13px] text-faint mt-0.5">
             {coverUrl
               ? '탭하면 다른 사진으로 변경'
               : required
@@ -151,7 +151,7 @@ export const CoverUploader = ({
       </motion.button>
 
       {invalid && (
-        <p className="text-[11px] text-destructive">판매하려면 책 상태 사진을 올려주세요.</p>
+        <p className="text-[13px] text-destructive">판매하려면 책 상태 사진을 올려주세요.</p>
       )}
     </div>
   );

@@ -92,11 +92,11 @@ export const ReadingBookModal = ({ book, onClose }: ReadingBookModalProps) => {
                   <Loader2 className="w-3.5 h-3.5 animate-spin" /> 불러오는 중…
                 </div>
               ) : info.description ? (
-                <p className="text-[13px] text-foreground/80 leading-relaxed mt-3 max-h-40 overflow-y-auto whitespace-pre-wrap">
+                <p className="text-[15px] text-foreground/80 leading-relaxed mt-3 max-h-40 overflow-y-auto whitespace-pre-wrap">
                   {info.description}
                 </p>
               ) : (
-                <p className="text-[13px] text-muted-foreground mt-3">소개가 아직 없어요.</p>
+                <p className="text-[15px] text-muted-foreground mt-3">소개가 아직 없어요.</p>
               )}
             </div>
           </div>

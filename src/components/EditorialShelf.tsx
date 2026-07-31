@@ -16,7 +16,7 @@ interface EditorialShelfProps {
 export const EditorialShelf = ({ children, label }: EditorialShelfProps) => (
   <div>
     {label && (
-      <p className="font-display italic text-[15px] text-foreground mb-0.5">{label}</p>
+      <p className="font-display italic text-[16px] text-foreground mb-0.5">{label}</p>
     )}
 
     {/* 책이 서는 자리 — 아래 정렬(flex-end)이라 책마다 높이가 달라도 바닥이 맞는다 */}

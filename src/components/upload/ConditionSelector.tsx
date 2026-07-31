@@ -16,7 +16,7 @@ const conditions: { value: Condition; label: string; description: string }[] = [
 export const ConditionSelector = ({ value, onChange }: ConditionSelectorProps) => {
   return (
     <div className="space-y-2">
-      <p className="text-[10px] font-bold tracking-wide text-muted-foreground">상태</p>
+      <p className="text-[12px] font-bold tracking-wide text-muted-foreground">상태</p>
       <div className="flex gap-2">
         {conditions.map((condition) => {
           const isActive = value === condition.value;
@@ -40,7 +40,7 @@ export const ConditionSelector = ({ value, onChange }: ConditionSelectorProps) =
               </span>
               <span
                 className={cn(
-                  'block text-[9px] mt-1',
+                  'block text-[11px] mt-1',
                   isActive ? 'text-primary-foreground/85' : 'text-faint'
                 )}
               >

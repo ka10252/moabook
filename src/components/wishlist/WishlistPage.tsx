@@ -119,13 +119,13 @@ export const WishlistPage = () => {
             <h1 className="font-display text-[30px] font-medium leading-none tracking-tight text-foreground mt-1">
               위시리스트
             </h1>
-            <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">
+            <p className="text-[13px] text-muted-foreground mt-1.5 leading-relaxed">
               아직 책장에서 못 찾은, 읽고 싶은 책을 남기는 곳이에요.
             </p>
           </div>
           <button
             onClick={handleAddClick}
-            className="flex items-center gap-1.5 bg-primary text-primary-foreground text-[11px] font-bold px-3.5 py-2 rounded-full shrink-0"
+            className="flex items-center gap-1.5 bg-primary text-primary-foreground text-[13px] font-bold px-3.5 py-2 rounded-full shrink-0"
           >
             <Plus className="w-3.5 h-3.5" />책 추가
           </button>
@@ -151,7 +151,7 @@ export const WishlistPage = () => {
             <button
               key={key}
               onClick={() => setFilter(key)}
-              className={`flex-1 text-[11px] font-bold py-2 rounded-[9px] transition-colors ${
+              className={`flex-1 text-[13px] font-bold py-2 rounded-[9px] transition-colors ${
                 filter === key
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-muted text-muted-foreground'
@@ -177,7 +177,7 @@ export const WishlistPage = () => {
           <>
             {showMineSection && mine.length > 0 && (
               <section className="space-y-2">
-                <p className="text-[11px] font-semibold text-muted-foreground px-0.5 pt-2">내 요청</p>
+                <p className="text-[13px] font-semibold text-muted-foreground px-0.5 pt-2">내 요청</p>
                 {mine.map((item) => (
                   <WishlistCard
                     key={item.id}
@@ -203,7 +203,7 @@ export const WishlistPage = () => {
 
             {showOthersSection && (others.length > 0 || demoItems.length > 0) && (
               <section className="space-y-2">
-                <p className="text-[11px] font-semibold text-muted-foreground px-0.5 pt-2">
+                <p className="text-[13px] font-semibold text-muted-foreground px-0.5 pt-2">
                   이웃의 요청
                 </p>
                 {others.map((item) => (

@@ -232,7 +232,7 @@ export const BookDetailWithActions = ({
                       <span className="eyebrow">{MODE_EYEBROW[book.mode]}</span>
                       <span
                         className={cn(
-                          'text-[11px] font-semibold',
+                          'text-[13px] font-semibold',
                           book.status === 'available'
                             ? 'text-green-600 dark:text-green-500'
                             : book.status === 'rented'
@@ -263,7 +263,7 @@ export const BookDetailWithActions = ({
                   <span className="eyebrow">책 상태</span>
                   <span
                     className={cn(
-                      'text-[12px] font-bold',
+                      'text-[14px] font-bold',
                       cond.good ? 'text-green-600 dark:text-green-500' : 'text-amber-600 dark:text-amber-500'
                     )}
                   >
@@ -297,21 +297,21 @@ export const BookDetailWithActions = ({
                       {book.owner?.nickname?.charAt(0) || '?'}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-[13.5px] font-bold text-foreground truncate min-w-0">
+                  <span className="text-[15.5px] font-bold text-foreground truncate min-w-0">
                     {book.owner?.nickname || '알 수 없음'}
                   </span>
-                  <span className="text-[11px] text-muted-foreground shrink-0">님의 책장</span>
+                  <span className="text-[13px] text-muted-foreground shrink-0">님의 책장</span>
                   {book.community && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 bg-[#EFEAF6] text-[#6E5B9E]">
+                    <span className="px-2 py-0.5 rounded-full text-[12px] font-semibold shrink-0 bg-[#EFEAF6] text-[#6E5B9E]">
                       📚 {book.community.name}
                     </span>
                   )}
-                  <span className="ml-auto text-[11.5px] font-bold text-primary shrink-0">프로필 ›</span>
+                  <span className="ml-auto text-[13.5px] font-bold text-primary shrink-0">프로필 ›</span>
                 </button>
 
                 {/* 5. 소개 */}
                 {book.description && (
-                  <p className="text-[13px] leading-[1.6] text-muted-foreground mt-4">
+                  <p className="text-[15px] leading-[1.6] text-muted-foreground mt-4">
                     {truncateDescription(book.description)}
                   </p>
                 )}
@@ -333,7 +333,7 @@ export const BookDetailWithActions = ({
                             {sibling.owner?.nickname || '알 수 없음'}
                           </p>
                           <span
-                            className={`text-[11px] px-2 py-0.5 rounded-full font-semibold shrink-0 ${
+                            className={`text-[13px] px-2 py-0.5 rounded-full font-semibold shrink-0 ${
                               sibling.status === 'available'
                                 ? 'border border-primary text-primary'
                                 : 'bg-secondary text-secondary-foreground'
@@ -343,7 +343,7 @@ export const BookDetailWithActions = ({
                           </span>
                           {sibling.status === 'available' && currentUserId && sibling.owner_id !== currentUserId && (
                             <button
-                              className="text-[11px] px-2.5 py-1.5 rounded-full bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors shrink-0"
+                              className="text-[13px] px-2.5 py-1.5 rounded-full bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors shrink-0"
                               onClick={() => { onChat(sibling.owner_id, sibling.id, sibling.mode); onClose(); }}
                             >
                               요청

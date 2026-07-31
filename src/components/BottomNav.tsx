@@ -34,7 +34,7 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
               onClick={() => onTabChange(item.id)}
             >
               <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
-              <span className="text-[9px] font-medium">{item.label}</span>
+              <span className="text-[11px] font-medium">{item.label}</span>
             </button>
           );
         })}

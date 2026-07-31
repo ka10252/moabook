@@ -87,7 +87,7 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
             <br />
             한글책 구하기 어렵죠?
           </h2>
-          <p className="text-[13px] text-muted-foreground leading-relaxed">
+          <p className="text-[15px] text-muted-foreground leading-relaxed">
             MOA Book에서는 <b className="text-foreground">이웃의 책장</b>을 열어
             <br />
             서로 책을 빌려주고 나눠줄 수 있어요.
@@ -116,7 +116,7 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
             <StepRow n={4} title="직접 만나서 책 받기" accent />
           </ol>
 
-          <p className="text-[11px] text-muted-foreground leading-relaxed w-full">
+          <p className="text-[13px] text-muted-foreground leading-relaxed w-full">
             판매·구매를 원할 경우 <b className="text-foreground">PayNow · PayLah</b>로 직접
             거래하세요!
           </p>
@@ -138,12 +138,12 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
               책은 여기서 올려요
             </h2>
           </div>
-          <p className="text-[13px] text-muted-foreground leading-relaxed">
+          <p className="text-[15px] text-muted-foreground leading-relaxed">
             제목만 검색하면 표지·저자가 자동으로 채워져요.
             <br />
             대여할지 판매할지 고르고, 책 상태만 알려주면 끝.
           </p>
-          <p className="text-[11px] text-faint leading-relaxed">
+          <p className="text-[13px] text-faint leading-relaxed">
             판매하는 책은 상태를 확인할 수 있게 사진이 꼭 필요해요.
           </p>
         </>
@@ -222,7 +222,7 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
               <ol className="w-full space-y-2.5 text-left mt-1">
                 <li className="flex items-start gap-3">
                   <StepNum n={1} />
-                  <p className="text-[13px] text-foreground leading-relaxed">
+                  <p className="text-[15px] text-foreground leading-relaxed">
                     아래 링크로 MOA Book 봇을 열어요<br />
                     <a href={`https://t.me/${TELEGRAM_BOT}`} target="_blank" rel="noreferrer"
                        className="text-primary font-semibold underline underline-offset-2 break-all">
@@ -232,12 +232,12 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
                 </li>
                 <li className="flex items-start gap-3">
                   <StepNum n={2} hot />
-                  <p className="text-[13px] text-foreground leading-relaxed">
-                    대화창에 <span className="font-mono bg-foreground text-background rounded px-1.5 py-0.5 text-[12px]">/start</span> 입력하면 끝
+                  <p className="text-[15px] text-foreground leading-relaxed">
+                    대화창에 <span className="font-mono bg-foreground text-background rounded px-1.5 py-0.5 text-[14px]">/start</span> 입력하면 끝
                   </p>
                 </li>
               </ol>
-              <div className="w-full rounded-xl bg-primary/10 border border-primary/25 p-3 text-[12px] text-foreground font-medium leading-relaxed">
+              <div className="w-full rounded-xl bg-primary/10 border border-primary/25 p-3 text-[14px] text-foreground font-medium leading-relaxed">
                 봇이 "연결됐어요" 메시지를 보내면 완료예요.
               </div>
               <button
@@ -263,7 +263,7 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
               <CoralBenefit icon={<Clock className="w-3.5 h-3.5" />} text="빌린 책 반납일이 다가올 때" />
               <CoralBenefit icon={<MessageCircle className="w-3.5 h-3.5" />} text="채팅 메시지가 도착했을 때" />
             </ul>
-            <p className="text-[12px] font-bold text-primary-foreground/95 w-full text-left mt-1">
+            <p className="text-[14px] font-bold text-primary-foreground/95 w-full text-left mt-1">
               아래 옵션 중 한 개는 설정하는 걸 추천해요
             </p>
 
@@ -271,38 +271,38 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
             {iosNeedsInstall ? (
               <button
                 onClick={handlePrimaryPush}
-                className="w-full h-11 rounded-full bg-white text-primary text-[13.5px] font-bold flex items-center justify-center gap-2"
+                className="w-full h-11 rounded-full bg-white text-primary text-[15.5px] font-bold flex items-center justify-center gap-2"
               >
                 <Plus className="w-4 h-4" /> 홈 화면에 추가하고 알림 받기
               </button>
             ) : pushDone ? (
               <button
                 disabled
-                className="w-full h-11 rounded-full bg-white text-primary text-[13.5px] font-bold flex items-center justify-center gap-2 opacity-70"
+                className="w-full h-11 rounded-full bg-white text-primary text-[15.5px] font-bold flex items-center justify-center gap-2 opacity-70"
               >
                 <Check className="w-4 h-4" /> 알림이 켜졌어요
               </button>
             ) : isBlocked ? (
-              <div className="w-full rounded-xl bg-white/15 p-3 text-[12px] text-primary-foreground leading-relaxed text-left">
+              <div className="w-full rounded-xl bg-white/15 p-3 text-[14px] text-primary-foreground leading-relaxed text-left">
                 브라우저에서 알림이 차단돼 있어요. 주소창 자물쇠 → 알림 → 허용으로 바꿔주세요.
               </div>
             ) : isPushSupported ? (
               <button
                 onClick={handleEnablePush}
                 disabled={pushLoading}
-                className="w-full h-11 rounded-full bg-white text-primary text-[13.5px] font-bold flex items-center justify-center gap-2 disabled:opacity-70"
+                className="w-full h-11 rounded-full bg-white text-primary text-[15.5px] font-bold flex items-center justify-center gap-2 disabled:opacity-70"
               >
                 <Bell className="w-4 h-4" /> 알림 허용하기
               </button>
             ) : (
-              <div className="w-full rounded-xl bg-white/15 p-3 text-[12px] text-primary-foreground leading-relaxed text-left">
+              <div className="w-full rounded-xl bg-white/15 p-3 text-[14px] text-primary-foreground leading-relaxed text-left">
                 이 브라우저는 알림을 지원하지 않아요. 아래 텔레그램으로 받아보세요.
               </div>
             )}
 
             <button
               onClick={handleTelegram}
-              className="w-full h-11 rounded-full bg-white/16 border-[1.5px] border-white/50 text-primary-foreground text-[13.5px] font-bold flex items-center justify-center gap-2"
+              className="w-full h-11 rounded-full bg-white/16 border-[1.5px] border-white/50 text-primary-foreground text-[15.5px] font-bold flex items-center justify-center gap-2"
             >
               <Send className="w-4 h-4" /> 텔레그램으로 받기
             </button>
@@ -324,12 +324,12 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
             <br />
             열렸어요
           </h2>
-          <p className="text-[13px] text-muted-foreground leading-relaxed">
+          <p className="text-[15px] text-muted-foreground leading-relaxed">
             천천히 둘러보시고, 마음에 드는 책이 있으면
             <br />
             언제든 대여를 신청해보세요.
           </p>
-          <p className="text-[11px] text-faint leading-relaxed">
+          <p className="text-[13px] text-faint leading-relaxed">
             안 읽는 책이 생각나면 그때 올려주셔도 됩니다.
           </p>
         </>
@@ -520,7 +520,7 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
                 <Bell className="w-5 h-5 text-primary" />
               </div>
               <h3 className="font-display text-[18px] text-foreground mb-1.5">언제든 다시 켤 수 있어요</h3>
-              <p className="text-[13px] text-muted-foreground mb-4 leading-relaxed">
+              <p className="text-[15px] text-muted-foreground mb-4 leading-relaxed">
                 프로필 › 알림 설정에서 켜면 돼요
               </p>
               <Button
@@ -641,20 +641,20 @@ const Spine = ({
 const LegendRow = ({ swatch, title }: { swatch: ReactNode; title: string }) => (
   <div className="flex items-center gap-3">
     <div className="w-7 flex justify-center shrink-0">{swatch}</div>
-    <p className="text-[13px] font-bold text-foreground leading-tight text-left">{title}</p>
+    <p className="text-[15px] font-bold text-foreground leading-tight text-left">{title}</p>
   </div>
 );
 
 const StepRow = ({ n, title, accent }: { n: number; title: string; accent?: boolean }) => (
   <li className="flex items-center gap-3">
     <span
-      className={`w-6 h-6 shrink-0 rounded-full text-[11px] font-black flex items-center justify-center ${
+      className={`w-6 h-6 shrink-0 rounded-full text-[13px] font-black flex items-center justify-center ${
         accent ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
       }`}
     >
       {n}
     </span>
-    <span className={`text-[13px] text-foreground ${accent ? 'font-bold' : ''}`}>{title}</span>
+    <span className={`text-[15px] text-foreground ${accent ? 'font-bold' : ''}`}>{title}</span>
   </li>
 );
 
@@ -667,7 +667,7 @@ const BenefitRow = ({ text }: { text: string }) => (
 
 /** 코랄 카드용 혜택 행 (흰 아이콘 칩 + 흰 글자) */
 const CoralBenefit = ({ icon, text }: { icon: ReactNode; text: string }) => (
-  <li className="flex items-center gap-2.5 text-[13px] text-primary-foreground">
+  <li className="flex items-center gap-2.5 text-[15px] text-primary-foreground">
     <span className="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center shrink-0 text-primary-foreground">
       {icon}
     </span>
@@ -678,7 +678,7 @@ const CoralBenefit = ({ icon, text }: { icon: ReactNode; text: string }) => (
 /** 번호 칩 — 기본은 크림, 핵심 단계만 코랄 */
 const StepNum = ({ n, hot }: { n: number; hot?: boolean }) => (
   <span
-    className={`w-6 h-6 shrink-0 rounded-full text-[11px] font-black flex items-center justify-center ${
+    className={`w-6 h-6 shrink-0 rounded-full text-[13px] font-black flex items-center justify-center ${
       hot ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
     }`}
   >
@@ -690,7 +690,7 @@ const StepNum = ({ n, hot }: { n: number; hot?: boolean }) => (
 const InstallStep = ({ n, ko, en, hot }: { n: number; ko: string; en?: string; hot?: boolean }) => (
   <li className="flex items-start gap-3">
     <StepNum n={n} hot={hot} />
-    <p className="text-[13px] text-foreground leading-relaxed">
+    <p className="text-[15px] text-foreground leading-relaxed">
       {ko}
       {en && <span className="text-muted-foreground"> ({en})</span>}
     </p>
@@ -720,12 +720,12 @@ const BorrowDemo = () => (
       <div className="flex items-center gap-2">
         <div className="w-[22px] h-[30px] rounded-[2px] bg-book-2 shrink-0" />
         <div className="min-w-0">
-          <p className="font-display text-[12px] text-foreground leading-none truncate">데미안</p>
-          <p className="text-[9px] text-faint mt-0.5 truncate">헤르만 헤세 · 대여 가능</p>
+          <p className="font-display text-[14px] text-foreground leading-none truncate">데미안</p>
+          <p className="text-[11px] text-faint mt-0.5 truncate">헤르만 헤세 · 대여 가능</p>
         </div>
       </div>
       <div className="mt-2 h-[22px] rounded-[3px] bg-primary flex items-center justify-center">
-        <span className="text-[10px] font-bold text-primary-foreground">대여 신청</span>
+        <span className="text-[12px] font-bold text-primary-foreground">대여 신청</span>
       </div>
     </div>
   </div>
@@ -789,7 +789,7 @@ const DemoSpine = ({
       )}
 
       <span
-        className="font-display text-[9px] text-spine-text mt-3 whitespace-nowrap relative z-[3]"
+        className="font-display text-[11px] text-spine-text mt-3 whitespace-nowrap relative z-[3]"
         style={{ writingMode: 'vertical-rl', opacity: lentAway ? 0.5 : 1 }}
       >
         {title}
@@ -810,7 +810,7 @@ const DemoSpine = ({
           }}
         >
           <span
-            className="text-[7px] font-black"
+            className="text-[9px] font-black"
             style={{ color: ribbon === 'lent' ? 'rgba(255,235,180,.92)' : 'rgba(205,214,255,.9)' }}
           >
             {dday}
@@ -827,10 +827,10 @@ const DemoSpine = ({
             boxShadow: '0 3px 7px rgba(0,0,0,.28)',
           }}
         >
-          <span className="text-[7px] font-black text-white opacity-75">
+          <span className="text-[9px] font-black text-white opacity-75">
             {ribbon === 'lent' ? '↑' : '↓'}
           </span>
-          <span className="text-[7px] font-black text-white">{who}</span>
+          <span className="text-[9px] font-black text-white">{who}</span>
         </div>
         </>
       )}

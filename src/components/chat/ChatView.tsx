@@ -425,7 +425,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
 
             {/* Direction badge + arrow */}
             {conversationTransactions.length === 1 && (
-              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+              <span className={`text-[12px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
                 conversationTransactions[0].isMine
                   ? 'bg-bookmark-lent/20 text-bookmark-lent'
                   : 'bg-primary/10 text-primary'
@@ -565,7 +565,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
                     {isImage && (
                       <div className={`flex items-end gap-1 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
                         {isOwn && !msg.is_read && (
-                          <span className="text-[11px] font-bold text-primary leading-none mb-1 shrink-0">1</span>
+                          <span className="text-[13px] font-bold text-primary leading-none mb-1 shrink-0">1</span>
                         )}
                         <div className="flex flex-col gap-1">
                           <a href={parsed.displayText} target="_blank" rel="noopener noreferrer">
@@ -587,7 +587,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
                       <div className={`flex items-end gap-1 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
                         {/* KakaoTalk-style unread "1" */}
                         {isOwn && !msg.is_read && (
-                          <span className="text-[11px] font-bold text-primary leading-none mb-1 shrink-0">1</span>
+                          <span className="text-[13px] font-bold text-primary leading-none mb-1 shrink-0">1</span>
                         )}
                         <div
                           className={`px-4 py-2.5 rounded-2xl max-w-full ${
@@ -753,7 +753,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
                           <p className="text-xs text-muted-foreground mt-0.5 truncate">{book.author}</p>
                         </div>
                         {!isAvailable && (
-                          <span className="text-[10px] font-medium text-muted-foreground shrink-0 bg-muted px-2 py-0.5 rounded-full">
+                          <span className="text-[12px] font-medium text-muted-foreground shrink-0 bg-muted px-2 py-0.5 rounded-full">
                             {book.status === 'rented' ? '대여중' : '거래완료'}
                           </span>
                         )}

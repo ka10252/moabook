@@ -16,7 +16,7 @@ const MODES: { value: BookMode; hint: string }[] = [
 export const ModeToggle = ({ value, onChange }: ModeToggleProps) => {
   return (
     <div className="space-y-2">
-      <p className="text-[10px] font-bold tracking-wide text-muted-foreground">거래 방식</p>
+      <p className="text-[12px] font-bold tracking-wide text-muted-foreground">거래 방식</p>
       <div className="flex bg-muted rounded-[11px] p-[3px]">
         {MODES.map((mode) => {
           const isActive = value === mode.value;
@@ -40,7 +40,7 @@ export const ModeToggle = ({ value, onChange }: ModeToggleProps) => {
               </span>
               <span
                 className={cn(
-                  'block text-[9px] mt-0.5',
+                  'block text-[11px] mt-0.5',
                   isActive ? 'text-primary-foreground/85' : 'text-faint'
                 )}
               >

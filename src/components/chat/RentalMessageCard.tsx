@@ -199,7 +199,7 @@ export const RentalMessageCard = ({
             >
               반납 확인
             </Button>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-[12px] text-muted-foreground">
               반납받았으면 눌러주세요
             </span>
           </div>
@@ -216,7 +216,7 @@ export const RentalMessageCard = ({
             >
               반납 확인
             </Button>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-[12px] text-muted-foreground">
               반납받았으면 눌러주세요
             </span>
           </div>

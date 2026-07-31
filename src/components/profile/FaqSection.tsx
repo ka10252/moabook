@@ -3,7 +3,7 @@ import { ChevronDown, Search, Heart, Share } from 'lucide-react';
 
 /** 버튼/탭 이름은 볼드 대신 '박스 칩'으로 표시 */
 const Chip = ({ children }: { children: ReactNode }) => (
-  <span className="inline-flex items-center rounded-md border border-border bg-muted px-1.5 py-[1px] text-[11px] font-semibold text-foreground align-middle mx-0.5">
+  <span className="inline-flex items-center rounded-md border border-border bg-muted px-1.5 py-[1px] text-[13px] font-semibold text-foreground align-middle mx-0.5">
     {children}
   </span>
 );
@@ -132,12 +132,12 @@ export const FaqSection = () => {
               onClick={() => setOpen(isOpen ? null : i)}
               className="w-full flex items-center gap-2.5 text-left px-4 py-3.5"
             >
-              <span className="shrink-0 text-[12px] font-bold text-primary tabular-nums">Q{i + 1}.</span>
-              <span className="flex-1 text-[13px] font-bold text-foreground">{item.q}</span>
+              <span className="shrink-0 text-[14px] font-bold text-primary tabular-nums">Q{i + 1}.</span>
+              <span className="flex-1 text-[15px] font-bold text-foreground">{item.q}</span>
               <ChevronDown className={`w-4 h-4 text-faint shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </button>
             {isOpen && (
-              <div className="px-4 pb-4 -mt-1 text-[12.5px] text-muted-foreground leading-relaxed">
+              <div className="px-4 pb-4 -mt-1 text-[14.5px] text-muted-foreground leading-relaxed">
                 {item.a}
               </div>
             )}

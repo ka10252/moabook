@@ -67,12 +67,12 @@ export const UploadPage = ({ onUploaded }: UploadPageProps) => {
               <h2 className="font-display text-[21px] leading-tight text-foreground">
                 제목만 입력하면 끝!
               </h2>
-              <p className="text-[13px] text-muted-foreground leading-relaxed mt-2.5">
+              <p className="text-[15px] text-muted-foreground leading-relaxed mt-2.5">
                 책 <b className="text-foreground">제목</b>을 입력하고 잠깐 기다리면
                 <br />
                 표지·저자·소개가 <b className="text-foreground">자동으로</b> 채워져요.
               </p>
-              <div className="flex items-center justify-center gap-1.5 text-[12px] text-muted-foreground mt-3 mb-5">
+              <div className="flex items-center justify-center gap-1.5 text-[14px] text-muted-foreground mt-3 mb-5">
                 <Search className="w-3.5 h-3.5 text-primary" />
                 자동완성 목록에서 내 책을 고르면 됩니다
               </div>

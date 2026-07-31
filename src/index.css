@@ -157,9 +157,9 @@
   }
 
   /* 가독성 — 전체 폰트를 키운다. rem 기반이라 텍스트·간격이 비례 확대(줌 느낌)돼
-     레이아웃이 깨지지 않는다. %를 써서 브라우저 확대/접근성 설정도 존중한다. (기본 16px → 18.5px) */
+     레이아웃이 깨지지 않는다. %를 써서 브라우저 확대/접근성 설정도 존중한다. (기본 16px → 17.4px) */
   html {
-    font-size: 115.5%;
+    font-size: 108.5%;
   }
 
   body {
@@ -181,7 +181,7 @@
   }
   /* Section eyebrow / overline — VIRTUAL LIBRARY, BOOKSHELF */
   .eyebrow {
-    @apply text-[10px] font-bold uppercase;
+    @apply text-[12px] font-bold uppercase;
     color: hsl(var(--faint));
     letter-spacing: 0.3em;
   }
@@ -294,7 +294,7 @@
   /* ── Filter chip ───────────────────────────────────────
      책등과 같은 2px 라운드. 알약형이 아니다 — 에디토리얼 무드의 각진 톤. */
   .chip {
-    @apply shrink-0 whitespace-nowrap text-[11px] font-semibold px-3.5 py-[7px];
+    @apply shrink-0 whitespace-nowrap text-[13px] font-semibold px-3.5 py-[7px];
     @apply border border-border text-muted-foreground bg-transparent;
     @apply transition-colors hover:text-foreground hover:border-foreground/30;
     border-radius: 2px;
@@ -307,7 +307,7 @@
   /* ── Search input ──────────────────────────────────────
      박스가 아니라 밑줄 하나. 에디토리얼 무드에서 검색창은 종이에 그은 선처럼 보인다. */
   .input-search {
-    @apply w-full bg-transparent border-0 outline-none text-[13px] text-foreground p-0;
+    @apply w-full bg-transparent border-0 outline-none text-[15px] text-foreground p-0;
     @apply placeholder:text-[#9A9488];
   }
   .search-underline {

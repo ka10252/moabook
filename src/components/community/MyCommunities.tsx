@@ -51,13 +51,13 @@ export const MyCommunities = ({
   return (
     <>
       <section className="space-y-2">
-        <p className="font-display italic text-[15px] text-foreground px-0.5">내 커뮤니티</p>
+        <p className="font-display italic text-[16px] text-foreground px-0.5">내 커뮤니티</p>
 
         {communities.length === 0 ? (
           <div className="bg-muted/60 rounded-[14px] p-5 text-center">
             <Users className="w-8 h-8 text-faint mx-auto mb-2" />
             <p className="text-xs text-muted-foreground">아직 가입한 커뮤니티가 없습니다</p>
-            <p className="text-[11px] text-faint mt-1">아래에서 커뮤니티를 찾아보세요</p>
+            <p className="text-[13px] text-faint mt-1">아래에서 커뮤니티를 찾아보세요</p>
           </div>
         ) : (
           <AnimatePresence>
@@ -85,8 +85,8 @@ export const MyCommunities = ({
                 )}
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-bold text-foreground truncate">{community.name}</p>
-                  <p className="text-[10.5px] text-faint mt-0.5">
+                  <p className="text-[15px] font-bold text-foreground truncate">{community.name}</p>
+                  <p className="text-[12.5px] text-faint mt-0.5">
                     멤버 {community.member_count ?? 0}명
                   </p>
                 </div>

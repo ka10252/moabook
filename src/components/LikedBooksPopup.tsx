@@ -101,7 +101,7 @@ export const LikedBooksPopup = ({ isOpen, onClose, onBookClick }: LikedBooksPopu
                             <DefaultBookCover 
                               title={item.book?.title || ''} 
                               author={item.book?.author || ''} 
-                              className="w-full h-full text-[6px]"
+                              className="w-full h-full text-[8px]"
                             />
                           )}
                         </div>

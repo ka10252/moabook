@@ -64,28 +64,28 @@ export function TelegramSettings() {
   return (
     <div className="mt-3 rounded-[14px] border border-border bg-card p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[13px] font-bold text-foreground">
+        <div className="flex items-center gap-2 text-[15px] font-bold text-foreground">
           <Send className="w-4 h-4 text-primary" />
           텔레그램 알림
         </div>
         {linked && <Switch checked={optIn} onCheckedChange={toggle} />}
       </div>
-      <p className="text-[11px] text-muted-foreground">
+      <p className="text-[13px] text-muted-foreground">
         앱 알림을 못 받아도, 대여 요청·수락·반납 임박 같은 중요한 소식을 텔레그램으로 받아보세요.
       </p>
       {linked ? (
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-[12px] font-medium text-primary">
+          <div className="flex items-center gap-1.5 text-[14px] font-medium text-primary">
             <Check className="w-4 h-4" /> 연결됨 {optIn ? '' : '(알림 꺼짐)'}
           </div>
-          <button onClick={disconnect} className="text-[12px] text-muted-foreground underline underline-offset-2">
+          <button onClick={disconnect} className="text-[14px] text-muted-foreground underline underline-offset-2">
             연결 해제
           </button>
         </div>
       ) : (
         <button
           onClick={connect}
-          className="w-full h-10 rounded-xl bg-primary text-primary-foreground text-[13px] font-semibold flex items-center justify-center gap-1.5"
+          className="w-full h-10 rounded-xl bg-primary text-primary-foreground text-[15px] font-semibold flex items-center justify-center gap-1.5"
         >
           <Send className="w-4 h-4" /> 텔레그램으로 연동하기
         </button>

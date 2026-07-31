@@ -49,7 +49,7 @@ export const ExploreCommunities = ({
 
   return (
     <section className="space-y-1">
-      <p className="font-display italic text-[15px] text-foreground px-0.5 mb-2">탐색</p>
+      <p className="font-display italic text-[16px] text-foreground px-0.5 mb-2">탐색</p>
 
       {communities.map((community, index) => {
         const isJoined = joinedCommunityIds.has(community.id);
@@ -77,13 +77,13 @@ export const ExploreCommunities = ({
             )}
 
             <div className="flex-1 min-w-0">
-              <p className="text-[12.5px] font-semibold text-foreground truncate">{community.name}</p>
-              <p className="text-[10px] text-faint mt-0.5">멤버 {community.member_count ?? 0}명</p>
+              <p className="text-[14.5px] font-semibold text-foreground truncate">{community.name}</p>
+              <p className="text-[12px] text-faint mt-0.5">멤버 {community.member_count ?? 0}명</p>
             </div>
 
             <button
               onClick={() => (isJoined ? onEnter(community) : onJoin(community))}
-              className={`shrink-0 text-[11px] font-bold px-3 py-1.5 rounded-full transition-colors ${
+              className={`shrink-0 text-[13px] font-bold px-3 py-1.5 rounded-full transition-colors ${
                 isJoined
                   ? 'bg-primary text-primary-foreground'
                   : 'text-primary border border-primary hover:bg-primary/10'

@@ -311,24 +311,24 @@ export default function VirtualSpacePage() {
             className="relative mx-4 w-[min(84vw,320px)] bg-white border-2 border-[#3a2d22] shadow-[4px_4px_0_0_#3a2d22]"
             style={{ fontFamily: 'Galmuri11, monospace', imageRendering: 'pixelated' }}
           >
-            <div className="flex items-center gap-1.5 px-3 py-2 bg-[#F26A4B] text-white text-[13px] border-b-2 border-[#3a2d22]">
+            <div className="flex items-center gap-1.5 px-3 py-2 bg-[#F26A4B] text-white text-[15px] border-b-2 border-[#3a2d22]">
               <span>📖</span>
               <span>관리자의 안내</span>
-              <span className="ml-auto text-[11px] opacity-90">{(tourStep ?? 0) + 1} / {TOUR.length}</span>
+              <span className="ml-auto text-[13px] opacity-90">{(tourStep ?? 0) + 1} / {TOUR.length}</span>
             </div>
-            <p className="px-4 py-5 text-[13px] leading-6 text-[#2c2621] text-center whitespace-pre-line">
+            <p className="px-4 py-5 text-[15px] leading-6 text-[#2c2621] text-center whitespace-pre-line">
               {TOUR[tourStep]?.text}
             </p>
             <div className="flex border-t-2 border-[#3a2d22]">
               <button
                 onClick={endTour}
-                className="flex-1 py-2.5 text-[12px] text-[#6b5d50] border-r-2 border-[#3a2d22] active:bg-gray-100"
+                className="flex-1 py-2.5 text-[14px] text-[#6b5d50] border-r-2 border-[#3a2d22] active:bg-gray-100"
               >
                 닫기
               </button>
               <button
                 onClick={nextTour}
-                className="flex-1 py-2.5 text-[12px] font-semibold text-[#F26A4B] active:bg-[#fff0ec]"
+                className="flex-1 py-2.5 text-[14px] font-semibold text-[#F26A4B] active:bg-[#fff0ec]"
               >
                 {tourStep === TOUR.length - 1 ? '완료' : '다음 ▶'}
               </button>

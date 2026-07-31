@@ -68,12 +68,12 @@ function BookCard({ book }: { book: PostBook }) {
         <p className="text-sm font-semibold text-foreground truncate leading-tight">{book.title}</p>
         <p className="text-xs text-muted-foreground truncate mt-0.5">{book.author}</p>
         <div className="flex gap-1.5 mt-1.5">
-          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+          <span className={`text-[12px] px-1.5 py-0.5 rounded-full font-medium ${
             book.mode === 'rent' ? 'bg-primary/10 text-primary' : 'bg-accent/20 text-accent-foreground'
           }`}>
             {book.mode === 'rent' ? '대여' : '판매'}
           </span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
+          <span className="text-[12px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
             {book.condition === 'S' ? '새 책' : book.condition === 'A' ? '양호' : '보통'}
           </span>
         </div>
@@ -151,7 +151,7 @@ function PostItem({
                 {post.author?.nickname || '알 수 없음'}
               </span>
               <div className="flex items-center gap-1 shrink-0">
-                <span className="text-[11px] text-muted-foreground">{timeAgo(post.created_at)}</span>
+                <span className="text-[13px] text-muted-foreground">{timeAgo(post.created_at)}</span>
                 {post.author_id === currentUserId && (
                   <button
                     onClick={() => onDelete(post.id)}
@@ -200,7 +200,7 @@ function PostItem({
                   <div key={c.id} className="flex items-start gap-2">
                     <Avatar className="w-7 h-7 shrink-0">
                       <AvatarImage src={c.author?.avatar_url || undefined} />
-                      <AvatarFallback className="bg-secondary text-[10px]">
+                      <AvatarFallback className="bg-secondary text-[12px]">
                         {c.author?.nickname?.charAt(0) || '?'}
                       </AvatarFallback>
                     </Avatar>
@@ -210,7 +210,7 @@ function PostItem({
                           {c.author?.nickname || '알 수 없음'}
                         </span>
                         <div className="flex items-center gap-1 shrink-0">
-                          <span className="text-[10px] text-muted-foreground">{timeAgo(c.created_at)}</span>
+                          <span className="text-[12px] text-muted-foreground">{timeAgo(c.created_at)}</span>
                           {c.author_id === currentUserId && (
                             <button
                               onClick={() => handleDeleteComment(c.id)}
@@ -390,7 +390,7 @@ export const CommunityBoard = ({ isOpen, onClose, communityId, communityName }: 
               <ArrowLeft className="w-5 h-5 text-muted-foreground" />
             </button>
             <div>
-              <p className="text-[11px] text-muted-foreground uppercase tracking-widest leading-none">{communityName}</p>
+              <p className="text-[13px] text-muted-foreground uppercase tracking-widest leading-none">{communityName}</p>
               <h2 className="font-bold text-foreground text-base leading-tight">게시판</h2>
             </div>
           </header>

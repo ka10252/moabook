@@ -64,7 +64,7 @@ export const WishlistBookSearch = ({ onBookSelect, onManualEntry }: WishlistBook
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
         <Input
           type="text"
-          placeholder="Search for a book (Korean supported)..."
+          placeholder="책 제목을 검색하세요 (한글 지원)…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => results.length > 0 && setIsOpen(true)}
@@ -84,7 +84,7 @@ export const WishlistBookSearch = ({ onBookSelect, onManualEntry }: WishlistBook
         className="text-muted-foreground hover:text-foreground gap-2"
       >
         <PenLine className="w-4 h-4" />
-        Can't find it? Enter manually
+        찾는 책이 없나요? 직접 입력하기
       </Button>
 
       <AnimatePresence>

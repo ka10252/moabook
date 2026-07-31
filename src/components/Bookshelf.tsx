@@ -428,7 +428,7 @@ export const Bookshelf = ({
               {myCommunities.length > 0 && (
                 <>
                   <DropdownMenuSeparator />
-                  <div className="px-2 py-1.5 text-[10px] uppercase tracking-widest text-muted-foreground font-bold">내 커뮤니티</div>
+                  <div className="px-2 py-1.5 text-[12px] uppercase tracking-widest text-muted-foreground font-bold">내 커뮤니티</div>
                   {myCommunities.map(c => (
                     <DropdownMenuItem
                       key={c.id}
@@ -503,7 +503,7 @@ export const Bookshelf = ({
           >
             <SlidersHorizontal className="w-4 h-4" />
             {activeFilterCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[12px] font-bold flex items-center justify-center">
                 {activeFilterCount}
               </span>
             )}
@@ -674,7 +674,7 @@ export const Bookshelf = ({
                   <button
                     type="button"
                     onClick={() => setSelectedDistricts([])}
-                    className="text-[11px] text-muted-foreground underline underline-offset-2"
+                    className="text-[13px] text-muted-foreground underline underline-offset-2"
                   >
                     선택 해제 ({selectedDistricts.length})
                   </button>

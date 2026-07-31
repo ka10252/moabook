@@ -143,7 +143,7 @@ export const BookSpine = ({
           세로쓰기에서는 인라인 축이 세로라, text-overflow가 아래쪽 끝에 적용된다. */}
       <span
         title={book.title}
-        className="relative z-[3] mt-4 text-[12px] whitespace-nowrap overflow-hidden text-spine-text"
+        className="relative z-[3] mt-4 text-[14px] whitespace-nowrap overflow-hidden text-spine-text"
         style={{
           fontFamily: "'Noto Sans KR', sans-serif",
           fontWeight: 700,
@@ -184,7 +184,7 @@ export const BookSpine = ({
         >
           {/* D-day — 색이 아니라 텍스트로만 알린다 */}
           {dday && (
-            <span className="text-[8px] font-black leading-none" style={{ color: r.textColor }}>
+            <span className="text-[10px] font-black leading-none" style={{ color: r.textColor }}>
               {dday.label}
             </span>
           )}
@@ -194,7 +194,7 @@ export const BookSpine = ({
       {/* ── Name chip — 상시 노출 ─────────────────────────────── */}
       {hasBookmark && chipName && (
         <motion.div
-          className="absolute left-1/2 z-[6] pointer-events-none flex items-center gap-[3px] rounded-full whitespace-nowrap text-white text-[8px] font-extrabold"
+          className="absolute left-1/2 z-[6] pointer-events-none flex items-center gap-[3px] rounded-full whitespace-nowrap text-white text-[10px] font-extrabold"
           style={{
             top: -15,
             x: '-50%',
@@ -212,7 +212,7 @@ export const BookSpine = ({
 
       {/* ── Duplicate count badge ─────────────────────────────── */}
       {(duplicateCount ?? 1) > 1 && !isHovered && (
-        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 z-[6] px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none whitespace-nowrap pointer-events-none bg-white/85 text-foreground shadow-sm">
+        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 z-[6] px-1.5 py-0.5 rounded-full text-[11px] font-black leading-none whitespace-nowrap pointer-events-none bg-white/85 text-foreground shadow-sm">
           ×{duplicateCount}
         </div>
       )}

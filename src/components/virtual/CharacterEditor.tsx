@@ -338,7 +338,7 @@ export function CharacterEditor({ isOpen, onClose, onSaved }: CharacterEditorPro
                           )}
                           <div className="min-w-0">
                             <p className="text-xs font-medium text-foreground truncate">{r.title}</p>
-                            <p className="text-[11px] text-muted-foreground truncate">{r.author}</p>
+                            <p className="text-[13px] text-muted-foreground truncate">{r.author}</p>
                           </div>
                         </button>
                       ))

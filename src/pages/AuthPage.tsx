@@ -331,7 +331,11 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
                       <button
                         key={val}
                         type="button"
-                        onClick={() => setResidence(val)}
+                        onClick={() => {
+                          setResidence(val);
+                          // 싱가포르 미거주 → 바로 안내 팝업(제출까지 갈 필요 없이 즉시)
+                          if (val === 'no') setShowRegionBlock(true);
+                        }}
                         className={`h-12 rounded-xl text-sm font-medium border transition-colors ${
                           residence === val
                             ? 'bg-primary text-primary-foreground border-primary'
@@ -486,9 +490,10 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
                 <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
                   <AlertTriangle className="w-6 h-6 text-destructive" />
                 </div>
-                <h3 className="font-display text-xl font-medium text-foreground mb-2">서비스 이용 불가</h3>
+                <h3 className="font-display text-xl font-medium text-foreground mb-2">앗, 죄송해요</h3>
                 <p className="text-sm text-muted-foreground mb-6">
-                  죄송합니다. 아직 해당 지역에서는 서비스 이용이 준비되지 않았습니다.
+                  MOA는 아직 <b className="text-foreground">싱가포르</b>에서만 서비스하고 있어요.
+                  <br />서비스 지역이 넓어지면 꼭 다시 찾아주세요. 🙏
                 </p>
                 <Button
                   onClick={() => setShowRegionBlock(false)}
