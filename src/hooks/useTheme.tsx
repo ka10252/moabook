@@ -18,7 +18,8 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
     const stored = localStorage.getItem('moa-theme') as Theme | null;
     if (stored === 'dark' || stored === 'light') return stored;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    // 첫 진입 기본값은 라이트 모드(차분한 밝은 톤). 사용자가 직접 다크로 바꾸면 그 선택을 유지.
+    return 'light';
   });
 
   useEffect(() => {
