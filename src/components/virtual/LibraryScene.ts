@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import { type AvatarConfig, avatarLayers, defaultAvatar, loadImage, NO_ACCESSORY } from '@/lib/avatar';
+import { type AvatarConfig, avatarLayers, defaultAvatar, loadImage } from '@/lib/avatar';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -156,6 +156,25 @@ export class LibraryScene extends Phaser.Scene {
     layers.forEach(({ key, url }) => {
       if (this.textures.exists(key)) this.textures.remove(key);
       this.load.spritesheet(key, url, { frameWidth: 32, frameHeight: 64 });
+    });
+    // 사서(관리자) NPC — 유저가 만들 수 없는 전용 스킨(원본 캐릭터 팩에서 사전 합성한 정적 시트).
+    // 게시판이 있는 방(커뮤니티룸)에만 등장하므로 그 경우에만 로드한다.
+    if (this.manifest.furniture.some((f) => f.action === 'board') && !this.textures.exists('npc_librarian')) {
+      this.load.spritesheet('npc_librarian', `${b}/character/librarian.png`, { frameWidth: 32, frameHeight: 64 });
+    }
+  }
+
+  /** 단일 캐릭터 스프라이트시트(24×2 레이아웃)에 idle/walk 애니메이션 4방향을 만든다. */
+  private createCharAnims(key: string) {
+    (['down', 'up', 'left', 'right'] as Dir[]).forEach((dir) => {
+      const walkBase = WALK_ROW * CHAR_COLS + DIR_ORDER[dir] * PER_DIR;
+      const idleBase = IDLE_ROW * CHAR_COLS + DIR_ORDER[dir] * PER_DIR;
+      if (!this.anims.exists(`${key}_walk_${dir}`)) {
+        this.anims.create({ key: `${key}_walk_${dir}`, frames: this.anims.generateFrameNumbers(key, { start: walkBase, end: walkBase + PER_DIR - 1 }), frameRate: 8, repeat: -1 });
+      }
+      if (!this.anims.exists(`${key}_idle_${dir}`)) {
+        this.anims.create({ key: `${key}_idle_${dir}`, frames: [{ key, frame: idleBase }], frameRate: 1 });
+      }
     });
   }
 
@@ -665,9 +684,6 @@ export class LibraryScene extends Phaser.Scene {
   // 안내 문구/단계 팝업은 React(VirtualSpacePage)가 화면 중앙에 그린다(상단 UI에 안 가리게).
   // Phaser는 사서 배치 + 안내 시작 콜백 + 가구 하이라이트만 담당.
   private static LIBRARIAN_TOUR_KEY = 'moa_room_tour_seen';
-  private static LIBRARIAN_AVATAR: AvatarConfig = {
-    body: '05', eyes: '01', hairShape: '03', hairColor: '01', outfitStyle: '09', outfitColor: '01', accessory: NO_ACCESSORY,
-  };
 
   private spawnLibrarian() {
     const T = this.manifest.tile;
@@ -677,21 +693,22 @@ export class LibraryScene extends Phaser.Scene {
     const x = Math.round(midCol * T);
     // 벽(게시판·블랙보드) 바로 아래에 딱 붙인다
     const y = Math.round(this.manifest.wall_rows * T + T * 0.45);
-    this.ensureAvatarTexture(LibraryScene.LIBRARIAN_AVATAR).then((texKey) => {
-      if (!this.scene || this.librarianSprite) return;
-      const s = this.add.sprite(x, y, texKey).setDepth(y);
-      s.play(`${texKey}_idle_down`);
-      s.setInteractive({ useHandCursor: true }).setData('npc', true);
-      s.on('pointerdown', () => this.onTourStart?.());
-      this.librarianSprite = s;
-      this.add.text(x, y + 30, '📖 관리자', {
-        fontFamily: 'Galmuri11, monospace', fontSize: '9px', color: '#3a2d22', resolution: 3,
-      }).setOrigin(0.5, 0).setDepth(y + 1);
-      // 첫 방문이면 자동으로 안내 시작
-      if (!localStorage.getItem(LibraryScene.LIBRARIAN_TOUR_KEY)) {
-        this.time.delayedCall(700, () => { if (this.librarianSprite?.active) this.onTourStart?.(); });
-      }
-    });
+    // 전용 스킨 시트가 없으면(로드 실패 등) 조용히 건너뛴다 — 방은 정상 동작.
+    const texKey = 'npc_librarian';
+    if (!this.textures.exists(texKey) || this.librarianSprite) return;
+    this.createCharAnims(texKey);
+    const s = this.add.sprite(x, y, texKey).setDepth(y);
+    s.play(`${texKey}_idle_down`);
+    s.setInteractive({ useHandCursor: true }).setData('npc', true);
+    s.on('pointerdown', () => this.onTourStart?.());
+    this.librarianSprite = s;
+    this.add.text(x, y + 30, '📖 관리자', {
+      fontFamily: 'Galmuri11, monospace', fontSize: '9px', color: '#3a2d22', resolution: 3,
+    }).setOrigin(0.5, 0).setDepth(y + 1);
+    // 첫 방문이면 자동으로 안내 시작
+    if (!localStorage.getItem(LibraryScene.LIBRARIAN_TOUR_KEY)) {
+      this.time.delayedCall(700, () => { if (this.librarianSprite?.active) this.onTourStart?.(); });
+    }
   }
 
   /** React 투어가 특정 가구를 강조/해제 (책장·게시판) */
