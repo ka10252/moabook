@@ -104,7 +104,7 @@ export class LibraryScene extends Phaser.Scene {
   private members: RoomMember[] = [];
   private offline = new Map<string, { sprite: Phaser.GameObjects.Sprite; label: Phaser.GameObjects.Text; zzz: Phaser.GameObjects.Text }>();
   private pendingOffline = new Set<string>();
-  private bubbles: { bubble: Phaser.GameObjects.Text; getPos: () => { x: number; y: number } | null; expire: number }[] = [];
+  private bubbles: { bubble: Phaser.GameObjects.Container; getPos: () => { x: number; y: number } | null; expire: number }[] = [];
   private lastBroadcast = 0;
   private lastSent = { x: 0, y: 0, dir: 'down' as Dir, moving: false };
 
@@ -497,13 +497,37 @@ export class LibraryScene extends Phaser.Scene {
   private showBubble(userId: string, text: string, isEmote: boolean) {
     if (isEmote) { this.showEmote(userId, text); return; }
     const pos = this.charPos(userId); if (!pos) return;
-    // 폰트 -1px(10) + 넉넉한 상하 패딩·줄간격으로 픽셀폰트 하단 잘림 방지, 말풍선 안에서 줄바꿈
-    const bubble = this.add.text(pos.x, pos.y - 42, text, {
-      fontFamily: 'Galmuri11, monospace', fontSize: '10px',
-      color: '#2c2621', backgroundColor: '#ffffffee', padding: { x: 7, y: 5 },
+
+    // 불투명 픽셀 말풍선(둥근 사각형 + 아래 꼬리) 안에 텍스트를 넣는다.
+    // (반투명 텍스트배경은 위의 책표지 말풍선과 겹쳐 잘려 보였음)
+    const c = this.add.container(pos.x, pos.y - 56).setDepth(100001);
+    const label = this.add.text(0, 0, text, {
+      fontFamily: 'Galmuri11, monospace', fontSize: '10px', color: '#2c2621',
       align: 'center', resolution: 3, lineSpacing: 3, wordWrap: { width: 120 },
-    }).setOrigin(0.5, 1).setDepth(100000);
-    this.bubbles.push({ bubble, getPos: () => this.charPos(userId), expire: this.time.now + 4000 });
+    }).setOrigin(0.5, 1);
+
+    const padX = 8, padY = 6, r = 7, tailW = 8, tailH = 7;
+    const bw = Math.ceil(label.width) + padX * 2;
+    const bh = Math.ceil(label.height) + padY * 2;
+    const bottom = -tailH, top = bottom - bh, left = -bw / 2;
+    const border = 0x2c2621;
+
+    const g = this.add.graphics();
+    g.fillStyle(0xffffff, 1);                                        // 불투명 흰색
+    g.fillTriangle(-tailW / 2, bottom, tailW / 2, bottom, 0, 0);     // 꼬리
+    g.fillRoundedRect(left, top, bw, bh, r);                         // 몸통
+    g.lineStyle(1.5, border, 1);
+    g.strokeRoundedRect(left, top, bw, bh, r);
+    g.fillStyle(0xffffff, 1);
+    g.fillRect(-tailW / 2 + 1, bottom - 1, tailW - 1, 2);            // 꼬리 연결부 테두리 지우기
+    g.lineStyle(1.5, border, 1);
+    g.beginPath();
+    g.moveTo(-tailW / 2, bottom); g.lineTo(0, 0); g.lineTo(tailW / 2, bottom);
+    g.strokePath();
+
+    label.setPosition(0, bottom - padY);   // 몸통 안에 세로 중앙 정렬(origin 0.5,1)
+    c.add([g, label]);
+    this.bubbles.push({ bubble: c, getPos: () => this.charPos(userId), expire: this.time.now + 4000 });
   }
 
   /** 이모트: 캐릭터 머리 주변에서 이모지 여러 개가 위로 흩어지며 사라지는 파티클 연출(배경 없음). */
@@ -708,7 +732,7 @@ export class LibraryScene extends Phaser.Scene {
       this.bubbles = this.bubbles.filter((b) => {
         const p = b.getPos();
         if (!p || now > b.expire) { b.bubble.destroy(); return false; }
-        b.bubble.setPosition(p.x, p.y - 42).setDepth(100000);
+        b.bubble.setPosition(p.x, p.y - 56).setDepth(100001);
         return true;
       });
     }
