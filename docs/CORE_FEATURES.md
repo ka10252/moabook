@@ -35,16 +35,20 @@
 ### 가상공간(P2 #13) 인터랙션 보강 ✅
 - **이모트**: 흰 말풍선 → 캐릭터 주변 파티클(투명 배경).
 - **읽는 책 말풍선**: 표지를 만화 말풍선(둥근사각+꼬리)에 둥근 클립(누끼)로 채움. 표지는 4x 슈퍼샘플+LINEAR 필터로 모자이크 방지. 클릭 → ReadingBookModal(책 소개).
-  - **불변식**: 말풍선 클릭 판정은 **씬 레벨 pointerdown에서 직접** 한다(Phaser 컨테이너 자식 입력이 불안정). 컨테이너에 `book`+`hit`(월드 히트박스) 데이터를 심고 `readingBubbles` Set으로 추적, 파괴 시 제거. 컨테이너 자식 `setInteractive`로 되돌리면 클릭이 깨진다.
+  - **불변식**: 말풍선 클릭은 **컨테이너 자체를 `setInteractive(hitArea)`** 로 잡는다(캐릭터 스프라이트처럼 최상위 오브젝트라 입력 안정). Phaser **컨테이너 자식**(이미지/Zone) 입력은 이 씬에서 불안정하니 자식에 `setInteractive`로 되돌리지 말 것. 표지 로드 후 hitArea를 말풍선 몸통 크기로 갱신.
 - **읽는 책 지정**: 보유/대여 책 + **검색으로 아무 책이나**(useBookSearch). `profiles.reading_book` jsonb 스냅샷 `{id?,title,author,coverUrl,description}`. ⚠️ 마이그레이션 `20260731000002` 필요.
 - **오프라인 멤버 배치**: 고정 슬롯 → **방 바닥 영역 안 userId-해시 무작위**(화면 밖 이탈 수정, 깜빡임 없음).
 - **책장 라벨**: 커뮤니티룸 low_shelf 위 '책장' 픽셀 라벨. 이름표·라벨은 배경 없이 텍스트만.
 - **프로필 책 클릭 → 요청**: MemberProfileModal `onBookClick` → `/?tab=shelf&book=<id>`로 메인 앱 책 상세(요청·채팅 배선 재사용).
 
 ### 알림 자동 읽음·동기화(#6) ✅
-- 알림창을 열면(로딩 후) **자동 일괄 읽음** → 헤더 배지 0. 창이 열린 동안엔 방금-미확인 항목 하이라이트 유지(스냅샷).
-- `useNotifications`의 `unreadCount`를 **목록에서 파생**(항상 일관) + realtime **UPDATE/DELETE 구독 추가** → 헤더 배지↔팝업 등 여러 인스턴스가 읽음/삭제를 즉시 공유.
-  - **불변식**: 인스턴스마다 별도 hook이라 크로스-인스턴스 동기화는 realtime UPDATE/DELETE에 의존 → 이 핸들러 제거 금지.
+- 알림창을 열면(로딩 후) **자동 일괄 읽음** → 미확인 표시·헤더 배지 **새로고침 없이 즉시** 사라짐.
+- `useNotifications`를 **모듈 공유 스토어(useSyncExternalStore)** 로 전환 → 헤더 배지·팝업이 같은 상태를 봐서 읽음/삭제가 모든 곳에 즉시 반영. `unreadCount`는 목록에서 파생. realtime INSERT/UPDATE/DELETE는 다른 기기/탭 동기화용으로 유지.
+  - **불변식**: 공유 스토어는 모듈 전역 1개. 인스턴스별 별도 상태로 되돌리면(예전 구조) 헤더 배지가 새로고침 전엔 안 줄어든다.
+
+### 메시지 미읽음 실시간(#10) ✅
+- `useChat` 채널에 **messages UPDATE(읽음 receipt) 구독** 추가 → 대화를 읽으면 헤더 채팅 아이콘 총 미읽음 수가 **새로고침 없이** 감소(디바운스 250ms 후 fetchConversations).
+  - **불변식**: 이 UPDATE 핸들러 제거 시 미읽음 수가 새로고침 전까지 안 줄어든다.
 
 ### PWA 배포 안정성(#7 인접) ✅
 - `sw.ts`에 `skipWaiting`+`clientsClaim` → 홈스크린 PWA가 새 배포 즉시 반영.
