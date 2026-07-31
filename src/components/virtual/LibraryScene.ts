@@ -355,14 +355,17 @@ export class LibraryScene extends Phaser.Scene {
   private makeReadingBubble(x: number, y: number, book: ReadingBook) {
     const c = this.add.container(x, y - 20).setDepth(y + 2);
     const openDetail = () => this.onOpenReadingBook?.(book);
+    // 클릭은 "컨테이너 자체"를 인터랙티브로 잡는다. 컨테이너 자식(이미지/Zone)은 입력이 불안정하지만
+    // 컨테이너는 최상위 오브젝트라 캐릭터 스프라이트처럼 안정적으로 클릭이 잡힌다.
+    c.setInteractive(new Phaser.Geom.Rectangle(-30, -26, 60, 26), Phaser.Geom.Rectangle.Contains)
+      .setData('reading', true);
+    c.on('pointerdown', openDetail);
 
     const t = book.title.length > 12 ? book.title.slice(0, 12) + '…' : book.title;
     const fallback = this.add.text(0, 0, `📖 ${t}`, {
       fontFamily: 'Galmuri11, monospace', fontSize: '10px',
       color: '#5a4a38', backgroundColor: '#fff7e6ee', padding: { x: 4, y: 2 }, resolution: 2,
     }).setOrigin(0.5, 1);
-    // 표지 로딩 전/표지 없을 때도 텍스트를 눌러 상세를 열 수 있게
-    fallback.setInteractive({ useHandCursor: true }).setData('reading', true).on('pointerdown', openDetail);
     c.add(fallback);
 
     if (book.coverUrl) {
@@ -399,14 +402,12 @@ export class LibraryScene extends Phaser.Scene {
         // 고해상도(슈퍼샘플)로 만들고 논리 크기로 축소 표시 → pixelArt/줌에서도 모자이크 없이 또렷.
         const clipKey = this.roundedCover(key, w, H, r - p);
         const cover = this.add.image(0, top + bh / 2, clipKey).setOrigin(0.5).setDisplaySize(w, H);
-        // 표지(이미지)를 직접 클릭 대상으로 — 최초 구현에서 정상 작동했던 방식
-        cover.setInteractive({ useHandCursor: true }).setData('reading', true).on('pointerdown', openDetail);
-        // 말풍선 몸통 전체도 클릭 대상(축소된 표지의 히트영역이 애매할 때 대비)
-        g.setInteractive(new Phaser.Geom.Rectangle(left, top, bw, bh), Phaser.Geom.Rectangle.Contains)
-          .setData('reading', true).on('pointerdown', openDetail);
 
         fallback.destroy();
         c.add([g, cover]);
+        // 표지가 뜬 뒤 컨테이너 클릭 영역을 말풍선 몸통 크기로 정확히 갱신
+        const hit = c.input?.hitArea as Phaser.Geom.Rectangle | undefined;
+        if (hit) hit.setTo(left, top, bw, bh);
       });
     }
     return c;

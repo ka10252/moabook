@@ -41,6 +41,7 @@ export const useChat = () => {
   const [loading, setLoading] = useState(true);
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const unreadRefreshRef = useRef<ReturnType<typeof setTimeout>>();
 
   const fetchConversations = useCallback(async () => {
     if (!user) {
@@ -157,9 +158,20 @@ export const useChat = () => {
           fetchConversations();
         }
       )
+      // 메시지를 읽으면(is_read UPDATE) 미읽음 수가 바뀐다 → 헤더 채팅 아이콘 카운트를 실시간 반영.
+      // 대화를 열면 여러 건이 한꺼번에 읽음 처리되므로 디바운스로 한 번만 갱신.
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'messages' },
+        () => {
+          if (unreadRefreshRef.current) clearTimeout(unreadRefreshRef.current);
+          unreadRefreshRef.current = setTimeout(() => fetchConversations(), 250);
+        }
+      )
       .subscribe();
 
     return () => {
+      if (unreadRefreshRef.current) clearTimeout(unreadRefreshRef.current);
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
       }
