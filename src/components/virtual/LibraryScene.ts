@@ -574,15 +574,24 @@ export class LibraryScene extends Phaser.Scene {
     this.refreshOffline();
   }
 
-  // 오프라인 멤버 배치 슬롯 (타일 좌표)
-  private static OFFLINE_SLOTS: [number, number][] = [
-    [3, 9], [6, 10], [9, 10], [12, 9], [2, 7], [13, 7], [7, 3], [10, 3], [5, 6], [11, 6], [1, 9], [14, 9],
-  ];
+  /** 오프라인 멤버를 방 바닥 영역 안 무작위 위치에 둔다. userId 해시로 매번 같은 자리(깜빡임 방지). */
+  private offlinePos(userId: string): { x: number; y: number } {
+    const T = this.manifest.tile;
+    const { cols, rows, wall_rows: wallH } = this.manifest;
+    let h1 = 2166136261, h2 = 5381;
+    for (let i = 0; i < userId.length; i++) {
+      h1 = ((h1 ^ userId.charCodeAt(i)) * 16777619) >>> 0;
+      h2 = ((h2 * 33) + userId.charCodeAt(i)) >>> 0;
+    }
+    const rx = (h1 % 10000) / 10000, ry = (h2 % 10000) / 10000;
+    const minX = 1.5 * T, maxX = (cols - 1.5) * T;               // 좌우 여백
+    const minY = (wallH + 1) * T, maxY = (rows - 1) * T;         // 벽 아래 ~ 바닥 끝
+    return { x: Math.round(minX + rx * (maxX - minX)), y: Math.round(minY + ry * (maxY - minY)) };
+  }
 
   /** 커뮤니티룸: 접속 안 한 멤버를 zzz와 함께 그 자리에 둔다. 접속 중이거나 나면 제거. */
   private refreshOffline() {
     if (!this.members.length) return;
-    const T = this.manifest.tile;
     const present = new Set<string>();
     if (this.presenceCfg) present.add(this.presenceCfg.me.userId);
     if (this.channel) {
@@ -594,10 +603,9 @@ export class LibraryScene extends Phaser.Scene {
       if (present.has(uid)) { o.sprite.destroy(); o.label.destroy(); o.zzz.destroy(); this.offline.delete(uid); }
     }
     // 오프라인 멤버 추가
-    this.members.forEach((m, idx) => {
+    this.members.forEach((m) => {
       if (present.has(m.userId) || this.offline.has(m.userId) || this.pendingOffline.has(m.userId)) return;
-      const slot = LibraryScene.OFFLINE_SLOTS[idx % LibraryScene.OFFLINE_SLOTS.length];
-      const x = slot[0] * T + 16, y = slot[1] * T + 32;
+      const { x, y } = this.offlinePos(m.userId);
       this.pendingOffline.add(m.userId);
       this.ensureAvatarTexture(m.avatar).then((texKey) => {
         this.pendingOffline.delete(m.userId);
