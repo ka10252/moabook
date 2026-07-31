@@ -49,8 +49,9 @@ serve(async (req) => {
   if ((count ?? 0) > 0) return json({ skipped: "has push" });
 
   const link = `${SITE}${spec.link(n.data ?? {})}`;
+  // 제목(n.title)에 이미 타입별 이모지가 포함돼 있어 여기서 또 붙이지 않는다 (📚 📚 중복 방지)
   const text =
-    `${spec.emoji} <b>${esc(n.title)}</b>` +
+    `<b>${esc(n.title)}</b>` +
     (n.body ? `\n${esc(n.body)}` : "") +
     `\n\n<a href="${link}">모아북에서 열기</a>`;
 
