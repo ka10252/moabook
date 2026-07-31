@@ -35,7 +35,7 @@
 ### 가상공간(P2 #13) 인터랙션 보강 ✅
 - **이모트**: 흰 말풍선 → 캐릭터 주변 파티클(투명 배경).
 - **읽는 책 말풍선**: 표지를 만화 말풍선(둥근사각+꼬리)에 둥근 클립(누끼)로 채움. 표지는 4x 슈퍼샘플+LINEAR 필터로 모자이크 방지. 클릭 → ReadingBookModal(책 소개).
-  - **불변식**: 말풍선 클릭은 **컨테이너 자체를 `setInteractive(hitArea)`** 로 잡는다(캐릭터 스프라이트처럼 최상위 오브젝트라 입력 안정). Phaser **컨테이너 자식**(이미지/Zone) 입력은 이 씬에서 불안정하니 자식에 `setInteractive`로 되돌리지 말 것. 표지 로드 후 hitArea를 말풍선 몸통 크기로 갱신.
+  - **불변식**: 말풍선 클릭은 **별도의 최상위 Zone**(`this.add.zone`, 가구 게시판/책장 Zone과 동일 방식)으로 잡고, 그 Zone을 매 프레임 말풍선 위치로 옮긴다(`update()`에서 `hitZone.setPosition`). 이 씬에선 **컨테이너 자체·컨테이너 자식**(이미지/Zone) 입력이 안 잡힌다 — 최상위 Zone만 신뢰할 것. Zone은 컨테이너 `hitZone` 데이터로 보관하고 컨테이너 destroy 시 함께 파괴.
 - **읽는 책 지정**: 보유/대여 책 + **검색으로 아무 책이나**(useBookSearch). `profiles.reading_book` jsonb 스냅샷 `{id?,title,author,coverUrl,description}`. ⚠️ 마이그레이션 `20260731000002` 필요.
 - **오프라인 멤버 배치**: 고정 슬롯 → **방 바닥 영역 안 userId-해시 무작위**(화면 밖 이탈 수정, 깜빡임 없음).
 - **책장 라벨**: 커뮤니티룸 low_shelf 위 '책장' 픽셀 라벨. 이름표·라벨은 배경 없이 텍스트만.
@@ -47,8 +47,8 @@
   - **불변식**: 공유 스토어는 모듈 전역 1개. 인스턴스별 별도 상태로 되돌리면(예전 구조) 헤더 배지가 새로고침 전엔 안 줄어든다.
 
 ### 메시지 미읽음 실시간(#10) ✅
-- `useChat` 채널에 **messages UPDATE(읽음 receipt) 구독** 추가 → 대화를 읽으면 헤더 채팅 아이콘 총 미읽음 수가 **새로고침 없이** 감소(디바운스 250ms 후 fetchConversations).
-  - **불변식**: 이 UPDATE 핸들러 제거 시 미읽음 수가 새로고침 전까지 안 줄어든다.
+- 대화를 읽으면(useMessages가 messages를 is_read=true로 UPDATE) **`window` 이벤트 `moa:messages-read`** 발생 → 같은 클라이언트의 `useChat`가 수신해 헤더 채팅 아이콘 총 미읽음 수를 **새로고침 없이** 갱신(디바운스). realtime UPDATE 구독도 병행(크로스-디바이스용).
+  - **불변식**: 읽음 처리 → `moa:messages-read` dispatch(useMessages) → useChat 리스너, 이 경로를 끊으면 미읽음 수가 새로고침 전까지 안 줄어든다.
 
 ### PWA 배포 안정성(#7 인접) ✅
 - `sw.ts`에 `skipWaiting`+`clientsClaim` → 홈스크린 PWA가 새 배포 즉시 반영.
