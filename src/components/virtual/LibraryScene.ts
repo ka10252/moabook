@@ -104,7 +104,7 @@ export class LibraryScene extends Phaser.Scene {
   private members: RoomMember[] = [];
   private offline = new Map<string, { sprite: Phaser.GameObjects.Sprite; label: Phaser.GameObjects.Text; zzz: Phaser.GameObjects.Text }>();
   private pendingOffline = new Set<string>();
-  private bubbles: { bubble: Phaser.GameObjects.Container; getPos: () => { x: number; y: number } | null; expire: number }[] = [];
+  private bubbles: { bubble: Phaser.GameObjects.Container; userId: string; getPos: () => { x: number; y: number } | null; expire: number }[] = [];
   private lastBroadcast = 0;
   private lastSent = { x: 0, y: 0, dir: 'down' as Dir, moving: false };
 
@@ -498,11 +498,17 @@ export class LibraryScene extends Phaser.Scene {
     if (isEmote) { this.showEmote(userId, text); return; }
     const pos = this.charPos(userId); if (!pos) return;
 
+    // 한 캐릭터는 말풍선 하나만 — 새 말이 나오면 그 유저의 기존 말풍선을 없앤다(겹쳐 반복돼 보이던 문제 방지)
+    this.bubbles = this.bubbles.filter((b) => {
+      if (b.userId === userId) { b.bubble.destroy(); return false; }
+      return true;
+    });
+
     // 불투명 픽셀 말풍선(둥근 사각형 + 아래 꼬리) 안에 텍스트를 넣는다.
     // (반투명 텍스트배경은 위의 책표지 말풍선과 겹쳐 잘려 보였음)
     const c = this.add.container(pos.x, pos.y - 56).setDepth(100001);
     const label = this.add.text(0, 0, text, {
-      fontFamily: 'Galmuri11, monospace', fontSize: '10px', color: '#2c2621',
+      fontFamily: 'Galmuri11, monospace', fontSize: '8px', color: '#2c2621',
       align: 'center', resolution: 3, lineSpacing: 3, wordWrap: { width: 120 },
     }).setOrigin(0.5, 1);
 
@@ -527,7 +533,7 @@ export class LibraryScene extends Phaser.Scene {
 
     label.setPosition(0, bottom - padY);   // 몸통 안에 세로 중앙 정렬(origin 0.5,1)
     c.add([g, label]);
-    this.bubbles.push({ bubble: c, getPos: () => this.charPos(userId), expire: this.time.now + 4000 });
+    this.bubbles.push({ bubble: c, userId, getPos: () => this.charPos(userId), expire: this.time.now + 4000 });
   }
 
   /** 이모트: 캐릭터 머리 주변에서 이모지 여러 개가 위로 흩어지며 사라지는 파티클 연출(배경 없음). */
