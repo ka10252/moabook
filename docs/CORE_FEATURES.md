@@ -46,6 +46,11 @@
 - `useNotifications`를 **모듈 공유 스토어(useSyncExternalStore)** 로 전환 → 헤더 배지·팝업이 같은 상태를 봐서 읽음/삭제가 모든 곳에 즉시 반영. `unreadCount`는 목록에서 파생. realtime INSERT/UPDATE/DELETE는 다른 기기/탭 동기화용으로 유지.
   - **불변식**: 공유 스토어는 모듈 전역 1개. 인스턴스별 별도 상태로 되돌리면(예전 구조) 헤더 배지가 새로고침 전엔 안 줄어든다.
 
+### 인앱 실시간 알림·관심도서·요청팝업(유저테스트 4·5·6) ✅
+- **대여요청 후 상세 팝업 닫힘**: BookDetailWithActions의 요청 CTA·형제책 요청이 onChat 후 onClose로 시트를 닫고 채팅으로 이동.
+- **관심도서 즉시 반영**: `useLikedBooks`를 모듈 공유 스토어로 → 상세 하트 ↔ 서가 FAB 배지 ↔ 관심도서 팝업이 한 상태. 인스턴스 분리로 새로고침 전 안 뜨던 버그 해소.
+- **인앱 실시간 알림**: `notifications` 테이블을 supabase_realtime publication에 추가(마이그레이션 20260731000003). **불변식**: 이 publication에서 notifications가 빠지면 벨 실시간 INSERT가 죽어 새 알림이 새로고침 전엔 안 뜬다. 새 공용 테이블 실시간 필요 시 publication 등록 확인 필수.
+
 ### 메시지 미읽음 실시간(#10) ✅
 - 대화를 읽으면(useMessages가 messages를 is_read=true로 UPDATE) **`window` 이벤트 `moa:messages-read`** 발생 → 같은 클라이언트의 `useChat`가 수신해 헤더 채팅 아이콘 총 미읽음 수를 **새로고침 없이** 갱신(디바운스). realtime UPDATE 구독도 병행(크로스-디바이스용).
   - **불변식**: 읽음 처리 → `moa:messages-read` dispatch(useMessages) → useChat 리스너, 이 경로를 끊으면 미읽음 수가 새로고침 전까지 안 줄어든다.
