@@ -306,6 +306,10 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
       return;
     }
 
+    // 업로드+DB 왕복을 기다리지 않고, 고른 사진을 화면에 즉시 보여준다(체감 지연 제거).
+    const localPreview = URL.createObjectURL(file);
+    const prevUrl = avatarUrl;
+    setAvatarUrl(localPreview);
     setIsSaving(true);
     try {
       const fileExt = file.name.split('.').pop();
@@ -328,12 +332,16 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
       if (updateError) throw updateError;
 
       setAvatarUrl(publicUrl);
+      // 다른 화면(내 아바타가 보이는 곳)도 새로고침 없이 갱신할 수 있게 알린다.
+      window.dispatchEvent(new CustomEvent('moa:avatar-updated', { detail: { userId: user.id, url: publicUrl } }));
       toast.success('프로필 사진이 업데이트되었습니다!');
     } catch (error) {
       console.error('Avatar upload error:', error);
+      setAvatarUrl(prevUrl); // 실패 시 원래 사진으로 되돌린다
       toast.error('프로필 사진 업로드에 실패했습니다');
     } finally {
       setIsSaving(false);
+      URL.revokeObjectURL(localPreview);
     }
   };
 
