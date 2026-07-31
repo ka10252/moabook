@@ -1,4 +1,4 @@
-import { BookOpen, BookPlus, Upload, Users, User } from 'lucide-react';
+import { BookOpen, Search, Upload, Users, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 type NavItem = 'shelf' | 'wishlist' | 'upload' | 'community' | 'profile';
@@ -10,7 +10,7 @@ interface BottomNavProps {
 
 const navItems = [
   { id: 'shelf' as NavItem, icon: BookOpen, label: '책장' },
-  { id: 'wishlist' as NavItem, icon: BookPlus, label: '위시리스트' },
+  { id: 'wishlist' as NavItem, icon: Search, label: '위시리스트' },
   { id: 'upload' as NavItem, icon: Upload, label: '등록' },
   { id: 'community' as NavItem, icon: Users, label: '커뮤니티' },
   { id: 'profile' as NavItem, icon: User, label: '프로필' },
