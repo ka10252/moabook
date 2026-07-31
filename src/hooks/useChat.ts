@@ -178,6 +178,17 @@ export const useChat = () => {
     };
   }, [user?.id, fetchConversations]);
 
+  // 같은 클라이언트에서 대화를 읽으면(useMessages가 이벤트 발생) 헤더 미읽음 수 즉시 갱신
+  useEffect(() => {
+    if (!user) return;
+    const onRead = () => {
+      if (unreadRefreshRef.current) clearTimeout(unreadRefreshRef.current);
+      unreadRefreshRef.current = setTimeout(() => fetchConversations(), 200);
+    };
+    window.addEventListener('moa:messages-read', onRead);
+    return () => window.removeEventListener('moa:messages-read', onRead);
+  }, [user?.id, fetchConversations]);
+
   const startConversation = async (otherUserId: string) => {
     if (!user) return { conversation: null, error: new Error('Not logged in'), isNew: false };
 
@@ -330,7 +341,12 @@ export const useMessages = (conversationId: string | null) => {
       .eq('conversation_id', conversationId)
       .neq('sender_id', user.id)
       .eq('is_read', false)
-      .then();
+      .select('id')
+      .then(({ data }) => {
+        // 실제로 읽음 처리된 게 있으면, 같은 클라이언트의 헤더(useChat)가 즉시 미읽음 수를 갱신하도록 알린다.
+        // realtime UPDATE에만 의존하면 안 줄어드는 경우가 있어 클라이언트 이벤트로 확실히 반영한다.
+        if (data && data.length > 0) window.dispatchEvent(new Event('moa:messages-read'));
+      });
   }, [conversationId, user?.id, messages]);
 
   // Real-time subscription (INSERT + UPDATE for read receipts)

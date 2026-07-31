@@ -355,11 +355,13 @@ export class LibraryScene extends Phaser.Scene {
   private makeReadingBubble(x: number, y: number, book: ReadingBook) {
     const c = this.add.container(x, y - 20).setDepth(y + 2);
     const openDetail = () => this.onOpenReadingBook?.(book);
-    // 클릭은 "컨테이너 자체"를 인터랙티브로 잡는다. 컨테이너 자식(이미지/Zone)은 입력이 불안정하지만
-    // 컨테이너는 최상위 오브젝트라 캐릭터 스프라이트처럼 안정적으로 클릭이 잡힌다.
-    c.setInteractive(new Phaser.Geom.Rectangle(-30, -26, 60, 26), Phaser.Geom.Rectangle.Contains)
-      .setData('reading', true);
-    c.on('pointerdown', openDetail);
+    // 클릭용 "최상위 Zone" — 가구 게시판/책장 Zone처럼 최상위 오브젝트라 입력이 확실히 잡힌다.
+    // (컨테이너 자체·컨테이너 자식 입력은 이 씬에서 불안정.) 매 프레임 말풍선을 따라간다(update).
+    const hitZone = this.add.zone(x, y - 39, 46, 42).setOrigin(0.5)
+      .setInteractive({ useHandCursor: true }).setData('reading', true).setDepth(99999);
+    hitZone.on('pointerdown', openDetail);
+    c.setData('hitZone', hitZone);
+    c.once('destroy', () => hitZone.destroy());
 
     const t = book.title.length > 12 ? book.title.slice(0, 12) + '…' : book.title;
     const fallback = this.add.text(0, 0, `📖 ${t}`, {
@@ -405,9 +407,9 @@ export class LibraryScene extends Phaser.Scene {
 
         fallback.destroy();
         c.add([g, cover]);
-        // 표지가 뜬 뒤 컨테이너 클릭 영역을 말풍선 몸통 크기로 정확히 갱신
-        const hit = c.input?.hitArea as Phaser.Geom.Rectangle | undefined;
-        if (hit) hit.setTo(left, top, bw, bh);
+        // 표지가 뜬 뒤 클릭 Zone 크기를 말풍선 몸통에 맞춘다(넉넉하게)
+        const hz = c.getData('hitZone') as Phaser.GameObjects.Zone | undefined;
+        hz?.setSize(bw + 6, bh + 6);
       });
     }
     return c;
@@ -669,6 +671,7 @@ export class LibraryScene extends Phaser.Scene {
     this.player.setDepth(this.player.y);
     this.playerLabel?.setPosition(this.player.x, this.player.y + 32).setDepth(this.player.y + 1);
     this.playerReading?.setPosition(this.player.x, this.player.y - 20).setDepth(this.player.y + 2);
+    (this.playerReading?.getData('hitZone') as Phaser.GameObjects.Zone | undefined)?.setPosition(this.player.x, this.player.y - 39);
     // 눈·옷·헤어·액세서리 레이어를 몸에 맞춰 위치·깊이·애니메이션 동기화
     for (const s of this.layers) {
       s.setPosition(this.player.x, this.player.y);
@@ -692,6 +695,7 @@ export class LibraryScene extends Phaser.Scene {
       rp.sprite.setDepth(rp.sprite.y);
       rp.label.setPosition(rp.sprite.x, rp.sprite.y + 32).setDepth(rp.sprite.y + 1);
       rp.readingBubble?.setPosition(rp.sprite.x, rp.sprite.y - 20).setDepth(rp.sprite.y + 2);
+      (rp.readingBubble?.getData('hitZone') as Phaser.GameObjects.Zone | undefined)?.setPosition(rp.sprite.x, rp.sprite.y - 39);
       const near = Math.abs(rp.sprite.x - rp.tx) < 1.5 && Math.abs(rp.sprite.y - rp.ty) < 1.5;
       const st = rp.moving && !near ? 'walk' : 'idle';
       rp.sprite.play(`${rp.texKey}_${st}_${rp.dir}`, true);
