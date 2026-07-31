@@ -79,7 +79,7 @@ export const ReadingBookModal = ({ book, onClose }: ReadingBookModalProps) => {
           <div className="flex gap-4">
             <div className="w-24 shrink-0 aspect-[2/3] rounded-lg overflow-hidden shadow-md bg-muted">
               {info.cover_url ? (
-                <img src={info.cover_url} alt={info.title} className="w-full h-full object-cover" />
+                <img src={info.cover_url} alt={info.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
               ) : (
                 <DefaultBookCover title={info.title} author={info.author ?? ''} className="w-full h-full" />
               )}

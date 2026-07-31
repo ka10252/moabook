@@ -30,6 +30,8 @@ export const BookCover = ({ book, onClick, isRented = false, isLent = false, isB
           <img
             src={book.cover}
             alt={book.title}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover"
           />
         ) : (

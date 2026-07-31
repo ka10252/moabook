@@ -447,7 +447,7 @@ export const CommunityBoard = ({ isOpen, onClose, communityId, communityName }: 
                             onClick={() => { setSelectedBook(b); setShowBookSearch(false); }}
                           >
                             {b.cover_url ? (
-                              <img src={b.cover_url} className="w-8 h-10 object-cover rounded shrink-0" />
+                              <img src={b.cover_url} loading="lazy" decoding="async" className="w-8 h-10 object-cover rounded shrink-0" />
                             ) : (
                               <div className="w-8 h-10 rounded bg-primary/10 flex items-center justify-center shrink-0">
                                 <BookOpen className="w-4 h-4 text-primary" />

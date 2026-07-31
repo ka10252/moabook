@@ -209,7 +209,7 @@ export const BookDetailWithActions = ({
                 <div className="flex gap-4">
                   <div className="w-[92px] shrink-0 aspect-[2/3] rounded-xl overflow-hidden shadow-hip">
                     {hasValidCover ? (
-                      <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
+                      <img src={book.cover} alt={book.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                     ) : (
                       <DefaultBookCover title={book.title} author={book.author} className="w-full h-full" />
                     )}

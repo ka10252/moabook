@@ -742,7 +742,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
                         }`}
                       >
                         {book.cover_url ? (
-                          <img src={book.cover_url} alt={book.title} className="w-10 h-14 object-cover rounded-lg shrink-0" />
+                          <img src={book.cover_url} alt={book.title} loading="lazy" decoding="async" className="w-10 h-14 object-cover rounded-lg shrink-0" />
                         ) : (
                           <div className="w-10 h-14 bg-muted rounded-lg flex items-center justify-center shrink-0">
                             <BookPickIcon className="w-4 h-4 text-muted-foreground" />

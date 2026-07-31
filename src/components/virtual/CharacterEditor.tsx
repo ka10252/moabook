@@ -332,7 +332,7 @@ export function CharacterEditor({ isOpen, onClose, onSaved }: CharacterEditorPro
                           className="w-full flex items-center gap-2 px-2.5 py-2 hover:bg-muted/60 text-left"
                         >
                           {r.cover ? (
-                            <img src={r.cover} alt="" className="w-7 h-10 object-cover rounded shrink-0 bg-muted" />
+                            <img src={r.cover} alt="" loading="lazy" decoding="async" className="w-7 h-10 object-cover rounded shrink-0 bg-muted" />
                           ) : (
                             <div className="w-7 h-10 rounded bg-muted shrink-0" />
                           )}

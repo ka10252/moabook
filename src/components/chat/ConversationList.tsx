@@ -66,7 +66,7 @@ export const ConversationList = ({ conversations, loading, selectedId, onSelect 
           <div className="relative shrink-0">
             <div className="w-11 h-14 rounded-lg bg-muted overflow-hidden shadow-sm">
               {conv.book?.cover_url ? (
-                <img src={conv.book.cover_url} alt={conv.book.title} className="w-full h-full object-cover" />
+                <img src={conv.book.cover_url} alt={conv.book.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                   <BookOpen className="w-5 h-5 opacity-40" />
