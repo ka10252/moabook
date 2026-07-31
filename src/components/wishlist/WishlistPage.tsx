@@ -120,8 +120,7 @@ export const WishlistPage = () => {
               위시리스트
             </h1>
             <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">
-              아직 이웃에게 <b className="text-foreground">없는</b>, 읽고 싶은 책을 남기는 곳이에요.
-              <br />(있는 책을 찜하려면 책 상세의 <span className="text-primary font-semibold">♥ 관심</span>)
+              아직 책장에서 못 찾은, 읽고 싶은 책을 남기는 곳이에요.
             </p>
           </div>
           <button
