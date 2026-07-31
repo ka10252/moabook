@@ -395,23 +395,25 @@ export const BookDetailWithActions = ({
                     </button>
                   )}
 
-                  {/* 위시 — 아웃라인 48px */}
-                  <button
-                    className={`w-12 h-12 shrink-0 rounded-full border flex items-center justify-center transition-colors ${
-                      isLiked
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-border text-muted-foreground hover:text-primary hover:border-primary'
-                    }`}
-                    onClick={() => { if (requireAuth()) handleLike(); }}
-                    disabled={likeLoading}
-                    aria-label="위시리스트"
-                  >
-                    {likeLoading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-                    )}
-                  </button>
+                  {/* 관심(하트) — 내 책은 찜할 수 없으니 소유자에겐 숨긴다 */}
+                  {!isOwner && (
+                    <button
+                      className={`w-12 h-12 shrink-0 rounded-full border flex items-center justify-center transition-colors ${
+                        isLiked
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border text-muted-foreground hover:text-primary hover:border-primary'
+                      }`}
+                      onClick={() => { if (requireAuth()) handleLike(); }}
+                      disabled={likeLoading}
+                      aria-label="관심 도서"
+                    >
+                      {likeLoading ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+                      )}
+                    </button>
+                  )}
 
                   {/* 신고 — 내 책에는 노출하지 않는다 */}
                   {!isOwner && currentUserId && (

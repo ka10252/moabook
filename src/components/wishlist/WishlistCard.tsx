@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Trash2, Check, MessageCircle } from 'lucide-react';
+import { Trash2, Check, MessageCircle, Pencil, Loader2 } from 'lucide-react';
 import { WishlistItem } from '@/hooks/useWishlist';
 import { spineClassFrom } from '@/lib/spineColor';
 import {
@@ -20,6 +20,8 @@ interface WishlistCardProps {
   onDelete?: () => void;
   onMarkFulfilled?: () => void;
   onMessage?: () => void;
+  /** 내 한마디 수정 (소유자만) */
+  onEditNotes?: (notes: string) => Promise<void> | void;
   /** 실제 요청이 아직 적을 때 채워 넣는 예시 카드 — 진짜인 척하면 안 된다 */
   isDemo?: boolean;
 }
@@ -34,10 +36,21 @@ export const WishlistCard = ({
   onDelete,
   onMarkFulfilled,
   onMessage,
+  onEditNotes,
   isDemo = false,
 }: WishlistCardProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [editingNote, setEditingNote] = useState(false);
+  const [draft, setDraft] = useState(item.notes ?? '');
+  const [savingNote, setSavingNote] = useState(false);
   const nickname = item.profile?.nickname || '익명';
+
+  const saveNote = async () => {
+    setSavingNote(true);
+    await onEditNotes?.(draft);
+    setSavingNote(false);
+    setEditingNote(false);
+  };
 
   const handleDelete = () => {
     onDelete?.();
@@ -109,17 +122,56 @@ export const WishlistCard = ({
         </div>
 
         {/* 한마디 — 요청자가 왜, 어떤 판본을 원하는지가 여기 담긴다.
-            빌려줄지 말지를 결정하는 정보라서 카드 안에서 접지 않고 그대로 보여준다. */}
-        {item.notes && (
+            소유자는 인라인으로 수정할 수 있다. */}
+        {isOwner && !isDemo && onEditNotes ? (
           <div className="mt-2.5 rounded-xl bg-muted px-3 py-2.5">
-            <p className="text-[10px] font-bold text-faint mb-1">
-              {isOwner ? '내 한마디' : `${nickname}님의 한마디`}
-            </p>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-bold text-faint">내 한마디</p>
+              {!editingNote && (
+                <button
+                  onClick={() => { setDraft(item.notes ?? ''); setEditingNote(true); }}
+                  className="text-[10px] font-semibold text-primary flex items-center gap-0.5 hover:underline"
+                >
+                  <Pencil className="w-3 h-3" /> {item.notes ? '수정' : '추가'}
+                </button>
+              )}
+            </div>
+            {editingNote ? (
+              <>
+                <textarea
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  rows={2}
+                  maxLength={200}
+                  autoFocus
+                  placeholder="어떤 판본을 원하는지 등 한마디"
+                  className="w-full text-[12px] bg-card border border-border rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-primary/40 resize-none"
+                />
+                <div className="flex justify-end gap-1.5 mt-1.5">
+                  <button onClick={() => setEditingNote(false)} className="text-[11px] text-muted-foreground px-2 py-1">취소</button>
+                  <button
+                    onClick={saveNote}
+                    disabled={savingNote}
+                    className="text-[11px] font-semibold text-primary-foreground bg-primary rounded-full px-3 py-1 flex items-center gap-1 disabled:opacity-70"
+                  >
+                    {savingNote && <Loader2 className="w-3 h-3 animate-spin" />} 저장
+                  </button>
+                </div>
+              </>
+            ) : item.notes ? (
+              <p className="text-[12px] text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">{item.notes}</p>
+            ) : (
+              <p className="text-[11px] text-faint">한마디를 남겨보세요</p>
+            )}
+          </div>
+        ) : item.notes ? (
+          <div className="mt-2.5 rounded-xl bg-muted px-3 py-2.5">
+            <p className="text-[10px] font-bold text-faint mb-1">{nickname}님의 한마디</p>
             <p className="text-[12px] text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">
               {item.notes}
             </p>
           </div>
-        )}
+        ) : null}
       </motion.div>
 
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>

@@ -76,6 +76,19 @@ export const useWishlist = () => {
     return { error };
   };
 
+  const updateNotes = async (id: string, notes: string) => {
+    const { error } = await supabase
+      .from('wishlists')
+      .update({ notes: notes.trim() || null })
+      .eq('id', id);
+
+    if (!error) {
+      await fetchWishlists();
+    }
+
+    return { error };
+  };
+
   const removeItem = async (id: string) => {
     const { error } = await supabase
       .from('wishlists')
@@ -108,6 +121,7 @@ export const useWishlist = () => {
     loading,
     error,
     addItem,
+    updateNotes,
     removeItem,
     markFulfilled,
     refresh: fetchWishlists,

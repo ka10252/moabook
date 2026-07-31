@@ -55,7 +55,7 @@ const DEMO_ITEMS: WishlistItem[] = [
 export const WishlistPage = () => {
   const { user } = useAuth();
   const { requireAuth } = useGuestGate();
-  const { items, myItems, loading, addItem, removeItem, markFulfilled } = useWishlist();
+  const { items, myItems, loading, addItem, updateNotes, removeItem, markFulfilled } = useWishlist();
   const { startConversation, sendMessage, refresh: refreshChat } = useChat();
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -182,6 +182,7 @@ export const WishlistPage = () => {
                     isOwner
                     onDelete={() => removeItem(item.id)}
                     onMarkFulfilled={() => markFulfilled(item.id)}
+                    onEditNotes={(notes) => updateNotes(item.id, notes).then(() => {})}
                   />
                 ))}
               </section>

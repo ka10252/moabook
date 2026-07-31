@@ -301,7 +301,7 @@ const Index = () => {
       case 'wishlist':
         return <WishlistPage />;
       case 'upload':
-        return <UploadPage />;
+        return <UploadPage onUploaded={() => goToTab('shelf')} />;
       case 'community':
         return (
           <CommunityPage

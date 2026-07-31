@@ -27,7 +27,12 @@ interface BookFormData {
   communityId: string | null;
 }
 
-export const UploadBookForm = () => {
+interface UploadBookFormProps {
+  /** 등록 성공 후 호출 — 보통 메인 책장 탭으로 이동시킨다 */
+  onUploaded?: () => void;
+}
+
+export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
   const { user } = useAuth();
   const { fetchBookDetails } = useBookSearch();
   // 검색으로 책을 매칭했는지 + 그 표지(확인용 썸네일). null이면 아직 검색으로 안 채운 상태.
@@ -166,6 +171,9 @@ export const UploadBookForm = () => {
         isPublic: true,
         communityId: null,
       });
+
+      // 등록 후 빈 폼에 머무르지 않고 메인 책장으로 이동해 등록된 책을 바로 확인하게 한다
+      onUploaded?.();
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('책 등록에 실패했습니다. 다시 시도해주세요.');
