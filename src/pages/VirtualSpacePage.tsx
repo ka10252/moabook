@@ -19,6 +19,18 @@ const ReadingBookModal = lazyRetry(() =>
   import('@/components/virtual/ReadingBookModal').then((m) => ({ default: m.ReadingBookModal }))
 );
 
+const TOUR_SEEN_KEY = 'moa_room_tour_seen';
+/** 사서 안내 단계 — 텍스트는 React가 화면 중앙 픽셀 팝업으로 그린다(상단 UI에 안 가림). */
+const TOUR: { text: string; highlight?: 'shelf' | 'board' }[] = [
+  { text: '어서 오세요!\n제가 이 방을 안내해 드릴게요 📖' },
+  { text: '캐릭터 머리 위에는 각자\n지금 읽는 책이 보여요.\n프로필 › 캐릭터 꾸미기에서 정해요.' },
+  { text: '화면 아래에서 이웃에게\n메시지와 이모지를 보낼 수 있어요.' },
+  { text: 'Zzz는 자는(미접속) 이웃이에요.\nZzz가 없으면 접속 중이라\n말을 걸 수 있어요.' },
+  { text: '이 책장을 누르면\n우리 커뮤니티의 책을 볼 수 있어요.', highlight: 'shelf' },
+  { text: '게시판에서는\n소식을 함께 나눠요.', highlight: 'board' },
+  { text: '즐겁게 둘러보세요!\n필요하면 저(사서)를 다시 눌러주세요 👋' },
+];
+
 /**
  * 가상 공간 페이지 (Phaser).
  * - /space              → 전체 가상 도서관
@@ -68,6 +80,7 @@ export default function VirtualSpacePage() {
       },
       onOpenProfile: (uid: string) => setProfileUserId(uid),
       onOpenReadingBook: (book: ReadingBook) => setReadingBook(book),
+      onTourStart: () => setTourStep(0),
       presence: user
         ? { channelName, me: { userId: user.id, nickname: nicknameRef.current, avatar, readingBook: readingBookRef.current } }
         : undefined,
@@ -82,6 +95,7 @@ export default function VirtualSpacePage() {
   const [readingBook, setReadingBook] = useState<ReadingBook | null>(null);
   const [chatText, setChatText] = useState('');
   const [showEmotes, setShowEmotes] = useState(false);
+  const [tourStep, setTourStep] = useState<number | null>(null);
 
   const EMOTES = ['👍', '❤️', '😆', '👋', '📚', '✨'];
   const sceneApi = () => gameRef.current?.scene.getScene('LibraryScene') as LibraryScene | undefined;
@@ -90,6 +104,25 @@ export default function VirtualSpacePage() {
     if (!t) return;
     sceneApi()?.sendBubble(t, false);
     setChatText('');
+  };
+
+  // 안내 단계가 바뀌면 해당 가구를 강조(책장/게시판), 끝나면 해제
+  useEffect(() => {
+    const api = sceneApi();
+    if (!api) return;
+    api.highlightFurniture(tourStep === null ? null : TOUR[tourStep]?.highlight ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tourStep]);
+
+  const endTour = () => {
+    sceneApi()?.highlightFurniture(null);
+    try { localStorage.setItem(TOUR_SEEN_KEY, '1'); } catch { /* ignore */ }
+    setTourStep(null);
+  };
+  const nextTour = () => {
+    const n = (tourStep ?? 0) + 1;
+    if (n >= TOUR.length) { endTour(); return; }
+    setTourStep(n);
   };
   const [communityName, setCommunityName] = useState('');
   const [title, setTitle] = useState(isCommunity ? '버추얼 커뮤니티룸' : '버추얼 도서관');
@@ -263,6 +296,44 @@ export default function VirtualSpacePage() {
           >
             <Send className="w-5 h-5" />
           </button>
+        </div>
+      )}
+
+      {/* 사서 안내 — 화면 중앙 픽셀 팝업(상단 UI에 안 가림, 픽셀톤 유지) */}
+      {tourStep !== null && (
+        <div
+          className="absolute inset-0 z-[70] flex items-start justify-center bg-black/25"
+          style={{ paddingTop: '30vh' }}
+          onClick={endTour}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative mx-4 w-[min(84vw,320px)] bg-white border-2 border-[#3a2d22] shadow-[4px_4px_0_0_#3a2d22]"
+            style={{ fontFamily: 'Galmuri11, monospace', imageRendering: 'pixelated' }}
+          >
+            <div className="flex items-center gap-1.5 px-3 py-2 bg-[#F26A4B] text-white text-[13px] border-b-2 border-[#3a2d22]">
+              <span>📖</span>
+              <span>사서의 안내</span>
+              <span className="ml-auto text-[11px] opacity-90">{(tourStep ?? 0) + 1} / {TOUR.length}</span>
+            </div>
+            <p className="px-4 py-5 text-[13px] leading-6 text-[#2c2621] text-center whitespace-pre-line">
+              {TOUR[tourStep]?.text}
+            </p>
+            <div className="flex border-t-2 border-[#3a2d22]">
+              <button
+                onClick={endTour}
+                className="flex-1 py-2.5 text-[12px] text-[#6b5d50] border-r-2 border-[#3a2d22] active:bg-gray-100"
+              >
+                닫기
+              </button>
+              <button
+                onClick={nextTour}
+                className="flex-1 py-2.5 text-[12px] font-semibold text-[#F26A4B] active:bg-[#fff0ec]"
+              >
+                {tourStep === TOUR.length - 1 ? '완료' : '다음 ▶'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
