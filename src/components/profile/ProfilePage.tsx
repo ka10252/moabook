@@ -381,6 +381,9 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
     if (!error) {
       setShowDeleteDialog(false);
       toast.success('계정이 삭제되었습니다');
+      // deleteAccount는 내부적으로 signOut하지만, 이 화면은 여전히 삭제된 프로필을 보여준다.
+      // 로그아웃 경로와 동일하게 홈으로 보내 잔류(및 null 세션 조작)를 막는다.
+      navigate('/', { replace: true });
       return;
     }
 

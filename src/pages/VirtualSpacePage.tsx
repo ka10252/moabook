@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, Suspense } from 'react';
 import { lazyRetry } from '@/lib/lazyRetry';
 import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { ArrowLeft, Loader2, UserRound, Smile, Send } from 'lucide-react';
 import Phaser from 'phaser';
 import { LibraryScene, type RoomManifest, type ReadingBook } from '@/components/virtual/LibraryScene';
@@ -131,6 +132,24 @@ export default function VirtualSpacePage() {
     let cancelled = false;
     (async () => {
       try {
+        // 멤버만 입장 — 비멤버가 URL로 들어와 presence 채널·게시판에 접근하는 것을 막는다(RLS 방어선 보강).
+        if (isCommunity && communityId) {
+          if (!user) { if (!cancelled) navigate('/auth', { replace: true }); return; }
+          const { data: membership } = await supabase
+            .from('community_members')
+            .select('user_id')
+            .eq('community_id', communityId)
+            .eq('user_id', user.id)
+            .eq('is_banned', false)
+            .maybeSingle();
+          if (!membership) {
+            if (!cancelled) {
+              toast.error('이 커뮤니티의 멤버만 입장할 수 있어요');
+              navigate('/?tab=community', { replace: true });
+            }
+            return;
+          }
+        }
         if (isCommunity && communityId) {
           // 커뮤니티 정보/멤버 조회 실패는 방 로딩을 막지 않는다(비필수). 실패해도 방은 뜬다.
           try {

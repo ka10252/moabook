@@ -29,7 +29,8 @@ interface AcceptRentalModalProps {
     id: string;
     nickname: string;
   };
-  requestType: 'rent' | 'purchase';
+  /** 책의 실제 거래 유형 — 나눔(give)을 '판매'로 뭉개지 않도록 3분기로 받는다. */
+  mode: 'rent' | 'sell' | 'give';
   onAccept: (startDate: string, returnDate?: string) => Promise<void>;
 }
 
@@ -38,7 +39,7 @@ export const AcceptRentalModal = ({
   onClose,
   book,
   borrower,
-  requestType,
+  mode,
   onAccept,
 }: AcceptRentalModalProps) => {
   const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -59,8 +60,10 @@ export const AcceptRentalModal = ({
     }
   };
 
-  const actionLabel = requestType === 'rent' ? '대여' : '판매';
-  const buttonLabel = requestType === 'rent' ? '대여 수락' : '판매 수락';
+  const isRent = mode === 'rent';
+  const actionLabel = mode === 'rent' ? '대여' : mode === 'give' ? '나눔' : '판매';
+  const buttonLabel = `${actionLabel} 수락`;
+  const partnerLabel = mode === 'rent' ? '대여자' : mode === 'give' ? '받는 분' : '구매자';
 
   return (
     <AnimatePresence>
@@ -119,7 +122,7 @@ export const AcceptRentalModal = ({
                 {/* Borrower Info */}
                 <div className="bg-primary/10 rounded-xl p-3">
                   <p className="text-sm text-muted-foreground">
-                    {requestType === 'rent' ? '대여자' : '구매자'}
+                    {partnerLabel}
                   </p>
                   <p className="font-semibold text-foreground">{borrower.nickname}</p>
                 </div>
@@ -129,7 +132,7 @@ export const AcceptRentalModal = ({
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-foreground flex items-center gap-2">
                       <Calendar className="w-4 h-4" />
-                      {requestType === 'rent' ? '대여 시작일' : '거래일'}
+                      {isRent ? '대여 시작일' : '거래일'}
                     </label>
                     <Input
                       type="date"
@@ -139,7 +142,7 @@ export const AcceptRentalModal = ({
                     />
                   </div>
 
-                  {requestType === 'rent' && (
+                  {isRent && (
                     <div className="space-y-1.5">
                       <label className="text-sm font-medium text-foreground flex items-center gap-2">
                         <Calendar className="w-4 h-4" />
@@ -183,7 +186,7 @@ export const AcceptRentalModal = ({
                 <AlertDialogTitle>{actionLabel}을(를) 수락하시겠습니까?</AlertDialogTitle>
                 <AlertDialogDescription>
                   "{book.title}"을(를) {borrower.nickname}님에게 {actionLabel}합니다.
-                  {requestType === 'rent' && returnDate && (
+                  {isRent && returnDate && (
                     <>
                       <br />
                       반납 예정일: {format(new Date(returnDate), 'yyyy년 M월 d일', { locale: ko })}

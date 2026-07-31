@@ -227,7 +227,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     const fetchBookInfo = async () => {
       const { data } = await supabase
         .from('books')
-        .select('id, title, author, cover_url, mode')
+        .select('id, title, author, cover_url, mode, status')
         .in('id', Array.from(bookIdsToFetch));
       
       if (data) {
@@ -469,7 +469,10 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
             // Determine if current user can take action
             // For request: owner (not the sender) can accept
             const isBookOwner = bookInfo && msg.sender_id !== user?.id;
-            const canAccept = parsed.category === 'request' && isBookOwner && !activeTransaction;
+            // 판매·나눔은 거래가 'completed'로 생성돼 activeTransaction으로는 안 잡힌다.
+            // 책이 이미 팔림/대여중이면(수락 완료) 재수락 불가 → 중복 거래 방지.
+            const bookTaken = bookInfo?.status === 'sold' || bookInfo?.status === 'rented';
+            const canAccept = parsed.category === 'request' && isBookOwner && !activeTransaction && !bookTaken;
             
             // For accepted: owner can confirm return completion
             const canShowReturnButton = parsed.category === 'accepted' &&
@@ -785,7 +788,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
             id: conversation.other_user.id,
             nickname: conversation.other_user.nickname,
           }}
-          requestType={acceptRequestType}
+          mode={bookInfoCache[selectedBookId].mode ?? 'rent'}
           onAccept={async (startDate, returnDate) => {
             try {
               await createTransaction(
@@ -817,6 +820,13 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
               await sendMessage(confirmMessage);
 
               await refreshTransactions();
+              // 수락 즉시 책 상태를 반영 → 같은 요청 카드로 재수락(중복 거래) 방지.
+              // 대여=rented, 판매·나눔=sold. (bookInfoCache는 재조회되지 않으므로 여기서 갱신)
+              setBookInfoCache((prev) =>
+                prev[selectedBookId!]
+                  ? { ...prev, [selectedBookId!]: { ...prev[selectedBookId!], status: acceptRequestType === 'rent' ? 'rented' : 'sold' } }
+                  : prev
+              );
 
               toast.success(
                 acceptRequestType === 'rent'

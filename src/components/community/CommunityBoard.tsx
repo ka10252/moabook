@@ -272,10 +272,26 @@ export const CommunityBoard = ({ isOpen, onClose, communityId, communityName }: 
   const [searchingBooks, setSearchingBooks] = useState(false);
   const bookSearchRef = useRef<HTMLInputElement>(null);
 
+  // 멤버만 열람/작성 — URL(?board=id)이나 방 게시판 가구로 비멤버가 들어오는 것을 막는다(RLS 방어선 보강).
+  const [isMember, setIsMember] = useState<boolean | null>(null);
   useEffect(() => {
-    if (!isOpen) return;
-    fetchPosts();
-  }, [isOpen, communityId]);
+    if (!isOpen) { setIsMember(null); return; }
+    let cancelled = false;
+    (async () => {
+      if (!user) { if (!cancelled) { setIsMember(false); setLoading(false); } return; }
+      const { data } = await supabase
+        .from('community_members')
+        .select('user_id')
+        .eq('community_id', communityId)
+        .eq('user_id', user.id)
+        .eq('is_banned', false)
+        .maybeSingle();
+      if (cancelled) return;
+      if (data) { setIsMember(true); fetchPosts(); }
+      else { setIsMember(false); setLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [isOpen, communityId, user?.id]);
 
   useEffect(() => {
     if (showBookSearch) {
@@ -381,6 +397,26 @@ export const CommunityBoard = ({ isOpen, onClose, communityId, communityName }: 
   };
 
   if (!isOpen) return null;
+
+  // 비멤버 접근 차단 화면
+  if (isMember === false) {
+    return (
+      <div className="h-full flex flex-col">
+        <header className="flex items-center gap-3 px-4 h-14 border-b border-border shrink-0 bg-background/80 backdrop-blur-md">
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-muted transition-colors">
+            <ArrowLeft className="w-5 h-5 text-muted-foreground" />
+          </button>
+          <h2 className="font-bold text-foreground text-base leading-tight">게시판</h2>
+        </header>
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center">
+          <p className="text-sm text-muted-foreground">이 커뮤니티의 멤버만 게시판을 볼 수 있어요.</p>
+          <button onClick={onClose} className="h-11 px-5 rounded-full bg-primary text-primary-foreground text-sm font-semibold">
+            닫기
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col">
