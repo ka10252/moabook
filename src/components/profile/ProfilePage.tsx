@@ -24,6 +24,7 @@ import {
   MessageSquare,
   Send,
   Sparkles,
+  HelpCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,6 +60,7 @@ import { SINGAPORE_DISTRICTS } from '@/data/singaporeDistricts';
 import { spineClassFrom } from '@/lib/spineColor';
 import { TelegramSettings } from '@/components/profile/TelegramSettings';
 import { CharacterEditor } from '@/components/virtual/CharacterEditor';
+import { FaqSection } from '@/components/profile/FaqSection';
 
 /** 탈퇴·문의 접수 채널. 자동 탈퇴가 실패해도 이 경로는 항상 열려 있어야 한다. */
 const SUPPORT_EMAIL = 'admin@moabook.app';
@@ -67,7 +69,7 @@ interface ProfilePageProps {
   onSignOut: () => void;
 }
 
-type View = 'overview' | 'edit' | 'notifications' | 'feedback';
+type View = 'overview' | 'edit' | 'notifications' | 'feedback' | 'faq';
 
 /** 의견 분류 — 안 고르면 null로 저장 */
 const FEEDBACK_CATEGORIES = [
@@ -467,6 +469,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
               <MenuRow icon={Sparkles} label="캐릭터 꾸미기" onClick={() => setCharacterOpen(true)} />
               <MenuRow icon={Bell} label="알림 설정" onClick={() => setView('notifications')} />
               <MenuRow icon={MessageSquare} label="의견 보내기" onClick={() => setView('feedback')} />
+              <MenuRow icon={HelpCircle} label="자주 묻는 질문" onClick={() => setView('faq')} />
               <MenuRow
                 icon={theme === 'dark' ? Moon : Sun}
                 label={theme === 'dark' ? '다크 모드' : '라이트 모드'}
@@ -825,6 +828,18 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                 답장이 필요한 문의는 프로필 하단의 문의 채널을 이용해주세요.
               </p>
             </div>
+          </motion.div>
+        )}
+
+        {view === 'faq' && (
+          <motion.div
+            key="faq"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+          >
+            <SubHeader title="자주 묻는 질문" onBack={() => setView('overview')} />
+            <FaqSection />
           </motion.div>
         )}
       </AnimatePresence>
