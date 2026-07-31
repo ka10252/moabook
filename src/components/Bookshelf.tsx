@@ -16,6 +16,7 @@ import { useLikedBooks } from '@/hooks/useLikedBooks';
 import { useAuth } from '@/hooks/useAuth';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { useBackClose } from '@/hooks/useBackClose';
+import { supabase } from '@/integrations/supabase/client';
 import { ChevronDown, Loader2, BookOpen, Heart, BookMarked, Search, X, MapPin, SlidersHorizontal } from 'lucide-react';
 
 import { toast } from 'sonner';
@@ -89,6 +90,21 @@ export const Bookshelf = ({
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [previewBook, setPreviewBook] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>(initialCommunityId || 'everybody');
+  // 커뮤니티 책장: 그 커뮤니티 멤버들의 user_id (멤버의 공개책도 책장에 노출하기 위함)
+  const [communityMemberIds, setCommunityMemberIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (activeFilter === 'everybody' || activeFilter === 'mine') { setCommunityMemberIds(new Set()); return; }
+    let cancelled = false;
+    supabase
+      .from('community_members')
+      .select('user_id')
+      .eq('community_id', activeFilter)
+      .eq('is_banned', false)
+      .then(({ data }) => {
+        if (!cancelled) setCommunityMemberIds(new Set((data ?? []).map((r) => (r as { user_id: string }).user_id)));
+      });
+    return () => { cancelled = true; };
+  }, [activeFilter]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
   const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
@@ -238,12 +254,11 @@ export const Bookshelf = ({
     if (activeFilter === 'mine') {
       books = books.filter(book => book.owner_id === user?.id);
     } else if (activeFilter !== 'everybody') {
-      const isMyMemberOfCommunity = myCommunities.some(c => c.id === activeFilter);
+      // 커뮤니티 책장 = ① 그 커뮤니티에 지정된 책(커뮤니티 전용 포함) + ② 커뮤니티 멤버들의 공개책
+      //   커뮤니티 전용(공개범위 제한) 책은 그 커뮤니티에서만 보이고, 공개책은 멤버라면 자동 노출.
       books = books.filter(book => {
         if (book.community_id === activeFilter) return true;
-        if (isMyMemberOfCommunity && book.owner_id === user?.id) {
-          return book.is_public || book.community_id === activeFilter;
-        }
+        if (book.is_public && communityMemberIds.has(book.owner_id)) return true;
         return false;
       });
     }
@@ -261,7 +276,7 @@ export const Bookshelf = ({
     }
 
     return sortShelfBooks(applyStatusFilter(books));
-  }, [allBooks, activeFilter, user?.id, myCommunities, selectedDistricts, searchQuery, sortShelfBooks, applyStatusFilter]);
+  }, [allBooks, activeFilter, user?.id, communityMemberIds, selectedDistricts, searchQuery, sortShelfBooks, applyStatusFilter]);
 
   // 검색 로그는 타이핑 중이 아니라 "멈춘 뒤"에 한 번만 남긴다.
   // 글자마다 찍으면 "책"을 치는 동안 ㅊ,채,책 3번이 남아 노이즈가 된다.
