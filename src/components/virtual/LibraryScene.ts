@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import { type AvatarConfig, avatarLayers, defaultAvatar, loadImage } from '@/lib/avatar';
+import { type AvatarConfig, avatarLayers, defaultAvatar, loadImage, NO_ACCESSORY } from '@/lib/avatar';
 import { supabase } from '@/integrations/supabase/client';
 
 /**

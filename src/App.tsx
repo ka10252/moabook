@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { AuthProvider } from "@/hooks/useAuth";
 import { GuestGateProvider } from "@/hooks/useGuestGate";
@@ -35,6 +35,32 @@ const RouteFallback = () => (
   </div>
 );
 
+// 라우트가 바뀌면 에러바운더리를 리셋(뒤로가기로 에러 화면에서 빠져나올 수 있게)
+const AppRoutes = () => {
+  const location = useLocation();
+  return (
+    <RouteErrorBoundary resetKey={location.pathname}>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<AuthPage />} />
+          {/* 재설정 링크는 세션을 만들어준다. AuthPage에 두면 로그인된 것으로 보고
+              비밀번호를 바꾸기도 전에 홈으로 튕겨낸다. 그래서 별도 라우트다. */}
+          <Route path="/auth/reset" element={<ResetPasswordPage />} />
+          <Route path="/admin-portal" element={<AdminPortal />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/library" element={<LibraryPreview />} />
+          <Route path="/space" element={<VirtualSpacePage />} />
+          <Route path="/space/community/:communityId" element={<VirtualSpacePage />} />
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
+    </RouteErrorBoundary>
+  );
+};
+
 const App = () => (
   <ThemeProvider>
     <QueryClientProvider client={queryClient}>
@@ -45,25 +71,7 @@ const App = () => (
           <BrowserRouter>
             {/* 게스트도 앱을 둘러볼 수 있다. 가입 유도는 GuestGate가 맡는다. */}
             <GuestGateProvider>
-              <RouteErrorBoundary>
-              <Suspense fallback={<RouteFallback />}>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/auth" element={<AuthPage />} />
-                  {/* 재설정 링크는 세션을 만들어준다. AuthPage에 두면 로그인된 것으로 보고
-                      비밀번호를 바꾸기도 전에 홈으로 튕겨낸다. 그래서 별도 라우트다. */}
-                  <Route path="/auth/reset" element={<ResetPasswordPage />} />
-                  <Route path="/admin-portal" element={<AdminPortal />} />
-                  <Route path="/terms" element={<TermsPage />} />
-                  <Route path="/privacy" element={<PrivacyPage />} />
-                  <Route path="/library" element={<LibraryPreview />} />
-                  <Route path="/space" element={<VirtualSpacePage />} />
-                  <Route path="/space/community/:communityId" element={<VirtualSpacePage />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
-              </RouteErrorBoundary>
+              <AppRoutes />
               <AuthPromptModal />
             </GuestGateProvider>
           </BrowserRouter>

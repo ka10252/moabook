@@ -1,17 +1,25 @@
 import { Component, type ReactNode } from 'react';
 
-interface Props { children: ReactNode }
-interface State { hasError: boolean }
+interface Props { children: ReactNode; resetKey?: string }
+interface State { hasError: boolean; lastKey?: string }
 
 /**
  * 라우트/탭 렌더 중 에러가 나도 앱 전체가 하얀 화면이 되지 않게 막는 안전망.
  * 특히 새 배포 후 옛 청크 로드 실패(ChunkLoadError)를 잡아 새로고침을 유도한다.
+ * resetKey(라우트 경로)가 바뀌면 에러 상태를 초기화 → 뒤로가기로 에러 화면에서 빠져나올 수 있다.
  */
 export class RouteErrorBoundary extends Component<Props, State> {
-  state: State = { hasError: false };
+  state: State = { hasError: false, lastKey: this.props.resetKey };
 
-  static getDerivedStateFromError(): State {
+  static getDerivedStateFromError(): Partial<State> {
     return { hasError: true };
+  }
+
+  static getDerivedStateFromProps(props: Props, state: State): Partial<State> | null {
+    if (props.resetKey !== state.lastKey) {
+      return { hasError: false, lastKey: props.resetKey };
+    }
+    return null;
   }
 
   componentDidCatch(error: unknown) {
