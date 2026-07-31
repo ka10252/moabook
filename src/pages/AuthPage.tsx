@@ -1,18 +1,27 @@
 import React, { useState, useEffect, forwardRef } from 'react';
 import { track } from '@/lib/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, MailCheck, Lock, User, Loader2, Globe, AlertTriangle } from 'lucide-react';
+import { Mail, MailCheck, Lock, User, Loader2, MapPin, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { Separator } from '@/components/ui/separator';
-import { CountrySelector } from '@/components/auth/CountrySelector';
 import { PasswordRequirements } from '@/components/auth/PasswordRequirements';
 import { passwordSchema } from '@/lib/passwordSchema';
 import { ALLOWED_COUNTRY } from '@/data/countries';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+
+// 싱가포르 권역(옵셔널). 하이퍼로컬 매칭 참고용이라 대략적인 5개 권역 + 캠퍼스로 충분하다.
+const SG_REGIONS = [
+  '센트럴 (Orchard·Bugis·Novena)',
+  '동부 East (Tampines·Bedok·Katong)',
+  '북동부 North-East (Serangoon·Hougang·Punggol)',
+  '북부 North (Woodlands·Yishun·AMK)',
+  '서부 West (Jurong·Clementi·Bukit Batok)',
+  'NUS·Kent Ridge 인근',
+  '기타',
+];
 
 const signUpSchema = z.object({
   email: z.string().trim().email({ message: "올바른 이메일 주소를 입력해주세요" }).max(255),
@@ -55,7 +64,9 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [nickname, setNickname] = useState('');
-  const [country, setCountry] = useState('');
+  // 싱가포르 거주 여부(필수) + 권역(옵셔널). 국가 드롭다운을 대신한다.
+  const [residence, setResidence] = useState<'' | 'yes' | 'no'>('');
+  const [region, setRegion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showRegionBlock, setShowRegionBlock] = useState(false);
   /**
@@ -129,12 +140,12 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
       }
 
       if (mode === 'signup') {
-        if (!country) {
-          toast.error('국가를 선택해주세요');
+        if (!residence) {
+          toast.error('싱가포르 거주 여부를 선택해주세요');
           setIsLoading(false);
           return;
         }
-        if (country !== ALLOWED_COUNTRY) {
+        if (residence === 'no') {
           setShowRegionBlock(true);
           setIsLoading(false);
           return;
@@ -146,7 +157,7 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
           return;
         }
 
-        const { error, needsEmailConfirmation } = await signUp(email, password, nickname, country);
+        const { error, needsEmailConfirmation } = await signUp(email, password, nickname, ALLOWED_COUNTRY, region);
         if (error) {
           toast.error(authErrorMessage(error.message));
         } else if (needsEmailConfirmation) {
@@ -193,7 +204,8 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
     setEmail('');
     setPassword('');
     setNickname('');
-    setCountry('');
+    setResidence('');
+    setRegion('');
   };
 
   return (
@@ -308,13 +320,48 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
                     maxLength={30}
                   />
                 </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                    <Globe className="w-4 h-4" />
-                    <span>현재 거주 국가</span>
+                {/* 싱가포르 거주 여부 — 필수. 싱가포르 거주자만 받는 서비스라 가입 게이트 역할. */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPin className="w-4 h-4" />
+                    <span>싱가포르에 거주하고 계신가요? <span className="text-primary">*</span></span>
                   </div>
-                  <CountrySelector value={country} onChange={setCountry} />
+                  <div className="grid grid-cols-2 gap-2">
+                    {([['yes', '네, 거주 중이에요'], ['no', '아니요']] as const).map(([val, label]) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setResidence(val)}
+                        className={`h-12 rounded-xl text-sm font-medium border transition-colors ${
+                          residence === val
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-muted/50 text-foreground border-transparent hover:bg-muted'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                {/* 권역 — 옵셔널. 거주 중일 때만 노출. 하이퍼로컬 매칭 참고용. */}
+                {residence === 'yes' && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span>사는 지역 <span className="text-muted-foreground/60">(선택)</span></span>
+                    </div>
+                    <select
+                      value={region}
+                      onChange={(e) => setRegion(e.target.value)}
+                      className="w-full h-12 px-4 rounded-xl bg-muted/50 border-0 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-primary outline-none"
+                    >
+                      <option value="">선택 안 함</option>
+                      {SG_REGIONS.map((r) => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </>
             )}
 

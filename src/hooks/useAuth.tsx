@@ -10,7 +10,8 @@ interface AuthContextType {
     email: string,
     password: string,
     nickname: string,
-    country?: string
+    country?: string,
+    region?: string
   ) => Promise<{ error: Error | null; needsEmailConfirmation: boolean }>;
   resendConfirmation: (email: string) => Promise<{ error: Error | null }>;
   requestPasswordReset: (email: string) => Promise<{ error: Error | null }>;
@@ -48,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, nickname: string, country?: string) => {
+  const signUp = async (email: string, password: string, nickname: string, country?: string, region?: string) => {
     // Check if nickname is unique (case-insensitive)
     const { data: existingProfile } = await supabase
       .from('profiles')
@@ -72,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         data: {
           nickname,
           ...(country ? { country } : {}),
+          ...(region ? { region } : {}),
         },
       },
     });
