@@ -148,6 +148,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   const [agePublic, setAgePublic] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [characterOpen, setCharacterOpen] = useState(false);
+  const [showInstallGuide, setShowInstallGuide] = useState(false);
   const [country, setCountry] = useState('');
   const [district, setDistrict] = useState('');
   const [showRegionBlock, setShowRegionBlock] = useState(false);
@@ -734,23 +735,27 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                   알림 서버가 아직 준비 중이에요. 정식 배포 후 사용할 수 있습니다.
                 </p>
               ) : null}
-            </div>
 
-            {/* 온보딩 외에서도 홈 화면 추가 방법을 언제든 다시 볼 수 있게 (iOS 앱푸시 조건) */}
-            <details className="mt-3 rounded-[14px] border border-border bg-card p-4 group">
-              <summary className="text-[13px] font-bold text-foreground cursor-pointer list-none flex items-center gap-2 [&::-webkit-details-marker]:hidden">
-                <Share className="w-4 h-4 text-primary" />
-                iPhone에서 앱처럼 쓰기 (홈 화면에 추가)
-                <ChevronRight className="w-3.5 h-3.5 text-faint ml-auto transition-transform group-open:rotate-90" />
-              </summary>
-              <ol className="mt-3 space-y-2 text-[12px] text-muted-foreground leading-relaxed">
-                <li>1. Safari 하단 공유 (Share) 버튼을 눌러요</li>
-                <li>2. 홈 화면에 추가 (Add to Home Screen)를 선택해요</li>
-                <li>3. 홈 화면의 MOA Book 아이콘으로 다시 열어요</li>
-                <li>4. 알림 허용 (Allow Notifications)을 누르면 끝!</li>
-              </ol>
-              <p className="mt-2 text-[11px] text-faint">홈 화면에 추가하면 앱푸시 알림을 받을 수 있어요.</p>
-            </details>
+              {/* 온보딩 외에서도 홈 화면 추가 방법을 언제든 다시 볼 수 있게 — 알림 받기 카드 안 버튼 */}
+              <div className="pt-1 border-t border-border">
+                <button
+                  onClick={() => setShowInstallGuide((v) => !v)}
+                  className="w-full flex items-center gap-2 text-[12px] font-semibold text-primary pt-2.5"
+                >
+                  <Share className="w-3.5 h-3.5" />
+                  iPhone 홈 화면에 추가하는 방법
+                  <ChevronRight className={`w-3.5 h-3.5 ml-auto transition-transform ${showInstallGuide ? 'rotate-90' : ''}`} />
+                </button>
+                {showInstallGuide && (
+                  <ol className="mt-2.5 space-y-2 text-[12px] text-muted-foreground leading-relaxed">
+                    <li>1. Safari 하단 공유 (Share) 버튼을 눌러요</li>
+                    <li>2. 홈 화면에 추가 (Add to Home Screen)를 선택해요</li>
+                    <li>3. 홈 화면의 MOA Book 아이콘으로 다시 열어요</li>
+                    <li>4. 알림 허용 (Allow Notifications)을 누르면 끝!</li>
+                  </ol>
+                )}
+              </div>
+            </div>
 
             <TelegramSettings />
           </motion.div>
