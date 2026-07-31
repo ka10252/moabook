@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -151,6 +151,8 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [characterOpen, setCharacterOpen] = useState(false);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
+  const [showAvatarOptions, setShowAvatarOptions] = useState(false);
+  const avatarFileRef = useRef<HTMLInputElement>(null);
   const [country, setCountry] = useState('');
   const [district, setDistrict] = useState('');
   const [showRegionBlock, setShowRegionBlock] = useState(false);
@@ -412,9 +414,9 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            {/* 정체성 */}
+            {/* 정체성 — 아바타를 누르면 옵션(사진 올리기 / 캐릭터 꾸미기)이 뜬다 */}
             <div className="text-center">
-              <div className="relative inline-block">
+              <button className="relative inline-block" onClick={() => setShowAvatarOptions(true)}>
                 <div
                   className={`w-[82px] h-[82px] rounded-full flex items-center justify-center overflow-hidden ${
                     avatarUrl ? 'bg-muted' : spineClassFrom(nickname || 'moa')
@@ -428,11 +430,11 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                     </span>
                   )}
                 </div>
-                <label className="absolute bottom-0 right-0 w-7 h-7 bg-primary rounded-full flex items-center justify-center cursor-pointer shadow-md">
+                <span className="absolute bottom-0 right-0 w-7 h-7 bg-primary rounded-full flex items-center justify-center shadow-md">
                   <Camera className="w-3.5 h-3.5 text-primary-foreground" />
-                  <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
-                </label>
-              </div>
+                </span>
+              </button>
+              <input ref={avatarFileRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
 
               <h1 className="font-display text-[28px] font-medium text-foreground mt-3 leading-none">
                 {nickname || '이름 없음'}
@@ -466,7 +468,6 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
             {/* 메뉴 */}
             <div className="mt-4">
               <MenuRow icon={User} label="프로필 편집" onClick={() => setView('edit')} />
-              <MenuRow icon={Sparkles} label="캐릭터 꾸미기" onClick={() => setCharacterOpen(true)} />
               <MenuRow icon={Bell} label="알림 설정" onClick={() => setView('notifications')} />
               <MenuRow icon={MessageSquare} label="의견 보내기" onClick={() => setView('feedback')} />
               <MenuRow icon={HelpCircle} label="자주 묻는 질문" onClick={() => setView('faq')} />
@@ -978,6 +979,52 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
               <Button onClick={() => setShowRegionBlock(false)} className="w-full rounded-xl">
                 확인
               </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 아바타 클릭 → 옵션 (사진 올리기 / 캐릭터 꾸미기) */}
+      <AnimatePresence>
+        {showAvatarOptions && (
+          <motion.div
+            className="fixed inset-0 z-[70] flex items-end justify-center bg-foreground/45 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowAvatarOptions(false)}
+          >
+            <motion.div
+              className="w-full max-w-[520px] bg-card p-4 pb-8 space-y-2"
+              style={{ borderRadius: 'var(--sheet-radius, 20px) var(--sheet-radius, 20px) 0 0' }}
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="eyebrow px-1 pt-1">프로필 이미지</p>
+              <button
+                onClick={() => { setShowAvatarOptions(false); avatarFileRef.current?.click(); }}
+                className="w-full flex items-center gap-3 p-3.5 rounded-xl hover:bg-muted transition-colors text-left"
+              >
+                <span className="w-9 h-9 rounded-full bg-primary/12 flex items-center justify-center shrink-0">
+                  <Camera className="w-4 h-4 text-primary" />
+                </span>
+                <span className="text-[14px] font-semibold text-foreground">사진 올리기</span>
+              </button>
+              <button
+                onClick={() => { setShowAvatarOptions(false); setCharacterOpen(true); }}
+                className="w-full flex items-center gap-3 p-3.5 rounded-xl hover:bg-muted transition-colors text-left"
+              >
+                <span className="w-9 h-9 rounded-full bg-primary/12 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                </span>
+                <div>
+                  <span className="text-[14px] font-semibold text-foreground">캐릭터 꾸미기</span>
+                  <p className="text-[11px] text-muted-foreground">픽셀 캐릭터를 만들어 프로필·가상공간에 사용</p>
+                </div>
+              </button>
             </motion.div>
           </motion.div>
         )}
