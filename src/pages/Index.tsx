@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { lazyRetry } from '@/lib/lazyRetry';
 import { track, trackSessionStart } from '@/lib/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bookshelf } from '@/components/Bookshelf';
@@ -6,12 +7,12 @@ import { BottomNav } from '@/components/BottomNav';
 
 // 유저는 한 번에 탭 하나만 본다. 첫 화면(책장)만 즉시 로드하고
 // 나머지 탭·오버레이는 실제로 열 때 내려받는다.
-const UploadPage = lazy(() => import('@/components/upload/UploadPage').then(m => ({ default: m.UploadPage })));
-const CommunityPage = lazy(() => import('@/components/community/CommunityPage').then(m => ({ default: m.CommunityPage })));
-const ProfilePage = lazy(() => import('@/components/profile/ProfilePage').then(m => ({ default: m.ProfilePage })));
-const WishlistPage = lazy(() => import('@/components/wishlist/WishlistPage').then(m => ({ default: m.WishlistPage })));
-const ChatModal = lazy(() => import('@/components/chat/ChatModal').then(m => ({ default: m.ChatModal })));
-const CommunityBoard = lazy(() => import('@/components/community/CommunityBoard').then(m => ({ default: m.CommunityBoard })));
+const UploadPage = lazyRetry(() => import('@/components/upload/UploadPage').then(m => ({ default: m.UploadPage })));
+const CommunityPage = lazyRetry(() => import('@/components/community/CommunityPage').then(m => ({ default: m.CommunityPage })));
+const ProfilePage = lazyRetry(() => import('@/components/profile/ProfilePage').then(m => ({ default: m.ProfilePage })));
+const WishlistPage = lazyRetry(() => import('@/components/wishlist/WishlistPage').then(m => ({ default: m.WishlistPage })));
+const ChatModal = lazyRetry(() => import('@/components/chat/ChatModal').then(m => ({ default: m.ChatModal })));
+const CommunityBoard = lazyRetry(() => import('@/components/community/CommunityBoard').then(m => ({ default: m.CommunityBoard })));
 import { OnboardingModal } from '@/components/OnboardingModal';
 import { NotificationPopup } from '@/components/notifications/NotificationPopup';
 import { TelegramBanner } from '@/components/notifications/TelegramBanner';

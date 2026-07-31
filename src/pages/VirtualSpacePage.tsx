@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, lazy, Suspense } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
+import { lazyRetry } from '@/lib/lazyRetry';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, LayoutList, UserRound, Smile, Send } from 'lucide-react';
 import Phaser from 'phaser';
@@ -8,13 +9,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { type AvatarConfig, defaultAvatar, normalizeAvatar } from '@/lib/avatar';
 
-const CommunityBoard = lazy(() =>
+const CommunityBoard = lazyRetry(() =>
   import('@/components/community/CommunityBoard').then((m) => ({ default: m.CommunityBoard }))
 );
-const MemberProfileModal = lazy(() =>
+const MemberProfileModal = lazyRetry(() =>
   import('@/components/profile/MemberProfileModal').then((m) => ({ default: m.MemberProfileModal }))
 );
-const ReadingBookModal = lazy(() =>
+const ReadingBookModal = lazyRetry(() =>
   import('@/components/virtual/ReadingBookModal').then((m) => ({ default: m.ReadingBookModal }))
 );
 

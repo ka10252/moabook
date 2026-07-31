@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,20 +9,23 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { GuestGateProvider } from "@/hooks/useGuestGate";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { AuthPromptModal } from "@/components/auth/AuthPromptModal";
+import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
+import { lazyRetry } from "@/lib/lazyRetry";
 import { AuthPage } from "@/pages/AuthPage";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
 // 일반 유저는 평생 열지 않는 화면들 — 첫 로딩에 함께 내려보내지 않는다.
 // 특히 AdminPortal은 관리자 전용 컴포넌트 8개를 끌고 온다.
-const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
-const AdminPortal = lazy(() => import("./pages/AdminPortal"));
-const TermsPage = lazy(() => import("./pages/TermsPage"));
-const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
+// lazyRetry: 새 배포로 옛 청크가 사라졌을 때 하얀 화면 대신 1회 자동 새로고침.
+const ResetPasswordPage = lazyRetry(() => import("./pages/ResetPasswordPage"));
+const AdminPortal = lazyRetry(() => import("./pages/AdminPortal"));
+const TermsPage = lazyRetry(() => import("./pages/TermsPage"));
+const PrivacyPage = lazyRetry(() => import("./pages/PrivacyPage"));
 // 임시: 미채택 기능("나의 도서관") 미리보기. 채택 여부 결정 후 제거.
-const LibraryPreview = lazy(() => import("./pages/LibraryPreview"));
+const LibraryPreview = lazyRetry(() => import("./pages/LibraryPreview"));
 // 가상 도서관 (Phaser). 무거운 게임 엔진이라 lazy 로드.
-const VirtualSpacePage = lazy(() => import("./pages/VirtualSpacePage"));
+const VirtualSpacePage = lazyRetry(() => import("./pages/VirtualSpacePage"));
 
 const queryClient = new QueryClient();
 
@@ -42,6 +45,7 @@ const App = () => (
           <BrowserRouter>
             {/* 게스트도 앱을 둘러볼 수 있다. 가입 유도는 GuestGate가 맡는다. */}
             <GuestGateProvider>
+              <RouteErrorBoundary>
               <Suspense fallback={<RouteFallback />}>
                 <Routes>
                   <Route path="/" element={<Index />} />
@@ -59,6 +63,7 @@ const App = () => (
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
+              </RouteErrorBoundary>
               <AuthPromptModal />
             </GuestGateProvider>
           </BrowserRouter>
