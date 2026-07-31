@@ -143,18 +143,11 @@ export const useChat = () => {
           schema: 'public',
           table: 'messages',
         },
-        (payload) => {
-          const msg = payload.new as { sender_id: string; content: string };
-          // Show browser notification for messages from others when tab is hidden
-          if (
-            msg.sender_id !== user.id &&
-            'Notification' in window &&
-            Notification.permission === 'granted' &&
-            document.hidden
-          ) {
-            const preview = msg.content.replace(/\s*\[BOOK_ID:[^\]]+\]/, '').slice(0, 60);
-            new window.Notification('새 메시지', { body: preview, icon: '/moa-logo.png' });
-          }
+        () => {
+          // OS 알림은 useNotifications(모듈 단일 채널, id 중복 제거)가 담당한다.
+          // 여기서 다시 new window.Notification 을 띄우면, useChat이 여러 곳(헤더·채팅목록·위시)에서
+          // 마운트되는 만큼 같은 메시지에 알림이 2~3번 뜬다(= "대여수락 3연속"). 그래서 제거.
+          // 이 구독은 대화목록·헤더 미읽음 배지를 갱신하는 용도로만 남긴다.
           fetchConversations();
         }
       )
