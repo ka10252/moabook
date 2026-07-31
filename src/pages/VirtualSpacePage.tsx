@@ -211,7 +211,12 @@ export default function VirtualSpacePage() {
 
       {profileUserId && (
         <Suspense fallback={null}>
-          <MemberProfileModal isOpen={!!profileUserId} onClose={() => setProfileUserId(null)} userId={profileUserId} />
+          <MemberProfileModal
+            isOpen={!!profileUserId}
+            onClose={() => setProfileUserId(null)}
+            userId={profileUserId}
+            onBookClick={(book) => { setProfileUserId(null); navigate(`/?tab=shelf&book=${book.id}`); }}
+          />
         </Suspense>
       )}
 
