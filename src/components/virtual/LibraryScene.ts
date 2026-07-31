@@ -211,6 +211,15 @@ export class LibraryScene extends Phaser.Scene {
         zone.on('pointerdown', () => this.onAction?.(item.action!, item.name));
         // 눈에 띄도록 은은한 펄스
         this.tweens.add({ targets: img, alpha: 0.7, duration: 900, yoyo: true, repeat: -1 });
+        // 무엇인지 알 수 있게 픽셀 폰트 라벨(게시판처럼) — 가구 위에 표시
+        const FURNITURE_LABELS: Record<string, string> = { shelf: '책장' };
+        const labelText = FURNITURE_LABELS[item.action];
+        if (labelText) {
+          this.add.text(x + w / 2, y - h - 3, labelText, {
+            fontFamily: 'Galmuri11, monospace', fontSize: '10px', color: '#3a2d22',
+            backgroundColor: '#ffffffdd', padding: { x: 4, y: 2 }, resolution: 3,
+          }).setOrigin(0.5, 1).setDepth(y + 1);
+        }
       } else {
         // 발밑 충돌 박스 (상호작용 벽면 게시판/포스터는 벽쪽이라 충돌 불필요)
         const isWallDecor = item.rowBottom < this.manifest.wall_rows;
@@ -334,7 +343,7 @@ export class LibraryScene extends Phaser.Scene {
   /** 캐릭터 하단 이름표 (픽셀 폰트 Galmuri11) */
   private makeNameLabel(x: number, y: number, name: string, faded = false) {
     return this.add.text(x, y + 32, name, {
-      fontFamily: 'Galmuri11, monospace', fontSize: '6px',
+      fontFamily: 'Galmuri11, monospace', fontSize: '8px',
       color: faded ? '#8a8276' : '#3a2d22',
       backgroundColor: '#ffffffcc', padding: { x: 2, y: 1 }, resolution: 3,
     }).setOrigin(0.5, 0).setDepth(y + 1);
@@ -345,7 +354,7 @@ export class LibraryScene extends Phaser.Scene {
    * 표지가 아직 안 뜬(또는 없는) 동안엔 제목 텍스트로 대체하고, 로드되면 표지로 교체한다.
    */
   private makeReadingBubble(x: number, y: number, book: ReadingBook) {
-    const c = this.add.container(x, y - 26).setDepth(y + 2);
+    const c = this.add.container(x, y - 20).setDepth(y + 2);
     const t = book.title.length > 12 ? book.title.slice(0, 12) + '…' : book.title;
     const fallback = this.add.text(0, 0, `📖 ${t}`, {
       fontFamily: 'Galmuri11, monospace', fontSize: '10px',
@@ -391,10 +400,13 @@ export class LibraryScene extends Phaser.Scene {
         // 고해상도(슈퍼샘플)로 만들고 논리 크기로 축소 표시 → pixelArt/줌에서도 모자이크 없이 또렷.
         const clipKey = this.roundedCover(key, w, H, r - p);
         const cover = this.add.image(0, top + bh / 2, clipKey).setOrigin(0.5).setDisplaySize(w, H);
-        cover.setInteractive({ useHandCursor: true }).setData('reading', true).on('pointerdown', openDetail);
+        // 클릭 타겟은 말풍선 전체를 덮는 Zone으로(축소된 이미지의 히트영역 문제 회피)
+        const hit = this.add.zone(0, top + bh / 2, bw, bh).setOrigin(0.5)
+          .setInteractive({ useHandCursor: true }).setData('reading', true);
+        hit.on('pointerdown', openDetail);
 
         fallback.destroy();
-        c.add([g, cover]);
+        c.add([g, cover, hit]);
       });
     }
     return c;
@@ -647,7 +659,7 @@ export class LibraryScene extends Phaser.Scene {
     this.player.play(`av_body_${state}_${this.facing}`, true);
     this.player.setDepth(this.player.y);
     this.playerLabel?.setPosition(this.player.x, this.player.y + 32).setDepth(this.player.y + 1);
-    this.playerReading?.setPosition(this.player.x, this.player.y - 44).setDepth(this.player.y + 2);
+    this.playerReading?.setPosition(this.player.x, this.player.y - 20).setDepth(this.player.y + 2);
     // 눈·옷·헤어·액세서리 레이어를 몸에 맞춰 위치·깊이·애니메이션 동기화
     for (const s of this.layers) {
       s.setPosition(this.player.x, this.player.y);
@@ -670,7 +682,7 @@ export class LibraryScene extends Phaser.Scene {
       rp.sprite.y = Phaser.Math.Linear(rp.sprite.y, rp.ty, 0.25);
       rp.sprite.setDepth(rp.sprite.y);
       rp.label.setPosition(rp.sprite.x, rp.sprite.y + 32).setDepth(rp.sprite.y + 1);
-      rp.readingBubble?.setPosition(rp.sprite.x, rp.sprite.y - 44).setDepth(rp.sprite.y + 2);
+      rp.readingBubble?.setPosition(rp.sprite.x, rp.sprite.y - 20).setDepth(rp.sprite.y + 2);
       const near = Math.abs(rp.sprite.x - rp.tx) < 1.5 && Math.abs(rp.sprite.y - rp.ty) < 1.5;
       const st = rp.moving && !near ? 'walk' : 'idle';
       rp.sprite.play(`${rp.texKey}_${st}_${rp.dir}`, true);
