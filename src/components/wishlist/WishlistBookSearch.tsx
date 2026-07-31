@@ -64,7 +64,7 @@ export const WishlistBookSearch = ({ onBookSelect, onManualEntry }: WishlistBook
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
         <Input
           type="text"
-          placeholder="책 제목을 검색하세요 (한글 지원)…"
+          placeholder="책 제목을 검색하세요…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => results.length > 0 && setIsOpen(true)}

@@ -493,7 +493,7 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
                 <h3 className="font-display text-xl font-medium text-foreground mb-2">앗, 죄송해요</h3>
                 <p className="text-sm text-muted-foreground mb-6">
                   MOA는 아직 <b className="text-foreground">싱가포르</b>에서만 서비스하고 있어요.
-                  <br />서비스 지역이 넓어지면 꼭 다시 찾아주세요. 🙏
+                  <br />서비스 지역이 넓어지면 꼭 다시 찾아주세요.
                 </p>
                 <Button
                   onClick={() => setShowRegionBlock(false)}
