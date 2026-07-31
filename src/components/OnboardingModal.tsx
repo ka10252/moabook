@@ -1,11 +1,15 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef, ReactNode } from 'react';
 import { track } from '@/lib/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Bell, Upload, Share, Plus, Check, Sparkles, ChevronRight } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Bell, Upload, Plus, Check, Sparkles, ChevronRight, BookOpen, Clock, MessageCircle, Send, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePushNotifications, pushResultMessage } from '@/hooks/usePushNotifications';
 import { needsHomeScreenInstall } from '@/lib/platform';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+
+const TELEGRAM_BOT = 'MOAbook_bot';
 
 interface OnboardingModalProps {
   onComplete: () => void;
@@ -28,10 +32,14 @@ interface Rect {
  * 유저가 나중에 스스로 찾아야 할 것을, 지금 눈으로 보게 만드는 게 목적이다.
  */
 export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
+  const { user } = useAuth();
   const [step, setStep] = useState(0);
   const { isPushSupported, permission, requestAndSubscribe, loading: pushLoading } =
     usePushNotifications();
   const [pushDone, setPushDone] = useState(false);
+  // 알림 스텝 내부 하위 화면: 옵션 선택 → 홈화면 추가 안내 / 텔레그램 안내
+  const [pushView, setPushView] = useState<'main' | 'install' | 'telegram'>('main');
+  const [showLater, setShowLater] = useState(false);
   // ?ios=1 → 데스크톱에서도 iOS 안내 화면을 미리 볼 수 있다 (검수용)
   const forceIOS =
     typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('ios');
@@ -47,6 +55,23 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
       // 실패 사유를 그대로 알린다 — "거부됨" 한 마디로는 유저가 뭘 해야 할지 모른다
       toast.error(pushResultMessage(result));
     }
+  };
+
+  /** 홈 화면 추가·알림 버튼: iOS 미설치면 설치 안내로, 그 외엔 바로 권한 요청 */
+  const handlePrimaryPush = () => {
+    if (iosNeedsInstall) setPushView('install');
+    else handleEnablePush();
+  };
+
+  /** 텔레그램 연동: 링크코드 만들고 봇을 연다. 자동 연동이 안 될 때를 대비해 안내 화면도 함께 보여준다. */
+  const handleTelegram = async () => {
+    if (user) {
+      const code = Array.from(crypto.getRandomValues(new Uint8Array(9)))
+        .map((b) => b.toString(36).padStart(2, '0')).join('').slice(0, 14);
+      await supabase.from('profiles').update({ telegram_link_code: code }).eq('id', user.id);
+      window.open(`https://t.me/${TELEGRAM_BOT}?start=${code}`, '_blank');
+    }
+    setPushView('telegram');
   };
 
   /** target: 실제 화면에서 조준할 요소. 없으면 화면 가운데 카드로 뜬다. */
@@ -152,80 +177,127 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
       ),
     },
 
-    // ⑤ 알림 — 헤더의 종 아이콘을 실제로 가리킨다
+    // ⑤ 알림 — 코랄 카드로 강조. 메인=혜택+옵션 2개 / install=홈화면 추가 안내 / telegram=봇 연동 안내
     {
       key: 'push',
-      target: '[data-onboarding="bell"]',
-      render: () => (
-        <>
-          <div className="flex items-center gap-2">
-            <span className="w-9 h-9 rounded-full bg-primary/12 flex items-center justify-center shrink-0">
-              <Bell className="w-[18px] h-[18px] text-primary" />
-            </span>
-            <h2 className="font-display text-[22px] leading-tight text-foreground">알림을 켜두세요</h2>
-          </div>
-
-          <ul className="w-full space-y-1.5 text-left text-[13px] text-muted-foreground">
-            <BenefitRow text="이웃이 내 책을 빌리고 싶어할 때" />
-            <BenefitRow text="빌린 책의 반납일이 다가올 때" />
-            <BenefitRow text="채팅 메시지가 도착했을 때" />
-          </ul>
-
-          {iosNeedsInstall ? (
-            /* iOS는 홈 화면에 추가하지 않으면 푸시가 아예 오지 않는다 (Safari 탭 = 수신 불가) */
-            <div className="w-full rounded-xl bg-muted p-3.5 text-left space-y-2">
-              <p className="text-[13px] font-bold text-foreground leading-snug">
-                iPhone에서 알림을 받으려면
-                <br />
-                홈 화면에 추가해야 해요
-              </p>
-              <div className="space-y-1.5 text-[12px] text-muted-foreground">
-                <p className="flex items-center gap-1.5">
-                  <Share className="w-3.5 h-3.5 shrink-0" />
-                  Safari 하단 <b className="text-foreground">공유</b> 버튼을 누르고
-                </p>
-                <p className="flex items-center gap-1.5">
-                  <Plus className="w-3.5 h-3.5 shrink-0" />
-                  <b className="text-foreground">홈 화면에 추가</b>를 선택하세요
-                </p>
+      target: pushView === 'main' ? '[data-onboarding="bell"]' : undefined,
+      render: () => {
+        // ── 홈 화면 추가 안내 (iOS) : 흰 카드, 문장은 볼드 섞지 않고 기본체로 통일 ──
+        if (pushView === 'install') {
+          return (
+            <>
+              <span className="w-9 h-9 rounded-full bg-primary/12 flex items-center justify-center shrink-0">
+                <Smartphone className="w-[18px] h-[18px] text-primary" />
+              </span>
+              <p className="eyebrow">iPhone 알림 설정</p>
+              <h2 className="font-display text-[20px] leading-tight text-foreground">
+                홈 화면에 추가하면 알림을 받아요
+              </h2>
+              <ol className="w-full space-y-2.5 text-left mt-1">
+                <InstallStep n={1} ko="Safari 하단 공유 버튼을 눌러요" en="Share" />
+                <InstallStep n={2} ko="홈 화면에 추가를 선택해요" en="Add to Home Screen" />
+                <InstallStep n={3} ko="홈 화면의 MOA Book 아이콘으로 다시 열어요" />
+                <InstallStep n={4} ko="알림 허용을 누르면 끝!" en="Allow Notifications" hot />
+              </ol>
+              <button
+                onClick={() => setPushView('main')}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors mt-1 flex items-center gap-1"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" /> 다른 방법으로 받기
+              </button>
+            </>
+          );
+        }
+        // ── 텔레그램 안내 (자동 연동 실패 대비) : 흰 카드 ──
+        if (pushView === 'telegram') {
+          return (
+            <>
+              <span className="w-9 h-9 rounded-full bg-primary/12 flex items-center justify-center shrink-0">
+                <Send className="w-[18px] h-[18px] text-primary" />
+              </span>
+              <p className="eyebrow">텔레그램 연동</p>
+              <h2 className="font-display text-[20px] leading-tight text-foreground">
+                봇에서 이렇게 연결해요
+              </h2>
+              <ol className="w-full space-y-2.5 text-left mt-1">
+                <li className="flex items-start gap-3">
+                  <StepNum n={1} />
+                  <p className="text-[13px] text-foreground leading-relaxed">
+                    아래 링크로 MOA Book 봇을 열어요<br />
+                    <a href={`https://t.me/${TELEGRAM_BOT}`} target="_blank" rel="noreferrer"
+                       className="text-primary font-semibold underline underline-offset-2 break-all">
+                      t.me/{TELEGRAM_BOT}
+                    </a>
+                  </p>
+                </li>
+                <li className="flex items-start gap-3">
+                  <StepNum n={2} hot />
+                  <p className="text-[13px] text-foreground leading-relaxed">
+                    대화창에 <span className="font-mono bg-foreground text-background rounded px-1.5 py-0.5 text-[12px]">/start</span> 입력하면 끝
+                  </p>
+                </li>
+              </ol>
+              <div className="w-full rounded-xl bg-primary/10 border border-primary/25 p-3 text-[12px] text-foreground font-medium leading-relaxed">
+                봇이 "연결됐어요" 메시지를 보내면 완료예요.
               </div>
-              <p className="text-[11px] text-muted-foreground/80">
-                그 다음 홈 화면 아이콘으로 열면 알림을 켤 수 있어요.
-              </p>
-            </div>
-          ) : isBlocked ? (
-            /* 브라우저가 이미 차단해 둔 상태 — 버튼을 눌러도 창조차 뜨지 않는다.
-               그래서 버튼 대신 푸는 방법을 알려준다. */
-            <div className="w-full rounded-xl bg-muted p-3.5 text-left space-y-1.5">
-              <p className="text-[13px] font-bold text-foreground">
-                이 브라우저에서 알림이 차단돼 있어요
-              </p>
-              <p className="text-[12px] text-muted-foreground leading-relaxed">
-                주소창 왼쪽 <b className="text-foreground">자물쇠 아이콘</b> → 알림 →{' '}
-                <b className="text-foreground">허용</b>으로 바꾼 뒤 새로고침해주세요.
-              </p>
-            </div>
-          ) : isPushSupported ? (
-            <Button
-              onClick={handleEnablePush}
-              disabled={pushLoading || pushDone}
-              className="w-full h-11 rounded-full text-sm font-semibold gap-2"
-            >
-              {pushDone ? (
-                <>
-                  <Check className="w-4 h-4" /> 알림이 켜졌어요
-                </>
-              ) : (
-                '알림 허용하기'
-              )}
-            </Button>
-          ) : (
-            <p className="text-[12px] text-muted-foreground text-left">
-              이 브라우저는 알림을 지원하지 않아요. 나중에 프로필에서 다시 확인해보세요.
+              <button
+                onClick={() => setPushView('main')}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors mt-1 flex items-center gap-1"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" /> 다른 방법으로 받기
+              </button>
+            </>
+          );
+        }
+        // ── 메인 : 코랄 카드 ──
+        return (
+          <>
+            <span className="w-10 h-10 rounded-xl bg-white/22 flex items-center justify-center shrink-0">
+              <Bell className="w-[21px] h-[21px] text-primary-foreground" />
+            </span>
+            <h2 className="font-display text-[21px] leading-tight text-primary-foreground">
+              알림을 켜야 놓치지 않아요
+            </h2>
+            <ul className="w-full space-y-2 text-left mt-1">
+              <CoralBenefit icon={<BookOpen className="w-3.5 h-3.5" />} text="누가 내 책을 빌리고 싶어할 때" />
+              <CoralBenefit icon={<Clock className="w-3.5 h-3.5" />} text="빌린 책 반납일이 다가올 때" />
+              <CoralBenefit icon={<MessageCircle className="w-3.5 h-3.5" />} text="채팅 메시지가 도착했을 때" />
+            </ul>
+            <p className="text-[12px] font-bold text-primary-foreground/95 w-full text-left mt-1">
+              아래 옵션 중 한 개는 설정하는 걸 추천해요
             </p>
-          )}
-        </>
-      ),
+
+            {isPushSupported && !isBlocked ? (
+              <button
+                onClick={handlePrimaryPush}
+                disabled={pushLoading || pushDone}
+                className="w-full h-11 rounded-full bg-white text-primary text-[13.5px] font-bold flex items-center justify-center gap-2 disabled:opacity-70"
+              >
+                {pushDone ? (
+                  <><Check className="w-4 h-4" /> 알림이 켜졌어요</>
+                ) : iosNeedsInstall ? (
+                  <><Plus className="w-4 h-4" /> 홈 화면에 추가하고 알림 받기</>
+                ) : (
+                  <><Bell className="w-4 h-4" /> 알림 허용하기</>
+                )}
+              </button>
+            ) : (
+              <div className="w-full rounded-xl bg-white/15 p-3 text-[12px] text-primary-foreground leading-relaxed text-left">
+                {isBlocked
+                  ? '브라우저에서 알림이 차단돼 있어요. 주소창 자물쇠 → 알림 → 허용으로 바꿔주세요.'
+                  : '이 브라우저는 알림을 지원하지 않아요. 아래 텔레그램으로 받아보세요.'}
+              </div>
+            )}
+
+            <button
+              onClick={handleTelegram}
+              className="w-full h-11 rounded-full bg-white/16 border-[1.5px] border-white/50 text-primary-foreground text-[13.5px] font-bold flex items-center justify-center gap-2"
+            >
+              <Send className="w-4 h-4" /> 텔레그램으로 받기
+            </button>
+          </>
+        );
+      },
     },
 
     // ⑥ 마무리 — 등록을 강요하지 않는다. 처음 온 사람에게 필요한 건 숙제가 아니라 구경거리다.
@@ -258,6 +330,8 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
   const current = steps[step];
   const rect = useSpotlight(current.target, step);
   const [cardRef, cardH] = useMeasuredHeight(step);
+  // 알림 스텝의 메인 화면만 코랄 카드로 강조 (설치/텔레그램 하위화면은 흰 카드)
+  const coralCard = current.key === 'push' && pushView === 'main';
 
   const handleNext = () => {
     if (!isLast) {
@@ -347,7 +421,7 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.2 }}
-            className={`${anchored ? 'absolute' : 'relative pointer-events-auto'} w-[min(340px,calc(100vw-32px))] max-h-[calc(100vh-24px)] overflow-y-auto bg-card rounded-2xl shadow-hip-lg p-5`}
+            className={`${anchored ? 'absolute' : 'relative pointer-events-auto'} w-[min(340px,calc(100vw-32px))] max-h-[calc(100vh-24px)] overflow-y-auto ${coralCard ? 'bg-primary' : 'bg-card'} rounded-2xl shadow-hip-lg p-5`}
             style={
               anchored && rect
                 ? {
@@ -374,7 +448,9 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
                   <div
                     key={i}
                     className={`h-1.5 rounded-full transition-all duration-300 ${
-                      i === step ? 'w-5 bg-primary' : 'w-1.5 bg-muted-foreground/25'
+                      i === step
+                        ? coralCard ? 'w-5 bg-primary-foreground' : 'w-5 bg-primary'
+                        : coralCard ? 'w-1.5 bg-primary-foreground/30' : 'w-1.5 bg-muted-foreground/25'
                     }`}
                   />
                 ))}
@@ -382,18 +458,27 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
-                    // 어느 단계에서 건너뛰는지가 온보딩 개선의 핵심 신호다
+                    // 알림 스텝에서 '나중에'는 바로 종료하지 않고 "설정에서 다시 켤 수 있어요" 안내를 띄운다
+                    if (current.key === 'push' && !isLast) {
+                      track('onboarding_skipped', { step: 'push' });
+                      setShowLater(true);
+                      return;
+                    }
                     if (!isLast) track('onboarding_skipped', { step: current.key });
                     else track('onboarding_completed');
                     onComplete();
                   }}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-2"
+                  className={`text-xs transition-colors px-2 py-2 ${
+                    coralCard ? 'text-primary-foreground/85 hover:text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                  }`}
                 >
-                  {isLast ? '닫기' : '건너뛰기'}
+                  {current.key === 'push' && !isLast ? '나중에' : isLast ? '닫기' : '건너뛰기'}
                 </button>
                 <Button
                   onClick={handleNext}
-                  className="h-10 px-4 rounded-full text-sm font-semibold gap-1.5"
+                  className={`h-10 px-4 rounded-full text-sm font-semibold gap-1.5 ${
+                    coralCard ? 'bg-primary-foreground text-primary hover:bg-primary-foreground/90' : ''
+                  }`}
                 >
                   {isLast ? '책장 둘러보기' : '다음'}
                   <ArrowRight className="w-4 h-4" />
@@ -403,6 +488,40 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* '나중에' 클릭 시 안내 팝업 — 지금 안 켜도 나중에 켤 수 있음을 알려주고 온보딩 종료 */}
+      <AnimatePresence>
+        {showLater && (
+          <motion.div
+            className="absolute inset-0 z-[110] flex items-center justify-center px-8"
+            style={{ background: 'hsl(var(--foreground) / 0.5)' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="w-full max-w-[300px] bg-card rounded-2xl p-5 text-center shadow-hip-lg pointer-events-auto"
+              initial={{ scale: 0.94, opacity: 0, y: 12 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.94, opacity: 0 }}
+            >
+              <div className="w-11 h-11 rounded-xl bg-primary/12 flex items-center justify-center mx-auto mb-3">
+                <Bell className="w-5 h-5 text-primary" />
+              </div>
+              <h3 className="font-display text-[18px] text-foreground mb-1.5">언제든 다시 켤 수 있어요</h3>
+              <p className="text-[13px] text-muted-foreground mb-4 leading-relaxed">
+                프로필 › 알림 설정에서 켜면 돼요
+              </p>
+              <Button
+                onClick={() => { setShowLater(false); onComplete(); }}
+                className="w-full h-11 rounded-full text-sm font-semibold"
+              >
+                알겠어요
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -532,6 +651,38 @@ const BenefitRow = ({ text }: { text: string }) => (
   <li className="flex items-start gap-2">
     <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
     <span>{text}</span>
+  </li>
+);
+
+/** 코랄 카드용 혜택 행 (흰 아이콘 칩 + 흰 글자) */
+const CoralBenefit = ({ icon, text }: { icon: ReactNode; text: string }) => (
+  <li className="flex items-center gap-2.5 text-[13px] text-primary-foreground">
+    <span className="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center shrink-0 text-primary-foreground">
+      {icon}
+    </span>
+    {text}
+  </li>
+);
+
+/** 번호 칩 — 기본은 크림, 핵심 단계만 코랄 */
+const StepNum = ({ n, hot }: { n: number; hot?: boolean }) => (
+  <span
+    className={`w-6 h-6 shrink-0 rounded-full text-[11px] font-black flex items-center justify-center ${
+      hot ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
+    }`}
+  >
+    {n}
+  </span>
+);
+
+/** 설치 안내 단계 — 문장은 볼드 섞지 않고 기본체, 영문은 흐리게 병기 */
+const InstallStep = ({ n, ko, en, hot }: { n: number; ko: string; en?: string; hot?: boolean }) => (
+  <li className="flex items-start gap-3">
+    <StepNum n={n} hot={hot} />
+    <p className="text-[13px] text-foreground leading-relaxed">
+      {ko}
+      {en && <span className="text-muted-foreground"> ({en})</span>}
+    </p>
   </li>
 );
 
