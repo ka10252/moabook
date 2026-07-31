@@ -23,6 +23,7 @@ import {
   ChevronLeft,
   MessageSquare,
   Send,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,6 +58,7 @@ import { ALLOWED_COUNTRY } from '@/data/countries';
 import { SINGAPORE_DISTRICTS } from '@/data/singaporeDistricts';
 import { spineClassFrom } from '@/lib/spineColor';
 import { TelegramSettings } from '@/components/profile/TelegramSettings';
+import { CharacterEditor } from '@/components/virtual/CharacterEditor';
 
 /** 탈퇴·문의 접수 채널. 자동 탈퇴가 실패해도 이 경로는 항상 열려 있어야 한다. */
 const SUPPORT_EMAIL = 'admin@moabook.app';
@@ -145,6 +147,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   const [genderPublic, setGenderPublic] = useState(false);
   const [agePublic, setAgePublic] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [characterOpen, setCharacterOpen] = useState(false);
   const [country, setCountry] = useState('');
   const [district, setDistrict] = useState('');
   const [showRegionBlock, setShowRegionBlock] = useState(false);
@@ -460,6 +463,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
             {/* 메뉴 */}
             <div className="mt-4">
               <MenuRow icon={User} label="프로필 편집" onClick={() => setView('edit')} />
+              <MenuRow icon={Sparkles} label="캐릭터 꾸미기" onClick={() => setCharacterOpen(true)} />
               <MenuRow icon={Bell} label="알림 설정" onClick={() => setView('notifications')} />
               <MenuRow icon={MessageSquare} label="의견 보내기" onClick={() => setView('feedback')} />
               <MenuRow
@@ -732,6 +736,22 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
               ) : null}
             </div>
 
+            {/* 온보딩 외에서도 홈 화면 추가 방법을 언제든 다시 볼 수 있게 (iOS 앱푸시 조건) */}
+            <details className="mt-3 rounded-[14px] border border-border bg-card p-4 group">
+              <summary className="text-[13px] font-bold text-foreground cursor-pointer list-none flex items-center gap-2 [&::-webkit-details-marker]:hidden">
+                <Share className="w-4 h-4 text-primary" />
+                iPhone에서 앱처럼 쓰기 (홈 화면에 추가)
+                <ChevronRight className="w-3.5 h-3.5 text-faint ml-auto transition-transform group-open:rotate-90" />
+              </summary>
+              <ol className="mt-3 space-y-2 text-[12px] text-muted-foreground leading-relaxed">
+                <li>1. Safari 하단 공유 (Share) 버튼을 눌러요</li>
+                <li>2. 홈 화면에 추가 (Add to Home Screen)를 선택해요</li>
+                <li>3. 홈 화면의 MOA Book 아이콘으로 다시 열어요</li>
+                <li>4. 알림 허용 (Allow Notifications)을 누르면 끝!</li>
+              </ol>
+              <p className="mt-2 text-[11px] text-faint">홈 화면에 추가하면 앱푸시 알림을 받을 수 있어요.</p>
+            </details>
+
             <TelegramSettings />
           </motion.div>
         )}
@@ -942,6 +962,13 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 캐릭터(픽셀 아바타) 꾸미기 — 가상공간과 동일 에디터. 프로필에서도 진입 가능하게. */}
+      <CharacterEditor
+        isOpen={characterOpen}
+        onClose={() => setCharacterOpen(false)}
+        onSaved={() => { setCharacterOpen(false); toast.success('캐릭터를 저장했어요'); }}
+      />
     </div>
   );
 };
