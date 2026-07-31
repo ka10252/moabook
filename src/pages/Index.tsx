@@ -15,7 +15,6 @@ const ChatModal = lazyRetry(() => import('@/components/chat/ChatModal').then(m =
 const CommunityBoard = lazyRetry(() => import('@/components/community/CommunityBoard').then(m => ({ default: m.CommunityBoard })));
 import { OnboardingModal } from '@/components/OnboardingModal';
 import { NotificationPopup } from '@/components/notifications/NotificationPopup';
-import { TelegramBanner } from '@/components/notifications/TelegramBanner';
 import { AnnouncementPopup } from '@/components/notifications/AnnouncementPopup';
 import { useAuth } from '@/hooks/useAuth';
 import { useGuestGate } from '@/hooks/useGuestGate';
@@ -383,8 +382,7 @@ const Index = () => {
         }}
       />
 
-      {/* 텔레그램 알림 수신 동의 배너 (연동 안 한 유저에게 1회) */}
-      {!showChatModal && !boardPage && <TelegramBanner />}
+      {/* 알림 설정 유도는 온보딩 + 벨 팝업 상단 카드로 이동함(화면마다 따라다니던 배너 제거) */}
 
       {/* Chat overlay — fixed so it's immune to main's pb-20 */}
       {showChatModal && (

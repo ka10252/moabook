@@ -1,13 +1,84 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Bell, Trash2, Loader2 } from 'lucide-react';
+import { X, Bell, Trash2, Loader2, Plus, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNotifications, Notification } from '@/hooks/useNotifications';
+import { usePushNotifications, pushResultMessage } from '@/hooks/usePushNotifications';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { routeFor } from '@/lib/notificationRoutes';
+import { toast } from 'sonner';
+
+const SETUP_DISMISS_KEY = 'moa_notif_setup_dismissed';
+const TELEGRAM_BOT = 'MOAbook_bot';
+
+/**
+ * 벨 팝업 상단 '알림 설정' 카드 — 온보딩을 건너뛰어 아직 푸시·텔레그램 어느 것도 안 켠 유저에게.
+ * 닫으면(X) 영구히 다시 안 뜬다(b1). 둘 중 하나라도 켜져 있으면 아예 안 뜬다.
+ */
+const NotifSetupCard = () => {
+  const { user } = useAuth();
+  const { isSubscribed, isPushSupported, needsHomeScreenInstall, requestAndSubscribe, loading } = usePushNotifications();
+  const [tgLinked, setTgLinked] = useState<boolean | null>(null);
+  const [dismissed, setDismissed] = useState(() => !!localStorage.getItem(SETUP_DISMISS_KEY));
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('profiles').select('telegram_chat_id').eq('id', user.id).maybeSingle()
+      .then(({ data }) => setTgLinked(!!(data as { telegram_chat_id?: string | null } | null)?.telegram_chat_id));
+  }, [user]);
+
+  // 로딩 중이거나(깜빡임 방지), 닫았거나, 이미 하나라도 켠 유저에겐 숨긴다
+  if (dismissed || tgLinked === null || isSubscribed || tgLinked) return null;
+
+  const enablePush = async () => {
+    if (needsHomeScreenInstall) { toast.info('iPhone은 홈 화면에 추가한 뒤 알림을 켤 수 있어요'); return; }
+    const r = await requestAndSubscribe();
+    (r === 'granted' ? toast.success : toast.error)(pushResultMessage(r));
+  };
+
+  const connectTelegram = async () => {
+    if (!user) return;
+    const code = Array.from(crypto.getRandomValues(new Uint8Array(9)))
+      .map((b) => b.toString(36).padStart(2, '0')).join('').slice(0, 14);
+    await supabase.from('profiles').update({ telegram_link_code: code }).eq('id', user.id);
+    window.open(`https://t.me/${TELEGRAM_BOT}?start=${code}`, '_blank');
+    toast.info('텔레그램에서 "시작"을 누르면 연동돼요');
+  };
+
+  const dismiss = () => { localStorage.setItem(SETUP_DISMISS_KEY, '1'); setDismissed(true); };
+
+  return (
+    <div className="m-2 mb-0 rounded-xl bg-primary/8 border border-primary/25 p-3.5 relative">
+      <button onClick={dismiss} aria-label="닫기"
+        className="absolute right-2 top-2 p-1 rounded-md text-muted-foreground hover:bg-primary/10">
+        <X className="w-3.5 h-3.5" />
+      </button>
+      <div className="flex items-center gap-1.5 text-[13px] font-bold text-foreground pr-6">
+        <Bell className="w-3.5 h-3.5 text-primary" /> 알림을 켜세요
+      </div>
+      <p className="text-[11.5px] text-muted-foreground mt-1 leading-relaxed">
+        대여 요청·반납일을 놓치지 않게, 아래 중 하나를 켜두세요.
+      </p>
+      <div className="flex gap-2 mt-2.5">
+        {(isPushSupported || needsHomeScreenInstall) && (
+          <button onClick={enablePush} disabled={loading}
+            className="flex-1 h-9 rounded-lg bg-primary text-primary-foreground text-[12px] font-bold flex items-center justify-center gap-1.5 disabled:opacity-70">
+            <Plus className="w-3.5 h-3.5" /> 앱 알림 켜기
+          </button>
+        )}
+        <button onClick={connectTelegram}
+          className="flex-1 h-9 rounded-lg bg-card border border-primary/40 text-primary text-[12px] font-bold flex items-center justify-center gap-1.5">
+          <Send className="w-3.5 h-3.5" /> 텔레그램
+        </button>
+      </div>
+    </div>
+  );
+};
 
 interface NotificationPopupProps {
   isOpen: boolean;
@@ -141,6 +212,9 @@ export const NotificationPopup = ({
                   </button>
                 </div>
               </header>
+
+              {/* 알림 설정 유도 카드 (아직 푸시·텔레그램 안 켠 유저에게, 닫으면 영구 숨김) */}
+              <NotifSetupCard />
 
               {/* Content */}
               <ScrollArea className="flex-1 min-h-0">
