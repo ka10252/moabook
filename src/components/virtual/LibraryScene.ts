@@ -681,7 +681,7 @@ export class LibraryScene extends Phaser.Scene {
       s.setInteractive({ useHandCursor: true }).setData('npc', true);
       s.on('pointerdown', () => this.onTourStart?.());
       this.librarianSprite = s;
-      this.add.text(x, y + 30, '📖 사서', {
+      this.add.text(x, y + 30, '📖 관리자', {
         fontFamily: 'Galmuri11, monospace', fontSize: '9px', color: '#3a2d22', resolution: 3,
       }).setOrigin(0.5, 0).setDepth(y + 1);
       // 첫 방문이면 자동으로 안내 시작

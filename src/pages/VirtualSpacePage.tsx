@@ -25,10 +25,10 @@ const TOUR: { text: string; highlight?: 'shelf' | 'board' }[] = [
   { text: '어서 오세요!\n제가 이 방을 안내해 드릴게요 📖' },
   { text: '캐릭터 머리 위에는 각자\n지금 읽는 책이 보여요.\n프로필 › 캐릭터 꾸미기에서 정해요.' },
   { text: '화면 아래에서 이웃에게\n메시지와 이모지를 보낼 수 있어요.' },
-  { text: 'Zzz는 자는(미접속) 이웃이에요.\nZzz가 없으면 접속 중이라\n말을 걸 수 있어요.' },
+  { text: 'Zzz는 접속중이지 않은 이웃이에요.\nZzz가 없으면 접속 중이라\n말을 걸 수 있어요.' },
   { text: '이 책장을 누르면\n우리 커뮤니티의 책을 볼 수 있어요.', highlight: 'shelf' },
   { text: '게시판에서는\n소식을 함께 나눠요.', highlight: 'board' },
-  { text: '즐겁게 둘러보세요!\n필요하면 저(사서)를 다시 눌러주세요 👋' },
+  { text: '즐겁게 둘러보세요!\n필요하면 저(관리자)를 다시 눌러주세요 👋' },
 ];
 
 /**
@@ -313,7 +313,7 @@ export default function VirtualSpacePage() {
           >
             <div className="flex items-center gap-1.5 px-3 py-2 bg-[#F26A4B] text-white text-[13px] border-b-2 border-[#3a2d22]">
               <span>📖</span>
-              <span>사서의 안내</span>
+              <span>관리자의 안내</span>
               <span className="ml-auto text-[11px] opacity-90">{(tourStep ?? 0) + 1} / {TOUR.length}</span>
             </div>
             <p className="px-4 py-5 text-[13px] leading-6 text-[#2c2621] text-center whitespace-pre-line">
