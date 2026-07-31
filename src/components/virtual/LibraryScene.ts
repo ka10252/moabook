@@ -345,8 +345,7 @@ export class LibraryScene extends Phaser.Scene {
    * 표지가 아직 안 뜬(또는 없는) 동안엔 제목 텍스트로 대체하고, 로드되면 표지로 교체한다.
    */
   private makeReadingBubble(x: number, y: number, book: ReadingBook) {
-    const c = this.add.container(x, y - 44).setDepth(y + 2);
-    const H = 46;                         // 표지 높이(px)
+    const c = this.add.container(x, y - 40).setDepth(y + 2);
     const t = book.title.length > 12 ? book.title.slice(0, 12) + '…' : book.title;
     const fallback = this.add.text(0, 0, `📖 ${t}`, {
       fontFamily: 'Galmuri11, monospace', fontSize: '10px',
@@ -361,17 +360,66 @@ export class LibraryScene extends Phaser.Scene {
     if (book.coverUrl) {
       this.loadCover(readingKey(book), book.coverUrl).then((key) => {
         if (!key || !c.active) return;
-        const src = this.textures.get(key).getSourceImage();
+        const src = this.textures.get(key).getSourceImage() as HTMLImageElement;
         const ratio = (src.width && src.height) ? src.width / src.height : 0.68;
+        const H = 54;                       // 표지 높이(px)
         const w = Math.round(H * ratio);
-        const frame = this.add.rectangle(0, 0, w + 4, H + 4, 0xfff7e6).setOrigin(0.5, 1).setStrokeStyle(1, 0xcbb993);
-        const cover = this.add.image(0, -2, key).setOrigin(0.5, 1).setDisplaySize(w, H);
+        const p = 2;                        // 표지 둘레 흰 테두리 두께
+        const bw = w + p * 2, bh = H + p * 2;
+        const r = 6;                        // 말풍선 모서리 둥글기
+        const tailW = 12, tailH = 10;       // 캐릭터를 향하는 아래 꼬리
+        const border = 0x2c2621;
+        const bottom = -tailH;              // 말풍선 하단(꼬리 시작) y
+        const top = bottom - bh;            // 말풍선 상단 y
+        const left = -bw / 2;
+
+        // 만화 말풍선(둥근 사각형 + 아래 꼬리)을 Graphics로 그린다
+        const g = this.add.graphics();
+        g.fillStyle(0xffffff, 1);
+        g.fillTriangle(-tailW / 2, bottom, tailW / 2, bottom, 0, 0);   // 꼬리(밑변은 몸통이 덮음)
+        g.fillRoundedRect(left, top, bw, bh, r);                       // 몸통
+        g.lineStyle(2, border, 1);
+        g.strokeRoundedRect(left, top, bw, bh, r);                     // 몸통 테두리
+        g.fillStyle(0xffffff, 1);
+        g.fillRect(-tailW / 2 + 1, bottom - 1.5, tailW - 2, 3);        // 꼬리 연결부 테두리 지우기
+        g.lineStyle(2, border, 1);
+        g.beginPath();                                                 // 꼬리 양옆 선만
+        g.moveTo(-tailW / 2, bottom); g.lineTo(0, 0); g.lineTo(tailW / 2, bottom);
+        g.strokePath();
+
+        // 표지를 말풍선 둥근 모양대로 잘라(누끼) 채운다 — 모서리를 벗어나지 않게 클립 텍스처 생성
+        const clipKey = this.roundedCover(key, w, H, r - p);
+        const cover = this.add.image(0, top + bh / 2, clipKey).setOrigin(0.5);
         cover.setInteractive({ useHandCursor: true }).setData('reading', true).on('pointerdown', openDetail);
+
         fallback.destroy();
-        c.add([frame, cover]);
+        c.add([g, cover]);
       });
     }
     return c;
+  }
+
+  /** 표지 이미지를 w×h 둥근 사각형으로 잘라낸(누끼) 텍스처를 만들어 키를 돌려준다. 크기별 캐시. */
+  private roundedCover(srcKey: string, w: number, h: number, radius: number): string {
+    const rk = `rc_${srcKey}_${w}x${h}`;
+    if (this.textures.exists(rk)) return rk;
+    const src = this.textures.get(srcKey).getSourceImage() as CanvasImageSource;
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d')!;
+    const rr = Math.max(0, radius);
+    ctx.beginPath();
+    ctx.moveTo(rr, 0);
+    ctx.arcTo(w, 0, w, h, rr);
+    ctx.arcTo(w, h, 0, h, rr);
+    ctx.arcTo(0, h, 0, 0, rr);
+    ctx.arcTo(0, 0, w, 0, rr);
+    ctx.closePath();
+    ctx.clip();
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(src, 0, 0, w, h);
+    this.textures.addCanvas(rk, canvas);
+    return rk;
   }
 
   /** 원격 이미지를 Phaser 텍스처로 로드(HTMLImageElement 사용 — 로더 충돌 회피). keyBase로 캐시. */
