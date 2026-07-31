@@ -226,7 +226,10 @@ export class LibraryScene extends Phaser.Scene {
         const FURNITURE_LABELS: Record<string, string> = { shelf: '책장', board: '게시판' };
         const labelText = FURNITURE_LABELS[item.action];
         if (labelText) {
-          this.add.text(x + w / 2, y - h - 3, labelText, {
+          // 게시판: 스프라이트 상단(원래 베이크된 글자가 있던 자리)에 라벨을 얹는다.
+          // 그 외(책장 등): 가구 바로 위.
+          const labelY = item.action === 'board' ? y - h + 16 : y - h - 3;
+          this.add.text(x + w / 2, labelY, labelText, {
             fontFamily: 'Galmuri11, monospace', fontSize: '10px', color: '#3a2d22', resolution: 3,
           }).setOrigin(0.5, 1).setDepth(y + 1);
         }
