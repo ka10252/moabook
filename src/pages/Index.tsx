@@ -201,12 +201,10 @@ const Index = () => {
     const accountAgeMs = Date.now() - new Date(user.created_at).getTime();
     const isNewUser = accountAgeMs < 24 * 60 * 60 * 1000; // 24시간 이내 가입
 
-    if (isNewUser) {
-      setShowOnboarding(true);
-    } else {
-      // 기존 유저 — 온보딩 본 것으로 처리해 다시 표시 안 함
-      localStorage.setItem(key, '1');
-    }
+    // 신규 유저면 온보딩을 띄우되, "띄우는 즉시" 본 것으로 표시한다.
+    // (완료 때만 표시하면 중간에 닫거나 재진입 시 24시간 내내 다시 떠서 매번 나오는 버그)
+    if (isNewUser) setShowOnboarding(true);
+    localStorage.setItem(key, '1');
   }, [user?.id]);
 
   // Handle community invite link: ?invite=TOKEN

@@ -66,7 +66,17 @@ self.addEventListener('push', (event: PushEvent) => {
     badge: '/icons/icon-72x72.png',
     data: { url: data.url ?? '/' },
   };
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(
+    (async () => {
+      // 앱을 보고 있는 창이 있으면 인앱 토스트로 이미 알림을 보여주므로 OS 알림은 생략(중복 방지)
+      const clientsArr = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      const focused = clientsArr.some(
+        (c) => (c as WindowClient).focused || (c as WindowClient).visibilityState === 'visible',
+      );
+      if (focused) return;
+      await self.registration.showNotification(title, options);
+    })(),
+  );
 });
 
 self.addEventListener('notificationclick', (event: NotificationEvent) => {

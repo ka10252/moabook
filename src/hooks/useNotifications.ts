@@ -78,7 +78,7 @@ function setupFor(userId: string | null) {
           }
         } else if (!toastedNotificationIds.has(n.id)) {
           toastedNotificationIds.add(n.id);
-          toast(n.title, { description: n.body ?? undefined, duration: 5000 });
+          toast(n.title, { description: n.body ?? undefined, duration: 3000 });
         }
       },
     )
