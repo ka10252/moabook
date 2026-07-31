@@ -344,7 +344,7 @@ export const BookDetailWithActions = ({
                           {sibling.status === 'available' && currentUserId && sibling.owner_id !== currentUserId && (
                             <button
                               className="text-[11px] px-2.5 py-1.5 rounded-full bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors shrink-0"
-                              onClick={() => onChat(sibling.owner_id, sibling.id, sibling.mode)}
+                              onClick={() => { onChat(sibling.owner_id, sibling.id, sibling.mode); onClose(); }}
                             >
                               요청
                             </button>
@@ -388,7 +388,7 @@ export const BookDetailWithActions = ({
                   ) : (
                     <button
                       className="btn-hip flex-1 flex items-center justify-center gap-2"
-                      onClick={() => { if (requireAuth()) onChat(book.owner_id, book.id, book.mode); }}
+                      onClick={() => { if (requireAuth()) { onChat(book.owner_id, book.id, book.mode); onClose(); } }}
                     >
                       <MessageCircle className="w-4 h-4" />
                       {MODE_CTA[book.mode]}
