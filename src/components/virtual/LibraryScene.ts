@@ -497,10 +497,11 @@ export class LibraryScene extends Phaser.Scene {
   private showBubble(userId: string, text: string, isEmote: boolean) {
     if (isEmote) { this.showEmote(userId, text); return; }
     const pos = this.charPos(userId); if (!pos) return;
+    // 폰트 -1px(10) + 넉넉한 상하 패딩·줄간격으로 픽셀폰트 하단 잘림 방지, 말풍선 안에서 줄바꿈
     const bubble = this.add.text(pos.x, pos.y - 42, text, {
-      fontFamily: 'Galmuri11, monospace', fontSize: '11px',
-      color: '#2c2621', backgroundColor: '#ffffffee', padding: { x: 6, y: 3 },
-      align: 'center', resolution: 2, wordWrap: { width: 130 },
+      fontFamily: 'Galmuri11, monospace', fontSize: '10px',
+      color: '#2c2621', backgroundColor: '#ffffffee', padding: { x: 7, y: 5 },
+      align: 'center', resolution: 3, lineSpacing: 3, wordWrap: { width: 120 },
     }).setOrigin(0.5, 1).setDepth(100000);
     this.bubbles.push({ bubble, getPos: () => this.charPos(userId), expire: this.time.now + 4000 });
   }
