@@ -988,19 +988,18 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
       <AnimatePresence>
         {showAvatarOptions && (
           <motion.div
-            className="fixed inset-0 z-[70] flex items-end justify-center bg-foreground/45 backdrop-blur-sm"
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-foreground/45 backdrop-blur-sm p-6 pb-[24vh]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setShowAvatarOptions(false)}
           >
             <motion.div
-              className="w-full max-w-[520px] bg-card p-4 pb-8 space-y-2"
-              style={{ borderRadius: 'var(--sheet-radius, 20px) var(--sheet-radius, 20px) 0 0' }}
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+              className="w-full max-w-[320px] bg-card rounded-2xl p-4 space-y-2 shadow-2xl"
+              initial={{ scale: 0.94, opacity: 0, y: 12 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.94, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 26 }}
               onClick={(e) => e.stopPropagation()}
             >
               <p className="eyebrow px-1 pt-1">프로필 이미지</p>
