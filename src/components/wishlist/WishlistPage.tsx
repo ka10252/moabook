@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, BookMarked, Loader2 } from 'lucide-react';
+import { Plus, Search, BookPlus, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useWishlist, type WishlistItem } from '@/hooks/useWishlist';
 import { useAuth } from '@/hooks/useAuth';
@@ -194,7 +194,7 @@ export const WishlistPage = () => {
 
             {filter === 'mine' && mine.length === 0 && (
               <div className="text-center py-12">
-                <BookMarked className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+                <BookPlus className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
                 <p className="text-sm text-muted-foreground">아직 추가한 책이 없습니다</p>
                 <button onClick={handleAddClick} className="mt-2 text-sm text-primary font-semibold">
                   첫 번째 책 추가하기
@@ -248,7 +248,7 @@ export const WishlistPage = () => {
 
 const EmptyState = () => (
   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
-    <BookMarked className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
+    <BookPlus className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
     <h3 className="font-display text-xl font-medium text-foreground mb-2">아직 위시리스트가 없습니다</h3>
     <p className="text-muted-foreground text-sm max-w-xs mx-auto">
       찾고 있는 책을 추가해보세요! 커뮤니티에서 찾을 수 있을지도 몰라요.
