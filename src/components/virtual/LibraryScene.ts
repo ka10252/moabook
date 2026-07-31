@@ -27,10 +27,15 @@ export interface RoomManifest {
 }
 
 export interface ReadingBook {
-  id: string;
+  id?: string | null;          // 우리 books 테이블의 책이면 id (검색으로 찾은 임의의 책은 null)
   title: string;
+  author?: string | null;
   coverUrl?: string | null;
+  description?: string | null;
 }
+
+/** 표지 텍스처 캐싱·변경감지에 쓰는 안정 키 (우리 책이면 id, 아니면 표지 URL/제목) */
+const readingKey = (b: ReadingBook) => b.id || b.coverUrl || b.title;
 
 export interface PresenceConfig {
   channelName: string;                 // 예: space:global, space:community:{id}
@@ -48,7 +53,7 @@ export interface SceneInitData {
   assetBase?: string;
   onAction?: (action: string, name: string) => void;
   onOpenProfile?: (userId: string) => void;
-  onOpenReadingBook?: (bookId: string) => void;
+  onOpenReadingBook?: (book: ReadingBook) => void;
   avatar?: AvatarConfig;
   presence?: PresenceConfig;
   members?: RoomMember[];   // 커뮤니티룸: 멤버 전원(미접속자는 zzz로 표시)
@@ -58,7 +63,7 @@ interface RemotePlayer {
   sprite: Phaser.GameObjects.Sprite;
   label: Phaser.GameObjects.Text;
   readingBubble?: Phaser.GameObjects.Container;
-  readingBookId?: string | null;
+  readingSig?: string | null;
   texKey: string;
   tx: number; ty: number;            // 목표 위치 (보간용)
   dir: Dir; moving: boolean;
@@ -79,7 +84,7 @@ export class LibraryScene extends Phaser.Scene {
   private assetBase = '/assets/library';
   private onAction?: (action: string, name: string) => void;
   private onOpenProfile?: (userId: string) => void;
-  private onOpenReadingBook?: (bookId: string) => void;
+  private onOpenReadingBook?: (book: ReadingBook) => void;
   private avatar: AvatarConfig = defaultAvatar();
   private layerKeys: string[] = [];                      // 이 아바타의 레이어 텍스처 키 (몸→…→액세서리)
   private player!: Phaser.Physics.Arcade.Sprite;         // 몸(물리 바디) — 나머지 레이어는 여기에 붙음
@@ -349,12 +354,12 @@ export class LibraryScene extends Phaser.Scene {
     }).setOrigin(0.5, 1);
     c.add(fallback);
 
-    const openDetail = () => this.onOpenReadingBook?.(book.id);
+    const openDetail = () => this.onOpenReadingBook?.(book);
     // 텍스트 대체본도 클릭 가능하게(표지 없거나 로딩 중일 때)
     fallback.setInteractive({ useHandCursor: true }).setData('reading', true).on('pointerdown', openDetail);
 
     if (book.coverUrl) {
-      this.loadCover(book.id, book.coverUrl).then((key) => {
+      this.loadCover(readingKey(book), book.coverUrl).then((key) => {
         if (!key || !c.active) return;
         const src = this.textures.get(key).getSourceImage();
         const ratio = (src.width && src.height) ? src.width / src.height : 0.68;
@@ -369,9 +374,9 @@ export class LibraryScene extends Phaser.Scene {
     return c;
   }
 
-  /** 원격 이미지를 Phaser 텍스처로 로드(HTMLImageElement 사용 — 로더 충돌 회피). 책 id로 캐시. */
-  private loadCover(bookId: string, url: string): Promise<string | null> {
-    const key = `cover_${bookId}`;
+  /** 원격 이미지를 Phaser 텍스처로 로드(HTMLImageElement 사용 — 로더 충돌 회피). keyBase로 캐시. */
+  private loadCover(keyBase: string, url: string): Promise<string | null> {
+    const key = `cover_${keyBase}`;
     if (this.textures.exists(key)) return Promise.resolve(key);
     const cached = this.coverLoads.get(key);
     if (cached) return cached;
@@ -474,10 +479,11 @@ export class LibraryScene extends Phaser.Scene {
       const existing = this.remotes.get(meta.userId);
       if (existing) {
         existing.tx = meta.x; existing.ty = meta.y; existing.dir = meta.dir; existing.moving = meta.moving;
-        if (existing.readingBookId !== (meta.readingBook?.id ?? null)) {
+        const sig = meta.readingBook ? readingKey(meta.readingBook) : null;
+        if (existing.readingSig !== sig) {
           existing.readingBubble?.destroy();
           existing.readingBubble = meta.readingBook ? this.makeReadingBubble(existing.sprite.x, existing.sprite.y, meta.readingBook) : undefined;
-          existing.readingBookId = meta.readingBook?.id ?? null;
+          existing.readingSig = sig;
         }
       } else if (!this.pendingRemotes.has(meta.userId)) {
         this.pendingRemotes.add(meta.userId);
@@ -492,7 +498,7 @@ export class LibraryScene extends Phaser.Scene {
           sprite.on('pointerdown', () => this.onOpenProfile?.(meta.userId));
           const label = this.makeNameLabel(meta.x, meta.y, meta.nickname);
           const readingBubble = meta.readingBook ? this.makeReadingBubble(meta.x, meta.y, meta.readingBook) : undefined;
-          this.remotes.set(meta.userId, { sprite, label, readingBubble, readingBookId: meta.readingBook?.id ?? null, texKey, tx: meta.x, ty: meta.y, dir: meta.dir, moving: meta.moving });
+          this.remotes.set(meta.userId, { sprite, label, readingBubble, readingSig: meta.readingBook ? readingKey(meta.readingBook) : null, texKey, tx: meta.x, ty: meta.y, dir: meta.dir, moving: meta.moving });
         });
       }
     }

@@ -37,13 +37,19 @@ export default function VirtualSpacePage() {
 
   const fetchReadingBook = async (): Promise<ReadingBook | null> => {
     if (!user) return null;
+    // reading_book(jsonb)은 별도 조회 — 컬럼 미생성 시에도 reading_book_id 경로가 살아있게 분리
+    const { data: rbData } = await supabase.from('profiles').select('reading_book').eq('id', user.id).maybeSingle();
+    const snap = (rbData as { reading_book?: ReadingBook | null } | null)?.reading_book;
+    // 새 스냅샷(jsonb) 우선 — 검색으로 지정한 임의의 책 포함
+    if (snap?.title) return snap;
+    // 구버전 호환: reading_book_id만 있는 유저는 books에서 스냅샷을 만든다
     const { data } = await supabase.from('profiles').select('reading_book_id').eq('id', user.id).maybeSingle();
     const rbid = (data as { reading_book_id?: string | null } | null)?.reading_book_id;
     if (!rbid) return null;
-    const { data: bk } = await supabase.from('books').select('id, title, cover_url').eq('id', rbid).maybeSingle();
-    const row = bk as { id: string; title?: string; cover_url?: string | null } | null;
-    if (!row) return null;
-    return { id: row.id, title: row.title ?? '', coverUrl: row.cover_url ?? null };
+    const { data: bk } = await supabase.from('books').select('id, title, author, cover_url, description').eq('id', rbid).maybeSingle();
+    const b = bk as { id: string; title?: string; author?: string; cover_url?: string | null; description?: string | null } | null;
+    if (!b) return null;
+    return { id: b.id, title: b.title ?? '', author: b.author ?? null, coverUrl: b.cover_url ?? null, description: b.description ?? null };
   };
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -60,7 +66,7 @@ export default function VirtualSpacePage() {
         else if (action === 'shelf' && communityId) navigate(`/?tab=shelf&community=${communityId}`);
       },
       onOpenProfile: (uid: string) => setProfileUserId(uid),
-      onOpenReadingBook: (bookId: string) => setReadingBookId(bookId),
+      onOpenReadingBook: (book: ReadingBook) => setReadingBook(book),
       presence: user
         ? { channelName, me: { userId: user.id, nickname: nicknameRef.current, avatar, readingBook: readingBookRef.current } }
         : undefined,
@@ -72,7 +78,7 @@ export default function VirtualSpacePage() {
   const [boardOpen, setBoardOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
-  const [readingBookId, setReadingBookId] = useState<string | null>(null);
+  const [readingBook, setReadingBook] = useState<ReadingBook | null>(null);
   const [chatText, setChatText] = useState('');
   const [showEmotes, setShowEmotes] = useState(false);
 
@@ -208,9 +214,9 @@ export default function VirtualSpacePage() {
         </Suspense>
       )}
 
-      {readingBookId && (
+      {readingBook && (
         <Suspense fallback={null}>
-          <ReadingBookModal bookId={readingBookId} onClose={() => setReadingBookId(null)} />
+          <ReadingBookModal book={readingBook} onClose={() => setReadingBook(null)} />
         </Suspense>
       )}
 
