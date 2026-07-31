@@ -307,21 +307,6 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     setShowBookPicker(true);
   };
 
-  const handleReturnRequestFromMenu = async () => {
-    setShowMore(false);
-    const borrowedTx = transactions.find(
-      t => !t.isMine && t.status === 'active' && t.type === 'rent' &&
-        conversation.other_user && t.owner_id === conversation.other_user.id
-    );
-    if (!borrowedTx) {
-      toast.error('진행 중인 대여가 없습니다');
-      return;
-    }
-    const msg = `[반납 요청] 책: ${borrowedTx.book?.title || '책'} 을 반납하겠습니다. [BOOK_ID:${borrowedTx.book_id}]`;
-    await sendMessage(msg);
-    toast.success('반납했다고 알렸어요');
-  };
-
   const handleBookPickerSelect = async (book: BookInfo) => {
     setShowBookPicker(false);
     const msg = `[대여 요청] [BOOK_ID:${book.id}]`;
@@ -499,12 +484,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
               activeTransaction.isMine &&
               !isOwn;
 
-            // Borrower can request return (shown on accepted message, for the borrower)
-            const canRequestReturn = parsed.category === 'accepted' &&
-              parsed.transactionType === 'rent' &&
-              activeTransaction &&
-              !activeTransaction.isMine &&
-              !isOwn;
+            // 빌린 사람의 '반납했어요' 버튼은 제거함 — 책 주인이 실제로 돌려받고 '반납 완료'를 누른다.
 
             return (
               <div key={msg.id}>
@@ -550,13 +530,6 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
                             }
                           }}
                           showReturnButton={canShowReturnButton}
-                          showRequestReturnButton={canRequestReturn}
-                          onRequestReturnClick={async () => {
-                            if (!bookInfo) return;
-                            const msg = `[반납 요청] 책: ${bookInfo.title} 을 반납하겠습니다. [BOOK_ID:${bookInfo.id}]`;
-                            await sendMessage(msg);
-                            toast.success('반납했다고 알렸어요');
-                          }}
                           showAcceptReturnButton={canAcceptReturn}
                           onAcceptReturnClick={() => {
                             if (activeTransaction && bookInfo) {
