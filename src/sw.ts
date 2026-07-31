@@ -1,11 +1,21 @@
 /// <reference lib="webworker" />
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
+import { clientsClaim } from 'workbox-core';
 import { registerRoute } from 'workbox-routing';
 import { CacheFirst } from 'workbox-strategies';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 import { ExpirationPlugin } from 'workbox-expiration';
 
 declare const self: ServiceWorkerGlobalScope;
+
+// 새 서비스워커가 "대기"만 하면 홈스크린 PWA(iOS)는 창이 안 닫혀 영영 활성화 안 됨 → 옛 캐시 고정.
+// 즉시 활성화(skipWaiting)하고 열린 화면을 넘겨받게(clientsClaim) 해서 배포가 바로 반영되게 한다.
+self.skipWaiting();
+clientsClaim();
+// autoUpdate 등록 스크립트가 보내는 SKIP_WAITING 메시지도 처리(있으면 즉시 반영)
+self.addEventListener('message', (event) => {
+  if ((event.data as { type?: string })?.type === 'SKIP_WAITING') self.skipWaiting();
+});
 
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
