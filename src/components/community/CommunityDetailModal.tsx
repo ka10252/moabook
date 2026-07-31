@@ -97,13 +97,12 @@ export const CommunityDetailModal = ({
       toast.error('알림 설정을 바꾸지 못했어요');
     }
   };
-  const [communityPinHash, setCommunityPinHash] = useState<string | null>(null);
+  const [requiresPin, setRequiresPin] = useState(false);
   const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [inviteCopied, setInviteCopied] = useState(false);
   const [inviteLoading, setInviteLoading] = useState(false);
 
   const isOwner = community?.created_by === user?.id;
-  const requiresPin = communityPinHash && communityPinHash !== btoa('0000');
 
   useEffect(() => {
     if (isOpen && community) {
@@ -139,15 +138,15 @@ export const CommunityDetailModal = ({
       }
     }
 
-    // Fetch community with pin_hash and member_visibility
+    // pin_hash는 더 이상 클라가 읽지 않는다(해시 유출 차단). PIN 필요 여부는 requires_pin 컬럼으로.
     const { data: fullCommunity } = await supabase
       .from('communities')
-      .select('pin_hash, member_visibility, invite_token')
+      .select('requires_pin, member_visibility, invite_token')
       .eq('id', community.id)
       .maybeSingle();
 
     if (fullCommunity) {
-      setCommunityPinHash(fullCommunity.pin_hash);
+      setRequiresPin(!!(fullCommunity as any).requires_pin);
       setInviteToken((fullCommunity as any).invite_token ?? null);
       const visibility = fullCommunity.member_visibility as 'public' | 'members_only' | 'private';
       
@@ -202,40 +201,22 @@ export const CommunityDetailModal = ({
 
     setRemovingId(confirmKick.user_id);
     try {
-      const newKickCount = (confirmKick.kick_count || 0) + 1;
-      const shouldBan = newKickCount >= 3;
+      // 방출 카운트는 멤버십 행이 삭제돼도 살아남는 flags 테이블에 서버측으로 기록된다(3회=영구차단).
+      const { data: result, error } = await supabase.rpc('kick_community_member', {
+        p_community_id: community.id,
+        p_user_id: confirmKick.user_id,
+        p_ban: false,
+      });
+      if (error) throw error;
 
-      if (shouldBan) {
-        // Mark as banned instead of deleting
-        const { error } = await supabase
-          .from('community_members')
-          .update({ kick_count: newKickCount, is_banned: true })
-          .eq('community_id', community.id)
-          .eq('user_id', confirmKick.user_id);
-
-        if (error) throw error;
-
+      if (result === 'banned') {
         toast.success(`${confirmKick.profile?.nickname || '멤버'}님이 영구 방출되었습니다 (3회 이상 방출)`);
+      } else if (result === 'kicked') {
+        const n = (confirmKick.kick_count || 0) + 1;
+        toast.success(`${confirmKick.profile?.nickname || '멤버'}님을 방출했습니다 (${n}/3)`);
       } else {
-        // Delete membership but keep record for kick count
-        const { error } = await supabase
-          .from('community_members')
-          .update({ kick_count: newKickCount })
-          .eq('community_id', community.id)
-          .eq('user_id', confirmKick.user_id);
-
-        if (error) throw error;
-
-        // Now delete the membership
-        const { error: deleteError } = await supabase
-          .from('community_members')
-          .delete()
-          .eq('community_id', community.id)
-          .eq('user_id', confirmKick.user_id);
-
-        if (deleteError) throw deleteError;
-
-        toast.success(`${confirmKick.profile?.nickname || '멤버'}님을 방출했습니다 (${newKickCount}/3)`);
+        toast.error('멤버 방출 권한이 없습니다');
+        return;
       }
 
       setMembers(prev => prev.filter(m => m.user_id !== confirmKick.user_id));
@@ -320,11 +301,14 @@ export const CommunityDetailModal = ({
     }
   };
 
-  const handlePinSubmit = () => {
-    if (!community || !communityPinHash) return;
-
-    const inputHash = btoa(pinInput);
-    if (inputHash === communityPinHash) {
+  const handlePinSubmit = async () => {
+    if (!community) return;
+    // 서버측 검증(bcrypt) — 해시를 클라로 가져오지 않는다.
+    const { data: ok, error } = await supabase.rpc('verify_community_pin', {
+      p_community_id: community.id,
+      p_pin: pinInput,
+    });
+    if (!error && ok) {
       setShowPinDialog(false);
       onClose();
       onNavigateToBookshelf?.(community.id);

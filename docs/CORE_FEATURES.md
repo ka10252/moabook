@@ -41,6 +41,14 @@
 - **책장 라벨**: 커뮤니티룸 low_shelf 위 '책장' 픽셀 라벨. 이름표·라벨은 배경 없이 텍스트만.
 - **프로필 책 클릭 → 요청**: MemberProfileModal `onBookClick` → `/?tab=shelf&book=<id>`로 메인 앱 책 상세(요청·채팅 배선 재사용).
 
+### 커뮤니티 보안·접근제어 (QA High 수정) ✅
+- **PIN**: base64(가역)+클라 비교 → **bcrypt 해시 + 서버측 RPC 검증**. 마이그레이션 `20260801000002_community_pin_bans.sql`.
+  - 저장: `communities.pin_hash`는 트리거 `hash_community_pin`이 평문을 bcrypt로. 클라는 평문만 보낸다.
+  - 검증: 가입=`join_community_with_pin(id,pin)`, 책장 게이트=`verify_community_pin(id,pin)`. **클라는 pin_hash를 절대 읽지 않는다**(`revoke select(pin_hash)`), "PIN 필요 여부"는 `communities.requires_pin` 컬럼으로만.
+  - **불변식**: communities를 `select('*')`로 읽으면 pin_hash 권한오류. 명시 컬럼만. 새 PIN 검증은 반드시 RPC.
+- **3회 방출 영구차단**: kick이 kick_count가 든 멤버십 행을 DELETE해 카운트 소멸 → 발동 불가였음. **영구 flags 테이블 `community_member_flags`(멤버십 삭제와 무관)** + `kick_community_member(id,user,ban)` RPC(소유자만, 3회=자동 is_banned). 가입 RPC가 flags.is_banned 확인.
+- **멤버십 게이트**: 커뮤니티룸 입장(`VirtualSpacePage`)·게시판(`CommunityBoard`)에서 비멤버 접근 차단(RLS 방어선 보강). 게시판 딥링크(`?board=`)·방 가구 공통.
+
 ### 가상공간 커뮤니티 집중 + 사서 NPC (2차) ✅
 - **전역 가상 도서관 진입 숨김**(코드 보존) → 커뮤니티룸 중심. 캐릭터 에디터는 프로필(아바타 클릭)에서 진입.
 - **사서 NPC**(커뮤니티룸=게시판 가구 있는 방에만): 아바타 시스템 기본룩, 게시판·블랙보드 사이 **벽에 붙여** 배치(`wall_rows*T + T*0.45`).

@@ -112,7 +112,7 @@ export const AdminDashboard = () => {
         supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', weekStart.toISOString()),
         supabase.from('books').select('*', { count: 'exact', head: true }),
         supabase.from('books').select('*', { count: 'exact', head: true }).eq('status', 'available'),
-        supabase.from('communities').select('*', { count: 'exact', head: true }),
+        supabase.from('communities').select('id', { count: 'exact', head: true }),
         supabase.from('transactions').select('*', { count: 'exact', head: true }),
         supabase.from('transactions').select('*', { count: 'exact', head: true }).eq('status', 'active'),
         supabase.from('transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending'),

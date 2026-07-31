@@ -84,8 +84,8 @@ export const CreateCommunityForm = ({ onSuccess, onCancel }: CreateCommunityForm
     setIsSubmitting(true);
 
     try {
-      // Use a default PIN hash if not requiring PIN (still needed for DB)
-      const pinHash = requiresPin ? btoa(pin) : btoa('0000');
+      // 평문 PIN을 보내면 DB 트리거(hash_community_pin)가 bcrypt로 저장한다. PIN 없으면 '0000'.
+      const pinPlain = requiresPin ? pin : '0000';
 
       // Upload cover image if provided
       let coverUrl: string | null = null;
@@ -112,11 +112,12 @@ export const CreateCommunityForm = ({ onSuccess, onCancel }: CreateCommunityForm
           name: name.trim(),
           description: description.trim() || null,
           cover_url: coverUrl,
-          pin_hash: pinHash,
+          pin_hash: pinPlain,
+          requires_pin: requiresPin,
           created_by: user.id,
           member_visibility: memberVisibility,
         } as any)
-        .select()
+        .select('id')
         .single();
 
       if (communityError) throw communityError;

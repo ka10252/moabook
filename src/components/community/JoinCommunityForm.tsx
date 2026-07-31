@@ -42,51 +42,32 @@ export const JoinCommunityForm = ({ community, onSuccess, onBack }: JoinCommunit
     setError(null);
 
     try {
-      // Verify PIN
-      const { data: communityData, error: fetchError } = await supabase
-        .from('communities')
-        .select('pin_hash')
-        .eq('id', community.id)
-        .single();
+      // PIN 검증·차단확인·가입을 서버측 RPC로 처리(해시를 클라가 읽지 않는다).
+      const { data: result, error: rpcError } = await supabase.rpc('join_community_with_pin', {
+        p_community_id: community.id,
+        p_pin: pin,
+      });
+      if (rpcError) throw rpcError;
 
-      if (fetchError) throw fetchError;
-
-      const enteredPinHash = btoa(pin);
-      
-      if (communityData.pin_hash !== enteredPinHash) {
-        setError('잘못된 PIN입니다. 다시 시도해주세요.');
-        setPin('');
-        setIsSubmitting(false);
-        return;
+      switch (result as string) {
+        case 'ok':
+          toast.success(`"${community.name}"에 가입했습니다!`);
+          onSuccess();
+          break;
+        case 'already_member':
+          toast.info('이미 이 커뮤니티의 멤버입니다');
+          onSuccess();
+          break;
+        case 'wrong_pin':
+          setError('잘못된 PIN입니다. 다시 시도해주세요.');
+          setPin('');
+          break;
+        case 'banned':
+          setError('이 커뮤니티에서 차단되어 가입할 수 없습니다.');
+          break;
+        default:
+          setError('커뮤니티 가입에 실패했습니다. 다시 시도해주세요.');
       }
-
-      // Check if already a member
-      const { data: existingMember } = await supabase
-        .from('community_members')
-        .select('id')
-        .eq('community_id', community.id)
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (existingMember) {
-        toast.info('이미 이 커뮤니티의 멤버입니다');
-        onSuccess();
-        return;
-      }
-
-      // Join community
-      const { error: joinError } = await supabase
-        .from('community_members')
-        .insert({
-          community_id: community.id,
-          user_id: user.id,
-          role: 'member',
-        });
-
-      if (joinError) throw joinError;
-
-      toast.success(`"${community.name}"에 가입했습니다!`);
-      onSuccess();
     } catch (error) {
       console.error('Join community error:', error);
       toast.error('커뮤니티 가입에 실패했습니다');
