@@ -216,8 +216,7 @@ export class LibraryScene extends Phaser.Scene {
         const labelText = FURNITURE_LABELS[item.action];
         if (labelText) {
           this.add.text(x + w / 2, y - h - 3, labelText, {
-            fontFamily: 'Galmuri11, monospace', fontSize: '10px', color: '#3a2d22',
-            backgroundColor: '#ffffffdd', padding: { x: 4, y: 2 }, resolution: 3,
+            fontFamily: 'Galmuri11, monospace', fontSize: '10px', color: '#3a2d22', resolution: 3,
           }).setOrigin(0.5, 1).setDepth(y + 1);
         }
       } else {
@@ -344,8 +343,7 @@ export class LibraryScene extends Phaser.Scene {
   private makeNameLabel(x: number, y: number, name: string, faded = false) {
     return this.add.text(x, y + 32, name, {
       fontFamily: 'Galmuri11, monospace', fontSize: '8px',
-      color: faded ? '#8a8276' : '#3a2d22',
-      backgroundColor: '#ffffffcc', padding: { x: 2, y: 1 }, resolution: 3,
+      color: faded ? '#8a8276' : '#3a2d22', resolution: 3,
     }).setOrigin(0.5, 0).setDepth(y + 1);
   }
 
