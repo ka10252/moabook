@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { formatPrice, MODE_LABEL } from '@/lib/bookMode';
 import { X, Heart, BookOpen, Loader2 } from 'lucide-react';
 import { useLikedBooks } from '@/hooks/useLikedBooks';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -114,9 +113,6 @@ export const LikedBooksPopup = ({ isOpen, onClose, onBookClick }: LikedBooksPopu
                           </p>
                           <p className="text-xs text-muted-foreground truncate">
                             {item.book?.author || ''}
-                          </p>
-                          <p className="text-xs text-primary mt-0.5">
-                            {item.book?.mode === 'sell' ? formatPrice(item.book?.price) : MODE_LABEL[item.book?.mode ?? 'rent']}
                           </p>
                         </div>
 
