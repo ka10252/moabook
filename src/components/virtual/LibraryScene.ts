@@ -105,6 +105,12 @@ export class LibraryScene extends Phaser.Scene {
   private offline = new Map<string, { sprite: Phaser.GameObjects.Sprite; label: Phaser.GameObjects.Text; zzz: Phaser.GameObjects.Text }>();
   private pendingOffline = new Set<string>();
   private bubbles: { bubble: Phaser.GameObjects.Container; userId: string; getPos: () => { x: number; y: number } | null; expire: number }[] = [];
+  // 사서 NPC & 안내 투어
+  private furnitureRectByAction = new Map<string, { x: number; y: number; w: number; h: number }>();
+  private librarianSprite?: Phaser.GameObjects.Sprite;
+  private tourStep = -1;
+  private tourBubble?: Phaser.GameObjects.Container;
+  private tourHi?: Phaser.GameObjects.Graphics;
   private lastBroadcast = 0;
   private lastSent = { x: 0, y: 0, dir: 'down' as Dir, moving: false };
 
@@ -126,6 +132,11 @@ export class LibraryScene extends Phaser.Scene {
     this.pendingRemotes = new Set();
     this.offline = new Map();
     this.pendingOffline = new Set();
+    this.furnitureRectByAction = new Map();
+    this.tourStep = -1;
+    this.librarianSprite = undefined;
+    this.tourBubble = undefined;
+    this.tourHi = undefined;
   }
 
   preload() {
@@ -203,6 +214,7 @@ export class LibraryScene extends Phaser.Scene {
 
       // 상호작용 가구(예: 게시판) → 클릭 시 액션 발생, 반짝이는 힌트
       if (item.action) {
+        this.furnitureRectByAction.set(item.action, { x, y: y - h, w, h }); // 투어 하이라이트용 영역
         // 모바일에서 정확히 안 눌러도 되도록 넉넉한 탭 영역(Zone)을 얹는다
         const zoneW = Math.max(w + T, T * 2);
         const zoneH = Math.max(h + T, T * 2.5);
@@ -299,8 +311,10 @@ export class LibraryScene extends Phaser.Scene {
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as Record<string, Phaser.Input.Keyboard.Key>;
     // 탭한 곳으로 걷기 (상호작용 가구를 탭한 경우는 이동하지 않음)
     this.input.on('pointerdown', (p: Phaser.Input.Pointer, currentlyOver: Phaser.GameObjects.GameObject[]) => {
-      // 상호작용 오브젝트(가구/캐릭터/읽는 책 말풍선)를 탭한 경우는 이동하지 않는다
-      if (currentlyOver.some((o) => o.getData && (o.getData('action') || o.getData('remoteUser') || o.getData('reading')))) return;
+      // 사서 안내 투어 중이면 탭으로 다음 단계 진행(이동/다른 동작 안 함)
+      if (this.tourStep >= 0) { this.advanceTour(); return; }
+      // 상호작용 오브젝트(가구/캐릭터/읽는 책 말풍선/사서)를 탭한 경우는 이동하지 않는다
+      if (currentlyOver.some((o) => o.getData && (o.getData('action') || o.getData('remoteUser') || o.getData('reading') || o.getData('npc')))) return;
       const wp = this.cameras.main.getWorldPoint(p.x, p.y);
       this.moveTarget = new Phaser.Math.Vector2(wp.x, wp.y);
     });
@@ -308,6 +322,8 @@ export class LibraryScene extends Phaser.Scene {
     // ---- 멀티플레이어(Presence) ----
     if (this.presenceCfg) this.setupPresence();
     this.refreshOffline(); // 커뮤니티룸: 멤버 전원 표시(미접속 zzz)
+    // 커뮤니티룸(게시판 가구가 있는 방)에만 사서 NPC 배치
+    if (this.manifest.furniture.some((f) => f.action === 'board')) this.spawnLibrarian();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       if (this.channel) { supabase.removeChannel(this.channel); this.channel = undefined; }
     });
@@ -639,6 +655,99 @@ export class LibraryScene extends Phaser.Scene {
         this.offline.set(m.userId, { sprite, label, zzz });
       });
     });
+  }
+
+  // ── 사서 NPC & 안내 투어 ─────────────────────────────────────────────
+  private static LIBRARIAN_TOUR_KEY = 'moa_room_tour_seen';
+  private static LIBRARIAN_AVATAR: AvatarConfig = {
+    // 사서다운 단정한 기본룩 (아바타 시스템으로 조합 → 픽셀 톤 유지)
+    body: '05', eyes: '01', hairShape: '03', hairColor: '01', outfitStyle: '09', outfitColor: '01', accessory: NO_ACCESSORY,
+  };
+  private static TOUR: { text: string; highlight?: string }[] = [
+    { text: '어서 오세요! 제가 이 방을\n안내해 드릴게요 📖' },
+    { text: '캐릭터 머리 위에는 각자\n지금 읽는 책이 보여요.\n프로필 › 캐릭터 꾸미기에서 정해요' },
+    { text: '화면 아래에서 메시지와\n이모지를 보낼 수 있어요' },
+    { text: 'Zzz는 자는(미접속) 이웃이에요.\nZzz가 없으면 접속 중이라\n말을 걸 수 있어요' },
+    { text: '이 책장을 누르면\n우리 커뮤니티의 책을 볼 수 있어요', highlight: 'shelf' },
+    { text: '게시판에서는\n소식을 함께 나눠요', highlight: 'board' },
+    { text: '즐겁게 둘러보세요!\n필요하면 저를 다시 눌러주세요 👋' },
+  ];
+
+  private spawnLibrarian() {
+    const T = this.manifest.tile;
+    const board = this.manifest.furniture.find((f) => f.action === 'board');
+    const chalk = this.manifest.furniture.find((f) => f.name === 'chalkboard');
+    const midCol = board && chalk ? (board.col + chalk.col) / 2 + 1 : 9;
+    const x = Math.round(midCol * T);
+    const y = Math.round((this.manifest.wall_rows + 1) * T + T * 0.5); // 벽(게시판·블랙보드) 바로 아래 바닥
+    this.ensureAvatarTexture(LibraryScene.LIBRARIAN_AVATAR).then((texKey) => {
+      if (!this.scene || this.librarianSprite) return;
+      const s = this.add.sprite(x, y, texKey).setDepth(y);
+      s.play(`${texKey}_idle_down`);
+      s.setInteractive({ useHandCursor: true }).setData('npc', true);
+      s.on('pointerdown', () => { if (this.tourStep < 0) this.startTour(); });
+      this.librarianSprite = s;
+      // 이름표 + 살짝 떠오르는 안내 아이콘
+      this.add.text(x, y + 30, '📖 사서', {
+        fontFamily: 'Galmuri11, monospace', fontSize: '9px', color: '#3a2d22', resolution: 3,
+      }).setOrigin(0.5, 0).setDepth(y + 1);
+      // 첫 방문이면 자동으로 안내 시작
+      if (!localStorage.getItem(LibraryScene.LIBRARIAN_TOUR_KEY)) {
+        this.time.delayedCall(700, () => { if (this.tourStep < 0 && this.librarianSprite?.active) this.startTour(); });
+      }
+    });
+  }
+
+  private startTour() { this.tourStep = 0; this.showTourStep(); }
+  private advanceTour() { this.tourStep += 1; this.showTourStep(); }
+
+  private showTourStep() {
+    this.tourBubble?.destroy(); this.tourBubble = undefined;
+    this.clearTourHighlight();
+    const step = LibraryScene.TOUR[this.tourStep];
+    if (!step || !this.librarianSprite) { this.endTour(); return; }
+    const isLast = this.tourStep === LibraryScene.TOUR.length - 1;
+    this.tourBubble = this.makeSpeechBubble(
+      this.librarianSprite.x,
+      this.librarianSprite.y - 40,
+      step.text + (isLast ? '\n\n(눌러서 닫기)' : '\n\n(눌러서 계속 ▶)'),
+    );
+    if (step.highlight) {
+      const r = this.furnitureRectByAction.get(step.highlight);
+      if (r) {
+        const hi = this.add.graphics().setDepth(150000);
+        hi.lineStyle(2.5, 0xF26A4B, 1);
+        hi.strokeRoundedRect(r.x - 4, r.y - 4, r.w + 8, r.h + 8, 6);
+        this.tourHi = hi;
+        this.tweens.add({ targets: hi, alpha: 0.25, duration: 550, yoyo: true, repeat: -1 });
+      }
+    }
+  }
+
+  private clearTourHighlight() {
+    if (this.tourHi) { this.tweens.killTweensOf(this.tourHi); this.tourHi.destroy(); this.tourHi = undefined; }
+  }
+
+  private endTour() {
+    this.tourStep = -1;
+    this.tourBubble?.destroy(); this.tourBubble = undefined;
+    this.clearTourHighlight();
+    try { localStorage.setItem(LibraryScene.LIBRARIAN_TOUR_KEY, '1'); } catch { /* ignore */ }
+  }
+
+  /** 픽셀 말풍선(불투명 흰 배경 + 아래 꼬리) — 사서 안내용. 컨테이너 반환. */
+  private makeSpeechBubble(x: number, y: number, text: string): Phaser.GameObjects.Container {
+    const c = this.add.container(x, y).setDepth(200000);
+    const label = this.add.text(0, -6, text, {
+      fontFamily: 'Galmuri11, monospace', fontSize: '9px', color: '#2c2621',
+      backgroundColor: '#ffffff', padding: { x: 9, y: 7 }, align: 'center', resolution: 3, lineSpacing: 3,
+      wordWrap: { width: 200 },
+    }).setOrigin(0.5, 1);
+    const g = this.add.graphics();
+    g.fillStyle(0xffffff, 1);
+    g.fillTriangle(-6, -6, 6, -6, 0, 1);
+    c.add([g, label]);
+    return c;
   }
 
   update() {
