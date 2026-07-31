@@ -105,14 +105,21 @@ export const NotificationPopup = ({
 }: NotificationPopupProps) => {
   const { notifications, loading, markAllAsRead, deleteNotification } = useNotifications();
 
-  // 알림창을 열면(로딩 완료 후) 쌓인 알림을 자동으로 읽음 처리 → 미확인 표시·헤더 배지 즉시 사라짐(새로고침 불필요).
+  // 창을 열 때 "그 시점에 안 읽었던 알림 id"를 얼려둔다(빨간 점·강조 배경 표시용).
+  // 열자마자 markAllAsRead로 is_read가 즉시 true가 돼도, 이 스냅샷으로 빨간 점을 창이 열려 있는 동안 유지한다.
+  // → 알림이 여러 개 쌓여 있어도 "방금까지 안 읽은 게 어떤 것인지" 구분 가능. 창을 닫으면 스냅샷을 비워 사라진다.
+  const [sessionUnreadIds, setSessionUnreadIds] = useState<Set<string>>(new Set());
+
+  // 알림창을 열면(로딩 완료 후) 쌓인 알림을 자동으로 읽음 처리 → 헤더 배지 즉시 사라짐(새로고침 불필요).
   const markedRef = useRef(false);
   useEffect(() => {
-    if (!isOpen) { markedRef.current = false; return; }
+    if (!isOpen) { markedRef.current = false; setSessionUnreadIds(new Set()); return; }
     if (loading || markedRef.current) return;
     markedRef.current = true;
+    // markAllAsRead가 is_read를 바꾸기 전에 스냅샷을 먼저 캡처한다.
+    setSessionUnreadIds(new Set(notifications.filter((n) => !n.is_read).map((n) => n.id)));
     markAllAsRead();
-  }, [isOpen, loading, markAllAsRead]);
+  }, [isOpen, loading, markAllAsRead, notifications]);
 
   /**
    * 알림을 눌렀는데 아무 일도 안 일어나면, 유저는 다음부터 알림을 안 누른다.
@@ -238,14 +245,15 @@ export const NotificationPopup = ({
                         animate={{ opacity: 1, x: 0 }}
                         className={cn(
                           "relative p-3 rounded-xl cursor-pointer transition-colors group",
-                          notification.is_read
-                            ? "bg-transparent hover:bg-muted/50"
-                            : "bg-primary/5 hover:bg-primary/10"
+                          // 미확인 강조는 '창을 열 때의 스냅샷' 기준 — 창이 열려 있는 동안 유지, 닫으면 사라짐
+                          sessionUnreadIds.has(notification.id)
+                            ? "bg-primary/5 hover:bg-primary/10"
+                            : "bg-transparent hover:bg-muted/50"
                         )}
                         onClick={() => handleNotificationClick(notification)}
                       >
-                        {/* Unread indicator */}
-                        {!notification.is_read && (
+                        {/* Unread indicator — 창 여는 순간 미확인이던 알림에만, 닫을 때까지 표시 */}
+                        {sessionUnreadIds.has(notification.id) && (
                           <div className="absolute left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-primary rounded-full" />
                         )}
 
