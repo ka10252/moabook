@@ -199,9 +199,19 @@ export function CharacterEditor({ isOpen, onClose, onSaved }: CharacterEditorPro
     if (!user) { toast.error('로그인이 필요해요'); return; }
     setSaving(true);
     try {
-      const { error } = await supabase.from('profiles')
-        .update({ pixel_avatar: config, reading_book: readingBook, reading_book_id: readingBook?.id ?? null } as never)
-        .eq('id', user.id);
+      // reading_book(jsonb) 컬럼이 아직 없어도 캐릭터(아바타)는 반드시 저장되게 단계적으로 시도한다.
+      // (컬럼 하나 때문에 저장 전체가 실패해 "저장하지 못했어요"가 뜨던 문제 방어)
+      const attempts: Record<string, unknown>[] = [
+        { pixel_avatar: config, reading_book: readingBook, reading_book_id: readingBook?.id ?? null },
+        { pixel_avatar: config, reading_book_id: readingBook?.id ?? null },
+        { pixel_avatar: config },
+      ];
+      let error: unknown = null;
+      for (const patch of attempts) {
+        const res = await supabase.from('profiles').update(patch as never).eq('id', user.id);
+        if (!res.error) { error = null; break; }
+        error = res.error;
+      }
       if (error) throw error;
       if (asProfile) {
         const blob = await renderAvatarBlob(config);
