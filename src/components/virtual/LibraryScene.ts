@@ -702,8 +702,10 @@ export class LibraryScene extends Phaser.Scene {
     s.setInteractive({ useHandCursor: true }).setData('npc', true);
     s.on('pointerdown', () => this.onTourStart?.());
     this.librarianSprite = s;
-    this.add.text(x, y + 30, '📖 관리자', {
-      fontFamily: 'Galmuri11, monospace', fontSize: '9px', color: '#3a2d22', resolution: 3,
+    // 관리자는 특별한 존재 — 이름 뒤에 흰색 박스 하이라이트(이모지 없이)
+    this.add.text(x, y + 30, '관리자', {
+      fontFamily: 'Galmuri11, monospace', fontSize: '9px', color: '#3a2d22',
+      backgroundColor: '#ffffff', padding: { x: 5, y: 3 }, resolution: 3,
     }).setOrigin(0.5, 0).setDepth(y + 1);
     // 첫 방문이면 자동으로 안내 시작
     if (!localStorage.getItem(LibraryScene.LIBRARIAN_TOUR_KEY)) {
