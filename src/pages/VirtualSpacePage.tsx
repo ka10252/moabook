@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, lazy, Suspense } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, LayoutList, UserRound, Smile, Send } from 'lucide-react';
 import Phaser from 'phaser';
-import { LibraryScene, type RoomManifest } from '@/components/virtual/LibraryScene';
+import { LibraryScene, type RoomManifest, type ReadingBook } from '@/components/virtual/LibraryScene';
 import { CharacterEditor } from '@/components/virtual/CharacterEditor';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,6 +13,9 @@ const CommunityBoard = lazy(() =>
 );
 const MemberProfileModal = lazy(() =>
   import('@/components/profile/MemberProfileModal').then((m) => ({ default: m.MemberProfileModal }))
+);
+const ReadingBookModal = lazy(() =>
+  import('@/components/virtual/ReadingBookModal').then((m) => ({ default: m.ReadingBookModal }))
 );
 
 /**
@@ -29,16 +32,18 @@ export default function VirtualSpacePage() {
   const gameRef = useRef<Phaser.Game | null>(null);
   const manifestRef = useRef<RoomManifest | null>(null);
   const nicknameRef = useRef<string>('익명');
-  const readingTitleRef = useRef<string | null>(null);
+  const readingBookRef = useRef<ReadingBook | null>(null);
   const membersRef = useRef<{ userId: string; nickname: string; avatar: AvatarConfig }[]>([]);
 
-  const fetchReadingTitle = async (): Promise<string | null> => {
+  const fetchReadingBook = async (): Promise<ReadingBook | null> => {
     if (!user) return null;
     const { data } = await supabase.from('profiles').select('reading_book_id').eq('id', user.id).maybeSingle();
     const rbid = (data as { reading_book_id?: string | null } | null)?.reading_book_id;
     if (!rbid) return null;
-    const { data: bk } = await supabase.from('books').select('title').eq('id', rbid).maybeSingle();
-    return (bk as { title?: string } | null)?.title ?? null;
+    const { data: bk } = await supabase.from('books').select('id, title, cover_url').eq('id', rbid).maybeSingle();
+    const row = bk as { id: string; title?: string; cover_url?: string | null } | null;
+    if (!row) return null;
+    return { id: row.id, title: row.title ?? '', coverUrl: row.cover_url ?? null };
   };
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -55,8 +60,9 @@ export default function VirtualSpacePage() {
         else if (action === 'shelf' && communityId) navigate(`/?tab=shelf&community=${communityId}`);
       },
       onOpenProfile: (uid: string) => setProfileUserId(uid),
+      onOpenReadingBook: (bookId: string) => setReadingBookId(bookId),
       presence: user
-        ? { channelName, me: { userId: user.id, nickname: nicknameRef.current, avatar, readingTitle: readingTitleRef.current } }
+        ? { channelName, me: { userId: user.id, nickname: nicknameRef.current, avatar, readingBook: readingBookRef.current } }
         : undefined,
       members: isCommunity ? membersRef.current : undefined,
     });
@@ -66,6 +72,7 @@ export default function VirtualSpacePage() {
   const [boardOpen, setBoardOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
+  const [readingBookId, setReadingBookId] = useState<string | null>(null);
   const [chatText, setChatText] = useState('');
   const [showEmotes, setShowEmotes] = useState(false);
 
@@ -120,7 +127,7 @@ export default function VirtualSpacePage() {
             avatar = normalizeAvatar(raw);
             const nick = (data as { nickname?: string } | null)?.nickname;
             if (nick) nicknameRef.current = nick;
-            readingTitleRef.current = await fetchReadingTitle();
+            readingBookRef.current = await fetchReadingBook();
             // 아직 캐릭터를 안 만든 유저 → 첫 입장 시 에디터를 먼저 띄운다
             if (data && (raw === null || raw === undefined) && !cancelled) setEditorOpen(true);
           } catch { /* 컬럼 미생성 시 기본값 */ }
@@ -190,7 +197,7 @@ export default function VirtualSpacePage() {
         isOpen={editorOpen}
         onClose={() => setEditorOpen(false)}
         onSaved={async (config) => {
-          readingTitleRef.current = await fetchReadingTitle();
+          readingBookRef.current = await fetchReadingBook();
           if (manifestRef.current) startScene(manifestRef.current, config);
         }}
       />
@@ -198,6 +205,12 @@ export default function VirtualSpacePage() {
       {profileUserId && (
         <Suspense fallback={null}>
           <MemberProfileModal isOpen={!!profileUserId} onClose={() => setProfileUserId(null)} userId={profileUserId} />
+        </Suspense>
+      )}
+
+      {readingBookId && (
+        <Suspense fallback={null}>
+          <ReadingBookModal bookId={readingBookId} onClose={() => setReadingBookId(null)} />
         </Suspense>
       )}
 

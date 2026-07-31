@@ -26,9 +26,15 @@ export interface RoomManifest {
   furniture: { name: string; col: number; rowBottom: number; dx?: number; dy?: number; action?: string }[];
 }
 
+export interface ReadingBook {
+  id: string;
+  title: string;
+  coverUrl?: string | null;
+}
+
 export interface PresenceConfig {
   channelName: string;                 // 예: space:global, space:community:{id}
-  me: { userId: string; nickname: string; avatar: AvatarConfig; readingTitle?: string | null };
+  me: { userId: string; nickname: string; avatar: AvatarConfig; readingBook?: ReadingBook | null };
 }
 
 export interface RoomMember {
@@ -42,6 +48,7 @@ export interface SceneInitData {
   assetBase?: string;
   onAction?: (action: string, name: string) => void;
   onOpenProfile?: (userId: string) => void;
+  onOpenReadingBook?: (bookId: string) => void;
   avatar?: AvatarConfig;
   presence?: PresenceConfig;
   members?: RoomMember[];   // 커뮤니티룸: 멤버 전원(미접속자는 zzz로 표시)
@@ -50,8 +57,8 @@ export interface SceneInitData {
 interface RemotePlayer {
   sprite: Phaser.GameObjects.Sprite;
   label: Phaser.GameObjects.Text;
-  readingBubble?: Phaser.GameObjects.Text;
-  readingTitle?: string | null;
+  readingBubble?: Phaser.GameObjects.Container;
+  readingBookId?: string | null;
   texKey: string;
   tx: number; ty: number;            // 목표 위치 (보간용)
   dir: Dir; moving: boolean;
@@ -72,12 +79,14 @@ export class LibraryScene extends Phaser.Scene {
   private assetBase = '/assets/library';
   private onAction?: (action: string, name: string) => void;
   private onOpenProfile?: (userId: string) => void;
+  private onOpenReadingBook?: (bookId: string) => void;
   private avatar: AvatarConfig = defaultAvatar();
   private layerKeys: string[] = [];                      // 이 아바타의 레이어 텍스처 키 (몸→…→액세서리)
   private player!: Phaser.Physics.Arcade.Sprite;         // 몸(물리 바디) — 나머지 레이어는 여기에 붙음
   private layers: Phaser.GameObjects.Sprite[] = [];      // 눈·옷·헤어·액세서리 (몸 위에 동기화)
   private playerLabel?: Phaser.GameObjects.Text;         // 내 이름표(하단)
-  private playerReading?: Phaser.GameObjects.Text;       // 내 "지금 읽는 책" 말풍선(상단)
+  private playerReading?: Phaser.GameObjects.Container;  // 내 "지금 읽는 책" 말풍선(상단, 표지)
+  private coverLoads = new Map<string, Promise<string | null>>();  // 표지 텍스처 로딩 캐시
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: Record<string, Phaser.Input.Keyboard.Key>;
   private facing: Dir = 'down';
@@ -103,6 +112,7 @@ export class LibraryScene extends Phaser.Scene {
     if (data.assetBase) this.assetBase = data.assetBase;
     this.onAction = data.onAction;
     this.onOpenProfile = data.onOpenProfile;
+    this.onOpenReadingBook = data.onOpenReadingBook;
     if (data.avatar) this.avatar = data.avatar;
     this.presenceCfg = data.presence;
     this.members = data.members ?? [];
@@ -248,8 +258,8 @@ export class LibraryScene extends Phaser.Scene {
     if (this.presenceCfg?.me.nickname) {
       this.playerLabel = this.makeNameLabel(startX, startY, this.presenceCfg.me.nickname);
     }
-    if (this.presenceCfg?.me.readingTitle) {
-      this.playerReading = this.makeReadingBubble(startX, startY, this.presenceCfg.me.readingTitle);
+    if (this.presenceCfg?.me.readingBook) {
+      this.playerReading = this.makeReadingBubble(startX, startY, this.presenceCfg.me.readingBook);
     }
 
     // ---- 카메라 ----
@@ -276,7 +286,7 @@ export class LibraryScene extends Phaser.Scene {
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as Record<string, Phaser.Input.Keyboard.Key>;
     // 탭한 곳으로 걷기 (상호작용 가구를 탭한 경우는 이동하지 않음)
     this.input.on('pointerdown', (p: Phaser.Input.Pointer, currentlyOver: Phaser.GameObjects.GameObject[]) => {
-      if (currentlyOver.some((o) => o.getData && (o.getData('action') || o.getData('remoteUser')))) return;
+      if (currentlyOver.some((o) => o.getData && (o.getData('action') || o.getData('remoteUser') || o.getData('reading')))) return;
       const wp = this.cameras.main.getWorldPoint(p.x, p.y);
       this.moveTarget = new Phaser.Math.Vector2(wp.x, wp.y);
     });
@@ -325,13 +335,55 @@ export class LibraryScene extends Phaser.Scene {
     }).setOrigin(0.5, 0).setDepth(y + 1);
   }
 
-  /** "📖 제목" 읽는 책 말풍선 (머리 위, 은은하게 항상 표시) */
-  private makeReadingBubble(x: number, y: number, title: string) {
-    const t = title.length > 12 ? title.slice(0, 12) + '…' : title;
-    return this.add.text(x, y - 44, `📖 ${t}`, {
+  /**
+   * 읽는 책 말풍선 (머리 위). 책 표지가 말풍선을 가득 채우고, 클릭하면 책 설명을 연다.
+   * 표지가 아직 안 뜬(또는 없는) 동안엔 제목 텍스트로 대체하고, 로드되면 표지로 교체한다.
+   */
+  private makeReadingBubble(x: number, y: number, book: ReadingBook) {
+    const c = this.add.container(x, y - 44).setDepth(y + 2);
+    const H = 46;                         // 표지 높이(px)
+    const t = book.title.length > 12 ? book.title.slice(0, 12) + '…' : book.title;
+    const fallback = this.add.text(0, 0, `📖 ${t}`, {
       fontFamily: 'Galmuri11, monospace', fontSize: '10px',
       color: '#5a4a38', backgroundColor: '#fff7e6ee', padding: { x: 4, y: 2 }, resolution: 2,
-    }).setOrigin(0.5, 1).setDepth(y + 2);
+    }).setOrigin(0.5, 1);
+    c.add(fallback);
+
+    const openDetail = () => this.onOpenReadingBook?.(book.id);
+    // 텍스트 대체본도 클릭 가능하게(표지 없거나 로딩 중일 때)
+    fallback.setInteractive({ useHandCursor: true }).setData('reading', true).on('pointerdown', openDetail);
+
+    if (book.coverUrl) {
+      this.loadCover(book.id, book.coverUrl).then((key) => {
+        if (!key || !c.active) return;
+        const src = this.textures.get(key).getSourceImage();
+        const ratio = (src.width && src.height) ? src.width / src.height : 0.68;
+        const w = Math.round(H * ratio);
+        const frame = this.add.rectangle(0, 0, w + 4, H + 4, 0xfff7e6).setOrigin(0.5, 1).setStrokeStyle(1, 0xcbb993);
+        const cover = this.add.image(0, -2, key).setOrigin(0.5, 1).setDisplaySize(w, H);
+        cover.setInteractive({ useHandCursor: true }).setData('reading', true).on('pointerdown', openDetail);
+        fallback.destroy();
+        c.add([frame, cover]);
+      });
+    }
+    return c;
+  }
+
+  /** 원격 이미지를 Phaser 텍스처로 로드(HTMLImageElement 사용 — 로더 충돌 회피). 책 id로 캐시. */
+  private loadCover(bookId: string, url: string): Promise<string | null> {
+    const key = `cover_${bookId}`;
+    if (this.textures.exists(key)) return Promise.resolve(key);
+    const cached = this.coverLoads.get(key);
+    if (cached) return cached;
+    const promise = new Promise<string | null>((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => { if (!this.textures.exists(key)) this.textures.addImage(key, img); resolve(key); };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+    this.coverLoads.set(key, promise);
+    return promise;
   }
 
   private myState() {
@@ -339,7 +391,7 @@ export class LibraryScene extends Phaser.Scene {
       userId: this.presenceCfg!.me.userId,
       nickname: this.presenceCfg!.me.nickname,
       avatar: this.presenceCfg!.me.avatar,
-      readingTitle: this.presenceCfg!.me.readingTitle ?? null,
+      readingBook: this.presenceCfg!.me.readingBook ?? null,
       x: Math.round(this.player.x), y: Math.round(this.player.y),
       dir: this.facing, moving: (this.player.body as Phaser.Physics.Arcade.Body).velocity.length() > 1,
     };
@@ -366,15 +418,41 @@ export class LibraryScene extends Phaser.Scene {
     return null;
   }
 
-  /** 머리 위 말풍선 (이모트/채팅). 몇 초 뒤 사라지고 캐릭터를 따라다닌다. */
+  /** 이모트/채팅 표시. 채팅은 머리 위 말풍선, 이모트는 캐릭터 주변에서 뿜어져 나오는 파티클. */
   private showBubble(userId: string, text: string, isEmote: boolean) {
+    if (isEmote) { this.showEmote(userId, text); return; }
     const pos = this.charPos(userId); if (!pos) return;
     const bubble = this.add.text(pos.x, pos.y - 42, text, {
-      fontFamily: 'Galmuri11, monospace', fontSize: isEmote ? '22px' : '11px',
+      fontFamily: 'Galmuri11, monospace', fontSize: '11px',
       color: '#2c2621', backgroundColor: '#ffffffee', padding: { x: 6, y: 3 },
       align: 'center', resolution: 2, wordWrap: { width: 130 },
     }).setOrigin(0.5, 1).setDepth(100000);
     this.bubbles.push({ bubble, getPos: () => this.charPos(userId), expire: this.time.now + 4000 });
+  }
+
+  /** 이모트: 캐릭터 머리 주변에서 이모지 여러 개가 위로 흩어지며 사라지는 파티클 연출(배경 없음). */
+  private showEmote(userId: string, emoji: string) {
+    const pos = this.charPos(userId); if (!pos) return;
+    const baseX = pos.x, baseY = pos.y - 24;
+    const N = 7;
+    for (let i = 0; i < N; i++) {
+      const p = this.add.text(baseX, baseY, emoji, {
+        fontFamily: 'Galmuri11, monospace', fontSize: '18px', resolution: 2,
+      }).setOrigin(0.5).setDepth(100000).setScale(0.3);
+      // 위쪽 중심 부채꼴로 퍼지며 전체적으로 떠오른다
+      const angle = -Math.PI / 2 + (Math.random() - 0.5) * (Math.PI * 0.9);
+      const dist = 30 + Math.random() * 34;
+      this.tweens.add({
+        targets: p, delay: i * 45,
+        x: baseX + Math.cos(angle) * dist,
+        y: baseY + Math.sin(angle) * dist - 12,
+        scale: 0.9 + Math.random() * 0.5,
+        angle: (Math.random() - 0.5) * 40,
+        alpha: { from: 1, to: 0 },
+        ease: 'Cubic.easeOut', duration: 1000 + Math.random() * 400,
+        onComplete: () => p.destroy(),
+      });
+    }
   }
 
   /** React UI에서 호출: 채팅/이모트 전송 (브로드캐스트 + 내 머리 위에도 표시) */
@@ -390,16 +468,16 @@ export class LibraryScene extends Phaser.Scene {
     const state = this.channel.presenceState() as Record<string, Array<Record<string, unknown>>>;
     const seen = new Set<string>();
     for (const key of Object.keys(state)) {
-      const meta = state[key][0] as unknown as { userId: string; nickname: string; avatar: AvatarConfig; x: number; y: number; dir: Dir; moving: boolean; readingTitle?: string | null };
+      const meta = state[key][0] as unknown as { userId: string; nickname: string; avatar: AvatarConfig; x: number; y: number; dir: Dir; moving: boolean; readingBook?: ReadingBook | null };
       if (!meta || meta.userId === this.presenceCfg.me.userId) continue;
       seen.add(meta.userId);
       const existing = this.remotes.get(meta.userId);
       if (existing) {
         existing.tx = meta.x; existing.ty = meta.y; existing.dir = meta.dir; existing.moving = meta.moving;
-        if (existing.readingTitle !== (meta.readingTitle ?? null)) {
+        if (existing.readingBookId !== (meta.readingBook?.id ?? null)) {
           existing.readingBubble?.destroy();
-          existing.readingBubble = meta.readingTitle ? this.makeReadingBubble(existing.sprite.x, existing.sprite.y, meta.readingTitle) : undefined;
-          existing.readingTitle = meta.readingTitle ?? null;
+          existing.readingBubble = meta.readingBook ? this.makeReadingBubble(existing.sprite.x, existing.sprite.y, meta.readingBook) : undefined;
+          existing.readingBookId = meta.readingBook?.id ?? null;
         }
       } else if (!this.pendingRemotes.has(meta.userId)) {
         this.pendingRemotes.add(meta.userId);
@@ -413,8 +491,8 @@ export class LibraryScene extends Phaser.Scene {
           sprite.setData('remoteUser', meta.userId);
           sprite.on('pointerdown', () => this.onOpenProfile?.(meta.userId));
           const label = this.makeNameLabel(meta.x, meta.y, meta.nickname);
-          const readingBubble = meta.readingTitle ? this.makeReadingBubble(meta.x, meta.y, meta.readingTitle) : undefined;
-          this.remotes.set(meta.userId, { sprite, label, readingBubble, readingTitle: meta.readingTitle ?? null, texKey, tx: meta.x, ty: meta.y, dir: meta.dir, moving: meta.moving });
+          const readingBubble = meta.readingBook ? this.makeReadingBubble(meta.x, meta.y, meta.readingBook) : undefined;
+          this.remotes.set(meta.userId, { sprite, label, readingBubble, readingBookId: meta.readingBook?.id ?? null, texKey, tx: meta.x, ty: meta.y, dir: meta.dir, moving: meta.moving });
         });
       }
     }
