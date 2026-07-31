@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Bell, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -34,20 +34,14 @@ export const NotificationPopup = ({
 }: NotificationPopupProps) => {
   const { notifications, loading, markAllAsRead, deleteNotification } = useNotifications();
 
-  // 알림창을 열면(로딩 완료 후) 쌓인 알림을 자동으로 읽음 처리 → 헤더 배지 개수 0으로.
-  // 단, 방금까지 미확인이던 항목은 창이 열려 있는 동안 하이라이트를 유지해 "새 알림"을 알 수 있게 스냅샷한다.
-  const [justUnread, setJustUnread] = useState<Set<string>>(new Set());
+  // 알림창을 열면(로딩 완료 후) 쌓인 알림을 자동으로 읽음 처리 → 미확인 표시·헤더 배지 즉시 사라짐(새로고침 불필요).
   const markedRef = useRef(false);
   useEffect(() => {
     if (!isOpen) { markedRef.current = false; return; }
     if (loading || markedRef.current) return;
     markedRef.current = true;
-    const unread = notifications.filter((n) => !n.is_read).map((n) => n.id);
-    if (unread.length) {
-      setJustUnread(new Set(unread));
-      markAllAsRead();
-    }
-  }, [isOpen, loading, notifications, markAllAsRead]);
+    markAllAsRead();
+  }, [isOpen, loading, markAllAsRead]);
 
   /**
    * 알림을 눌렀는데 아무 일도 안 일어나면, 유저는 다음부터 알림을 안 누른다.
@@ -170,14 +164,14 @@ export const NotificationPopup = ({
                         animate={{ opacity: 1, x: 0 }}
                         className={cn(
                           "relative p-3 rounded-xl cursor-pointer transition-colors group",
-                          !justUnread.has(notification.id)
+                          notification.is_read
                             ? "bg-transparent hover:bg-muted/50"
                             : "bg-primary/5 hover:bg-primary/10"
                         )}
                         onClick={() => handleNotificationClick(notification)}
                       >
                         {/* Unread indicator */}
-                        {justUnread.has(notification.id) && (
+                        {!notification.is_read && (
                           <div className="absolute left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-primary rounded-full" />
                         )}
 
