@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { BookMode, CURRENCY } from '@/lib/bookMode';
+import { FirstBookNotifPrompt } from './FirstBookNotifPrompt';
 
 interface BookFormData {
   title: string;
@@ -39,6 +40,7 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
   const [matched, setMatched] = useState<{ cover: string | null } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
+  const [showNotifPrompt, setShowNotifPrompt] = useState(false);
   // 판매인데 사진이 없으면 제출을 시도한 뒤에야 붉게 알린다 (입력 전부터 빨갛게 하지 않는다)
   const [coverMissing, setCoverMissing] = useState(false);
 
@@ -172,8 +174,26 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
         communityId: null,
       });
 
-      // 등록 후 빈 폼에 머무르지 않고 메인 책장으로 이동해 등록된 책을 바로 확인하게 한다
-      onUploaded?.();
+      // 첫 책 등록 + 아직 알림 미설정이면 → 알림 설정 유도 팝업(닫으면 서가로 이동).
+      // 아니면 바로 서가로.
+      let firstBookPrompt = false;
+      try {
+        if (!localStorage.getItem('moa_first_book_notif_seen')) {
+          const [{ count }, { data: prof }] = await Promise.all([
+            supabase.from('books').select('id', { count: 'exact', head: true }).eq('owner_id', user.id),
+            supabase.from('profiles').select('telegram_chat_id').eq('id', user.id).maybeSingle(),
+          ]);
+          const hasTelegram = !!(prof as { telegram_chat_id?: string | null } | null)?.telegram_chat_id;
+          if ((count ?? 0) <= 1 && !hasTelegram) {
+            localStorage.setItem('moa_first_book_notif_seen', '1');
+            setShowNotifPrompt(true);
+            firstBookPrompt = true;
+          }
+        }
+      } catch { /* 실패해도 등록 흐름은 계속 */ }
+
+      // 팝업을 띄웠으면 이동은 팝업 닫을 때. 아니면 바로 메인 책장으로.
+      if (!firstBookPrompt) onUploaded?.();
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('책 등록에 실패했습니다. 다시 시도해주세요.');
@@ -185,6 +205,7 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
   const isSell = formData.mode === 'sell';
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* 사진 — 판매는 필수, 대여는 권장 */}
       {user && (
@@ -309,5 +330,10 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
         )}
       </Button>
     </form>
+    <FirstBookNotifPrompt
+      isOpen={showNotifPrompt}
+      onClose={() => { setShowNotifPrompt(false); onUploaded?.(); }}
+    />
+    </>
   );
 };

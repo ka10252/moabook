@@ -70,6 +70,7 @@ export const CommunityDetailModal = ({
   const { user } = useAuth();
   const navigate = useNavigate();
   const [members, setMembers] = useState<Member[]>([]);
+  const [banned, setBanned] = useState<{ user_id: string; nickname: string | null; kick_count: number; is_banned: boolean }[]>([]);
   const [loading, setLoading] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -109,8 +110,24 @@ export const CommunityDetailModal = ({
   useEffect(() => {
     if (isOpen && community) {
       checkMembershipAndVisibility();
+      if (isOwner) fetchBanned();
     }
-  }, [isOpen, community?.id, user?.id]);
+  }, [isOpen, community?.id, user?.id, isOwner]);
+
+  // 방장: 방출/차단된 멤버 목록(재가입 허용용)
+  const fetchBanned = async () => {
+    if (!community) return;
+    const { data } = await supabase.rpc('list_banned_members', { p_community_id: community.id });
+    setBanned((data ?? []) as typeof banned);
+  };
+
+  const handleUnban = async (targetUserId: string) => {
+    if (!community) return;
+    const { data, error } = await supabase.rpc('unban_community_member', { p_community_id: community.id, p_user_id: targetUserId });
+    if (error || data !== 'ok') { toast.error('처리에 실패했어요'); return; }
+    toast.success('재가입을 허용했어요');
+    setBanned(prev => prev.filter(b => b.user_id !== targetUserId));
+  };
 
   const checkMembershipAndVisibility = async () => {
     if (!community || !user) return;
@@ -580,6 +597,28 @@ export const CommunityDetailModal = ({
                         </div>
                       );
                     })}
+                  </div>
+                )}
+
+                {/* 방장: 방출·차단된 멤버 재가입 허용 */}
+                {isOwner && banned.length > 0 && (
+                  <div className="px-4 py-3 border-t border-border">
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">방출·차단된 멤버</p>
+                    <div className="space-y-2">
+                      {banned.map((b) => (
+                        <div key={b.user_id} className="flex items-center justify-between">
+                          <div className="min-w-0">
+                            <span className="text-sm text-foreground">{b.nickname || '알 수 없음'}</span>
+                            <span className="ml-2 text-[11px] text-muted-foreground">
+                              {b.is_banned ? '영구 차단' : `방출 ${b.kick_count}회`}
+                            </span>
+                          </div>
+                          <Button size="sm" variant="outline" className="rounded-full text-xs shrink-0" onClick={() => handleUnban(b.user_id)}>
+                            재가입 허용
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </ScrollArea>
