@@ -17,7 +17,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { useBackClose } from '@/hooks/useBackClose';
 import { supabase } from '@/integrations/supabase/client';
-import { ChevronDown, Loader2, BookOpen, Heart, BookMarked, Search, X, MapPin, SlidersHorizontal } from 'lucide-react';
+import { ChevronDown, Loader2, BookOpen, Heart, History, Search, X, MapPin, SlidersHorizontal } from 'lucide-react';
 
 import { toast } from 'sonner';
 import {
@@ -449,7 +449,7 @@ export const Bookshelf = ({
               className="w-10 h-10 rounded-full bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors flex items-center justify-center shrink-0"
               title="거래 현황"
             >
-              <BookMarked className="w-[18px] h-[18px]" />
+              <History className="w-[18px] h-[18px]" />
             </button>
           )}
         </div>

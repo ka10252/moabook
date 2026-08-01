@@ -44,13 +44,15 @@ export const TransactionDashboard = ({ isOpen, onClose, partnerId, initialTab }:
   if (!isOpen) return null;
 
   const getStatusLabel = (transaction: Transaction) => {
+    // 판매·나눔은 수락 즉시 완료 → 나눔/판매 구분해 '완료' 표기
     if (transaction.type === 'purchase') {
-      return '판매완료';
+      return transaction.book?.mode === 'give' ? '나눔완료' : '판매완료';
     }
-    if (transaction.isMine) {
-      return '대여해줌';
+    // 대여: 완료(반납됨)면 '대여·반납 완료', 진행 중이면 방향 표기
+    if (transaction.status === 'completed') {
+      return '대여·반납 완료';
     }
-    return '대여받음';
+    return transaction.isMine ? '대여해줌' : '대여받음';
   };
 
   const getStatusColor = (transaction: Transaction) => {

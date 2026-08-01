@@ -18,6 +18,7 @@ export interface Transaction {
     title: string;
     author: string;
     cover_url: string | null;
+    mode?: 'rent' | 'sell' | 'give' | null;
   };
   counterparty?: {
     id: string;
@@ -44,7 +45,7 @@ export const useTransactions = () => {
         .from('transactions')
         .select(`
           *,
-          book:books(id, title, author, cover_url)
+          book:books(id, title, author, cover_url, mode)
         `)
         .or(`owner_id.eq.${user.id},borrower_id.eq.${user.id}`)
         .in('status', ['pending', 'active'])
@@ -208,7 +209,7 @@ export const useTransactionHistory = () => {
     try {
       const { data, error } = await supabase
         .from('transactions')
-        .select(`*, book:books(id, title, author, cover_url)`)
+        .select(`*, book:books(id, title, author, cover_url, mode)`)
         .or(`owner_id.eq.${user.id},borrower_id.eq.${user.id}`)
         .in('status', ['completed', 'cancelled'])
         .order('created_at', { ascending: false })
