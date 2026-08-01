@@ -24,6 +24,7 @@ const TOUR_SEEN_KEY = 'moa_room_tour_seen';
 /** 사서 안내 단계 — 텍스트는 React가 화면 중앙 픽셀 팝업으로 그린다(상단 UI에 안 가림). */
 const TOUR: { text: string; highlight?: 'shelf' | 'board' }[] = [
   { text: '어서 오세요!\n제가 이 방을 안내해 드릴게요 📖' },
+  { text: '가고 싶은 곳을 화면에서\n톡 누르면 캐릭터가 걸어가요 🚶\n(키보드는 방향키·WASD)' },
   { text: '캐릭터 머리 위에는 각자\n지금 읽는 책이 보여요.\n프로필 › 캐릭터 꾸미기에서 정해요.' },
   { text: '화면 아래에서 이웃에게\n메시지와 이모지를 보낼 수 있어요.' },
   { text: 'Zzz는 접속중이지 않은 이웃이에요.\nZzz가 없으면 접속 중이라\n말을 걸 수 있어요.' },
