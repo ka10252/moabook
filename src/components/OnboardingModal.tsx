@@ -163,10 +163,10 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
 
           {/* 한 줄씩, 좌측 정렬. 설명을 두 줄로 늘리면 훑어보기가 안 된다. */}
           <div className="w-full space-y-3 text-left">
-            <LegendRow swatch={<Spine color="bg-book-4" ribbon="lent" />} title="금색 책갈피 · 내가 빌려준 책" />
+            <LegendRow swatch={<Spine color="bg-book-4" ribbon="lent" />} title="내가 빌려준 책: ↑ 위쪽 화살표 · 금색 책갈피" />
             <LegendRow
               swatch={<Spine color="bg-book-6" ribbon="borrowed" />}
-              title="남색 책갈피 · 내가 빌린 책"
+              title="내가 빌린 책: ↓ 아래쪽 화살표 · 남색 책갈피"
             />
             <LegendRow
               swatch={<Spine color="bg-book-3" ghost />}

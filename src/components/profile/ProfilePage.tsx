@@ -61,6 +61,7 @@ import { spineClassFrom } from '@/lib/spineColor';
 import { TelegramSettings } from '@/components/profile/TelegramSettings';
 import { CharacterEditor } from '@/components/virtual/CharacterEditor';
 import { FaqSection } from '@/components/profile/FaqSection';
+import { TransactionDashboard } from '@/components/transaction/TransactionDashboard';
 
 /** 탈퇴·문의 접수 채널. 자동 탈퇴가 실패해도 이 경로는 항상 열려 있어야 한다. */
 const SUPPORT_EMAIL = 'admin@moabook.app';
@@ -157,6 +158,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   const [district, setDistrict] = useState('');
   const [showRegionBlock, setShowRegionBlock] = useState(false);
   const [stats, setStats] = useState<Stats>({ registered: 0, lent: 0, deals: 0 });
+  const [showTransactions, setShowTransactions] = useState(false);
 
   // Password change
   const [newPassword, setNewPassword] = useState('');
@@ -462,13 +464,14 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
             {/* 지표 */}
             <div className="flex mt-5 bg-card border border-border rounded-[14px] py-4">
               {[
-                { n: stats.registered, l: '등록한 책' },
-                { n: stats.lent, l: '빌려줌' },
-                { n: stats.deals, l: '거래' },
+                { n: stats.registered, l: '등록한 책', onClick: undefined as (() => void) | undefined },
+                { n: stats.lent, l: '빌려주는 중', onClick: () => setShowTransactions(true) },
+                { n: stats.deals, l: '거래완료', onClick: () => setShowTransactions(true) },
               ].map((s, i) => (
                 <div
                   key={s.l}
-                  className={`flex-1 text-center ${i < 2 ? 'border-r border-border' : ''}`}
+                  onClick={s.onClick}
+                  className={`flex-1 text-center ${i < 2 ? 'border-r border-border' : ''} ${s.onClick ? 'cursor-pointer hover:bg-muted/40 rounded-lg transition-colors' : ''}`}
                 >
                   <p className="font-display text-[23px] text-primary leading-none">{s.n}</p>
                   <p className="text-[12px] text-muted-foreground mt-1">{s.l}</p>
@@ -1045,6 +1048,12 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
         isOpen={characterOpen}
         onClose={() => setCharacterOpen(false)}
         onSaved={() => { setCharacterOpen(false); toast.success('캐릭터를 저장했어요'); }}
+      />
+
+      {/* 빌려주는 중 / 거래완료 클릭 → 거래 현황(진행중+완료) 모달 */}
+      <TransactionDashboard
+        isOpen={showTransactions}
+        onClose={() => setShowTransactions(false)}
       />
     </div>
   );
