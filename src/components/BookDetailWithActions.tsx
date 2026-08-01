@@ -9,6 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { MemberProfileModal } from '@/components/profile/MemberProfileModal';
 import { ReportModal } from '@/components/report/ReportModal';
 import { useGuestGate } from '@/hooks/useGuestGate';
+import { useNavigate } from 'react-router-dom';
+import { track } from '@/lib/analytics';
 import { DefaultBookCover } from '@/components/DefaultBookCover';
 import { cn } from '@/lib/utils';
 import {
@@ -31,6 +33,8 @@ interface BookDetailWithActionsProps {
   isLiked?: boolean;
   onToggleLike?: (book: Book) => Promise<void>;
   currentUserId?: string;
+  /** 내가 등록한 책 수 — 0이면 대여/나눔 요청을 막고 "책 1권 등록" 게이트를 띄운다 */
+  myBookCount?: number;
 }
 
 interface SiblingBook {
@@ -55,11 +59,30 @@ export const BookDetailWithActions = ({
   onDelete,
   isLiked = false,
   onToggleLike,
-  currentUserId 
+  currentUserId,
+  myBookCount,
 }: BookDetailWithActionsProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const [showBorrowGate, setShowBorrowGate] = useState(false);
+  const navigate = useNavigate();
   const { requireAuth } = useGuestGate();
+
+  /**
+   * 요청(대여/나눔/구매) 시도. 대여·나눔은 "내 책 1권 이상 등록" 필요 —
+   * 서로 내놓는 책장이라, 등록 0이면 요청 대신 등록 유도 게이트를 띄운다.
+   * (구매는 돈을 내는 거래라 게이트 없음)
+   */
+  const tryRequest = (ownerId: string, bookId: string, mode: BookMode) => {
+    if (!requireAuth()) return;
+    if ((mode === 'rent' || mode === 'give') && myBookCount === 0) {
+      track('borrow_gate_shown', { book_id: bookId, mode });
+      setShowBorrowGate(true);
+      return;
+    }
+    onChat(ownerId, bookId, mode);
+    onClose();
+  };
   const [deleting, setDeleting] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
   const [showOwnerProfile, setShowOwnerProfile] = useState(false);
@@ -344,7 +367,7 @@ export const BookDetailWithActions = ({
                           {sibling.status === 'available' && currentUserId && sibling.owner_id !== currentUserId && (
                             <button
                               className="text-[13px] px-2.5 py-1.5 rounded-full bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors shrink-0"
-                              onClick={() => { onChat(sibling.owner_id, sibling.id, sibling.mode); onClose(); }}
+                              onClick={() => tryRequest(sibling.owner_id, sibling.id, sibling.mode)}
                             >
                               요청
                             </button>
@@ -388,7 +411,7 @@ export const BookDetailWithActions = ({
                   ) : (
                     <button
                       className="btn-hip flex-1 flex items-center justify-center gap-2"
-                      onClick={() => { if (requireAuth()) { onChat(book.owner_id, book.id, book.mode); onClose(); } }}
+                      onClick={() => tryRequest(book.owner_id, book.id, book.mode)}
                     >
                       <MessageCircle className="w-4 h-4" />
                       {MODE_CTA[book.mode]}
@@ -472,6 +495,46 @@ export const BookDetailWithActions = ({
         targetLabel={book.title}
         context={`${book.title} / ${book.author}${book.description ? ` — ${book.description}` : ''}`}
       />
+
+      {/* 대여/나눔 게이트 — 내 책 0권일 때: 서로 내놓는 책장이라 1권 등록 후 이용 */}
+      <AnimatePresence>
+        {showBorrowGate && (
+          <motion.div
+            className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setShowBorrowGate(false)}
+          >
+            <motion.div
+              className="w-full max-w-sm bg-card rounded-2xl shadow-2xl p-6 text-center"
+              initial={{ opacity: 0, scale: 0.95, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 12 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                <BookOpen className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="font-display text-[20px] font-medium text-foreground mb-1.5">앗, 책이 필요해요</h3>
+              <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
+                모아북은 서로 책을 내놓는 책장이에요.<br />
+                <b className="text-foreground">내 책을 1권 이상 등록</b>하면 바로 빌릴 수 있어요.
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => { setShowBorrowGate(false); onClose(); navigate('/?tab=upload'); }}
+                  className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold"
+                >
+                  내 책 등록하기
+                </button>
+                <button
+                  onClick={() => setShowBorrowGate(false)}
+                  className="w-full h-11 rounded-xl text-muted-foreground text-sm"
+                >
+                  나중에
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 };

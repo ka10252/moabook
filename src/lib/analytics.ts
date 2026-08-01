@@ -62,6 +62,7 @@ export type EventName =
   | 'filter_applied' // props: { filter, value }
   // 거래 퍼널
   | 'request_started' // 대여/나눔/구매 신청 버튼
+  | 'borrow_gate_shown' // 대여/나눔 신청했으나 등록 책 0 → "책 1권 등록" 게이트 표시. props: { book_id, mode }
   | 'request_sent' // props: { book_id, mode }
   | 'request_accepted' // props: { book_id }
   | 'return_completed' // props: { book_id }

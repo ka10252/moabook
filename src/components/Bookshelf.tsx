@@ -752,6 +752,7 @@ export const Bookshelf = ({
         book={selectedBook}
         onClose={() => setSelectedBook(null)}
         onChat={onOpenChat}
+        myBookCount={user ? allBooks.filter((b) => b.owner_id === user.id).length : undefined}
         onEdit={(book) => setEditingBook(book)}
         onDelete={async (bookId) => {
           const { error } = await deleteBook(bookId);
