@@ -88,6 +88,13 @@ export const useBooks = (options: UseBooksOptions = {}) => {
     };
   }, [fetchBooks]);
 
+  // 차단/해제 시 즉시 재조회 — 차단한 사람 책은 RLS로 걸러져 목록에서 바로 사라진다.
+  useEffect(() => {
+    const onBlocked = () => fetchBooks();
+    window.addEventListener('moa:blocked-changed', onBlocked);
+    return () => window.removeEventListener('moa:blocked-changed', onBlocked);
+  }, [fetchBooks]);
+
   const deleteBook = async (bookId: string) => {
     const { error } = await supabase
       .from('books')

@@ -65,6 +65,8 @@ export const useBlockedUsers = () => {
       return { error: error.message };
     }
     await fetchBlocked();
+    // 차단 즉시 그 사람 책이 목록에서 사라지도록 책장 재조회 신호(RLS가 서버에서 걸러줌)
+    window.dispatchEvent(new Event('moa:blocked-changed'));
     return { error: null };
   };
 
@@ -79,6 +81,7 @@ export const useBlockedUsers = () => {
 
     if (error) return { error: error.message };
     await fetchBlocked();
+    window.dispatchEvent(new Event('moa:blocked-changed')); // 해제 시 그 사람 책 다시 보이게
     return { error: null };
   };
 

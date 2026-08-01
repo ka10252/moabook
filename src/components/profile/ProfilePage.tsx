@@ -63,6 +63,8 @@ import { CharacterEditor } from '@/components/virtual/CharacterEditor';
 import { FaqSection } from '@/components/profile/FaqSection';
 import { TransactionDashboard } from '@/components/transaction/TransactionDashboard';
 import { passwordSchema } from '@/lib/passwordSchema';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
+import { Ban } from 'lucide-react';
 
 /** 탈퇴·문의 접수 채널. 자동 탈퇴가 실패해도 이 경로는 항상 열려 있어야 한다. */
 const SUPPORT_EMAIL = 'admin@moabook.app';
@@ -71,7 +73,7 @@ interface ProfilePageProps {
   onSignOut: () => void;
 }
 
-type View = 'overview' | 'edit' | 'notifications' | 'feedback' | 'faq';
+type View = 'overview' | 'edit' | 'notifications' | 'feedback' | 'faq' | 'blocked';
 
 /** 의견 분류 — 안 고르면 null로 저장 */
 const FEEDBACK_CATEGORIES = [
@@ -161,6 +163,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   const [stats, setStats] = useState<Stats>({ registered: 0, lent: 0, deals: 0 });
   const [showTransactions, setShowTransactions] = useState(false);
   const [transactionsTab, setTransactionsTab] = useState<'active' | 'history'>('active');
+  const { blocked, unblockUser, loading: blockedLoading } = useBlockedUsers();
 
   // Password change
   const [newPassword, setNewPassword] = useState('');
@@ -490,6 +493,8 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
               <MenuRow icon={Bell} label="알림 설정" onClick={() => setView('notifications')} />
               <MenuRow icon={MessageSquare} label="의견 보내기" onClick={() => setView('feedback')} />
               <MenuRow icon={HelpCircle} label="자주 묻는 질문" onClick={() => setView('faq')} />
+              <MenuRow icon={Ban} label="차단 목록" onClick={() => setView('blocked')} />
+
               <MenuRow
                 icon={theme === 'dark' ? Moon : Sun}
                 label={theme === 'dark' ? '다크 모드' : '라이트 모드'}
@@ -860,6 +865,45 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
           >
             <SubHeader title="자주 묻는 질문" onBack={() => setView('overview')} />
             <FaqSection />
+          </motion.div>
+        )}
+
+        {view === 'blocked' && (
+          <motion.div
+            key="blocked"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+          >
+            <SubHeader title="차단 목록" onBack={() => setView('overview')} />
+            {blockedLoading ? (
+              <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+            ) : blocked.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Ban className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                <p className="text-sm">차단한 사용자가 없습니다</p>
+              </div>
+            ) : (
+              <div className="mt-2 space-y-2">
+                {blocked.map((b) => (
+                  <div key={b.id} className="flex items-center justify-between bg-card border border-border rounded-[14px] px-4 py-3">
+                    <span className="text-sm font-medium text-foreground">{b.nickname || '알 수 없는 사용자'}</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full text-xs"
+                      onClick={async () => {
+                        const { error } = await unblockUser(b.blocked_id);
+                        if (error) toast.error('차단 해제에 실패했어요');
+                        else toast.success('차단을 해제했어요');
+                      }}
+                    >
+                      차단 해제
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

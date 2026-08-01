@@ -1,13 +1,6 @@
 import { useState } from 'react';
-import { Flag, Loader2 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Flag, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -35,6 +28,12 @@ const TARGET_LABELS: Record<ReportTargetType, string> = {
   user: '이 사용자',
 };
 
+/**
+ * 신고 모달 — 커스텀 오버레이(Radix Dialog 아님).
+ * 다른 모달(책상세 Sheet·멤버프로필) 안에서 열릴 때 Radix dismiss가 꼬여
+ * 내부 클릭(사유 선택 등)에도 닫히던 문제 때문에 커스텀 모달로 구현한다.
+ * 배경 클릭·취소·X 로만 닫히고, 내부 클릭은 stopPropagation.
+ */
 export const ReportModal = ({
   isOpen,
   onClose,
@@ -59,7 +58,6 @@ export const ReportModal = ({
       toast.error('신고 사유를 선택해주세요');
       return;
     }
-
     const { error } = await submitReport({
       targetType,
       targetId,
@@ -68,73 +66,80 @@ export const ReportModal = ({
       detail,
       context: context ?? targetLabel,
     });
-
     if (error) {
       toast.error(error);
       return;
     }
-
     toast.success('신고가 접수되었습니다. 검토 후 조치하겠습니다.');
     handleClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      {/* 다른 모달(책상세·멤버프로필) 안에서 열릴 때, 내부 클릭이 '바깥 클릭'으로 오인돼
-          모달이 닫히던 문제 방지 — 취소/신고 버튼으로만 닫는다. */}
-      <DialogContent
-        className="max-w-sm rounded-2xl"
-        onInteractOutside={(e) => e.preventDefault()}
-        onPointerDownOutside={(e) => e.preventDefault()}
-      >
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Flag className="w-4 h-4 text-destructive" />
-            {TARGET_LABELS[targetType]} 신고
-          </DialogTitle>
-          <DialogDescription>
-            {targetLabel ? (
-              <span className="line-clamp-2">"{targetLabel}"</span>
-            ) : (
-              '부적절한 콘텐츠를 신고해주세요.'
-            )}
-          </DialogDescription>
-        </DialogHeader>
-
-        <RadioGroup value={reason} onValueChange={setReason} className="gap-2">
-          {REPORT_REASONS.map((r) => (
-            <div key={r.value} className="flex items-center gap-2">
-              <RadioGroupItem value={r.value} id={`reason-${r.value}`} />
-              <Label htmlFor={`reason-${r.value}`} className="text-sm font-normal cursor-pointer">
-                {r.label}
-              </Label>
-            </div>
-          ))}
-        </RadioGroup>
-
-        <Textarea
-          placeholder="상세 내용 (선택)"
-          value={detail}
-          onChange={(e) => setDetail(e.target.value)}
-          maxLength={500}
-          rows={3}
-          className="rounded-xl resize-none"
-        />
-
-        <DialogFooter className="gap-2 sm:gap-2">
-          <Button variant="outline" onClick={handleClose} className="rounded-full">
-            취소
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={handleSubmit}
-            disabled={submitting}
-            className="rounded-full"
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={handleClose}
+        >
+          <motion.div
+            className="w-full max-w-sm max-h-[85vh] overflow-y-auto bg-card rounded-2xl shadow-2xl p-5"
+            initial={{ opacity: 0, scale: 0.95, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 12 }}
+            onClick={(e) => e.stopPropagation()}
           >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : '신고하기'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            <div className="flex items-start justify-between mb-1">
+              <h2 className="flex items-center gap-2 font-display text-[19px] font-medium text-foreground">
+                <Flag className="w-4 h-4 text-destructive" />
+                {TARGET_LABELS[targetType]} 신고
+              </h2>
+              <button onClick={handleClose} className="p-1 rounded-lg hover:bg-muted -mr-1">
+                <X className="w-5 h-5 text-muted-foreground" />
+              </button>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              {targetLabel ? <span className="line-clamp-2">"{targetLabel}"</span> : '부적절한 콘텐츠를 신고해주세요.'}
+            </p>
+
+            <RadioGroup value={reason} onValueChange={setReason} className="gap-2">
+              {REPORT_REASONS.map((r) => (
+                <div key={r.value} className="flex items-center gap-2">
+                  <RadioGroupItem value={r.value} id={`reason-${r.value}`} />
+                  <Label htmlFor={`reason-${r.value}`} className="text-sm font-normal cursor-pointer">
+                    {r.label}
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
+
+            <Textarea
+              placeholder="상세 내용 (선택)"
+              value={detail}
+              onChange={(e) => setDetail(e.target.value)}
+              maxLength={500}
+              rows={3}
+              className="rounded-xl resize-none mt-3"
+            />
+
+            <div className="flex gap-2 mt-4">
+              <Button variant="outline" onClick={handleClose} className="flex-1 rounded-full">
+                취소
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="flex-1 rounded-full"
+              >
+                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : '신고하기'}
+              </Button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
