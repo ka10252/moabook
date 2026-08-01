@@ -55,6 +55,7 @@ export interface SceneInitData {
   onOpenProfile?: (userId: string) => void;
   onOpenReadingBook?: (book: ReadingBook) => void;
   onTourStart?: () => void;   // 사서 안내 시작(첫 방문 자동/사서 탭) → React가 중앙 팝업 표시
+  onChatMessage?: (nickname: string, text: string) => void;   // 채팅(이모지 제외) → React 하단 히스토리
   avatar?: AvatarConfig;
   presence?: PresenceConfig;
   members?: RoomMember[];   // 커뮤니티룸: 멤버 전원(미접속자는 zzz로 표시)
@@ -111,6 +112,7 @@ export class LibraryScene extends Phaser.Scene {
   private librarianSprite?: Phaser.GameObjects.Sprite;
   private tourHi?: Phaser.GameObjects.Graphics;
   private onTourStart?: () => void;
+  private onChatMessage?: (nickname: string, text: string) => void;
   private lastBroadcast = 0;
   private lastSent = { x: 0, y: 0, dir: 'down' as Dir, moving: false };
 
@@ -125,6 +127,7 @@ export class LibraryScene extends Phaser.Scene {
     this.onOpenProfile = data.onOpenProfile;
     this.onOpenReadingBook = data.onOpenReadingBook;
     this.onTourStart = data.onTourStart;
+    this.onChatMessage = data.onChatMessage;
     if (data.avatar) this.avatar = data.avatar;
     this.presenceCfg = data.presence;
     this.members = data.members ?? [];
@@ -516,8 +519,11 @@ export class LibraryScene extends Phaser.Scene {
     this.channel = supabase.channel(channelName, { config: { presence: { key: me.userId } } });
     this.channel.on('presence', { event: 'sync' }, () => this.refreshRemotes());
     this.channel.on('broadcast', { event: 'bubble' }, ({ payload }) => {
-      const p = payload as { from: string; kind: 'emote' | 'chat'; text: string };
-      if (p.from !== me.userId) this.showBubble(p.from, p.text, p.kind === 'emote');
+      const p = payload as { from: string; kind: 'emote' | 'chat'; text: string; nick?: string };
+      if (p.from !== me.userId) {
+        this.showBubble(p.from, p.text, p.kind === 'emote');
+        if (p.kind === 'chat') this.onChatMessage?.(p.nick ?? '이웃', p.text);
+      }
     });
     this.channel.subscribe((status) => {
       if (status === 'SUBSCRIBED') this.channel!.track(this.myState());
@@ -586,8 +592,10 @@ export class LibraryScene extends Phaser.Scene {
   /** React UI에서 호출: 채팅/이모트 전송 (브로드캐스트 + 내 머리 위에도 표시) */
   sendBubble(text: string, isEmote: boolean) {
     if (!this.channel || !this.presenceCfg) return;
-    this.channel.send({ type: 'broadcast', event: 'bubble', payload: { from: this.presenceCfg.me.userId, kind: isEmote ? 'emote' : 'chat', text } });
+    const nick = this.presenceCfg.me.nickname;
+    this.channel.send({ type: 'broadcast', event: 'bubble', payload: { from: this.presenceCfg.me.userId, kind: isEmote ? 'emote' : 'chat', text, nick } });
     this.showBubble(this.presenceCfg.me.userId, text, isEmote);
+    if (!isEmote) this.onChatMessage?.(nick, text);
   }
 
   /** presenceState를 읽어 원격 캐릭터를 추가/갱신/제거한다. */

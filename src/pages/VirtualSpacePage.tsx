@@ -48,6 +48,8 @@ export default function VirtualSpacePage() {
   const nicknameRef = useRef<string>('익명');
   const readingBookRef = useRef<ReadingBook | null>(null);
   const membersRef = useRef<{ userId: string; nickname: string; avatar: AvatarConfig }[]>([]);
+  const chatIdRef = useRef(0);
+  const chatLogTimer = useRef<ReturnType<typeof setTimeout>>();
 
   const fetchReadingBook = async (): Promise<ReadingBook | null> => {
     if (!user) return null;
@@ -82,6 +84,12 @@ export default function VirtualSpacePage() {
       onOpenProfile: (uid: string) => setProfileUserId(uid),
       onOpenReadingBook: (book: ReadingBook) => setReadingBook(book),
       onTourStart: () => setTourStep(0),
+      // 채팅(이모지 제외)을 하단 히스토리에 잠깐 표시(최근 3줄). 말풍선이 빨리 사라져도 놓치지 않게.
+      onChatMessage: (nick: string, text: string) => {
+        setChatLog((prev) => [...prev, { id: chatIdRef.current++, nick, text }].slice(-3));
+        if (chatLogTimer.current) clearTimeout(chatLogTimer.current);
+        chatLogTimer.current = setTimeout(() => setChatLog([]), 8000);
+      },
       presence: user
         ? { channelName, me: { userId: user.id, nickname: nicknameRef.current, avatar, readingBook: readingBookRef.current } }
         : undefined,
@@ -95,6 +103,7 @@ export default function VirtualSpacePage() {
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [readingBook, setReadingBook] = useState<ReadingBook | null>(null);
   const [chatText, setChatText] = useState('');
+  const [chatLog, setChatLog] = useState<{ id: number; nick: string; text: string }[]>([]);
   const [showEmotes, setShowEmotes] = useState(false);
   const [tourStep, setTourStep] = useState<number | null>(null);
 
@@ -277,6 +286,20 @@ export default function VirtualSpacePage() {
       )}
 
 
+      {/* 최근 채팅 3줄 — 말풍선이 사라져도 잠깐 볼 수 있게 입력창 위에 표시 */}
+      {user && !loading && chatLog.length > 0 && (
+        <div className="absolute bottom-[68px] left-1/2 -translate-x-1/2 z-10 w-[calc(100%-2rem)] max-w-[460px] pointer-events-none">
+          <div className="inline-flex flex-col gap-0.5 max-w-full rounded-xl bg-black/45 backdrop-blur-sm px-3 py-2">
+            {chatLog.map((m) => (
+              <p key={m.id} className="text-[12px] leading-snug text-white/95 truncate">
+                <span className="font-bold">{m.nick}</span>
+                <span className="opacity-70">: </span>{m.text}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 하단 채팅/이모트 바 (근접 대화·이모트 → 머리 위 말풍선) */}
       {user && !loading && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 w-[calc(100%-2rem)] max-w-[460px]">
@@ -303,7 +326,7 @@ export default function VirtualSpacePage() {
           <input
             value={chatText}
             onChange={(e) => setChatText(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') sendChat(); }}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) sendChat(); }}
             placeholder="메시지 보내기…"
             maxLength={60}
             className="flex-1 h-11 px-4 rounded-full bg-white/95 shadow-md text-sm text-gray-800 outline-none focus:ring-2 focus:ring-primary/40"

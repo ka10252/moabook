@@ -236,7 +236,7 @@ function PostItem({
                     placeholder="댓글 입력…"
                     rows={1}
                     className="resize-none text-sm rounded-xl bg-card border-border min-h-0 py-2"
-                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddComment(); } }}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); handleAddComment(); } }}
                   />
                   <Button
                     size="icon"
