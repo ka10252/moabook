@@ -16,10 +16,10 @@ export function TelegramSettings() {
 
   const load = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from('profiles').select('telegram_chat_id, telegram_opt_in').eq('id', user.id).maybeSingle();
-    const row = data as { telegram_chat_id?: string | null; telegram_opt_in?: boolean } | null;
-    setLinked(!!row?.telegram_chat_id);
+    // telegram_chat_id는 base에서 회수됨 → 본인 비공개 필드는 RPC로.
+    const { data } = await supabase.rpc('get_my_private_profile' as any);
+    const row = data as { telegram_linked?: boolean; telegram_opt_in?: boolean } | null;
+    setLinked(!!row?.telegram_linked);
     setOptIn(!!row?.telegram_opt_in);
     setLoading(false);
   };

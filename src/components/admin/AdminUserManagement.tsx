@@ -40,7 +40,8 @@ export const AdminUserManagement = () => {
         { data: bookCounts },
         { data: transactionCounts },
       ] = await Promise.all([
-        supabase.from('profiles').select('id, nickname, avatar_url, bio, gender, age, gender_public, age_public, country, district, region, pixel_avatar, reading_book, reading_book_id, telegram_chat_id, telegram_opt_in, created_at, updated_at').order('created_at', { ascending: false }),
+        // gender/age/telegram_chat_id는 base에서 회수됨 → 관리자 전용 RPC로 전체 조회.
+        supabase.rpc('admin_list_users' as any),
         supabase.from('community_members').select('user_id').eq('is_banned', false),
         supabase.from('books').select('owner_id'),
         supabase.from('transactions').select('owner_id, borrower_id'),

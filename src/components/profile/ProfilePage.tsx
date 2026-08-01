@@ -186,8 +186,9 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        // telegram_link_code는 보안상 클라 SELECT 불가(회수됨) → '*' 대신 명시 컬럼
-        .select('id, nickname, avatar_url, bio, gender, age, gender_public, age_public, country, district, region, pixel_avatar, reading_book, reading_book_id, telegram_chat_id, telegram_opt_in, school, created_at, updated_at')
+        // 명시 컬럼만. telegram_link_code(보안)·gender·age·telegram_chat_id는 base에서 회수됨
+        // → gender/age는 아래 get_my_private_profile RPC로 본인만 읽는다.
+        .select('id, nickname, avatar_url, bio, gender_public, age_public, country, district, region, pixel_avatar, reading_book, reading_book_id, telegram_opt_in, school, created_at, updated_at')
         .eq('id', user.id)
         .single();
 
@@ -205,14 +206,20 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
         };
         setNickname(profileData.nickname || '');
         setBio(profileData.bio || '');
-        setGender(profileData.gender || '');
-        setAge(profileData.age?.toString() || '');
         setGenderPublic(profileData.gender_public || false);
         setAgePublic(profileData.age_public || false);
         setAvatarUrl(profileData.avatar_url);
         setCountry(profileData.country || '');
         setDistrict(profileData.district || '');
         setSchool((profileData as { school?: string | null }).school ?? null);
+      }
+
+      // gender/age는 base에서 회수되어 본인만 RPC로 읽는다(비공개 필드).
+      const { data: priv } = await supabase.rpc('get_my_private_profile' as any);
+      if (priv) {
+        const p = priv as { gender?: string | null; age?: number | null };
+        setGender(p.gender || '');
+        setAge(p.age != null ? String(p.age) : '');
       }
     } catch (error) {
       console.error('Fetch profile error:', error);

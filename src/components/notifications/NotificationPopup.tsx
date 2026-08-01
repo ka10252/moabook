@@ -28,8 +28,8 @@ const NotifSetupCard = () => {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from('profiles').select('telegram_chat_id').eq('id', user.id).maybeSingle()
-      .then(({ data }) => setTgLinked(!!(data as { telegram_chat_id?: string | null } | null)?.telegram_chat_id));
+    supabase.rpc('am_i_telegram_linked' as any)
+      .then(({ data }) => setTgLinked(!!data));
   }, [user]);
 
   // 로딩 중이거나(깜빡임 방지), 닫았거나, 이미 하나라도 켠 유저에겐 숨긴다

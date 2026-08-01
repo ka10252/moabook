@@ -85,8 +85,9 @@ export const MemberProfileModal = ({
     setCompletedDeals(null);
     try {
       // Fetch profile
+      // 남의 프로필은 profiles_public 뷰로만 본다 — gender/age는 _public일 때만 값이 온다.
       const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
+        .from('profiles_public' as any)
         .select('id, nickname, avatar_url, bio, gender, age, gender_public, age_public, school')
         .eq('id', userId)
         .single();

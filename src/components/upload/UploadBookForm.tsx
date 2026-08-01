@@ -179,11 +179,11 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
       let firstBookPrompt = false;
       try {
         if (!localStorage.getItem('moa_first_book_notif_seen')) {
-          const [{ count }, { data: prof }] = await Promise.all([
+          const [{ count }, { data: linked }] = await Promise.all([
             supabase.from('books').select('id', { count: 'exact', head: true }).eq('owner_id', user.id),
-            supabase.from('profiles').select('telegram_chat_id').eq('id', user.id).maybeSingle(),
+            supabase.rpc('am_i_telegram_linked' as any),
           ]);
-          const hasTelegram = !!(prof as { telegram_chat_id?: string | null } | null)?.telegram_chat_id;
+          const hasTelegram = !!linked;
           if ((count ?? 0) <= 1 && !hasTelegram) {
             localStorage.setItem('moa_first_book_notif_seen', '1');
             setShowNotifPrompt(true);

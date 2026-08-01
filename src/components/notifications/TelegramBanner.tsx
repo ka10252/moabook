@@ -16,8 +16,8 @@ export function TelegramBanner() {
     if (!user) return;
     if (localStorage.getItem(DISMISS_KEY)) return;
     (async () => {
-      const { data } = await supabase.from('profiles').select('telegram_chat_id').eq('id', user.id).maybeSingle();
-      if (!(data as { telegram_chat_id?: string | null } | null)?.telegram_chat_id) setShow(true);
+      const { data: linked } = await supabase.rpc('am_i_telegram_linked' as any);
+      if (!linked) setShow(true);
     })();
   }, [user]);
 

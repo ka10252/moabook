@@ -103,7 +103,8 @@ export const AdminUserDetailModal = ({ userId, onClose, onRefresh }: AdminUserDe
         { data: roleData },
         { data: authData },
       ] = await Promise.all([
-        supabase.from('profiles').select('id, nickname, avatar_url, bio, gender, age, gender_public, age_public, country, district, region, pixel_avatar, reading_book, reading_book_id, telegram_chat_id, telegram_opt_in, created_at, updated_at').eq('id', userId).single(),
+        // gender/age/telegram_chat_id는 base에서 회수됨 → 관리자 전용 RPC로.
+        supabase.rpc('admin_get_user' as any, { p_user_id: userId }).single(),
         supabase.from('books').select('id, title, author, status, mode, created_at').eq('owner_id', userId).order('created_at', { ascending: false }),
         supabase.from('transactions').select(`
           id, type, status, created_at,
