@@ -159,6 +159,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   const [showRegionBlock, setShowRegionBlock] = useState(false);
   const [stats, setStats] = useState<Stats>({ registered: 0, lent: 0, deals: 0 });
   const [showTransactions, setShowTransactions] = useState(false);
+  const [transactionsTab, setTransactionsTab] = useState<'active' | 'history'>('active');
 
   // Password change
   const [newPassword, setNewPassword] = useState('');
@@ -465,13 +466,13 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
             <div className="flex mt-5 bg-card border border-border rounded-[14px] py-4">
               {[
                 { n: stats.registered, l: '등록한 책', onClick: undefined as (() => void) | undefined },
-                { n: stats.lent, l: '빌려주는 중', onClick: () => setShowTransactions(true) },
-                { n: stats.deals, l: '거래완료', onClick: () => setShowTransactions(true) },
+                { n: stats.lent, l: '빌려주는 중', onClick: () => { setTransactionsTab('active'); setShowTransactions(true); } },
+                { n: stats.deals, l: '거래완료', onClick: () => { setTransactionsTab('history'); setShowTransactions(true); } },
               ].map((s, i) => (
                 <div
                   key={s.l}
                   onClick={s.onClick}
-                  className={`flex-1 text-center ${i < 2 ? 'border-r border-border' : ''} ${s.onClick ? 'cursor-pointer hover:bg-muted/40 rounded-lg transition-colors' : ''}`}
+                  className={`flex-1 text-center ${i < 2 ? 'border-r border-border' : ''} ${s.onClick ? 'cursor-pointer hover:bg-muted/40 transition-colors' : ''}`}
                 >
                   <p className="font-display text-[23px] text-primary leading-none">{s.n}</p>
                   <p className="text-[12px] text-muted-foreground mt-1">{s.l}</p>
@@ -1053,6 +1054,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
       {/* 빌려주는 중 / 거래완료 클릭 → 거래 현황(진행중+완료) 모달 */}
       <TransactionDashboard
         isOpen={showTransactions}
+        initialTab={transactionsTab}
         onClose={() => setShowTransactions(false)}
       />
     </div>

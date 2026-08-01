@@ -12,20 +12,25 @@ interface TransactionDashboardProps {
   onClose: () => void;
   /** When provided, only show transactions between the current user and this partner */
   partnerId?: string;
+  /** 열 때 보여줄 탭 (기본: 진행중) */
+  initialTab?: 'active' | 'history';
 }
 
-export const TransactionDashboard = ({ isOpen, onClose, partnerId }: TransactionDashboardProps) => {
+export const TransactionDashboard = ({ isOpen, onClose, partnerId, initialTab }: TransactionDashboardProps) => {
   const { transactions: allTransactions, loading, updateTransaction, refresh } = useTransactions();
   const { history: allHistory, loading: historyLoading, refresh: refreshHistory } = useTransactionHistory();
 
   // 이 훅 인스턴스는 부모(책장/채팅)가 마운트될 때 한 번 가져온 뒤 갱신되지 않는다.
   // 그래서 그 사이 새로 생긴 거래가 안 보였다. 열 때마다 최신으로 다시 불러온다.
+  const [tab, setTab] = useState<'active' | 'history'>(initialTab ?? 'active');
+
   useEffect(() => {
     if (isOpen) {
+      setTab(initialTab ?? 'active'); // 열 때마다 지정 탭으로(거래완료 클릭=히스토리)
       refresh();
       refreshHistory();
     }
-  }, [isOpen, refresh, refreshHistory]);
+  }, [isOpen, initialTab, refresh, refreshHistory]);
 
   const transactions = partnerId
     ? allTransactions.filter(t => t.counterparty?.id === partnerId)
@@ -35,7 +40,6 @@ export const TransactionDashboard = ({ isOpen, onClose, partnerId }: Transaction
     ? allHistory.filter(t => t.counterparty?.id === partnerId)
     : allHistory;
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-  const [tab, setTab] = useState<'active' | 'history'>('active');
 
   if (!isOpen) return null;
 
