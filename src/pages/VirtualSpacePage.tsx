@@ -303,10 +303,10 @@ export default function VirtualSpacePage() {
           {chatLog.map((m) => (
             <p
               key={m.id}
-              className="text-[13px] leading-snug text-[#2c2621] break-words"
+              className="text-[13px] leading-snug text-[#2c2621] break-all"
               style={{ textShadow: '0 1px 3px rgba(255,255,255,.95), 0 0 2px rgba(255,255,255,.95)' }}
             >
-              <span className="font-extrabold text-[#c24f34]">{m.nick}</span>
+              <span className="font-extrabold text-[#c24f34] whitespace-nowrap">{m.nick}</span>
               <span className="opacity-60">: </span>{m.text}
             </p>
           ))}
