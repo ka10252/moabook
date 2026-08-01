@@ -16,6 +16,7 @@ import {
   Sun,
   Moon,
   MapPin,
+  GraduationCap,
   Bell,
   Share,
   Plus,
@@ -159,6 +160,8 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   const avatarFileRef = useRef<HTMLInputElement>(null);
   const [country, setCountry] = useState('');
   const [district, setDistrict] = useState('');
+  const [school, setSchool] = useState<string | null>(null);
+  const [verifyingSchool, setVerifyingSchool] = useState(false);
   const [showRegionBlock, setShowRegionBlock] = useState(false);
   const [stats, setStats] = useState<Stats>({ registered: 0, lent: 0, deals: 0 });
   const [showTransactions, setShowTransactions] = useState(false);
@@ -184,7 +187,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
       const { data, error } = await supabase
         .from('profiles')
         // telegram_link_code는 보안상 클라 SELECT 불가(회수됨) → '*' 대신 명시 컬럼
-        .select('id, nickname, avatar_url, bio, gender, age, gender_public, age_public, country, district, region, pixel_avatar, reading_book, reading_book_id, telegram_chat_id, telegram_opt_in, created_at, updated_at')
+        .select('id, nickname, avatar_url, bio, gender, age, gender_public, age_public, country, district, region, pixel_avatar, reading_book, reading_book_id, telegram_chat_id, telegram_opt_in, school, created_at, updated_at')
         .eq('id', user.id)
         .single();
 
@@ -209,12 +212,41 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
         setAvatarUrl(profileData.avatar_url);
         setCountry(profileData.country || '');
         setDistrict(profileData.district || '');
+        setSchool((profileData as { school?: string | null }).school ?? null);
       }
     } catch (error) {
       console.error('Fetch profile error:', error);
       toast.error('프로필 불러오기에 실패했습니다');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  /**
+   * 학교 이메일 인증. 이미 인증된 가입 이메일의 도메인이 SG 대학이면 학교 태그를 단다.
+   * 별도 메일 발송 없이 Supabase가 검증한 이메일을 재사용 → 비용 0.
+   */
+  const handleVerifySchool = async () => {
+    setVerifyingSchool(true);
+    try {
+      const { data, error } = await supabase.rpc('verify_school_email' as any);
+      if (error) throw error;
+      const result = (data as string | null) ?? null;
+      setSchool(result);
+      if (result) {
+        toast.success(`${result} 학교 이메일이 인증되었어요 🎓`);
+      } else {
+        toast.info('가입 이메일이 싱가포르 대학 이메일이 아니에요. 학교 이메일로 가입하면 인증 태그가 붙어요.');
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(
+        /not find|PGRST202|schema cache/i.test(msg)
+          ? '학교 인증 기능이 아직 배포되지 않았어요.'
+          : '인증에 실패했어요. 잠시 후 다시 시도해주세요.',
+      );
+    } finally {
+      setVerifyingSchool(false);
     }
   };
 
@@ -467,6 +499,25 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                   {district}
                 </p>
               )}
+
+              {/* 학교 인증(사실 태그) */}
+              <div className="mt-2.5 flex justify-center">
+                {school ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 text-primary text-[12px] font-semibold px-3 py-1">
+                    <GraduationCap className="w-3.5 h-3.5" />
+                    {school} 인증
+                  </span>
+                ) : (
+                  <button
+                    onClick={handleVerifySchool}
+                    disabled={verifyingSchool}
+                    className="inline-flex items-center gap-1 rounded-full border border-border text-[12px] text-muted-foreground px-3 py-1 hover:bg-muted/50 transition-colors disabled:opacity-60"
+                  >
+                    <GraduationCap className="w-3.5 h-3.5" />
+                    {verifyingSchool ? '확인 중…' : '학교 이메일 인증'}
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* 지표 */}

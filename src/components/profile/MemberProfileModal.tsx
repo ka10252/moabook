@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, BookOpen, Loader2, User, Flag, Ban, ShieldOff } from 'lucide-react';
+import { X, BookOpen, Loader2, User, Flag, Ban, ShieldOff, GraduationCap, Handshake } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +32,7 @@ interface Profile {
   age: number | null;
   gender_public: boolean;
   age_public: boolean;
+  school: string | null;
 }
 
 interface MemberProfileModalProps {
@@ -51,6 +52,7 @@ export const MemberProfileModal = ({
   const { isBlocked, blockUser, unblockUser } = useBlockedUsers();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
+  const [completedDeals, setCompletedDeals] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
@@ -80,16 +82,25 @@ export const MemberProfileModal = ({
     if (!userId) return;
 
     setLoading(true);
+    setCompletedDeals(null);
     try {
       // Fetch profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('id, nickname, avatar_url, bio, gender, age, gender_public, age_public')
+        .select('id, nickname, avatar_url, bio, gender, age, gender_public, age_public, school')
         .eq('id', userId)
         .single();
 
       if (profileError) throw profileError;
       setProfile(profileData as Profile);
+
+      // 완료 거래수(신뢰 신호) — 실패해도 프로필은 떠야 하므로 조용히 무시.
+      supabase
+        .rpc('get_user_public_stats' as any, { p_user_id: userId })
+        .then(({ data }) => {
+          const deals = (data as { completed_deals?: number } | null)?.completed_deals;
+          setCompletedDeals(typeof deals === 'number' ? deals : null);
+        });
 
       // Fetch user's books (public or owned by them)
       const { data: booksData, error: booksError } = await supabase
@@ -175,8 +186,20 @@ export const MemberProfileModal = ({
                       </p>
                     )}
                     
-                    {/* Gender & Age (if public) */}
-                    <div className="flex items-center justify-center gap-2 mt-3">
+                    {/* 신뢰 신호 + 성별/나이(공개 시) */}
+                    <div className="flex items-center justify-center gap-2 mt-3 flex-wrap">
+                      {profile.school && (
+                        <Badge className="text-xs bg-primary/15 text-primary hover:bg-primary/15 border-0 gap-1">
+                          <GraduationCap className="w-3 h-3" />
+                          {profile.school} 인증
+                        </Badge>
+                      )}
+                      {completedDeals !== null && completedDeals > 0 && (
+                        <Badge variant="secondary" className="text-xs gap-1">
+                          <Handshake className="w-3 h-3" />
+                          완료 거래 {completedDeals}건
+                        </Badge>
+                      )}
                       {profile.gender_public && profile.gender && (
                         <Badge variant="secondary" className="text-xs">
                           {getGenderLabel(profile.gender)}
