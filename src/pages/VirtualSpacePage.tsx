@@ -298,7 +298,7 @@ export default function VirtualSpacePage() {
       {user && !loading && chatLog.length > 0 && (
         <div
           ref={chatLogRef}
-          className="moa-thin-scroll absolute bottom-[68px] left-1/2 -translate-x-1/2 z-10 w-[calc(100%-2rem)] max-h-[84px] overflow-y-auto pr-1"
+          className="moa-thin-scroll absolute bottom-[88px] left-1/2 -translate-x-1/2 z-10 w-[calc(100%-3.5rem)] max-h-[84px] overflow-y-auto pr-1"
         >
           {chatLog.map((m) => (
             <p
