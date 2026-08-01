@@ -43,7 +43,10 @@ export default defineConfig({
         ],
       },
       injectManifest: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // ⚠️ html 제외: index.html을 프리캐시하면 배포 직후 옛 SW가 옛 index.html(옛 청크 참조)을
+        // 서빙해 흰 화면이 난다. 내비게이션은 항상 네트워크에서 최신 index.html을 받게 한다.
+        // (트레이드오프: 완전 오프라인 앱 셸은 포기 — 이 앱은 어차피 네트워크가 필요)
+        globPatterns: ["**/*.{js,css,ico,png,svg,woff2}"],
         // 대형 폰트는 프리캐시(설치 시 전량 다운로드)에서 제외 → PWA 설치 payload 축소.
         //  - Galmuri11(496KB): 가상공간 픽셀 라벨 전용, 대부분 유저는 안 씀
         //  - Noto Sans KR(559KB): 책등 세로 라벨용, 필요 시 네트워크에서 로드(브라우저 캐시 적용)
