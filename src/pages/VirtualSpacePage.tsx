@@ -50,6 +50,7 @@ export default function VirtualSpacePage() {
   const membersRef = useRef<{ userId: string; nickname: string; avatar: AvatarConfig }[]>([]);
   const chatIdRef = useRef(0);
   const chatLogTimer = useRef<ReturnType<typeof setTimeout>>();
+  const chatLogRef = useRef<HTMLDivElement>(null);
 
   const fetchReadingBook = async (): Promise<ReadingBook | null> => {
     if (!user) return null;
@@ -86,9 +87,9 @@ export default function VirtualSpacePage() {
       onTourStart: () => setTourStep(0),
       // 채팅(이모지 제외)을 하단 히스토리에 잠깐 표시(최근 3줄). 말풍선이 빨리 사라져도 놓치지 않게.
       onChatMessage: (nick: string, text: string) => {
-        setChatLog((prev) => [...prev, { id: chatIdRef.current++, nick, text }].slice(-3));
+        setChatLog((prev) => [...prev, { id: chatIdRef.current++, nick, text }].slice(-40));
         if (chatLogTimer.current) clearTimeout(chatLogTimer.current);
-        chatLogTimer.current = setTimeout(() => setChatLog([]), 8000);
+        chatLogTimer.current = setTimeout(() => setChatLog([]), 12000);
       },
       presence: user
         ? { channelName, me: { userId: user.id, nickname: nicknameRef.current, avatar, readingBook: readingBookRef.current } }
@@ -123,6 +124,12 @@ export default function VirtualSpacePage() {
     api.highlightFurniture(tourStep === null ? null : TOUR[tourStep]?.highlight ?? null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tourStep]);
+
+  // 새 채팅이 오면 히스토리를 최신(맨 아래)으로 스크롤
+  useEffect(() => {
+    const el = chatLogRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [chatLog]);
 
   const endTour = () => {
     sceneApi()?.highlightFurniture(null);
@@ -287,17 +294,22 @@ export default function VirtualSpacePage() {
       )}
 
 
-      {/* 최근 채팅 3줄 — 말풍선이 사라져도 잠깐 볼 수 있게 입력창 위에 표시 */}
+      {/* 최근 채팅 — 말풍선이 사라져도 잠깐 볼 수 있게 입력창 위에 표시(투명 배경, 스크롤 가능) */}
       {user && !loading && chatLog.length > 0 && (
-        <div className="absolute bottom-[68px] left-1/2 -translate-x-1/2 z-10 w-[calc(100%-2rem)] max-w-[460px] pointer-events-none">
-          <div className="inline-flex flex-col gap-0.5 max-w-full rounded-xl bg-black/45 backdrop-blur-sm px-3 py-2">
-            {chatLog.map((m) => (
-              <p key={m.id} className="text-[12px] leading-snug text-white/95 truncate">
-                <span className="font-bold">{m.nick}</span>
-                <span className="opacity-70">: </span>{m.text}
-              </p>
-            ))}
-          </div>
+        <div
+          ref={chatLogRef}
+          className="moa-thin-scroll absolute bottom-[68px] left-1/2 -translate-x-1/2 z-10 w-[calc(100%-2rem)] max-h-[84px] overflow-y-auto pr-1"
+        >
+          {chatLog.map((m) => (
+            <p
+              key={m.id}
+              className="text-[13px] leading-snug text-[#2c2621] break-words"
+              style={{ textShadow: '0 1px 3px rgba(255,255,255,.95), 0 0 2px rgba(255,255,255,.95)' }}
+            >
+              <span className="font-extrabold text-[#c24f34]">{m.nick}</span>
+              <span className="opacity-60">: </span>{m.text}
+            </p>
+          ))}
         </div>
       )}
 
