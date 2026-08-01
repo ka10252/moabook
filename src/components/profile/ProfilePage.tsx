@@ -180,7 +180,8 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        // telegram_link_code는 보안상 클라 SELECT 불가(회수됨) → '*' 대신 명시 컬럼
+        .select('id, nickname, avatar_url, bio, gender, age, gender_public, age_public, country, district, region, pixel_avatar, reading_book, reading_book_id, telegram_chat_id, telegram_opt_in, created_at, updated_at')
         .eq('id', user.id)
         .single();
 

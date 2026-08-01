@@ -103,7 +103,7 @@ export const AdminUserDetailModal = ({ userId, onClose, onRefresh }: AdminUserDe
         { data: roleData },
         { data: authData },
       ] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', userId).single(),
+        supabase.from('profiles').select('id, nickname, avatar_url, bio, gender, age, gender_public, age_public, country, district, region, pixel_avatar, reading_book, reading_book_id, telegram_chat_id, telegram_opt_in, created_at, updated_at').eq('id', userId).single(),
         supabase.from('books').select('id, title, author, status, mode, created_at').eq('owner_id', userId).order('created_at', { ascending: false }),
         supabase.from('transactions').select(`
           id, type, status, created_at,

@@ -107,9 +107,9 @@ export const AdminDashboard = () => {
         { count: pendingTransactions },
         { count: completedTransactions },
       ] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString()),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', weekStart.toISOString()),
+        supabase.from('profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString()),
+        supabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', weekStart.toISOString()),
         supabase.from('books').select('*', { count: 'exact', head: true }),
         supabase.from('books').select('*', { count: 'exact', head: true }).eq('status', 'available'),
         supabase.from('communities').select('id', { count: 'exact', head: true }),

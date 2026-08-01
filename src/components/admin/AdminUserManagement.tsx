@@ -40,7 +40,7 @@ export const AdminUserManagement = () => {
         { data: bookCounts },
         { data: transactionCounts },
       ] = await Promise.all([
-        supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+        supabase.from('profiles').select('id, nickname, avatar_url, bio, gender, age, gender_public, age_public, country, district, region, pixel_avatar, reading_book, reading_book_id, telegram_chat_id, telegram_opt_in, created_at, updated_at').order('created_at', { ascending: false }),
         supabase.from('community_members').select('user_id').eq('is_banned', false),
         supabase.from('books').select('owner_id'),
         supabase.from('transactions').select('owner_id, borrower_id'),
