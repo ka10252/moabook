@@ -18,6 +18,7 @@ interface AuthContextType {
   updatePassword: (password: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
+  signInWithKakao: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<{ error: Error | null; unavailable?: boolean }>;
 }
@@ -131,6 +132,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   };
 
+  const signInWithKakao = async (): Promise<{ error: Error | null }> => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'kakao',
+      options: { redirectTo: window.location.origin },
+    });
+    return { error: error as Error | null };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
@@ -192,6 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updatePassword,
         signIn,
         signInWithGoogle,
+        signInWithKakao,
         signOut,
         deleteAccount,
       }}

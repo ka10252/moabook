@@ -75,7 +75,12 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
    */
   const [pending, setPending] = useState<{ email: string; kind: 'signup' | 'reset' } | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
-  const { user, signUp, signIn, resendConfirmation, requestPasswordReset } = useAuth();
+  const { user, signUp, signIn, resendConfirmation, requestPasswordReset, signInWithGoogle, signInWithKakao } = useAuth();
+
+  const handleOAuth = async (provider: 'google' | 'kakao') => {
+    const { error } = provider === 'google' ? await signInWithGoogle() : await signInWithKakao();
+    if (error) toast.error(authErrorMessage(error.message));
+  };
 
   // 재발송 버튼을 연타하면 Supabase 발송 한도에 걸려 오히려 메일이 안 온다
   useEffect(() => {
@@ -304,6 +309,33 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
             </p>
           </div>
 
+
+          {/* 소셜 로그인 — 비밀번호 찾기 화면 제외 */}
+          {mode !== 'forgot' && (
+            <div className="mb-4">
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleOAuth('kakao')}
+                  className="w-full h-12 rounded-xl bg-[#FEE500] text-[#191600] text-sm font-semibold flex items-center justify-center gap-2 hover:brightness-95 transition"
+                >
+                  <span className="text-base">💬</span> 카카오로 계속하기
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleOAuth('google')}
+                  className="w-full h-12 rounded-xl bg-card border border-border text-foreground text-sm font-semibold flex items-center justify-center gap-2 hover:bg-muted transition"
+                >
+                  <span className="text-base font-bold text-[#4285F4]">G</span> Google로 계속하기
+                </button>
+              </div>
+              <div className="flex items-center gap-3 my-4">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-xs text-muted-foreground">또는 이메일로</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
