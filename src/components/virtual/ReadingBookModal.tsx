@@ -59,7 +59,7 @@ export const ReadingBookModal = ({ book, onClose }: ReadingBookModalProps) => {
         onClick={onClose}
       >
         <motion.div
-          className="w-full max-w-sm bg-card rounded-3xl p-6 shadow-2xl"
+          className="w-full max-w-sm bg-card rounded-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
           initial={{ scale: 0.92, opacity: 0, y: 16 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.92, opacity: 0, y: 16 }}

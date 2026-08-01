@@ -138,7 +138,7 @@ export const AcceptRentalModal = ({
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="bg-muted border-0 rounded-xl"
+                      className="h-11 max-w-full bg-muted border-0 rounded-xl"
                     />
                   </div>
 
@@ -154,7 +154,7 @@ export const AcceptRentalModal = ({
                         onChange={(e) => setReturnDate(e.target.value)}
                         min={startDate}
                         placeholder="미정"
-                        className="bg-muted border-0 rounded-xl"
+                        className="h-11 max-w-full bg-muted border-0 rounded-xl"
                       />
                       {!returnDate && (
                         <p className="text-xs text-muted-foreground">

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Users, Crown, Trash2, UserMinus, Loader2, Pencil, BookOpen, Lock, LayoutList, Link2, Check, Bell, Home } from 'lucide-react';
+import { X, Users, Crown, Trash2, UserMinus, Loader2, Pencil, BookOpen, Lock, LayoutList, Link2, Check, Bell, Home, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -74,7 +74,9 @@ export const CommunityDetailModal = ({
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmKick, setConfirmKick] = useState<Member | null>(null);
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPinDialog, setShowPinDialog] = useState(false);
@@ -226,6 +228,29 @@ export const CommunityDetailModal = ({
     } finally {
       setRemovingId(null);
       setConfirmKick(null);
+    }
+  };
+
+  // 멤버 본인이 커뮤니티에서 나가기 (방장은 나가기 대신 삭제/양도)
+  const handleLeaveCommunity = async () => {
+    if (!community || !user) return;
+    setLeaving(true);
+    try {
+      const { error } = await supabase
+        .from('community_members')
+        .delete()
+        .eq('community_id', community.id)
+        .eq('user_id', user.id);
+      if (error) throw error;
+      toast.success('커뮤니티에서 나왔어요');
+      onClose();
+      onCommunityUpdated?.();
+    } catch (err) {
+      console.error('Failed to leave community:', err);
+      toast.error('나가기에 실패했습니다');
+    } finally {
+      setLeaving(false);
+      setConfirmLeave(false);
     }
   };
 
@@ -466,6 +491,18 @@ export const CommunityDetailModal = ({
                     </Button>
                   </div>
                 )}
+                {/* 멤버 본인 나가기 (방장 제외) */}
+                {isMember && !isOwner && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setConfirmLeave(true)}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1 h-8 px-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>나가기</span>
+                  </Button>
+                )}
               </div>
 
               {/* Members List */}
@@ -566,6 +603,28 @@ export const CommunityDetailModal = ({
                   className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
                   {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : '삭제'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Leave Community Confirmation */}
+          <AlertDialog open={confirmLeave} onOpenChange={setConfirmLeave}>
+            <AlertDialogContent className="rounded-2xl max-w-[90vw] md:max-w-sm mx-4 z-[60]">
+              <AlertDialogHeader>
+                <AlertDialogTitle>커뮤니티에서 나가시겠습니까?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  "{community.name}"에서 나갑니다. 다시 들어오려면 PIN으로 재가입해야 해요.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="rounded-xl">취소</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleLeaveCommunity}
+                  disabled={leaving}
+                  className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {leaving ? <Loader2 className="w-4 h-4 animate-spin" /> : '나가기'}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

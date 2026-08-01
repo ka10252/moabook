@@ -151,8 +151,8 @@ export const TransactionEditModal = ({
             </button>
           </header>
 
-          {/* Content */}
-          <div className="p-4 space-y-4">
+          {/* Content — 화면보다 길면 내부 스크롤(팝업이 화면 밖으로 넘치지 않게) */}
+          <div className="p-4 space-y-4 flex-1 overflow-y-auto min-h-0">
             {/* Book Info */}
             <div className="bg-muted/50 rounded-xl p-3">
               <p className="font-medium text-foreground">{transaction.book?.title}</p>
