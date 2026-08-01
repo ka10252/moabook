@@ -382,7 +382,13 @@ export const Bookshelf = ({
   const totalRealBooks = filteredMySection.length + dedupedCommunityBooks.length;
   const showDummyBanner = canShowDummy(activeFilter, statusFilter, searchQuery, totalRealBooks);
 
-  const emptyShelvesNeeded = Math.max(0, 3 - shelfGroups.length);
+  // 필터·검색을 걸었는데 0건이면 빈 서가만 보여선 안 된다 — 왜 비었는지 알려준다.
+  const hasActiveQuery =
+    searchQuery.trim() !== '' || statusFilter !== 'all' || selectedDistricts.length > 0;
+  const showNoResults = totalRealBooks === 0 && hasActiveQuery && !showDummyBanner;
+
+  // 결과 없음 안내를 띄울 땐 장식용 빈 서가 필러를 숨겨 메시지가 붕 뜨지 않게 한다.
+  const emptyShelvesNeeded = showNoResults ? 1 : Math.max(0, 3 - shelfGroups.length);
 
   const statusFilterLabels: Record<StatusFilter, string> = {
     all: '전체',
@@ -625,6 +631,33 @@ export const Bookshelf = ({
                     </div>
                   </motion.div>
                 )}
+
+                {/* 결과 없음 — 필터/검색으로 0건일 때 */}
+                {showNoResults && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-4 mx-auto max-w-[520px] text-center px-5 py-8"
+                  >
+                    <div className="w-12 h-12 mx-auto rounded-full bg-muted flex items-center justify-center mb-3">
+                      <Search className="w-6 h-6 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">조건에 맞는 책이 없어요</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {searchQuery.trim()
+                        ? <>‘{searchQuery.trim()}’ 검색 결과가 없어요. 다른 검색어나 필터를 바꿔보세요.</>
+                        : '필터를 바꾸거나 초기화해보세요.'}
+                    </p>
+                    {(statusFilter !== 'all' || selectedDistricts.length > 0) && (
+                      <button
+                        onClick={() => { setStatusFilter('all'); setSelectedDistricts([]); }}
+                        className="mt-3 text-xs font-semibold text-primary underline underline-offset-2"
+                      >
+                        필터 초기화
+                      </button>
+                    )}
+                  </motion.div>
+                )}
               </motion.div>
         )}
       </div>
@@ -680,6 +713,9 @@ export const Bookshelf = ({
                   </button>
                 )}
               </div>
+              <p className="text-[11px] text-muted-foreground -mt-1">
+                현재 싱가포르 지역만 서비스해요. 지역은 책 등록·거래 위치 기준이에요.
+              </p>
 
               {/* Trigger button */}
               <button

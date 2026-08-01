@@ -144,6 +144,11 @@ export default function VirtualSpacePage() {
     if (n >= TOUR.length) { endTour(); return; }
     setTourStep(n);
   };
+  const prevTour = () => {
+    const p = (tourStep ?? 0) - 1;
+    if (p < 0) return;
+    setTourStep(p);
+  };
   const [communityName, setCommunityName] = useState('');
   const [title, setTitle] = useState(isCommunity ? '버추얼 커뮤니티룸' : '버추얼 도서관');
 
@@ -379,10 +384,10 @@ export default function VirtualSpacePage() {
             </p>
             <div className="flex border-t-2 border-[#3a2d22]">
               <button
-                onClick={endTour}
+                onClick={tourStep === 0 ? endTour : prevTour}
                 className="flex-1 py-2.5 text-[14px] text-[#6b5d50] border-r-2 border-[#3a2d22] active:bg-gray-100"
               >
-                닫기
+                {tourStep === 0 ? '닫기' : '◀ 이전'}
               </button>
               <button
                 onClick={nextTour}
