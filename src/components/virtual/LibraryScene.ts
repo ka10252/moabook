@@ -714,7 +714,13 @@ export class LibraryScene extends Phaser.Scene {
       this.pendingOffline.add(m.userId);
       this.ensureAvatarTexture(m.avatar).then((texKey) => {
         this.pendingOffline.delete(m.userId);
-        if (this.offline.has(m.userId)) return;
+        // 비동기 로드 중에 이 멤버가 접속했을 수 있다 → 접속 상태면 zzz(오프라인) 생성 안 함.
+        // (이 재확인이 없으면 "활성 캐릭터인데 zzz가 안 꺼짐" 발생)
+        if (this.offline.has(m.userId) || this.remotes.has(m.userId) || this.presenceCfg?.me.userId === m.userId) return;
+        if (this.channel) {
+          const st = this.channel.presenceState() as Record<string, Array<{ userId?: string }>>;
+          if (Object.values(st).some((arr) => arr[0]?.userId === m.userId)) return;
+        }
         const sprite = this.add.sprite(x, y, texKey).setDepth(y).setAlpha(0.75);
         sprite.play(`${texKey}_idle_down`);
         sprite.setInteractive({ useHandCursor: true });

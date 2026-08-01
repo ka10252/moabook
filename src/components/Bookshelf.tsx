@@ -646,7 +646,7 @@ export const Bookshelf = ({
 
       {/* Filter Dialog */}
       <Dialog open={showFilterSheet} onOpenChange={v => { setShowFilterSheet(v); if (!v) setDistrictDropdownOpen(false); }}>
-        <DialogContent className="w-[calc(100%-2rem)] max-w-sm rounded-2xl mb-[4vh]">
+        <DialogContent className="w-[calc(100%-2rem)] max-w-sm rounded-2xl mb-[4vh] overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="text-left text-base">필터 / 정렬</DialogTitle>
           </DialogHeader>

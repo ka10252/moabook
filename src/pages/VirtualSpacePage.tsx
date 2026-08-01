@@ -51,6 +51,7 @@ export default function VirtualSpacePage() {
   const chatIdRef = useRef(0);
   const chatLogTimer = useRef<ReturnType<typeof setTimeout>>();
   const chatLogRef = useRef<HTMLDivElement>(null);
+  const editorOpenRef = useRef(false); // 캐릭터 에디터 열림 여부(투어 자동시작 억제용)
 
   const fetchReadingBook = async (): Promise<ReadingBook | null> => {
     if (!user) return null;
@@ -84,7 +85,8 @@ export default function VirtualSpacePage() {
       },
       onOpenProfile: (uid: string) => setProfileUserId(uid),
       onOpenReadingBook: (book: ReadingBook) => setReadingBook(book),
-      onTourStart: () => setTourStep(0),
+      // 첫 입장 시 캐릭터 에디터가 떠 있으면 관리자 투어를 겹쳐 띄우지 않는다(에디터에 가려 묵살됨).
+      onTourStart: () => { if (!editorOpenRef.current) setTourStep(0); },
       // 채팅(이모지 제외)을 하단 히스토리에 잠깐 표시(최근 3줄). 말풍선이 빨리 사라져도 놓치지 않게.
       onChatMessage: (nick: string, text: string) => {
         setChatLog((prev) => [...prev, { id: chatIdRef.current++, nick, text }].slice(-40));
@@ -101,6 +103,7 @@ export default function VirtualSpacePage() {
   const [loading, setLoading] = useState(true);
   const [boardOpen, setBoardOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
+  useEffect(() => { editorOpenRef.current = editorOpen; }, [editorOpen]);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [readingBook, setReadingBook] = useState<ReadingBook | null>(null);
   const [chatText, setChatText] = useState('');
