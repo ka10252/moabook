@@ -557,6 +557,15 @@ export class LibraryScene extends Phaser.Scene {
     return null;
   }
 
+  /** 그 유저의 '읽는 책' 말풍선 표시/숨김 (채팅 중 겹침 방지용) */
+  private setReadingHidden(userId: string, hidden: boolean) {
+    const bubble = userId === this.presenceCfg?.me.userId
+      ? this.playerReading
+      : this.remotes.get(userId)?.readingBubble;
+    bubble?.setVisible(!hidden);
+    (bubble?.getData('hitZone') as Phaser.GameObjects.Zone | undefined)?.setActive(!hidden);
+  }
+
   /** 이모트/채팅 표시. 채팅은 머리 위 말풍선, 이모트는 캐릭터 주변에서 뿜어져 나오는 파티클. */
   private showBubble(userId: string, text: string, isEmote: boolean) {
     if (isEmote) { this.showEmote(userId, text); return; }
@@ -570,13 +579,19 @@ export class LibraryScene extends Phaser.Scene {
 
     // 불투명 흰 배경 텍스트 — 배경을 Phaser가 렌더 시 텍스트에 정확히 맞춰 그려서
     // 수동 측정 불일치로 글자가 잘려 보이던 문제를 없앤다. 아래 꼬리는 작은 삼각형으로.
+    // 대화하는 동안 그 사람의 '읽는 책' 말풍선은 잠깐 숨긴다(같은 머리 위 자리 → 겹침 방지). 말풍선 사라지면 복원.
+    this.setReadingHidden(userId, true);
+
     // 줄바꿈 폭은 화면(카메라 뷰) 폭에 맞춘다 → 말풍선이 화면을 넘지 않게. 폰트는 이름표와 동일(8px).
     // Phaser 기본 워드랩은 공백에서만 끊어져 공백 없는 긴 문자열이 넘친다 → 직접 줄바꿈(긴 토큰은 글자 단위로 강제).
     const viewW = this.scale.width / this.cameras.main.zoom;
-    const wrapW = Math.max(80, Math.min(150, Math.round(viewW * 0.66)));
+    const wrapW = Math.max(80, Math.min(150, Math.round(viewW * 0.62)));
     const maxChars = Math.max(6, Math.floor(wrapW / 8));
-    const c = this.add.container(pos.x, pos.y - 52).setDepth(100001);
-    const label = this.add.text(0, -5, wrapBubbleText(text, maxChars), {
+    const wrapped = wrapBubbleText(text, maxChars);
+    const lines = wrapped.split('\n').length;
+    // 읽는 책과 같은 자리(머리 위)에 띄운다.
+    const c = this.add.container(pos.x, pos.y - 22).setDepth(100001);
+    const label = this.add.text(0, -5, wrapped, {
       fontFamily: 'Galmuri11, monospace', fontSize: '8px', color: '#2c2621',
       backgroundColor: '#ffffff', padding: { x: 7, y: 5 },
       align: 'center', resolution: 3,
@@ -585,8 +600,8 @@ export class LibraryScene extends Phaser.Scene {
     g.fillStyle(0xffffff, 1);
     g.fillTriangle(-5, -5, 5, -5, 0, 1);   // 텍스트 박스 하단(y=-5)에서 캐릭터 쪽으로
     c.add([g, label]);
-    // 화면 안에 완전히 들어오게 클램프할 때 쓸 반폭/윗여백(매 프레임 update에서 사용)
-    this.bubbles.push({ bubble: c, userId, getPos: () => this.charPos(userId), expire: this.time.now + 4000, halfW: label.width / 2 + 4, topPad: label.height + 10 });
+    // 화면 안에 완전히 들어오게 클램프할 때 쓸 반폭/윗여백(라벨 metric 대신 추정치 — resolution 영향 배제)
+    this.bubbles.push({ bubble: c, userId, getPos: () => this.charPos(userId), expire: this.time.now + 4000, halfW: wrapW / 2 + 10, topPad: lines * 11 + 16 });
   }
 
   /** 이모트: 캐릭터 머리 주변에서 이모지 여러 개가 위로 흩어지며 사라지는 파티클 연출(배경 없음). */
@@ -841,14 +856,19 @@ export class LibraryScene extends Phaser.Scene {
       const m = 4;
       this.bubbles = this.bubbles.filter((b) => {
         const p = b.getPos();
-        if (!p || now > b.expire) { b.bubble.destroy(); return false; }
+        if (!p || now > b.expire) {
+          b.bubble.destroy();
+          // 말풍선이 사라지면 그 사람의 '읽는 책'을 다시 띄운다(다른 말풍선이 아직 없을 때만)
+          if (!this.bubbles.some((o) => o !== b && o.userId === b.userId)) this.setReadingHidden(b.userId, false);
+          return false;
+        }
         // 좌우: 말풍선 전체가 화면 안에 들어오게
         const minX = cam.scrollX + m + b.halfW;
         const maxX = cam.scrollX + viewW - m - b.halfW;
         const x = maxX > minX ? Phaser.Math.Clamp(p.x, minX, maxX) : (cam.scrollX + viewW / 2);
         // 위: 말풍선 윗변이 화면 위로 안 넘치게
         const minY = cam.scrollY + m + b.topPad;
-        const y = Math.max(p.y - 56, minY);
+        const y = Math.max(p.y - 22, minY);
         b.bubble.setPosition(x, y).setDepth(100001);
         return true;
       });
