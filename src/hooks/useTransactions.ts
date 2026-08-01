@@ -85,6 +85,20 @@ export const useTransactions = () => {
     fetchTransactions();
   }, [fetchTransactions]);
 
+  // 실시간 반영 — 상대가 수락/반납하면 내 '거래중' 배너·현황이 새로고침 없이 갱신된다.
+  // owner/borrower 두 방향을 각각 구독(supabase 필터는 조건당 1개).
+  useEffect(() => {
+    if (!user?.id) return;
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const refetch = () => { if (t) clearTimeout(t); t = setTimeout(() => fetchTransactions(), 300); };
+    const ch = supabase
+      .channel(`tx:${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions', filter: `owner_id=eq.${user.id}` }, refetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions', filter: `borrower_id=eq.${user.id}` }, refetch)
+      .subscribe();
+    return () => { if (t) clearTimeout(t); supabase.removeChannel(ch); };
+  }, [user?.id, fetchTransactions]);
+
   const updateTransaction = async (transactionId: string, updates: {
     status?: 'pending' | 'active' | 'completed' | 'cancelled';
     type?: 'rent' | 'purchase';

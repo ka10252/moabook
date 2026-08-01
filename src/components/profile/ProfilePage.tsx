@@ -62,6 +62,7 @@ import { TelegramSettings } from '@/components/profile/TelegramSettings';
 import { CharacterEditor } from '@/components/virtual/CharacterEditor';
 import { FaqSection } from '@/components/profile/FaqSection';
 import { TransactionDashboard } from '@/components/transaction/TransactionDashboard';
+import { passwordSchema } from '@/lib/passwordSchema';
 
 /** 탈퇴·문의 접수 채널. 자동 탈퇴가 실패해도 이 경로는 항상 열려 있어야 한다. */
 const SUPPORT_EMAIL = 'admin@moabook.app';
@@ -349,8 +350,10 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   };
 
   const handleChangePassword = async () => {
-    if (newPassword.length < 6) {
-      toast.error('비밀번호는 6자 이상이어야 합니다');
+    // 가입·재설정과 동일한 비밀번호 정책 적용(여기만 약하던 것 통일)
+    const pwCheck = passwordSchema.safeParse(newPassword);
+    if (!pwCheck.success) {
+      toast.error(pwCheck.error.errors[0].message);
       return;
     }
 

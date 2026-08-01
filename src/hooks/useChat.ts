@@ -247,6 +247,21 @@ export const useChat = () => {
     const result = await startConversation(otherUserId);
 
     if (result.conversation) {
+      // 이미 이 책에 대한 '미해결 요청'이 있으면 새 요청 카드를 또 보내지 않는다(CTA 재진입 시 카드 누적 방지).
+      const { data: existing } = await supabase
+        .from('messages')
+        .select('content')
+        .eq('conversation_id', result.conversation.id)
+        .ilike('content', `%[BOOK_ID:${bookId}]%`)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      const rows = existing ?? [];
+      const hasOpenRequest = rows.some((m) => /^\[(대여|구매|나눔) 요청\]/.test(m.content));
+      const hasResolution = rows.some((m) => /^\[(대여 수락|판매 완료|나눔 완료)\]/.test(m.content));
+      if (hasOpenRequest && !hasResolution) {
+        return result; // 진행 중인 요청이 이미 있음 → 중복 카드 생성 안 함
+      }
+
       // Send request message with embedded BOOK_ID for dynamic rendering
       const REQUEST_LABEL: Record<BookMode, string> = {
         rent: '대여',

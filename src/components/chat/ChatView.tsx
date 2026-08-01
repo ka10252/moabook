@@ -293,7 +293,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     setLoadingBooks(true);
     const { data } = await supabase
       .from('books')
-      .select('id, title, author, cover_url, status')
+      .select('id, title, author, cover_url, status, mode')
       .eq('owner_id', conversation.other_user.id)
       .eq('is_public', true)
       .order('status', { ascending: false }); // available first
@@ -309,9 +309,12 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
 
   const handleBookPickerSelect = async (book: BookInfo) => {
     setShowBookPicker(false);
-    const msg = `[대여 요청] [BOOK_ID:${book.id}]`;
-    await sendMessage(msg);
-    toast.success('대여 요청을 보냈습니다');
+    // 책의 실제 거래유형에 맞는 요청을 보낸다(판매/나눔 책에 '대여 요청'이 가던 버그 수정)
+    const prefix = book.mode === 'sell' ? '[구매 요청]' : book.mode === 'give' ? '[나눔 요청]' : '[대여 요청]';
+    const label = book.mode === 'sell' ? '구매' : book.mode === 'give' ? '나눔' : '대여';
+    const { error } = await sendMessage(`${prefix} [BOOK_ID:${book.id}]`);
+    if (error) { toast.error('요청 전송에 실패했어요. 다시 시도해주세요.'); return; }
+    toast.success(`${label} 요청을 보냈습니다`);
   };
 
   const RESERVED_PREFIXES = ['[대여 요청]', '[구매 요청]', '[나눔 요청]', '[대여 수락]', '[판매 완료]', '[나눔 완료]', '[반납 완료]', '[반납 요청]'];

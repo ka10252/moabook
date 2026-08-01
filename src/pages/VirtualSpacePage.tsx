@@ -231,8 +231,9 @@ export default function VirtualSpacePage() {
       gameRef.current?.destroy(true);
       gameRef.current = null;
     };
+    // user 객체 전체가 아니라 id에만 의존 — 토큰 갱신으로 user 참조가 바뀌어도 게임을 재생성하지 않는다(깜빡임·presence churn 방지).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [assetBase, communityId, isCommunity, user]);
+  }, [assetBase, communityId, isCommunity, user?.id]);
 
   return (
     <div className="fixed inset-0 bg-[#e9e2d0] overflow-hidden">
