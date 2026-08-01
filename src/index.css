@@ -1,7 +1,6 @@
-/* 책등 전용 — Noto Sans KR Bold (한글 서브셋).
-   Instrument Serif에는 한글 글리프가 없어 시스템 명조로 폴백됐고,
-   세로쓰기 12px에서 획이 얇아 읽히지 않았다. */
-@import "@fontsource/noto-sans-kr/korean-700.css";
+/* 책등 전용 — Noto Sans KR Medium(500) 한글 서브셋. (볼드 대신 미디엄 — 책장에서 제목 볼드 제거 요청)
+   Instrument Serif에는 한글 글리프가 없어 세로쓰기용으로 Noto를 쓴다. BookSpine에서만 사용. */
+@import "@fontsource/noto-sans-kr/korean-500.css";
 
 @import "@fontsource/plus-jakarta-sans/400.css";
 @import "@fontsource/plus-jakarta-sans/500.css";

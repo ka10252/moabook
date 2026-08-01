@@ -80,7 +80,13 @@ export const ReportModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-sm rounded-2xl">
+      {/* 다른 모달(책상세·멤버프로필) 안에서 열릴 때, 내부 클릭이 '바깥 클릭'으로 오인돼
+          모달이 닫히던 문제 방지 — 취소/신고 버튼으로만 닫는다. */}
+      <DialogContent
+        className="max-w-sm rounded-2xl"
+        onInteractOutside={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Flag className="w-4 h-4 text-destructive" />

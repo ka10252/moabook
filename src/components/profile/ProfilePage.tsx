@@ -1052,7 +1052,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
       <CharacterEditor
         isOpen={characterOpen}
         onClose={() => setCharacterOpen(false)}
-        onSaved={() => { setCharacterOpen(false); toast.success('캐릭터를 저장했어요'); }}
+        onSaved={() => { setCharacterOpen(false); /* 저장 토스트는 CharacterEditor가 이미 띄움(중복 방지) */ }}
       />
 
       {/* 빌려주는 중 / 거래완료 클릭 → 거래 현황(진행중+완료) 모달 */}

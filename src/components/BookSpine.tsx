@@ -146,7 +146,7 @@ export const BookSpine = ({
         className="relative z-[3] mt-4 text-[14px] whitespace-nowrap overflow-hidden text-spine-text"
         style={{
           fontFamily: "'Noto Sans KR', sans-serif",
-          fontWeight: 700,
+          fontWeight: 500,
           writingMode: 'vertical-rl',
           maxHeight: '90%',
           textOverflow: 'ellipsis',
