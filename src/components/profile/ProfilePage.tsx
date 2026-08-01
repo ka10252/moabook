@@ -1096,7 +1096,12 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
       <CharacterEditor
         isOpen={characterOpen}
         onClose={() => setCharacterOpen(false)}
-        onSaved={() => { setCharacterOpen(false); /* 저장 토스트는 CharacterEditor가 이미 띄움(중복 방지) */ }}
+        onSaved={() => {
+          setCharacterOpen(false);
+          // 캐릭터를 '프로필 사진으로도' 저장하면 avatar_url이 바뀐다 → 프로필 재조회로 즉시 반영(새로고침 불필요).
+          // (저장 토스트는 CharacterEditor가 이미 띄움 — 중복 방지)
+          fetchProfile();
+        }}
       />
 
       {/* 빌려주는 중 / 거래완료 클릭 → 거래 현황(진행중+완료) 모달 */}
