@@ -582,10 +582,9 @@ export class LibraryScene extends Phaser.Scene {
     // 대화하는 동안 그 사람의 '읽는 책' 말풍선은 잠깐 숨긴다(같은 머리 위 자리 → 겹침 방지). 말풍선 사라지면 복원.
     this.setReadingHidden(userId, true);
 
-    // 줄바꿈 폭은 화면(카메라 뷰) 폭에 맞춘다 → 말풍선이 화면을 넘지 않게. 폰트는 이름표와 동일(8px).
+    // 줄바꿈 폭은 카메라 실제 가시영역(worldView) 폭에 맞춘다 → 말풍선이 화면을 넘지 않게. 폰트는 이름표와 동일(8px).
     // Phaser 기본 워드랩은 공백에서만 끊어져 공백 없는 긴 문자열이 넘친다 → 직접 줄바꿈(긴 토큰은 글자 단위로 강제).
-    const viewW = this.scale.width / this.cameras.main.zoom;
-    const wrapW = Math.max(80, Math.min(150, Math.round(viewW * 0.62)));
+    const wrapW = Math.max(80, Math.min(150, Math.round(this.cameras.main.worldView.width * 0.6)));
     const maxChars = Math.max(6, Math.floor(wrapW / 8));
     const wrapped = wrapBubbleText(text, maxChars);
     const lines = wrapped.split('\n').length;
@@ -851,8 +850,7 @@ export class LibraryScene extends Phaser.Scene {
     // 말풍선: 캐릭터 따라다니기 + 화면(카메라) 안으로 클램프 + 만료 제거
     if (this.bubbles.length) {
       const now = this.time.now;
-      const cam = this.cameras.main;
-      const viewW = this.scale.width / cam.zoom;
+      const view = this.cameras.main.worldView; // 실제 가시영역(월드 좌표) — DPR/zoom 영향 없음
       const m = 4;
       this.bubbles = this.bubbles.filter((b) => {
         const p = b.getPos();
@@ -862,12 +860,12 @@ export class LibraryScene extends Phaser.Scene {
           if (!this.bubbles.some((o) => o !== b && o.userId === b.userId)) this.setReadingHidden(b.userId, false);
           return false;
         }
-        // 좌우: 말풍선 전체가 화면 안에 들어오게
-        const minX = cam.scrollX + m + b.halfW;
-        const maxX = cam.scrollX + viewW - m - b.halfW;
-        const x = maxX > minX ? Phaser.Math.Clamp(p.x, minX, maxX) : (cam.scrollX + viewW / 2);
+        // 좌우: 말풍선 전체가 화면(가시영역) 안에 들어오게
+        const minX = view.x + m + b.halfW;
+        const maxX = view.right - m - b.halfW;
+        const x = maxX > minX ? Phaser.Math.Clamp(p.x, minX, maxX) : view.centerX;
         // 위: 말풍선 윗변이 화면 위로 안 넘치게
-        const minY = cam.scrollY + m + b.topPad;
+        const minY = view.y + m + b.topPad;
         const y = Math.max(p.y - 22, minY);
         b.bubble.setPosition(x, y).setDepth(100001);
         return true;
