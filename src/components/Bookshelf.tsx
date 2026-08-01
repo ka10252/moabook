@@ -365,7 +365,24 @@ export const Bookshelf = ({
     const hasPersonal = user && filteredMySection.length > 0;
     const hasCommunity = activeFilter !== 'mine' && dedupedCommunityBooks.length > 0;
 
-    if (hasPersonal) addSection(filteredMySection, hasCommunity ? '나의 책장' : undefined);
+    if (hasPersonal) {
+      // 내 서가를 방향(내 책 / 빌려준 책 / 빌린 책)으로 칸막이 구분한다.
+      //  - 빌린 책: 남의 책을 내가 빌림(_isBorrowed)
+      //  - 빌려준 책: 내 책이 지금 나가 있음(lentBookIds)
+      //  - 내 책: 그 외 내가 가진 책
+      const own      = filteredMySection.filter(b => !b._isBorrowed && !lentBookIds.has(b.id));
+      const lent     = filteredMySection.filter(b => !b._isBorrowed &&  lentBookIds.has(b.id));
+      const borrowed = filteredMySection.filter(b =>  b._isBorrowed);
+
+      // 카테고리가 둘 이상이거나 커뮤니티 책장이 함께 뜰 때만 라벨을 붙인다.
+      // 한 종류뿐이면 굳이 나누지 않고 깔끔하게.
+      const nonEmpty = [own, lent, borrowed].filter(a => a.length > 0).length;
+      const labelize = nonEmpty > 1 || hasCommunity;
+
+      if (own.length)      addSection(own,      labelize ? '내 책'      : undefined);
+      if (lent.length)     addSection(lent,     labelize ? '빌려준 책'  : undefined);
+      if (borrowed.length) addSection(borrowed, labelize ? '빌린 책'    : undefined);
+    }
     if (hasCommunity) addSection(dedupedCommunityBooks, hasPersonal ? getFilterLabel() : undefined);
 
     // 예시 책은 "아직 책이 없는 새 책장"을 덜 휑하게 보이려고 두는 것이다.
@@ -377,7 +394,7 @@ export const Bookshelf = ({
     }
 
     return groups;
-  }, [filteredMySection, dedupedCommunityBooks, activeFilter, statusFilter, user, booksPerShelf, getFilterLabel, searchQuery]);
+  }, [filteredMySection, dedupedCommunityBooks, activeFilter, statusFilter, user, booksPerShelf, getFilterLabel, searchQuery, lentBookIds]);
 
   const totalRealBooks = filteredMySection.length + dedupedCommunityBooks.length;
   const showDummyBanner = canShowDummy(activeFilter, statusFilter, searchQuery, totalRealBooks);

@@ -1,7 +1,7 @@
 -- moabook DB 상태 점검 (Supabase SQL Editor에 통째로 붙여넣고 실행)
 -- ok 컬럼이 전부 true 면 정상. false 가 있으면 아래 "조치" 참고.
 
-select '1. 웹푸시 트리거 (notifications 테이블 push 트리거)' as check,
+select '1. 웹푸시 트리거 (notifications 테이블 push 트리거)' as item,
   exists(
     select 1 from pg_trigger
     where tgrelid = 'public.notifications'::regclass
@@ -32,7 +32,7 @@ select '5. member_count is_banned 트리거 (0731_5)',
 union all
 select '6. safe_uuid 배포됨 (0802_4)',
   exists(select 1 from pg_proc where proname = 'safe_uuid')
-order by check;
+order by item;
 
 -- ── 조치 ────────────────────────────────────────────────────
 -- 1 false: 웹푸시 트리거가 없음 = 잠금화면 푸시 안 감. 이 트리거는 레포 밖(Supabase에서 직접 생성)
