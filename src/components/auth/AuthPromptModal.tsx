@@ -37,7 +37,7 @@ export const AuthPromptModal = () => {
           onClick={closeAuthPrompt}
         >
           <motion.div
-            className="w-full max-w-[520px] bg-card p-6 pb-8"
+            className="w-full max-w-[520px] max-h-[90vh] overflow-y-auto bg-card p-6 pb-8"
             style={{ borderRadius: 'var(--sheet-radius) var(--sheet-radius) 0 0' }}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
