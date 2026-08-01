@@ -23,13 +23,11 @@ interface RentalMessageCardProps {
   showAcceptButton?: boolean;
   onAcceptClick?: () => void;
   hasActiveTransaction?: boolean;
-  // For accepted cards (owner side)
+  // For accepted cards (owner side) — 반납 확인은 책 주인만. 대여자에겐 반납 버튼을 두지 않는다
+  // (실물은 만나서 주고받으므로 주인이 확인하는 게 사실의 원천).
   showReturnButton?: boolean;
   onReturnClick?: () => void;
-  // For accepted cards (borrower side)
-  showRequestReturnButton?: boolean;
-  onRequestReturnClick?: () => void;
-  // For return_request cards (owner side)
+  // For return_request cards (owner side) — 레거시: 예전 대여자 '반납 요청' 메시지 처리용
   showAcceptReturnButton?: boolean;
   onAcceptReturnClick?: () => void;
 }
@@ -46,8 +44,6 @@ export const RentalMessageCard = ({
   hasActiveTransaction = false,
   showReturnButton = false,
   onReturnClick,
-  showRequestReturnButton = false,
-  onRequestReturnClick,
   showAcceptReturnButton = false,
   onAcceptReturnClick,
 }: RentalMessageCardProps) => {
@@ -176,19 +172,7 @@ export const RentalMessageCard = ({
           </div>
         )}
         
-        {/* Accepted: Borrower requests return */}
-        {type === 'accepted' && !isPurchase && showRequestReturnButton && onRequestReturnClick && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full rounded-xl"
-            onClick={onRequestReturnClick}
-          >
-            반납했어요
-          </Button>
-        )}
-
-        {/* Accepted: Owner confirms return */}
+        {/* Accepted: Owner confirms return (책 주인만) */}
         {type === 'accepted' && !isPurchase && showReturnButton && onReturnClick && (
           <div className="w-full flex flex-col items-center gap-1">
             <Button
