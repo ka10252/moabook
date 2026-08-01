@@ -183,9 +183,19 @@ export const WishlistPage = () => {
                     key={item.id}
                     item={item}
                     isOwner
-                    onDelete={() => removeItem(item.id)}
-                    onMarkFulfilled={() => markFulfilled(item.id)}
-                    onEditNotes={(notes) => updateNotes(item.id, notes).then(() => {})}
+                    onDelete={async () => {
+                      const { error } = await removeItem(item.id);
+                      if (error) { toast.error('삭제에 실패했어요. 다시 시도해주세요.'); throw error; }
+                    }}
+                    onMarkFulfilled={async () => {
+                      const { error } = await markFulfilled(item.id);
+                      if (error) { toast.error('처리에 실패했어요. 다시 시도해주세요.'); throw error; }
+                      toast.success('찾았어요! 목록에서 내렸어요');
+                    }}
+                    onEditNotes={async (notes) => {
+                      const { error } = await updateNotes(item.id, notes);
+                      if (error) toast.error('저장에 실패했어요. 다시 시도해주세요.');
+                    }}
                   />
                 ))}
               </section>

@@ -17,9 +17,10 @@ import {
 interface WishlistCardProps {
   item: WishlistItem;
   isOwner: boolean;
-  onDelete?: () => void;
-  onMarkFulfilled?: () => void;
-  onMessage?: () => void;
+  /** 실패 시 throw 하면 카드가 다이얼로그를 닫지 않는다(피드백은 부모가 토스트) */
+  onDelete?: () => Promise<void> | void;
+  onMarkFulfilled?: () => Promise<void> | void;
+  onMessage?: () => Promise<void> | void;
   /** 내 한마디 수정 (소유자만) */
   onEditNotes?: (notes: string) => Promise<void> | void;
   /** 실제 요청이 아직 적을 때 채워 넣는 예시 카드 — 진짜인 척하면 안 된다 */
@@ -40,9 +41,13 @@ export const WishlistCard = ({
   isDemo = false,
 }: WishlistCardProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showFulfillConfirm, setShowFulfillConfirm] = useState(false);
   const [editingNote, setEditingNote] = useState(false);
   const [draft, setDraft] = useState(item.notes ?? '');
   const [savingNote, setSavingNote] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [fulfilling, setFulfilling] = useState(false);
+  const [messaging, setMessaging] = useState(false);
   const nickname = item.profile?.nickname || '익명';
 
   const saveNote = async () => {
@@ -52,9 +57,26 @@ export const WishlistCard = ({
     setEditingNote(false);
   };
 
-  const handleDelete = () => {
-    onDelete?.();
-    setShowDeleteConfirm(false);
+  // 실패 시 부모가 throw → 다이얼로그를 닫지 않는다(사용자가 재시도 가능).
+  const handleDelete = async () => {
+    setDeleting(true);
+    try { await onDelete?.(); setShowDeleteConfirm(false); }
+    catch { /* 부모 토스트 */ }
+    finally { setDeleting(false); }
+  };
+
+  const handleFulfill = async () => {
+    setFulfilling(true);
+    try { await onMarkFulfilled?.(); setShowFulfillConfirm(false); }
+    catch { /* 부모 토스트 */ }
+    finally { setFulfilling(false); }
+  };
+
+  const handleMessageClick = async () => {
+    if (messaging) return; // 연타로 중복 문의 전송 방지
+    setMessaging(true);
+    try { await onMessage?.(); }
+    finally { setMessaging(false); }
   };
 
   return (
@@ -91,17 +113,18 @@ export const WishlistCard = ({
           <div className="flex items-center gap-1 shrink-0">
             {!isOwner && onMessage && (
               <button
-                onClick={onMessage}
-                className="p-2 rounded-full text-primary hover:bg-primary/10 transition-colors"
+                onClick={handleMessageClick}
+                disabled={messaging}
+                className="p-2 rounded-full text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
                 title="이 사람에게 메시지"
               >
-                <MessageCircle className="w-[18px] h-[18px]" />
+                {messaging ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : <MessageCircle className="w-[18px] h-[18px]" />}
               </button>
             )}
 
             {isOwner && onMarkFulfilled && (
               <button
-                onClick={onMarkFulfilled}
+                onClick={() => setShowFulfillConfirm(true)}
                 className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                 title="찾았어요"
               >
@@ -185,10 +208,33 @@ export const WishlistCard = ({
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-xl">취소</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
+              onClick={(e) => { e.preventDefault(); handleDelete(); }}
+              disabled={deleting}
               className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              삭제
+              {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : '삭제'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* '찾았어요' 확인 — 되돌릴 수 없으니(목록에서 내려감) 한 번 확인 */}
+      <AlertDialog open={showFulfillConfirm} onOpenChange={setShowFulfillConfirm}>
+        <AlertDialogContent className="rounded-2xl max-w-sm mx-4">
+          <AlertDialogHeader>
+            <AlertDialogTitle>이 책을 찾으셨나요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{item.title}"을(를) 찾은 것으로 표시하고 위시리스트에서 내립니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleFulfill(); }}
+              disabled={fulfilling}
+              className="rounded-xl"
+            >
+              {fulfilling ? <Loader2 className="w-4 h-4 animate-spin" /> : '찾았어요'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
