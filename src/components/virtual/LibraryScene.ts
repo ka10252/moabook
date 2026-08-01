@@ -3,6 +3,25 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import { type AvatarConfig, avatarLayers, defaultAvatar, loadImage } from '@/lib/avatar';
 import { supabase } from '@/integrations/supabase/client';
 
+/** 말풍선 텍스트 줄바꿈 — 공백 기준으로 채우되, maxChars보다 긴 토큰은 글자 단위로 강제 분할.
+ *  Phaser 기본 워드랩(공백만)으로는 공백 없는 긴 문자열이 화면을 넘치는 문제를 해결. */
+function wrapBubbleText(text: string, maxChars: number): string {
+  const out: string[] = [];
+  let line = '';
+  for (let token of text.split(/\s+/).filter(Boolean)) {
+    while (token.length > maxChars) {
+      if (line) { out.push(line); line = ''; }
+      out.push(token.slice(0, maxChars));
+      token = token.slice(maxChars);
+    }
+    if (!line) line = token;
+    else if (line.length + 1 + token.length <= maxChars) line += ' ' + token;
+    else { out.push(line); line = token; }
+  }
+  if (line) out.push(line);
+  return out.join('\n') || text;
+}
+
 /**
  * 가상 도서관 씬.
  * manifest.json(방 레이아웃)을 읽어 바닥·벽·가구를 배치하고,
@@ -106,7 +125,7 @@ export class LibraryScene extends Phaser.Scene {
   private members: RoomMember[] = [];
   private offline = new Map<string, { sprite: Phaser.GameObjects.Sprite; label: Phaser.GameObjects.Text; zzz: Phaser.GameObjects.Text }>();
   private pendingOffline = new Set<string>();
-  private bubbles: { bubble: Phaser.GameObjects.Container; userId: string; getPos: () => { x: number; y: number } | null; expire: number }[] = [];
+  private bubbles: { bubble: Phaser.GameObjects.Container; userId: string; getPos: () => { x: number; y: number } | null; expire: number; halfW: number; topPad: number }[] = [];
   // 사서 NPC & 안내 투어 (안내 팝업은 React가 그림; Phaser는 사서 + 가구 하이라이트만)
   private furnitureRectByAction = new Map<string, { x: number; y: number; w: number; h: number }>();
   private librarianSprite?: Phaser.GameObjects.Sprite;
@@ -551,17 +570,23 @@ export class LibraryScene extends Phaser.Scene {
 
     // 불투명 흰 배경 텍스트 — 배경을 Phaser가 렌더 시 텍스트에 정확히 맞춰 그려서
     // 수동 측정 불일치로 글자가 잘려 보이던 문제를 없앤다. 아래 꼬리는 작은 삼각형으로.
+    // 줄바꿈 폭은 화면(카메라 뷰) 폭에 맞춘다 → 말풍선이 화면을 넘지 않게. 폰트는 이름표와 동일(8px).
+    // Phaser 기본 워드랩은 공백에서만 끊어져 공백 없는 긴 문자열이 넘친다 → 직접 줄바꿈(긴 토큰은 글자 단위로 강제).
+    const viewW = this.scale.width / this.cameras.main.zoom;
+    const wrapW = Math.max(80, Math.min(150, Math.round(viewW * 0.66)));
+    const maxChars = Math.max(6, Math.floor(wrapW / 8));
     const c = this.add.container(pos.x, pos.y - 52).setDepth(100001);
-    const label = this.add.text(0, -5, text, {
-      fontFamily: 'Galmuri11, monospace', fontSize: '9px', color: '#2c2621',
+    const label = this.add.text(0, -5, wrapBubbleText(text, maxChars), {
+      fontFamily: 'Galmuri11, monospace', fontSize: '8px', color: '#2c2621',
       backgroundColor: '#ffffff', padding: { x: 7, y: 5 },
-      align: 'center', resolution: 3, wordWrap: { width: 150 },
+      align: 'center', resolution: 3,
     }).setOrigin(0.5, 1);
     const g = this.add.graphics();
     g.fillStyle(0xffffff, 1);
     g.fillTriangle(-5, -5, 5, -5, 0, 1);   // 텍스트 박스 하단(y=-5)에서 캐릭터 쪽으로
     c.add([g, label]);
-    this.bubbles.push({ bubble: c, userId, getPos: () => this.charPos(userId), expire: this.time.now + 4000 });
+    // 화면 안에 완전히 들어오게 클램프할 때 쓸 반폭/윗여백(매 프레임 update에서 사용)
+    this.bubbles.push({ bubble: c, userId, getPos: () => this.charPos(userId), expire: this.time.now + 4000, halfW: label.width / 2 + 4, topPad: label.height + 10 });
   }
 
   /** 이모트: 캐릭터 머리 주변에서 이모지 여러 개가 위로 흩어지며 사라지는 파티클 연출(배경 없음). */
@@ -808,13 +833,23 @@ export class LibraryScene extends Phaser.Scene {
       rp.sprite.play(`${rp.texKey}_${st}_${rp.dir}`, true);
     }
 
-    // 말풍선: 캐릭터 따라다니기 + 만료 제거
+    // 말풍선: 캐릭터 따라다니기 + 화면(카메라) 안으로 클램프 + 만료 제거
     if (this.bubbles.length) {
       const now = this.time.now;
+      const cam = this.cameras.main;
+      const viewW = this.scale.width / cam.zoom;
+      const m = 4;
       this.bubbles = this.bubbles.filter((b) => {
         const p = b.getPos();
         if (!p || now > b.expire) { b.bubble.destroy(); return false; }
-        b.bubble.setPosition(p.x, p.y - 56).setDepth(100001);
+        // 좌우: 말풍선 전체가 화면 안에 들어오게
+        const minX = cam.scrollX + m + b.halfW;
+        const maxX = cam.scrollX + viewW - m - b.halfW;
+        const x = maxX > minX ? Phaser.Math.Clamp(p.x, minX, maxX) : (cam.scrollX + viewW / 2);
+        // 위: 말풍선 윗변이 화면 위로 안 넘치게
+        const minY = cam.scrollY + m + b.topPad;
+        const y = Math.max(p.y - 56, minY);
+        b.bubble.setPosition(x, y).setDepth(100001);
         return true;
       });
     }
