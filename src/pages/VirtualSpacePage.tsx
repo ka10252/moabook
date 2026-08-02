@@ -48,7 +48,7 @@ export default function VirtualSpacePage() {
   const manifestRef = useRef<RoomManifest | null>(null);
   const nicknameRef = useRef<string>('익명');
   const readingBookRef = useRef<ReadingBook | null>(null);
-  const membersRef = useRef<{ userId: string; nickname: string; avatar: AvatarConfig }[]>([]);
+  const membersRef = useRef<{ userId: string; nickname: string; avatar: AvatarConfig; readingBook?: ReadingBook | null }[]>([]);
   const chatIdRef = useRef(0);
   const chatLogTimer = useRef<ReturnType<typeof setTimeout>>();
   const chatLogRef = useRef<HTMLDivElement>(null);
@@ -190,13 +190,14 @@ export default function VirtualSpacePage() {
             // 멤버 전원(미접속자는 zzz로 방에 표시)
             const { data: mem } = await supabase
               .from('community_members')
-              .select('user_id, profile:profiles(nickname, pixel_avatar)')
+              .select('user_id, profile:profiles(nickname, pixel_avatar, reading_book)')
               .eq('community_id', communityId)
               .eq('is_banned', false);
-            membersRef.current = ((mem ?? []) as Array<{ user_id: string; profile: { nickname?: string; pixel_avatar?: unknown } | null }>).map((r) => ({
+            membersRef.current = ((mem ?? []) as Array<{ user_id: string; profile: { nickname?: string; pixel_avatar?: unknown; reading_book?: ReadingBook | null } | null }>).map((r) => ({
               userId: r.user_id,
               nickname: r.profile?.nickname ?? '멤버',
               avatar: normalizeAvatar(r.profile?.pixel_avatar),
+              readingBook: r.profile?.reading_book ?? null,
             }));
           } catch (e) {
             console.error('community info load failed (non-fatal):', e);

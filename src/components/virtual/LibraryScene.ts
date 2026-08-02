@@ -65,6 +65,7 @@ export interface RoomMember {
   userId: string;
   nickname: string;
   avatar: AvatarConfig;
+  readingBook?: ReadingBook | null;
 }
 
 export interface SceneInitData {
@@ -123,7 +124,7 @@ export class LibraryScene extends Phaser.Scene {
   private remotes = new Map<string, RemotePlayer>();
   private pendingRemotes = new Set<string>();
   private members: RoomMember[] = [];
-  private offline = new Map<string, { sprite: Phaser.GameObjects.Sprite; label: Phaser.GameObjects.Text; zzz: Phaser.GameObjects.Text }>();
+  private offline = new Map<string, { sprite: Phaser.GameObjects.Sprite; label: Phaser.GameObjects.Text; zzz: Phaser.GameObjects.Text; readingBubble?: Phaser.GameObjects.Container }>();
   private pendingOffline = new Set<string>();
   private bubbles: { bubble: Phaser.GameObjects.Container; userId: string; getPos: () => { x: number; y: number } | null; expire: number; halfW: number; topPad: number }[] = [];
   // 사서 NPC & 안내 투어 (안내 팝업은 React가 그림; Phaser는 사서 + 가구 하이라이트만)
@@ -705,7 +706,7 @@ export class LibraryScene extends Phaser.Scene {
     }
     // 접속했거나 나(=제거 대상)
     for (const [uid, o] of this.offline) {
-      if (present.has(uid)) { o.sprite.destroy(); o.label.destroy(); o.zzz.destroy(); this.offline.delete(uid); }
+      if (present.has(uid)) { o.sprite.destroy(); o.label.destroy(); o.zzz.destroy(); o.readingBubble?.destroy(); this.offline.delete(uid); }
     }
     // 오프라인 멤버 추가
     this.members.forEach((m) => {
@@ -728,7 +729,9 @@ export class LibraryScene extends Phaser.Scene {
         sprite.on('pointerdown', () => this.onOpenProfile?.(m.userId));
         const zzz = this.add.text(x + 11, y - 30, '💤', { fontSize: '13px' }).setOrigin(0.5, 1).setDepth(y + 2);
         const label = this.makeNameLabel(x, y, m.nickname, true);
-        this.offline.set(m.userId, { sprite, label, zzz });
+        // 오프라인 멤버도 '지금 읽는 책'을 머리 위에 표시(zzz는 유지). 접속 여부와 무관하게 보이게.
+        const readingBubble = m.readingBook ? this.makeReadingBubble(x, y, m.readingBook) : undefined;
+        this.offline.set(m.userId, { sprite, label, zzz, readingBubble });
       });
     });
   }
