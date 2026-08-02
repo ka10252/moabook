@@ -352,7 +352,7 @@ const Index = () => {
         }}
       />
 
-      <main className="flex-1 pt-14 pb-20 overflow-hidden">
+      <main className="flex-1 pt-14 pb-20">
         <AnimatePresence mode="wait">
           <motion.div
             key={contentKey}
@@ -360,7 +360,7 @@ const Index = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="h-full max-w-[520px] mx-auto w-full"
+            className="min-h-full max-w-[520px] mx-auto w-full"
           >
             <Suspense fallback={<TabFallback />}>{renderContent()}</Suspense>
           </motion.div>

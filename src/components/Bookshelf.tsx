@@ -422,9 +422,9 @@ export const Bookshelf = ({
     (selectedDistricts.length > 0 ? 1 : 0);
 
   return (
-    <div className="flex flex-col h-full relative">
-      {/* Header */}
-      <header className="flex flex-col gap-3 px-5 pt-4 pb-3 bg-background/85 backdrop-blur-md sticky top-0 z-30 border-b border-border/40">
+    <div className="flex flex-col min-h-full relative">
+      {/* Header — 페이지 스크롤 시 상단(앱 헤더 아래)에 고정 */}
+      <header className="flex flex-col gap-3 px-5 pt-4 pb-3 bg-background/85 backdrop-blur-md sticky top-14 z-30 border-b border-border/40">
         {/* Title block — 제목 자체가 '책장 범위' 선택기다.
             예전엔 제목과 드롭다운이 같은 값을 두 번 보여줬다(중복). 제목을 컨트롤로 만들면
             드롭다운이 컨트롤 줄에서 빠지고, 그 자리를 상태 칩이 쓴다 → 줄 수는 그대로. */}
@@ -540,7 +540,7 @@ export const Bookshelf = ({
           (bookcaseRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
           (pullRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
         }}
-        className="flex-1 overflow-y-auto px-6 py-4"
+        className="flex-1 px-6 py-4"
       >
         {/* Pull-to-refresh indicator */}
         {(pullDistance > 0 || pullRefreshing) && (
