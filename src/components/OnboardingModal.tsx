@@ -264,48 +264,42 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
               <CoralBenefit icon={<MessageCircle className="w-3.5 h-3.5" />} text="채팅 메시지가 도착했을 때" />
             </ul>
             <p className="text-[14px] font-bold text-primary-foreground/95 w-full text-left mt-1">
-              아래 옵션 중 한 개는 설정하는 걸 추천해요
+              텔레그램으로 받는 걸 추천해요 — 앱을 안 열어도 알림이 와요
             </p>
 
-            {/* iOS는 권한 상태와 무관하게 "홈 화면에 추가"부터 안내한다(설치해야 푸시 가능) */}
-            {iosNeedsInstall ? (
-              <button
-                onClick={handlePrimaryPush}
-                className="w-full h-11 rounded-full bg-white text-primary text-[15.5px] font-bold flex items-center justify-center gap-2"
-              >
-                <Plus className="w-4 h-4" /> 홈 화면에 추가하고 알림 받기
-              </button>
-            ) : pushDone ? (
-              <button
-                disabled
-                className="w-full h-11 rounded-full bg-white text-primary text-[15.5px] font-bold flex items-center justify-center gap-2 opacity-70"
-              >
-                <Check className="w-4 h-4" /> 알림이 켜졌어요
-              </button>
+            {/* 1순위: 텔레그램 (기본 알림 채널) — 흰 solid로 강조 */}
+            <button
+              onClick={handleTelegram}
+              className="w-full h-11 rounded-full bg-white text-primary text-[15.5px] font-bold flex items-center justify-center gap-2"
+            >
+              <Send className="w-4 h-4" /> 텔레그램으로 알림 받기
+            </button>
+
+            {/* 2순위: 앱 알림/홈 화면 — 텔레그램이 없거나, 앱처럼 쓰고 싶은 사람용 (은은한 outline) */}
+            {pushDone ? (
+              <div className="w-full rounded-xl bg-white/15 p-2.5 text-[13.5px] text-primary-foreground leading-relaxed text-center flex items-center justify-center gap-1.5">
+                <Check className="w-4 h-4" /> 앱 알림이 켜졌어요
+              </div>
             ) : isBlocked ? (
-              <div className="w-full rounded-xl bg-white/15 p-3 text-[14px] text-primary-foreground leading-relaxed text-left">
+              <div className="w-full rounded-xl bg-white/15 p-3 text-[13.5px] text-primary-foreground leading-relaxed text-left">
                 브라우저에서 알림이 차단돼 있어요. 주소창 자물쇠 → 알림 → 허용으로 바꿔주세요.
               </div>
+            ) : iosNeedsInstall ? (
+              <button
+                onClick={handlePrimaryPush}
+                className="w-full h-11 rounded-full bg-white/16 border-[1.5px] border-white/50 text-primary-foreground text-[14px] font-semibold flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4" /> 텔레그램 대신 홈 화면에 추가해 받기
+              </button>
             ) : isPushSupported ? (
               <button
                 onClick={handleEnablePush}
                 disabled={pushLoading}
-                className="w-full h-11 rounded-full bg-white text-primary text-[15.5px] font-bold flex items-center justify-center gap-2 disabled:opacity-70"
+                className="w-full h-11 rounded-full bg-white/16 border-[1.5px] border-white/50 text-primary-foreground text-[14px] font-semibold flex items-center justify-center gap-2 disabled:opacity-70"
               >
-                <Bell className="w-4 h-4" /> 알림 허용하기
+                <Bell className="w-4 h-4" /> 텔레그램 대신 앱 알림 받기
               </button>
-            ) : (
-              <div className="w-full rounded-xl bg-white/15 p-3 text-[14px] text-primary-foreground leading-relaxed text-left">
-                이 브라우저는 알림을 지원하지 않아요. 아래 텔레그램으로 받아보세요.
-              </div>
-            )}
-
-            <button
-              onClick={handleTelegram}
-              className="w-full h-11 rounded-full bg-white/16 border-[1.5px] border-white/50 text-primary-foreground text-[15.5px] font-bold flex items-center justify-center gap-2"
-            >
-              <Send className="w-4 h-4" /> 텔레그램으로 받기
-            </button>
+            ) : null}
           </>
         );
       },

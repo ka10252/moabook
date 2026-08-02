@@ -62,19 +62,21 @@ const NotifSetupCard = () => {
         <Bell className="w-3.5 h-3.5 text-primary" /> 알림을 켜세요
       </div>
       <p className="text-[13.5px] text-muted-foreground mt-1 leading-relaxed">
-        대여 요청·반납일을 놓치지 않게, 아래 중 하나를 켜두세요.
+        대여 요청·반납일을 놓치지 않게, <span className="text-foreground font-medium">텔레그램</span>으로 받는 걸 추천해요.
       </p>
       <div className="flex gap-2 mt-2.5">
+        {/* 1순위: 텔레그램(기본 채널) */}
+        <button onClick={connectTelegram}
+          className="flex-1 h-9 rounded-lg bg-primary text-primary-foreground text-[14px] font-bold flex items-center justify-center gap-1.5">
+          <Send className="w-3.5 h-3.5" /> 텔레그램으로 받기
+        </button>
+        {/* 2순위: 앱 알림(텔레그램 없거나 앱처럼 쓰고 싶은 사람) */}
         {(isPushSupported || needsHomeScreenInstall) && (
           <button onClick={enablePush} disabled={loading}
-            className="flex-1 h-9 rounded-lg bg-primary text-primary-foreground text-[14px] font-bold flex items-center justify-center gap-1.5 disabled:opacity-70">
-            <Plus className="w-3.5 h-3.5" /> 앱 알림 켜기
+            className="flex-1 h-9 rounded-lg bg-card border border-primary/40 text-primary text-[14px] font-bold flex items-center justify-center gap-1.5 disabled:opacity-70">
+            <Plus className="w-3.5 h-3.5" /> 앱 알림
           </button>
         )}
-        <button onClick={connectTelegram}
-          className="flex-1 h-9 rounded-lg bg-card border border-primary/40 text-primary text-[14px] font-bold flex items-center justify-center gap-1.5">
-          <Send className="w-3.5 h-3.5" /> 텔레그램
-        </button>
       </div>
     </div>
   );
