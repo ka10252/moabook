@@ -85,6 +85,12 @@ const FAQS: { q: string; a: ReactNode }[] = [
     ),
   },
   {
+    q: '프로필의 학교 인증·거래 완료 수는 뭔가요?',
+    a: (
+      <>믿을 근거를 <b className="text-foreground">사실 그대로</b> 보여주는 거예요. 프로필 › <Chip>학교 이메일 인증</Chip>에서 싱가포르 대학 이메일(예: @u.nus.edu)로 가입했다면 학교 태그가 붙고, 지금까지 <b className="text-foreground">완료한 거래 수</b>도 표시돼요. 평점 같은 주관 점수는 없어요.</>
+    ),
+  },
+  {
     q: '판매하는 책은 왜 사진이 필요한가요?',
     a: <>상태를 직접 확인할 수 있게 <b className="text-foreground">실제 사진</b>이 필요해요. (대여·나눔은 선택)</>,
   },
