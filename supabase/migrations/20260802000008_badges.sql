@@ -50,8 +50,8 @@ SET search_path = public
 AS $$
 DECLARE
   uid uuid := auth.uid();
-  -- ⚠️ 출시일. elder(터줏대감: 출시 후 2주 이내 가입) 판정 기준. 실제 출시일로 수정할 것.
-  v_launch date := DATE '2026-08-15';
+  -- 출시일. elder(터줏대감: 출시 후 2주 이내 가입) 판정 기준.
+  v_launch date := DATE '2026-08-04';
   v_books int; v_completed int; v_lent int; v_borrowed_ret int; v_given int;
   v_joined int; v_santa int; v_posts int; v_hosted int; v_streak int;
   v_created timestamptz;
