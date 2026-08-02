@@ -10,6 +10,7 @@ import { ModeToggle } from './ModeToggle';
 import { CommunitySelector } from './CommunitySelector';
 import { CoverUploader } from './CoverUploader';
 import { BookSearchResult, useBookSearch } from '@/hooks/useBookSearch';
+import { track } from '@/lib/analytics';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -156,6 +157,9 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
       });
 
       if (error) throw error;
+
+      // 퍼널 측정: '첫 책 등록' 단계. (타입엔 있었지만 실제 호출이 없어 미측정이던 이벤트)
+      track('book_upload_completed', { mode: formData.mode, has_photo: !!coverUrl });
 
       toast.success('책이 등록되었습니다!');
 
