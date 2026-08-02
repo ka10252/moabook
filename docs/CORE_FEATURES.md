@@ -214,16 +214,16 @@
 
 # 알려진 버그 · 리스크 (착수 후보)
 
-| 심각도 | 항목 | 근거 | 영향 |
-|---|---|---|---|
-| 🐛 높음 | **반납 임박/연체 알림 미작동** | 크론 `notify_due_returns`/`notify_overdue_returns`가 `transactions.end_date`로 필터하는데, 앱은 `return_date`만 쓰고 `end_date`는 항상 NULL (`useTransactions.ts:124`) | 반납 D-1/D-day/연체 알림(벨+텔레그램 Tier1)이 **한 번도 안 뜸**. `BorrowedBooksTab`의 “Due …”도 안 뜸 |
-| ⚠️ 높음 | **웹푸시 트리거 레포 밖** | `trg_notifications_push`가 저장소 밖 관리 | 마이그레이션만으로 재구축 시 웹푸시 조용히 누락 |
-| ⚠️ 중 | **커뮤니티 PIN 우회 가능** | `btoa(pin)` + `pin_hash` 전체 공개 SELECT | PIN 방 무단 입장 가능 |
-| ⚠️ 중 | **member_count drift(밴)** | 밴=UPDATE, 트리거는 INSERT/DELETE만 | 멤버 수 부정확 |
-| ⚠️ 중 | **notify_on_new_message의 `::uuid` 무방비 캐스트** | AFTER INSERT + EXCEPTION 없음, `book_id_txt::uuid` | 비-UUID BOOK_ID가 들어오면 채팅 전송 자체가 실패(현재는 생산자가 항상 UUID라 안전) |
-| ⚠️ 낮 | profiles gender/age 프라이버시 UI-only | SELECT 전체 공개 | 원시 쿼리로 노출 |
-| ⚠️ 낮 | 이용약관 지역(KR) vs 코드(SG) 불일치 | `TermsPage` 4조② | 법적 문구 오류 |
-| 🧩 | LibraryPage/BorrowedBooksTab 프리뷰, `signInWithGoogle` 데드코드 | `/library`만 진입, UI 미연결 | 정리 대상 |
+| 심각도 | 항목 | 상태 |
+|---|---|---|
+| ✅ 해결 | 반납 임박/연체 알림 미작동 | 20260731000004 `COALESCE(return_date,end_date)` + DB_CHECKS 4번 true 확인(2026-08-02) |
+| ✅ 확인 | 웹푸시 트리거 레포 밖 | DB_CHECKS 1번 true — `notifications` push 트리거 **존재 확인**(2026-08-02). 여전히 레포 밖이라 재구축 시 주의 |
+| ✅ 해결 | 커뮤니티 PIN 우회 | 20260802000007 동적 GRANT로 `pin_hash` SELECT 회수(pin은 bcrypt, 검증은 RPC) |
+| ✅ 해결 | member_count drift(밴) | 20260731000005 `UPDATE OF is_banned` 트리거 + DB_CHECKS 5번 true |
+| ✅ 해결 | notify_on_new_message `::uuid` 무방비 캐스트 | 20260802000004 `safe_uuid()`로 교체(notify_pending_requests 포함) |
+| ✅ 해결 | profiles gender/age·telegram_chat_id 프라이버시 | 20260802000005/6 `profiles_public` 뷰(_public 게이트) + RPC + base 컬럼 회수 |
+| ✅ 해결 | 이용약관 지역(KR) vs 코드(SG) | TermsPage 4조·12조 싱가포르로 수정(2026-08-02) |
+| 🧩 잔여 | LibraryPage/BorrowedBooksTab 프리뷰·`signInWithGoogle` 등 데드코드 | 정리 대상(진행 예정) |
 
 ---
 
@@ -239,4 +239,5 @@
 
 ---
 
-_최종 갱신: 2026-07-31. 정적 QA + 빌드 통과 기준. 기능 변경 시 이 문서의 해당 항목 불변식/작동상태를 함께 갱신할 것._
+_최종 갱신: 2026-08-02. 정적 QA + 빌드 통과 기준. 기능 변경 시 이 문서의 해당 항목 불변식/작동상태를 함께 갱신할 것._
+_2026-08-02 세션 반영: 위 알려진 버그 대부분 해소(반납알림·pin_hash·member_count·uuid캐스트·프라이버시·약관). 관련: docs/DB_CHECKS.sql, docs/ACCESS_AUDIT.md, docs/FUNNEL_METRICS.md._
