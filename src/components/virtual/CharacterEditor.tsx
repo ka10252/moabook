@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, Loader2, Shuffle, X, Search } from 'lucide-react';
+import { Check, Loader2, Shuffle, X, Search, BookOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useBookSearch } from '@/hooks/useBookSearch';
@@ -305,9 +305,13 @@ export function CharacterEditor({ isOpen, onClose, onSaved }: CharacterEditorPro
             <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
           ) : (
             <>
-            {/* 지금 읽는 책 — 캐릭터 머리 위 말풍선(표지)으로 표시됨 */}
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground mb-2">지금 읽는 책</p>
+            {/* 지금 읽는 책 — 외형 옵션들과 섞이지 않게 강조 카드로 구분(캐릭터 머리 위 말풍선으로 표시됨) */}
+            <div className="rounded-xl border border-primary/30 bg-primary/[0.05] p-3">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <BookOpen className="w-4 h-4 text-primary" />
+                <p className="text-[14px] font-bold text-foreground">지금 읽는 책</p>
+              </div>
+              <p className="text-[11px] text-muted-foreground mb-2.5">캐릭터 머리 위 말풍선에 표지로 보여요</p>
 
               {/* 검색: 우리 책이 아니어도 아무 책이나 찾아서 지정 */}
               <div className="relative mb-2">
