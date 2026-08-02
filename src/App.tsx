@@ -23,7 +23,6 @@ const AdminPortal = lazyRetry(() => import("./pages/AdminPortal"));
 const TermsPage = lazyRetry(() => import("./pages/TermsPage"));
 const PrivacyPage = lazyRetry(() => import("./pages/PrivacyPage"));
 // 임시: 미채택 기능("나의 도서관") 미리보기. 채택 여부 결정 후 제거.
-const LibraryPreview = lazyRetry(() => import("./pages/LibraryPreview"));
 // 가상 도서관 (Phaser). 무거운 게임 엔진이라 lazy 로드.
 const VirtualSpacePage = lazyRetry(() => import("./pages/VirtualSpacePage"));
 
@@ -50,7 +49,6 @@ const AppRoutes = () => {
           <Route path="/admin-portal" element={<AdminPortal />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
-          <Route path="/library" element={<LibraryPreview />} />
           <Route path="/space" element={<VirtualSpacePage />} />
           <Route path="/space/community/:communityId" element={<VirtualSpacePage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
