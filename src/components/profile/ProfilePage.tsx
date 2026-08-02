@@ -22,6 +22,7 @@ import {
   Plus,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
   MessageSquare,
   Send,
   Sparkles,
@@ -170,6 +171,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   const [schoolBusy, setSchoolBusy] = useState(false);
   const [featuredBadge, setFeaturedBadge] = useState<string | null>(null);
   const [badgesPublic, setBadgesPublic] = useState(true);
+  const [badgesOpen, setBadgesOpen] = useState(false); // 진열장 기본 접힘
   const { badges: myBadges } = useBadges();
   const [showRegionBlock, setShowRegionBlock] = useState(false);
   const [stats, setStats] = useState<Stats>({ registered: 0, lent: 0, deals: 0 });
@@ -645,48 +647,62 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
               ))}
             </div>
 
-            {/* 활동 배지 진열장 */}
+            {/* 활동 배지 진열장 — 기본 접힘, 헤더 눌러 펼침 */}
             <div className="mt-4 bg-card border border-border rounded-[14px] p-4">
-              <div className="flex items-center justify-between mb-1">
+              <button
+                onClick={() => setBadgesOpen((v) => !v)}
+                className="w-full flex items-center gap-2 text-left"
+              >
                 <p className="text-[15px] font-bold text-foreground">활동 배지</p>
-                <label className="flex items-center gap-1.5 text-[12px] text-muted-foreground cursor-pointer">
-                  공개
-                  <input
-                    type="checkbox"
-                    checked={badgesPublic}
-                    onChange={(e) => toggleBadgesPublic(e.target.checked)}
-                    className="accent-primary w-3.5 h-3.5"
-                  />
-                </label>
-              </div>
-              <p className="text-[12px] text-muted-foreground mb-3">
-                획득한 배지를 눌러 이름 옆 <span className="text-foreground font-medium">대표 배지</span>로 설정하세요.
-              </p>
-              {(() => {
-                const earned = new Map(myBadges.map((b) => [b.badge_key, b.tier]));
-                return (
-                  <div className="grid grid-cols-4 gap-x-2 gap-y-4">
-                    {BADGE_META.map(({ id, cond }) => {
-                      const has = earned.has(id);
-                      const tier = earned.get(id);
-                      const isFeatured = featuredBadge === id;
-                      return (
-                        <button
-                          key={id}
-                          onClick={() => has && chooseFeatured(id)}
-                          disabled={!has}
-                          className={`flex flex-col items-center gap-1 text-center rounded-lg py-1.5 transition-colors ${has ? 'cursor-pointer hover:bg-muted/50' : 'cursor-default'} ${isFeatured ? 'bg-primary/10 ring-1 ring-primary/40' : ''}`}
-                        >
-                          <BadgeStamp id={id} tier={(tier || undefined) as 1 | 2 | 3 | undefined} size={44} muted={!has} />
-                          <span className={`text-[10.5px] leading-tight ${has ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-                            {has ? BADGES[id].name : cond}
-                          </span>
-                        </button>
-                      );
-                    })}
+                <span className="text-[12px] text-muted-foreground tabular-nums">
+                  {myBadges.length} / {BADGE_META.length}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-muted-foreground ml-auto transition-transform ${badgesOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {badgesOpen && (
+                <div className="mt-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[12px] text-muted-foreground">
+                      획득한 배지를 눌러 이름 옆 <span className="text-foreground font-medium">대표 배지</span>로.
+                    </p>
+                    <label className="flex items-center gap-1.5 text-[12px] text-muted-foreground cursor-pointer shrink-0">
+                      공개
+                      <input
+                        type="checkbox"
+                        checked={badgesPublic}
+                        onChange={(e) => toggleBadgesPublic(e.target.checked)}
+                        className="accent-primary w-3.5 h-3.5"
+                      />
+                    </label>
                   </div>
-                );
-              })()}
+                  {(() => {
+                    const earned = new Map(myBadges.map((b) => [b.badge_key, b.tier]));
+                    return (
+                      <div className="grid grid-cols-4 gap-x-2 gap-y-4">
+                        {BADGE_META.map(({ id, cond }) => {
+                          const has = earned.has(id);
+                          const tier = earned.get(id);
+                          const isFeatured = featuredBadge === id;
+                          return (
+                            <button
+                              key={id}
+                              onClick={() => has && chooseFeatured(id)}
+                              disabled={!has}
+                              className={`flex flex-col items-center gap-1 text-center rounded-lg py-1.5 transition-colors ${has ? 'cursor-pointer hover:bg-muted/50' : 'cursor-default'} ${isFeatured ? 'bg-primary/10 ring-1 ring-primary/40' : ''}`}
+                            >
+                              <BadgeStamp id={id} tier={(tier || undefined) as 1 | 2 | 3 | undefined} size={44} muted={!has} />
+                              <span className={`text-[10.5px] leading-tight ${has ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                                {has ? BADGES[id].name : cond}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
 
             {/* 메뉴 */}
