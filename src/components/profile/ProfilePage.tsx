@@ -163,7 +163,11 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   const [country, setCountry] = useState('');
   const [district, setDistrict] = useState('');
   const [school, setSchool] = useState<string | null>(null);
-  const [verifyingSchool, setVerifyingSchool] = useState(false);
+  // 학교 이메일 인증(별도 이메일 OTP) 인라인 플로우
+  const [schoolStep, setSchoolStep] = useState<'idle' | 'email' | 'code'>('idle');
+  const [schoolEmailInput, setSchoolEmailInput] = useState('');
+  const [schoolCodeInput, setSchoolCodeInput] = useState('');
+  const [schoolBusy, setSchoolBusy] = useState(false);
   const [featuredBadge, setFeaturedBadge] = useState<string | null>(null);
   const [badgesPublic, setBadgesPublic] = useState(true);
   const { badges: myBadges } = useBadges();
@@ -216,7 +220,14 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
         setAvatarUrl(profileData.avatar_url);
         setCountry(profileData.country || '');
         setDistrict(profileData.district || '');
-        setSchool((profileData as { school?: string | null }).school ?? null);
+        const schoolFromDb = (profileData as { school?: string | null }).school ?? null;
+        setSchool(schoolFromDb);
+        // 가입 이메일이 학교 도메인이면 코드 없이 바로 인증(멱등, 매치될 때만 세팅).
+        if (!schoolFromDb) {
+          supabase.rpc('verify_school_email' as any).then(({ data }) => {
+            if (data) setSchool(data as string);
+          });
+        }
         const pd = profileData as { featured_badge?: string | null; badges_public?: boolean | null };
         setFeaturedBadge(pd.featured_badge ?? null);
         setBadgesPublic(pd.badges_public ?? true);
@@ -238,31 +249,44 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   };
 
   /**
-   * 학교 이메일 인증. 이미 인증된 가입 이메일의 도메인이 SG 대학이면 학교 태그를 단다.
-   * 별도 메일 발송 없이 Supabase가 검증한 이메일을 재사용 → 비용 0.
+   * 학교 이메일 인증 — school-verify 엣지함수 호출(코드 발송/확인).
    */
-  const handleVerifySchool = async () => {
-    setVerifyingSchool(true);
+  const callSchoolFn = async (body: Record<string, unknown>) => {
+    const token = (await supabase.auth.getSession()).data.session?.access_token;
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/school-verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    });
+    return res.json() as Promise<{ ok?: boolean; school?: string; error?: string }>;
+  };
+
+  const sendSchoolCode = async () => {
+    if (!schoolEmailInput.trim()) return;
+    setSchoolBusy(true);
     try {
-      const { data, error } = await supabase.rpc('verify_school_email' as any);
-      if (error) throw error;
-      const result = (data as string | null) ?? null;
-      setSchool(result);
-      if (result) {
-        toast.success(`${result} 학교 이메일이 인증되었어요 🎓`);
-      } else {
-        toast.info('가입 이메일이 싱가포르 대학 이메일이 아니에요. 학교 이메일로 가입하면 인증 태그가 붙어요.');
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error(
-        /not find|PGRST202|schema cache/i.test(msg)
-          ? '학교 인증 기능이 아직 배포되지 않았어요.'
-          : '인증에 실패했어요. 잠시 후 다시 시도해주세요.',
-      );
-    } finally {
-      setVerifyingSchool(false);
-    }
+      const r = await callSchoolFn({ action: 'send', email: schoolEmailInput.trim() });
+      if (r.error) { toast.error(r.error); return; }
+      toast.success('인증 코드를 보냈어요. 학교 메일함을 확인하세요.');
+      setSchoolStep('code');
+    } catch {
+      toast.error('발송에 실패했어요. 잠시 후 다시 시도해주세요.');
+    } finally { setSchoolBusy(false); }
+  };
+
+  const confirmSchoolCode = async () => {
+    if (!schoolCodeInput.trim()) return;
+    setSchoolBusy(true);
+    try {
+      const r = await callSchoolFn({ action: 'confirm', email: schoolEmailInput.trim(), code: schoolCodeInput.trim() });
+      if (r.error) { toast.error(r.error); return; }
+      setSchool(r.school ?? null);
+      setSchoolStep('idle');
+      setSchoolCodeInput('');
+      toast.success(`${r.school} 학교 이메일이 인증됐어요 🎓`);
+    } catch {
+      toast.error('인증에 실패했어요.');
+    } finally { setSchoolBusy(false); }
   };
 
   /** 대표 배지 선택(같은 걸 다시 누르면 해제). 획득한 배지만 고를 수 있다. */
@@ -538,21 +562,67 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
               )}
 
               {/* 학교 인증(사실 태그) */}
-              <div className="mt-2.5 flex justify-center">
+              <div className="mt-2.5 flex flex-col items-center">
                 {school ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 text-primary text-[12px] font-semibold px-3 py-1">
                     <GraduationCap className="w-3.5 h-3.5" />
                     {school} 인증
                   </span>
-                ) : (
+                ) : schoolStep === 'idle' ? (
                   <button
-                    onClick={handleVerifySchool}
-                    disabled={verifyingSchool}
-                    className="inline-flex items-center gap-1 rounded-full border border-border text-[12px] text-muted-foreground px-3 py-1 hover:bg-muted/50 transition-colors disabled:opacity-60"
+                    onClick={() => { setSchoolStep('email'); }}
+                    className="inline-flex items-center gap-1 rounded-full border border-border text-[12px] text-muted-foreground px-3 py-1 hover:bg-muted/50 transition-colors"
                   >
                     <GraduationCap className="w-3.5 h-3.5" />
-                    {verifyingSchool ? '확인 중…' : '학교 이메일 인증'}
+                    학교 이메일 인증
                   </button>
+                ) : (
+                  <div className="w-full max-w-[280px] rounded-xl border border-border bg-card p-3 space-y-2 text-left">
+                    <p className="text-[12px] text-muted-foreground">
+                      학교 이메일(@u.nus.edu 등)로 코드를 받아 인증하면 학교 배지가 붙어요.
+                    </p>
+                    {schoolStep === 'email' ? (
+                      <>
+                        <input
+                          type="email"
+                          value={schoolEmailInput}
+                          onChange={(e) => setSchoolEmailInput(e.target.value)}
+                          placeholder="학교 이메일 주소"
+                          className="w-full h-9 px-3 rounded-lg border border-border bg-background text-[13px] outline-none focus:ring-2 focus:ring-primary/40"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={sendSchoolCode}
+                            disabled={schoolBusy}
+                            className="flex-1 h-9 rounded-lg bg-primary text-primary-foreground text-[13px] font-semibold disabled:opacity-60"
+                          >
+                            {schoolBusy ? '보내는 중…' : '인증 코드 받기'}
+                          </button>
+                          <button onClick={() => setSchoolStep('idle')} className="h-9 px-3 rounded-lg border border-border text-[13px] text-muted-foreground">취소</button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <input
+                          inputMode="numeric"
+                          value={schoolCodeInput}
+                          onChange={(e) => setSchoolCodeInput(e.target.value)}
+                          placeholder="메일로 받은 6자리 코드"
+                          className="w-full h-9 px-3 rounded-lg border border-border bg-background text-[13px] tracking-widest outline-none focus:ring-2 focus:ring-primary/40"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={confirmSchoolCode}
+                            disabled={schoolBusy}
+                            className="flex-1 h-9 rounded-lg bg-primary text-primary-foreground text-[13px] font-semibold disabled:opacity-60"
+                          >
+                            {schoolBusy ? '확인 중…' : '인증 완료'}
+                          </button>
+                          <button onClick={sendSchoolCode} disabled={schoolBusy} className="h-9 px-3 rounded-lg border border-border text-[13px] text-muted-foreground">코드 재발송</button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
