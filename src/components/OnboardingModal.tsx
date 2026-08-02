@@ -177,6 +177,36 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
       ),
     },
 
+    // ④-b 커뮤니티 — 하단 '커뮤니티' 탭을 가리킨다.
+    {
+      key: 'community',
+      target: '[data-onboarding="nav-community"]',
+      render: () => (
+        <>
+          <div className="flex items-center gap-2">
+            <span className="w-9 h-9 rounded-full bg-primary/12 flex items-center justify-center shrink-0">
+              <MessageCircle className="w-[18px] h-[18px] text-primary" />
+            </span>
+            <h2 className="font-display text-[22px] leading-tight text-foreground">
+              아는 사람들과 더 가깝게
+            </h2>
+          </div>
+          <p className="text-[15px] text-muted-foreground leading-relaxed">
+            학교·모임 사람들끼리 <b className="text-foreground">커뮤니티 책장</b>을 함께 쓸 수 있어요.
+            아는 이웃끼리 빌리고 나누면 더 안심되고, 그 커뮤니티에만 공개할 책도 고를 수 있어요.
+          </p>
+          <p className="text-[13px] text-faint leading-relaxed w-full text-left">
+            하단 <b className="text-foreground">커뮤니티</b> 탭에서
+          </p>
+          <ol className="w-full space-y-2 text-left">
+            <StepRow n={1} title="받은 초대 링크로 참여하거나" />
+            <StepRow n={2} title="비밀번호로 가입하거나" />
+            <StepRow n={3} title="직접 만들어서 친구를 초대하세요" accent />
+          </ol>
+        </>
+      ),
+    },
+
     // ⑤ 알림 — 코랄 카드로 강조. 항상 화면 중앙에 띄운다(카드가 커서 종 옆에 붙이면 잘림).
     {
       key: 'push',
