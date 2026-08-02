@@ -13,6 +13,8 @@ export function TelegramSettings() {
   const [loading, setLoading] = useState(true);
   const [linked, setLinked] = useState(false);
   const [optIn, setOptIn] = useState(false);
+  // 연동 시도 후 안내용 코드. 폰에서 텔레그램이 자동으로 안 열려도 이 코드로 수동 연결.
+  const [pendingCode, setPendingCode] = useState<string | null>(null);
 
   const load = async () => {
     if (!user) return;
@@ -21,6 +23,7 @@ export function TelegramSettings() {
     const row = data as { telegram_linked?: boolean; telegram_opt_in?: boolean } | null;
     setLinked(!!row?.telegram_linked);
     setOptIn(!!row?.telegram_opt_in);
+    if (row?.telegram_linked) setPendingCode(null); // 연동 완료되면 안내 감춤
     setLoading(false);
   };
 
@@ -39,8 +42,11 @@ export function TelegramSettings() {
       .map((b) => b.toString(36).padStart(2, '0')).join('').slice(0, 14);
     const { error } = await supabase.from('profiles').update({ telegram_link_code: code }).eq('id', user.id);
     if (error) { toast.error('연동 준비에 실패했어요'); return; }
-    window.open(`https://t.me/${BOT}?start=${code}`, '_blank');
-    toast.info('텔레그램에서 "시작"을 누르면 연동돼요');
+    // 폰에서는 팝업 차단·앱 미설치로 자동으로 안 열릴 수 있다 → 항상 수동 안내 코드를 남긴다.
+    setPendingCode(code);
+    const w = window.open(`https://t.me/${BOT}?start=${code}`, '_blank');
+    if (w) toast.info('텔레그램에서 "시작"을 누르면 연동돼요');
+    else toast.info('텔레그램이 안 열리면 아래 안내대로 연결해주세요');
   };
 
   const toggle = async (v: boolean) => {
@@ -83,12 +89,42 @@ export function TelegramSettings() {
           </button>
         </div>
       ) : (
-        <button
-          onClick={connect}
-          className="w-full h-10 rounded-xl bg-primary text-primary-foreground text-[15px] font-semibold flex items-center justify-center gap-1.5"
-        >
-          <Send className="w-4 h-4" /> 텔레그램으로 연동하기
-        </button>
+        <>
+          <button
+            onClick={connect}
+            className="w-full h-10 rounded-xl bg-primary text-primary-foreground text-[15px] font-semibold flex items-center justify-center gap-1.5"
+          >
+            <Send className="w-4 h-4" /> 텔레그램으로 연동하기
+          </button>
+
+          {/* 자동 연결 실패 대비 수동 안내 — 연동 시도 후에만 노출 */}
+          {pendingCode && (
+            <div className="rounded-xl bg-muted/50 border border-border p-3 space-y-2 text-[13px]">
+              <p className="font-semibold text-foreground">텔레그램이 안 열렸나요?</p>
+              <p className="text-muted-foreground leading-relaxed">
+                텔레그램 앱에서 <span className="font-medium text-foreground">@{BOT}</span> 을 검색해 열고,
+                아래 코드를 붙여넣어 보내면 연결돼요.
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 select-all rounded-lg bg-background border border-border px-2.5 py-1.5 font-mono text-[13px] text-foreground break-all">
+                  /start {pendingCode}
+                </code>
+                <button
+                  onClick={() => { navigator.clipboard?.writeText(`/start ${pendingCode}`); toast.success('코드를 복사했어요'); }}
+                  className="shrink-0 h-8 px-3 rounded-lg border border-border text-[13px] font-medium hover:bg-muted"
+                >
+                  복사
+                </button>
+              </div>
+              <button
+                onClick={() => window.open(`https://t.me/${BOT}?start=${pendingCode}`, '_blank')}
+                className="text-[13px] text-primary underline underline-offset-2"
+              >
+                텔레그램 다시 열기
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
