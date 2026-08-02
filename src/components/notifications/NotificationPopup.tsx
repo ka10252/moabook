@@ -103,7 +103,7 @@ export const NotificationPopup = ({
   onOpenCommunity,
   onOpenAnnouncement,
 }: NotificationPopupProps) => {
-  const { notifications, loading, markAllAsRead, deleteNotification } = useNotifications();
+  const { notifications, loading, markAllAsRead, deleteNotification, deleteAllNotifications } = useNotifications();
 
   // 창을 열 때 "그 시점에 안 읽었던 알림 id"를 얼려둔다(빨간 점·강조 배경 표시용).
   // 열자마자 markAllAsRead로 is_read가 즉시 true가 돼도, 이 스냅샷으로 빨간 점을 창이 열려 있는 동안 유지한다.
@@ -209,6 +209,16 @@ export const NotificationPopup = ({
                       className="text-xs text-primary"
                     >
                       모두 읽음
+                    </Button>
+                  )}
+                  {notifications.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={deleteAllNotifications}
+                      className="text-xs text-muted-foreground"
+                    >
+                      모두 삭제
                     </Button>
                   )}
                   <button

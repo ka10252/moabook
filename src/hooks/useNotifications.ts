@@ -120,6 +120,13 @@ async function deleteNotification(id: string) {
   await supabase.from('notifications').delete().eq('id', id);
 }
 
+async function deleteAllNotifications() {
+  if (!storeUserId) return;
+  if (notifications.length === 0) return;
+  setNotifications([]); // 낙관적 → 목록 즉시 비움
+  await supabase.from('notifications').delete().eq('user_id', storeUserId);
+}
+
 export const useNotifications = () => {
   const { user } = useAuth();
 
@@ -136,6 +143,7 @@ export const useNotifications = () => {
     markAsRead,
     markAllAsRead,
     deleteNotification,
+    deleteAllNotifications,
     refresh: fetchNotifications,
   };
 };
