@@ -22,6 +22,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 import { toast } from 'sonner';
 import { Book, transformDbBook } from '@/types/book';
+import { BadgeStamp, BADGES, type BadgeId } from '@/components/BadgeStamp';
+import { fetchUserBadges, type EarnedBadge } from '@/hooks/useBadges';
 
 interface Profile {
   id: string;
@@ -33,6 +35,8 @@ interface Profile {
   gender_public: boolean;
   age_public: boolean;
   school: string | null;
+  featured_badge: string | null;
+  badges_public: boolean;
 }
 
 interface MemberProfileModalProps {
@@ -53,6 +57,7 @@ export const MemberProfileModal = ({
   const [profile, setProfile] = useState<Profile | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [completedDeals, setCompletedDeals] = useState<number | null>(null);
+  const [memberBadges, setMemberBadges] = useState<EarnedBadge[]>([]);
   const [loading, setLoading] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
@@ -83,17 +88,23 @@ export const MemberProfileModal = ({
 
     setLoading(true);
     setCompletedDeals(null);
+    setMemberBadges([]);
     try {
       // Fetch profile
       // 남의 프로필은 profiles_public 뷰로만 본다 — gender/age는 _public일 때만 값이 온다.
       const { data: profileData, error: profileError } = await supabase
         .from('profiles_public' as any)
-        .select('id, nickname, avatar_url, bio, gender, age, gender_public, age_public, school')
+        .select('id, nickname, avatar_url, bio, gender, age, gender_public, age_public, school, featured_badge, badges_public')
         .eq('id', userId)
         .single();
 
       if (profileError) throw profileError;
       setProfile(profileData as Profile);
+
+      // 배지 공개한 유저만 배지 조회(실패해도 프로필은 떠야 함)
+      if ((profileData as Profile).badges_public !== false) {
+        fetchUserBadges(userId).then(setMemberBadges).catch(() => {});
+      }
 
       // 완료 거래수(신뢰 신호) — 실패해도 프로필은 떠야 하므로 조용히 무시.
       supabase
@@ -178,8 +189,15 @@ export const MemberProfileModal = ({
                         {profile.nickname?.charAt(0) || <User className="w-10 h-10" />}
                       </AvatarFallback>
                     </Avatar>
-                    <h2 className="font-display text-[24px] font-medium tracking-tight text-foreground mt-4">
+                    <h2 className="font-display text-[24px] font-medium tracking-tight text-foreground mt-4 flex items-center justify-center gap-1.5">
                       {profile.nickname}
+                      {profile.featured_badge && memberBadges.some((b) => b.badge_key === profile.featured_badge) && (
+                        <BadgeStamp
+                          id={profile.featured_badge as BadgeId}
+                          tier={(memberBadges.find((b) => b.badge_key === profile.featured_badge)?.tier || undefined) as 1 | 2 | 3 | undefined}
+                          size={20}
+                        />
+                      )}
                     </h2>
                     {profile.bio && (
                       <p className="text-sm text-muted-foreground mt-2 max-w-xs mx-auto">
@@ -212,6 +230,17 @@ export const MemberProfileModal = ({
                         </Badge>
                       )}
                     </div>
+
+                    {/* 획득 배지 진열 */}
+                    {memberBadges.length > 0 && (
+                      <div className="flex items-center justify-center gap-1.5 mt-3 flex-wrap">
+                        {memberBadges.map((b) => (
+                          <span key={b.badge_key} title={BADGES[b.badge_key]?.name}>
+                            <BadgeStamp id={b.badge_key} tier={(b.tier || undefined) as 1 | 2 | 3 | undefined} size={26} />
+                          </span>
+                        ))}
+                      </div>
+                    )}
 
                     {/* 신고 / 차단 — 본인 프로필에는 노출하지 않는다 */}
                     {!isSelf && user && (

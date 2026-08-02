@@ -66,6 +66,8 @@ import { TransactionDashboard } from '@/components/transaction/TransactionDashbo
 import { passwordSchema } from '@/lib/passwordSchema';
 import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 import { Ban } from 'lucide-react';
+import { useBadges } from '@/hooks/useBadges';
+import { BadgeStamp, BADGE_META, BADGES, type BadgeId } from '@/components/BadgeStamp';
 
 /** 탈퇴·문의 접수 채널. 자동 탈퇴가 실패해도 이 경로는 항상 열려 있어야 한다. */
 const SUPPORT_EMAIL = 'admin@moabook.app';
@@ -162,6 +164,9 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   const [district, setDistrict] = useState('');
   const [school, setSchool] = useState<string | null>(null);
   const [verifyingSchool, setVerifyingSchool] = useState(false);
+  const [featuredBadge, setFeaturedBadge] = useState<string | null>(null);
+  const [badgesPublic, setBadgesPublic] = useState(true);
+  const { badges: myBadges } = useBadges();
   const [showRegionBlock, setShowRegionBlock] = useState(false);
   const [stats, setStats] = useState<Stats>({ registered: 0, lent: 0, deals: 0 });
   const [showTransactions, setShowTransactions] = useState(false);
@@ -188,7 +193,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
         .from('profiles')
         // 명시 컬럼만. telegram_link_code(보안)·gender·age·telegram_chat_id는 base에서 회수됨
         // → gender/age는 아래 get_my_private_profile RPC로 본인만 읽는다.
-        .select('id, nickname, avatar_url, bio, gender_public, age_public, country, district, region, pixel_avatar, reading_book, reading_book_id, telegram_opt_in, school, created_at, updated_at')
+        .select('id, nickname, avatar_url, bio, gender_public, age_public, country, district, region, pixel_avatar, reading_book, reading_book_id, telegram_opt_in, school, featured_badge, badges_public, created_at, updated_at')
         .eq('id', user.id)
         .single();
 
@@ -212,6 +217,9 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
         setCountry(profileData.country || '');
         setDistrict(profileData.district || '');
         setSchool((profileData as { school?: string | null }).school ?? null);
+        const pd = profileData as { featured_badge?: string | null; badges_public?: boolean | null };
+        setFeaturedBadge(pd.featured_badge ?? null);
+        setBadgesPublic(pd.badges_public ?? true);
       }
 
       // gender/age는 base에서 회수되어 본인만 RPC로 읽는다(비공개 필드).
@@ -255,6 +263,21 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
     } finally {
       setVerifyingSchool(false);
     }
+  };
+
+  /** 대표 배지 선택(같은 걸 다시 누르면 해제). 획득한 배지만 고를 수 있다. */
+  const chooseFeatured = async (id: BadgeId) => {
+    if (!user) return;
+    const next = featuredBadge === id ? null : id;
+    setFeaturedBadge(next);
+    await supabase.from('profiles').update({ featured_badge: next }).eq('id', user.id);
+  };
+
+  const toggleBadgesPublic = async (v: boolean) => {
+    if (!user) return;
+    setBadgesPublic(v);
+    const { error } = await supabase.from('profiles').update({ badges_public: v }).eq('id', user.id);
+    if (error) { setBadgesPublic(!v); toast.error('설정을 바꾸지 못했어요'); }
   };
 
   /** 숫자는 지어내지 않는다 — 전부 DB 카운트다. */
@@ -496,8 +519,15 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
               </button>
               <input ref={avatarFileRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
 
-              <h1 className="font-display text-[28px] font-medium text-foreground mt-3 leading-none">
+              <h1 className="font-display text-[28px] font-medium text-foreground mt-3 leading-none flex items-center justify-center gap-1.5">
                 {nickname || '이름 없음'}
+                {featuredBadge && new Map(myBadges.map((b) => [b.badge_key, b.tier])).has(featuredBadge as BadgeId) && (
+                  <BadgeStamp
+                    id={featuredBadge as BadgeId}
+                    tier={(new Map(myBadges.map((b) => [b.badge_key, b.tier])).get(featuredBadge as BadgeId) || undefined) as 1 | 2 | 3 | undefined}
+                    size={22}
+                  />
+                )}
               </h1>
               {bio && <p className="text-xs text-muted-foreground mt-1.5">{bio}</p>}
               {district && (
@@ -543,6 +573,50 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                   <p className="text-[12px] text-muted-foreground mt-1">{s.l}</p>
                 </div>
               ))}
+            </div>
+
+            {/* 활동 배지 진열장 */}
+            <div className="mt-4 bg-card border border-border rounded-[14px] p-4">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[15px] font-bold text-foreground">활동 배지</p>
+                <label className="flex items-center gap-1.5 text-[12px] text-muted-foreground cursor-pointer">
+                  공개
+                  <input
+                    type="checkbox"
+                    checked={badgesPublic}
+                    onChange={(e) => toggleBadgesPublic(e.target.checked)}
+                    className="accent-primary w-3.5 h-3.5"
+                  />
+                </label>
+              </div>
+              <p className="text-[12px] text-muted-foreground mb-3">
+                획득한 배지를 눌러 이름 옆 <span className="text-foreground font-medium">대표 배지</span>로 설정하세요.
+              </p>
+              {(() => {
+                const earned = new Map(myBadges.map((b) => [b.badge_key, b.tier]));
+                return (
+                  <div className="grid grid-cols-4 gap-x-2 gap-y-4">
+                    {BADGE_META.map(({ id, cond }) => {
+                      const has = earned.has(id);
+                      const tier = earned.get(id);
+                      const isFeatured = featuredBadge === id;
+                      return (
+                        <button
+                          key={id}
+                          onClick={() => has && chooseFeatured(id)}
+                          disabled={!has}
+                          className={`flex flex-col items-center gap-1 text-center rounded-lg py-1.5 transition-colors ${has ? 'cursor-pointer hover:bg-muted/50' : 'cursor-default'} ${isFeatured ? 'bg-primary/10 ring-1 ring-primary/40' : ''}`}
+                        >
+                          <BadgeStamp id={id} tier={(tier || undefined) as 1 | 2 | 3 | undefined} size={44} muted={!has} />
+                          <span className={`text-[10.5px] leading-tight ${has ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                            {has ? BADGES[id].name : cond}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* 메뉴 */}
