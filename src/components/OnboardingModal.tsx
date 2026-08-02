@@ -110,16 +110,11 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
           <BorrowDemo />
 
           <ol className="w-full space-y-2 text-left">
-            <StepRow n={1} title="마음에 드는 책등을 탭" />
-            <StepRow n={2} title="대여 신청 누르기" />
-            <StepRow n={3} title="채팅으로 만날 약속 잡기" />
-            <StepRow n={4} title="직접 만나서 책 받기" accent />
+            <StepRow n={1} title="책등을 탭" />
+            <StepRow n={2} title="대여 신청" />
+            <StepRow n={3} title="채팅으로 약속 잡기" />
+            <StepRow n={4} title="만나서 받기" accent />
           </ol>
-
-          <p className="text-[13px] text-muted-foreground leading-relaxed w-full">
-            판매·구매를 원할 경우 <b className="text-foreground">PayNow · PayLah</b>로 직접
-            거래하세요!
-          </p>
         </>
       ),
     },
@@ -139,45 +134,13 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
             </h2>
           </div>
           <p className="text-[15px] text-muted-foreground leading-relaxed">
-            제목만 검색하면 표지·저자가 자동으로 채워져요.
-            <br />
-            대여할지 판매할지 고르고, 책 상태만 알려주면 끝.
-          </p>
-          <p className="text-[13px] text-faint leading-relaxed">
-            판매하는 책은 상태를 확인할 수 있게 사진이 꼭 필요해요.
+            제목만 검색하면 표지·저자가 자동으로 채워져요. 거래 방식(대여·판매·나눔)과 상태만 고르면 끝.
           </p>
         </>
       ),
     },
 
-    // ④ 책갈피 — 서가의 시각 언어. 데모 책등에 실제로 책갈피를 꽂아 눈으로 보게 한다.
-    {
-      key: 'bookmark',
-      target: '[data-onboarding="shelf"]',
-      render: () => (
-        <>
-          <p className="eyebrow">대여 상태 읽는 법</p>
-          <h2 className="font-display text-[22px] leading-tight text-foreground">책갈피가 알려줘요</h2>
-
-          <BookmarkDemo />
-
-          {/* 한 줄씩, 좌측 정렬. 설명을 두 줄로 늘리면 훑어보기가 안 된다. */}
-          <div className="w-full space-y-3 text-left">
-            <LegendRow swatch={<Spine color="bg-book-4" ribbon="lent" />} title="내가 빌려준 책: ↑ 위쪽 화살표 · 금색 책갈피" />
-            <LegendRow
-              swatch={<Spine color="bg-book-6" ribbon="borrowed" />}
-              title="내가 빌린 책: ↓ 아래쪽 화살표 · 남색 책갈피"
-            />
-            <LegendRow
-              swatch={<Spine color="bg-book-3" ghost />}
-              title="희미한 책 · 지금은 빌릴 수 없는 책"
-            />
-          </div>
-        </>
-      ),
-    },
-
-    // ④-b 커뮤니티 — 하단 '커뮤니티' 탭을 가리킨다.
+    // ④ 커뮤니티 — 하단 '커뮤니티' 탭을 가리킨다.
     {
       key: 'community',
       target: '[data-onboarding="nav-community"]',
@@ -192,8 +155,7 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
             </h2>
           </div>
           <p className="text-[15px] text-muted-foreground leading-relaxed">
-            학교·모임 사람들끼리 <b className="text-foreground">커뮤니티 책장</b>을 함께 쓸 수 있어요.
-            아는 이웃끼리 빌리고 나누면 더 안심되고, 그 커뮤니티에만 공개할 책도 고를 수 있어요.
+            학교·모임 사람들끼리 <b className="text-foreground">커뮤니티 책장</b>을 함께 써요. 아는 이웃끼리라 더 안심돼요.
           </p>
           <p className="text-[13px] text-faint leading-relaxed w-full text-left">
             하단 <b className="text-foreground">커뮤니티</b> 탭에서
@@ -205,134 +167,6 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
           </ol>
         </>
       ),
-    },
-
-    // ⑤ 알림 — 코랄 카드로 강조. 항상 화면 중앙에 띄운다(카드가 커서 종 옆에 붙이면 잘림).
-    {
-      key: 'push',
-      target: undefined,
-      render: () => {
-        // ── 홈 화면 추가 안내 (iOS) : 흰 카드, 문장은 볼드 섞지 않고 기본체로 통일 ──
-        if (pushView === 'install') {
-          return (
-            <>
-              <span className="w-9 h-9 rounded-full bg-primary/12 flex items-center justify-center shrink-0">
-                <Smartphone className="w-[18px] h-[18px] text-primary" />
-              </span>
-              <p className="eyebrow">iPhone 알림 설정</p>
-              <h2 className="font-display text-[20px] leading-tight text-foreground">
-                홈 화면에 추가하면 알림을 받아요
-              </h2>
-              <ol className="w-full space-y-2.5 text-left mt-1">
-                <InstallStep n={1} ko="Safari 하단 공유 버튼을 눌러요" en="Share" />
-                <InstallStep n={2} ko="홈 화면에 추가를 선택해요" en="Add to Home Screen" />
-                <InstallStep n={3} ko="홈 화면의 MOA Book 아이콘으로 다시 열어요" />
-                <InstallStep n={4} ko="알림 허용을 누르면 끝!" en="Allow Notifications" hot />
-              </ol>
-              <button
-                onClick={() => setPushView('main')}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors mt-1 flex items-center gap-1"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" /> 다른 방법으로 받기
-              </button>
-            </>
-          );
-        }
-        // ── 텔레그램 안내 (자동 연동 실패 대비) : 흰 카드 ──
-        if (pushView === 'telegram') {
-          return (
-            <>
-              <span className="w-9 h-9 rounded-full bg-primary/12 flex items-center justify-center shrink-0">
-                <Send className="w-[18px] h-[18px] text-primary" />
-              </span>
-              <p className="eyebrow">텔레그램 연동</p>
-              <h2 className="font-display text-[20px] leading-tight text-foreground">
-                봇에서 이렇게 연결해요
-              </h2>
-              <ol className="w-full space-y-2.5 text-left mt-1">
-                <li className="flex items-start gap-3">
-                  <StepNum n={1} />
-                  <p className="text-[15px] text-foreground leading-relaxed">
-                    아래 링크로 MOA Book 봇을 열어요<br />
-                    <a href={`https://t.me/${TELEGRAM_BOT}`} target="_blank" rel="noreferrer"
-                       className="text-primary font-semibold underline underline-offset-2 break-all">
-                      t.me/{TELEGRAM_BOT}
-                    </a>
-                  </p>
-                </li>
-                <li className="flex items-start gap-3">
-                  <StepNum n={2} hot />
-                  <p className="text-[15px] text-foreground leading-relaxed">
-                    대화창에 <span className="font-mono bg-foreground text-background rounded px-1.5 py-0.5 text-[14px]">/start</span> 입력하면 끝
-                  </p>
-                </li>
-              </ol>
-              <div className="w-full rounded-xl bg-primary/10 border border-primary/25 p-3 text-[14px] text-foreground font-medium leading-relaxed">
-                봇이 "연결됐어요" 메시지를 보내면 완료예요.
-              </div>
-              <button
-                onClick={() => setPushView('main')}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors mt-1 flex items-center gap-1"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" /> 다른 방법으로 받기
-              </button>
-            </>
-          );
-        }
-        // ── 메인 : 코랄 카드 ──
-        return (
-          <>
-            <span className="w-10 h-10 rounded-xl bg-white/22 flex items-center justify-center shrink-0">
-              <Bell className="w-[21px] h-[21px] text-primary-foreground" />
-            </span>
-            <h2 className="font-display text-[21px] leading-tight text-primary-foreground">
-              알림을 켜야 놓치지 않아요
-            </h2>
-            <ul className="w-full space-y-2 text-left mt-1">
-              <CoralBenefit icon={<BookOpen className="w-3.5 h-3.5" />} text="누가 내 책을 빌리고 싶어할 때" />
-              <CoralBenefit icon={<Clock className="w-3.5 h-3.5" />} text="빌린 책 반납일이 다가올 때" />
-              <CoralBenefit icon={<MessageCircle className="w-3.5 h-3.5" />} text="채팅 메시지가 도착했을 때" />
-            </ul>
-            <p className="text-[14px] font-bold text-primary-foreground/95 w-full text-left mt-1">
-              텔레그램으로 받는 걸 추천해요 — 앱을 안 열어도 알림이 와요
-            </p>
-
-            {/* 1순위: 텔레그램 (기본 알림 채널) — 흰 solid로 강조 */}
-            <button
-              onClick={handleTelegram}
-              className="w-full h-11 rounded-full bg-white text-primary text-[15.5px] font-bold flex items-center justify-center gap-2"
-            >
-              <Send className="w-4 h-4" /> 텔레그램으로 알림 받기
-            </button>
-
-            {/* 2순위: 앱 알림/홈 화면 — 텔레그램이 없거나, 앱처럼 쓰고 싶은 사람용 (은은한 outline) */}
-            {pushDone ? (
-              <div className="w-full rounded-xl bg-white/15 p-2.5 text-[13.5px] text-primary-foreground leading-relaxed text-center flex items-center justify-center gap-1.5">
-                <Check className="w-4 h-4" /> 앱 알림이 켜졌어요
-              </div>
-            ) : isBlocked ? (
-              <div className="w-full rounded-xl bg-white/15 p-3 text-[13.5px] text-primary-foreground leading-relaxed text-left">
-                브라우저에서 알림이 차단돼 있어요. 주소창 자물쇠 → 알림 → 허용으로 바꿔주세요.
-              </div>
-            ) : iosNeedsInstall ? (
-              <button
-                onClick={handlePrimaryPush}
-                className="w-full h-11 rounded-full bg-white/16 border-[1.5px] border-white/50 text-primary-foreground text-[14px] font-semibold flex items-center justify-center gap-2"
-              >
-                <Plus className="w-4 h-4" /> 텔레그램 대신 홈 화면에 추가해 받기
-              </button>
-            ) : isPushSupported ? (
-              <button
-                onClick={handleEnablePush}
-                disabled={pushLoading}
-                className="w-full h-11 rounded-full bg-white/16 border-[1.5px] border-white/50 text-primary-foreground text-[14px] font-semibold flex items-center justify-center gap-2 disabled:opacity-70"
-              >
-                <Bell className="w-4 h-4" /> 텔레그램 대신 앱 알림 받기
-              </button>
-            ) : null}
-          </>
-        );
-      },
     },
 
     // ⑥ 마무리 — 등록을 강요하지 않는다. 처음 온 사람에게 필요한 건 숙제가 아니라 구경거리다.
@@ -349,12 +183,7 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
             열렸어요
           </h2>
           <p className="text-[15px] text-muted-foreground leading-relaxed">
-            천천히 둘러보시고, 마음에 드는 책이 있으면
-            <br />
-            언제든 대여를 신청해보세요.
-          </p>
-          <p className="text-[13px] text-faint leading-relaxed">
-            안 읽는 책이 생각나면 그때 올려주셔도 됩니다.
+            마음에 드는 책이 있으면 언제든 대여를 신청해보세요.
           </p>
         </>
       ),
