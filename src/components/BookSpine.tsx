@@ -79,8 +79,12 @@ const RIBBON = {
  * 색과 마찬가지로 제목 해시로 결정론적으로 정해, 새로고침해도 같은 책은 같은 높이를 유지한다.
  */
 const heightFromTitle = (title: string) => {
-  const hash = (title || '').split('').reduce((acc, ch) => (acc * 31 + ch.charCodeAt(0)) >>> 0, 11);
-  return 74 + (hash % 6) * 5; // 74% ~ 99%
+  const t = title || '';
+  const hash = t.split('').reduce((acc, ch) => (acc * 31 + ch.charCodeAt(0)) >>> 0, 11);
+  // 제목이 길수록 책등을 길게(높게) 해서 긴 제목도 2줄 안에 담기게 한다. + 약간의 해시 변주로 서가 느낌.
+  const base = 74 + (hash % 4) * 3;                 // 74~83% 기본 변주
+  const lengthBoost = Math.min(Math.max(t.length - 6, 0), 18) * 0.95; // 6자 넘으면 길이만큼 최대 +17%
+  return Math.min(100, Math.round(base + lengthBoost));
 };
 
 export const BookSpine = ({
@@ -151,8 +155,8 @@ export const BookSpine = ({
         style={{
           fontFamily: "'Noto Sans KR', sans-serif",
           fontWeight: 500,
-          writingMode: 'vertical-rl',
-          maxHeight: '88%',
+          writingMode: 'vertical-lr',   // 열이 왼→오로 진행(2줄일 때 첫 줄이 왼쪽)
+          maxHeight: '90%',
           maxWidth: '2.4em',   // 최대 2열
           letterSpacing: '0.02em',
           lineHeight: 1.15,
