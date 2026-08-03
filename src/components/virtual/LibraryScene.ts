@@ -256,12 +256,21 @@ export class LibraryScene extends Phaser.Scene {
       // 상호작용 가구(예: 게시판) → 클릭 시 액션 발생, 반짝이는 힌트
       if (item.action) {
         this.furnitureRectByAction.set(item.action, { x, y: y - h, w, h }); // 투어 하이라이트용 영역
-        // 모바일에서 정확히 안 눌러도 되도록 넉넉한 탭 영역(Zone)을 얹는다
-        const zoneW = Math.max(w + T, T * 2);
-        const zoneH = Math.max(h + T, T * 2.5);
-        const zone = this.add.zone(x + w / 2, y - h / 2, zoneW, zoneH).setInteractive({ useHandCursor: true });
+        // 탭 영역 = 스프라이트 실제 크기(넉넉한 존이 걷기 탭을 가로채 오클릭을 유발했음).
+        const cx = x + w / 2;
+        const cy = y - h / 2;
+        const zone = this.add.zone(cx, cy, w, h).setInteractive({ useHandCursor: true });
         zone.setData('action', item.action);
-        zone.on('pointerdown', () => this.onAction?.(item.action!, item.name));
+        // 근접 상호작용: 캐릭터가 가구 옆에 있을 때만 열고, 멀리서 탭하면 그쪽으로 걸어간다.
+        // (책장·게시판이 방 가운데 있어도 이동 탭이 실수로 열리지 않게 함)
+        zone.on('pointerdown', () => {
+          const near = Phaser.Math.Distance.Between(this.player.x, this.player.y, cx, y) <= T * 2.2;
+          if (near) {
+            this.onAction?.(item.action!, item.name);
+          } else {
+            this.moveTarget = new Phaser.Math.Vector2(cx, Math.min(y + T * 0.4, this.manifest.rows * T - T));
+          }
+        });
         // 눈에 띄도록 은은한 펄스
         this.tweens.add({ targets: img, alpha: 0.7, duration: 900, yoyo: true, repeat: -1 });
         // 무엇인지 알 수 있게 픽셀 폰트 라벨(게시판처럼) — 가구 위에 표시
