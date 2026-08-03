@@ -1,0 +1,121 @@
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { X, Search, Loader2, BookOpen, Check } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useBookSearch } from '@/hooks/useBookSearch';
+import { toast } from 'sonner';
+import type { ReadingBook } from '@/components/virtual/LibraryScene';
+
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  /** 저장 후 씬 말풍선 갱신 */
+  onSaved: () => void;
+}
+
+/**
+ * '지금 읽는 책' 전용 설정 모달.
+ * 캐릭터 설정 안에 묻혀 있어 발견이 어렵다는 피드백 → 가상룸 상단에서 바로 여는 독립 화면.
+ */
+export const ReadingBookPicker = ({ isOpen, onClose, onSaved }: Props) => {
+  const { user } = useAuth();
+  const { results, isSearching, searchBooks, clearResults } = useBookSearch();
+  const [query, setQuery] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  if (!isOpen) return null;
+
+  const onQuery = (v: string) => {
+    setQuery(v);
+    if (v.trim().length >= 2) searchBooks(v.trim());
+    else clearResults();
+  };
+
+  const save = async (book: ReadingBook | null) => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      // reading_book(jsonb 스냅샷) + reading_book_id. 컬럼 없어도 안전하게 폴백.
+      let res = await supabase.from('profiles')
+        .update({ reading_book: book as never, reading_book_id: book?.id ?? null } as never)
+        .eq('id', user.id);
+      if (res.error) {
+        res = await supabase.from('profiles')
+          .update({ reading_book_id: book?.id ?? null } as never)
+          .eq('id', user.id);
+      }
+      if (res.error) throw res.error;
+      toast.success(book ? `'${book.title}'(으)로 설정했어요` : '읽는 책을 지웠어요');
+      onSaved();
+      onClose();
+    } catch {
+      toast.error('설정에 실패했어요');
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-[60] bg-black/50 flex items-end sm:items-center justify-center"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="w-full sm:max-w-md bg-card rounded-t-2xl sm:rounded-2xl p-4 max-h-[80vh] flex flex-col"
+        initial={{ y: 40 }} animate={{ y: 0 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-1.5">
+            <BookOpen className="w-4 h-4 text-primary" />
+            <h2 className="text-[16px] font-bold text-foreground">지금 읽는 책</h2>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted"><X className="w-5 h-5 text-muted-foreground" /></button>
+        </div>
+        <p className="text-[12px] text-muted-foreground mb-3">캐릭터 머리 위 말풍선에 표지로 보여요.</p>
+
+        <div className="relative mb-2">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            value={query}
+            onChange={(e) => onQuery(e.target.value)}
+            placeholder="책 제목·저자로 검색"
+            className="w-full h-10 pl-9 pr-3 rounded-xl bg-muted/50 border-0 text-sm outline-none focus:ring-2 focus:ring-primary/40"
+            autoFocus
+          />
+        </div>
+
+        <div className="flex-1 overflow-y-auto moa-thin-scroll">
+          <button
+            onClick={() => save(null)}
+            disabled={saving}
+            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-muted/60 text-left text-[13px] text-muted-foreground"
+          >
+            <span className="w-7 h-10 rounded bg-muted shrink-0 flex items-center justify-center"><X className="w-3.5 h-3.5" /></span>
+            읽는 책 없음(지우기)
+          </button>
+          {isSearching && results.length === 0 && (
+            <div className="flex items-center gap-2 px-3 py-3 text-[13px] text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> 검색 중…</div>
+          )}
+          {results.map((r) => (
+            <button
+              key={r.key}
+              onClick={() => save({ id: null, title: r.title, author: r.author, coverUrl: r.cover, description: r.description })}
+              disabled={saving}
+              className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-muted/60 text-left"
+            >
+              {r.cover
+                ? <img src={r.cover} alt="" loading="lazy" className="w-7 h-10 object-cover rounded shrink-0 bg-muted" />
+                : <div className="w-7 h-10 rounded bg-muted shrink-0" />}
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-medium text-foreground truncate">{r.title}</p>
+                <p className="text-[12px] text-muted-foreground truncate">{r.author}</p>
+              </div>
+              {saving && <Check className="w-4 h-4 text-primary shrink-0" />}
+            </button>
+          ))}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};

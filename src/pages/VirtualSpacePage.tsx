@@ -2,10 +2,11 @@ import { useEffect, useRef, useState, Suspense } from 'react';
 import { lazyRetry } from '@/lib/lazyRetry';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, UserRound, Smile, Send } from 'lucide-react';
+import { ArrowLeft, Loader2, UserRound, Smile, Send, BookOpen } from 'lucide-react';
 import Phaser from 'phaser';
 import { LibraryScene, type RoomManifest, type ReadingBook } from '@/components/virtual/LibraryScene';
 import { CharacterEditor } from '@/components/virtual/CharacterEditor';
+import { ReadingBookPicker } from '@/components/virtual/ReadingBookPicker';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { type AvatarConfig, defaultAvatar, normalizeAvatar } from '@/lib/avatar';
@@ -25,7 +26,7 @@ const TOUR_SEEN_KEY = 'moa_room_tour_seen';
 const TOUR: { text: string; highlight?: 'shelf' | 'board' }[] = [
   { text: '어서 오세요!\n제가 이 방을 안내해 드릴게요 📖' },
   { text: '가고 싶은 곳을 화면에서\n톡 누르면 캐릭터가 걸어가요 🚶\n(키보드는 방향키·WASD)' },
-  { text: '캐릭터 머리 위에는 각자\n지금 읽는 책이 보여요.\n프로필 › 캐릭터 꾸미기에서 정해요.' },
+  { text: '캐릭터 머리 위에는 각자\n지금 읽는 책이 보여요.\n오른쪽 위 "읽는 책"에서 정해요.' },
   { text: '화면 아래에서 이웃에게\n메시지와 이모지를 보낼 수 있어요.' },
   { text: 'Zzz는 접속중이지 않은 이웃이에요.\nZzz가 없으면 접속 중이라\n말을 걸 수 있어요.' },
   { text: '이 책장을 누르면\n우리 커뮤니티의 책을 볼 수 있어요.', highlight: 'shelf' },
@@ -48,6 +49,8 @@ export default function VirtualSpacePage() {
   const manifestRef = useRef<RoomManifest | null>(null);
   const nicknameRef = useRef<string>('익명');
   const readingBookRef = useRef<ReadingBook | null>(null);
+  const avatarRef = useRef<AvatarConfig | null>(null);
+  const [readingPickerOpen, setReadingPickerOpen] = useState(false);
   const membersRef = useRef<{ userId: string; nickname: string; avatar: AvatarConfig; readingBook?: ReadingBook | null }[]>([]);
   const chatIdRef = useRef(0);
   const chatLogTimer = useRef<ReturnType<typeof setTimeout>>();
@@ -76,6 +79,7 @@ export default function VirtualSpacePage() {
   const channelName = isCommunity ? `space:community:${communityId}` : 'space:global';
 
   const startScene = (manifest: RoomManifest, avatar: AvatarConfig) => {
+    avatarRef.current = avatar;
     gameRef.current?.scene.start('LibraryScene', {
       manifest,
       assetBase,
@@ -268,7 +272,13 @@ export default function VirtualSpacePage() {
       </div>
 
       <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
-        {/* 게시판 버튼 제거 — 방 안의 게시판 가구를 눌러 접근 */}
+        {/* 읽는 책 — 캐릭터 설정과 분리된 독립 진입점 */}
+        <button
+          onClick={() => setReadingPickerOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 shadow-md text-sm font-medium text-gray-800 hover:bg-white"
+        >
+          <BookOpen className="w-4 h-4" /> 읽는 책
+        </button>
         <button
           onClick={() => setEditorOpen(true)}
           className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 shadow-md text-sm font-medium text-gray-800 hover:bg-white"
@@ -276,6 +286,15 @@ export default function VirtualSpacePage() {
           <UserRound className="w-4 h-4" /> 캐릭터
         </button>
       </div>
+
+      <ReadingBookPicker
+        isOpen={readingPickerOpen}
+        onClose={() => setReadingPickerOpen(false)}
+        onSaved={async () => {
+          readingBookRef.current = await fetchReadingBook();
+          if (manifestRef.current && avatarRef.current) startScene(manifestRef.current, avatarRef.current);
+        }}
+      />
 
       <CharacterEditor
         isOpen={editorOpen}
