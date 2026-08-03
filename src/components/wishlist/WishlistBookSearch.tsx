@@ -7,7 +7,7 @@ import { BookSearchResult, useBookSearch } from '@/hooks/useBookSearch';
 import { cn } from '@/lib/utils';
 
 interface WishlistBookSearchProps {
-  onBookSelect: (title: string, author: string | null) => void;
+  onBookSelect: (title: string, author: string | null, cover: string | null) => void;
   onManualEntry: () => void;
 }
 
@@ -52,7 +52,7 @@ export const WishlistBookSearch = ({ onBookSelect, onManualEntry }: WishlistBook
   }, []);
 
   const handleSelect = (book: BookSearchResult) => {
-    onBookSelect(book.title, book.author);
+    onBookSelect(book.title, book.author, book.cover ?? null);
     setQuery('');
     setIsOpen(false);
     clearResults();

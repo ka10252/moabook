@@ -9,6 +9,7 @@ export interface WishlistItem {
   author: string | null;
   notes: string | null;
   desired_mode?: 'rent' | 'buy' | 'any';
+  cover_url?: string | null;
   is_fulfilled: boolean;
   created_at: string;
   profile?: {
@@ -65,6 +66,7 @@ export const useWishlist = () => {
     author: string | null,
     notes: string | null,
     desiredMode: 'rent' | 'buy' | 'any' = 'any',
+    coverUrl: string | null = null,
   ) => {
     if (!user) return { error: new Error('Must be logged in') };
 
@@ -74,6 +76,7 @@ export const useWishlist = () => {
       author: author?.trim() || null,
       notes: notes?.trim() || null,
       desired_mode: desiredMode,
+      cover_url: coverUrl,
     } as never);
 
     if (!error) {

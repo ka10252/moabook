@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { WishlistBookSearch } from './WishlistBookSearch';
 
 interface AddWishlistFormProps {
-  onAdd: (title: string, author: string | null, notes: string | null, desiredMode: 'rent' | 'buy' | 'any') => Promise<{ error: Error | null }>;
+  onAdd: (title: string, author: string | null, notes: string | null, desiredMode: 'rent' | 'buy' | 'any', coverUrl: string | null) => Promise<{ error: Error | null }>;
   onCancel: () => void;
 }
 
@@ -26,6 +26,7 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [notes, setNotes] = useState('');
+  const [cover, setCover] = useState<string | null>(null);
   const [desiredMode, setDesiredMode] = useState<DesiredMode>('any');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -50,9 +51,10 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
     </div>
   );
 
-  const handleBookSelect = (selectedTitle: string, selectedAuthor: string | null) => {
+  const handleBookSelect = (selectedTitle: string, selectedAuthor: string | null, selectedCover: string | null) => {
     setTitle(selectedTitle);
     setAuthor(selectedAuthor || '');
+    setCover(selectedCover);
     setMode('confirm');
   };
 
@@ -68,7 +70,7 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
     }
 
     setIsSubmitting(true);
-    const { error } = await onAdd(title, author || null, notes || null, desiredMode);
+    const { error } = await onAdd(title, author || null, notes || null, desiredMode, cover);
     setIsSubmitting(false);
 
     if (error) {
@@ -85,6 +87,7 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
       setTitle('');
       setAuthor('');
       setNotes('');
+      setCover(null);
       setDesiredMode('any');
       setMode('search');
       onCancel();

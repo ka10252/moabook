@@ -89,11 +89,21 @@ export const WishlistCard = ({
         className={`bg-card border border-border rounded-[14px] p-3 ${isDemo ? 'opacity-70' : ''}`}
       >
         <div className="flex items-center gap-3">
-          {/* 책등 색 블록 */}
-          <div
-            className={`w-[38px] h-[54px] rounded-[3px] shrink-0 ${spineClassFrom(item.title)}`}
-            style={{ boxShadow: '0 5px 10px -5px rgba(0,0,0,.5)' }}
-          />
+          {/* 표지가 있으면 표지, 없으면 책등 색 블록 */}
+          {item.cover_url ? (
+            <img
+              src={item.cover_url}
+              alt={item.title}
+              loading="lazy"
+              className="w-[38px] h-[54px] rounded-[3px] shrink-0 object-cover bg-muted"
+              style={{ boxShadow: '0 5px 10px -5px rgba(0,0,0,.5)' }}
+            />
+          ) : (
+            <div
+              className={`w-[38px] h-[54px] rounded-[3px] shrink-0 ${spineClassFrom(item.title)}`}
+              style={{ boxShadow: '0 5px 10px -5px rgba(0,0,0,.5)' }}
+            />
+          )}
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 min-w-0">
