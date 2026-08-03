@@ -23,7 +23,9 @@ interface BookFormData {
   description: string;
   coverUrl: string;
   condition: 'S' | 'A' | 'B';
-  mode: BookMode;
+  allowRent: boolean;
+  allowSell: boolean;
+  allowGive: boolean;
   price: string;
   isPublic: boolean;
   communityId: string | null;
@@ -51,11 +53,22 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
     description: '',
     coverUrl: '',
     condition: 'A',
-    mode: 'rent',
+    allowRent: true,
+    allowSell: false,
+    allowGive: false,
     price: '',
     isPublic: true,
     communityId: null,
   });
+
+  // 대표 모드(호환용): 판매>대여>나눔 우선
+  const primaryMode = (d: BookFormData): BookMode => (d.allowSell ? 'sell' : d.allowRent ? 'rent' : 'give');
+  const toggleMode = (mode: BookMode) => setFormData((d) => ({
+    ...d,
+    allowRent: mode === 'rent' ? !d.allowRent : d.allowRent,
+    allowSell: mode === 'sell' ? !d.allowSell : d.allowSell,
+    allowGive: mode === 'give' ? !d.allowGive : d.allowGive,
+  }));
 
   const truncateDescription = (description: string): string => {
     if (!description || description.length <= 300) return description;
@@ -115,13 +128,18 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
       return;
     }
 
-    if (formData.mode === 'sell' && (!formData.price || parseFloat(formData.price) <= 0)) {
+    if (!formData.allowRent && !formData.allowSell && !formData.allowGive) {
+      toast.error('거래 방식을 하나 이상 선택해주세요');
+      return;
+    }
+
+    if (formData.allowSell && (!formData.price || parseFloat(formData.price) <= 0)) {
       toast.error('판매 가격을 입력해주세요');
       return;
     }
 
     // 판매는 돈이 오간다. 사는 사람이 상태를 눈으로 확인할 수 없으면 분쟁이 난다.
-    if (formData.mode === 'sell' && !formData.coverUrl) {
+    if (formData.allowSell && !formData.coverUrl) {
       setCoverMissing(true);
       toast.error('판매하려면 책 상태 사진을 올려주세요');
       return;
@@ -149,17 +167,20 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
         description: formData.description.trim() || null,
         cover_url: coverUrl,
         condition: formData.condition,
-        mode: formData.mode,
-        price: formData.mode === 'sell' ? parseFloat(formData.price) : null,
+        mode: primaryMode(formData),
+        allow_rent: formData.allowRent,
+        allow_sell: formData.allowSell,
+        allow_give: formData.allowGive,
+        price: formData.allowSell ? parseFloat(formData.price) : null,
         is_public: formData.isPublic,
         community_id: formData.communityId,
         owner_id: user.id,
-      });
+      } as never);
 
       if (error) throw error;
 
       // 퍼널 측정: '첫 책 등록' 단계. (타입엔 있었지만 실제 호출이 없어 미측정이던 이벤트)
-      track('book_upload_completed', { mode: formData.mode, has_photo: !!coverUrl });
+      track('book_upload_completed', { mode: primaryMode(formData), has_photo: !!coverUrl });
 
       toast.success('책이 등록되었습니다!');
 
@@ -206,7 +227,7 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
     }
   };
 
-  const isSell = formData.mode === 'sell';
+  const isSell = formData.allowSell;
 
   return (
     <>
@@ -278,11 +299,16 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
       />
 
       <ModeToggle
-        value={formData.mode}
-        onChange={(mode) => {
-          // 판매가 아니면 가격은 남길 이유가 없다 (S$0 같은 게 뜬다)
-          setFormData((prev) => ({ ...prev, mode, price: mode === 'sell' ? prev.price : '' }));
-          if (mode !== 'sell') setCoverMissing(false);
+        allowRent={formData.allowRent}
+        allowSell={formData.allowSell}
+        allowGive={formData.allowGive}
+        onToggle={(mode) => {
+          toggleMode(mode);
+          // 판매를 끄면 가격/사진경고 초기화
+          if (mode === 'sell' && formData.allowSell) {
+            setFormData((prev) => ({ ...prev, price: '' }));
+            setCoverMissing(false);
+          }
         }}
       />
 

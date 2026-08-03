@@ -235,9 +235,9 @@ export const Bookshelf = ({
 
 
   const applyStatusFilter = useCallback(<T extends Book>(books: T[]): T[] => {
-    if (statusFilter === 'available') return books.filter(b => b.status === 'available' && b.mode === 'rent');
-    if (statusFilter === 'giving') return books.filter(b => b.status === 'available' && b.mode === 'give');
-    if (statusFilter === 'selling') return books.filter(b => b.mode === 'sell');
+    if (statusFilter === 'available') return books.filter(b => b.status === 'available' && b.allowRent);
+    if (statusFilter === 'giving') return books.filter(b => b.status === 'available' && b.allowGive);
+    if (statusFilter === 'selling') return books.filter(b => b.allowSell);
     if (statusFilter === 'rented') return books.filter(b => b.status === 'rented');
     return books;
   }, [statusFilter]);

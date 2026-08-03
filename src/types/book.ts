@@ -7,7 +7,10 @@ export interface Book {
   cover: string;
   description: string | null;
   condition: 'S' | 'A' | 'B';
-  mode: BookMode;
+  mode: BookMode;               // 대표 모드(호환용). 실제 허용 방식은 아래 3개.
+  allowRent: boolean;
+  allowSell: boolean;
+  allowGive: boolean;
   price?: number | null;
   status: 'available' | 'rented' | 'sold';
   is_public: boolean;
@@ -42,6 +45,10 @@ export const transformDbBook = (row: any): Book => ({
   description: row.description,
   condition: row.condition as 'S' | 'A' | 'B',
   mode: row.mode as BookMode,
+  // 새 컬럼(allow_*)이 있으면 그걸, 없으면 대표 mode에서 유도(마이그 전 호환).
+  allowRent: row.allow_rent ?? (row.mode === 'rent'),
+  allowSell: row.allow_sell ?? (row.mode === 'sell'),
+  allowGive: row.allow_give ?? (row.mode === 'give'),
   price: row.price,
   status: row.status as 'available' | 'rented' | 'sold',
   is_public: row.is_public,

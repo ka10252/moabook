@@ -409,13 +409,22 @@ export const BookDetailWithActions = ({
                       {isInWaitlist ? '대기 취소' : `대기 신청${waitlistCount > 0 ? ` (${waitlistCount}명)` : ''}`}
                     </button>
                   ) : (
-                    <button
-                      className="btn-hip flex-1 flex items-center justify-center gap-2"
-                      onClick={() => tryRequest(book.owner_id, book.id, book.mode)}
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      {MODE_CTA[book.mode]}
-                    </button>
+                    <div className="flex-1 flex flex-col gap-2">
+                      {(([
+                        book.allowRent && 'rent',
+                        book.allowGive && 'give',
+                        book.allowSell && 'sell',
+                      ].filter(Boolean)) as BookMode[]).map((m, i) => (
+                        <button
+                          key={m}
+                          className={`flex items-center justify-center gap-2 ${i === 0 ? 'btn-hip' : 'py-3 px-4 rounded-full border border-primary/50 text-primary font-semibold hover:bg-primary/5 transition-colors'}`}
+                          onClick={() => tryRequest(book.owner_id, book.id, m)}
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          {MODE_CTA[m]}
+                        </button>
+                      ))}
+                    </div>
                   )}
 
                   {/* 관심(하트) — 내 책은 찜할 수 없으니 소유자에겐 숨긴다 */}
