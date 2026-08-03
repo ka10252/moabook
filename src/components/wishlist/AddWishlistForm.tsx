@@ -8,19 +8,47 @@ import { useToast } from '@/hooks/use-toast';
 import { WishlistBookSearch } from './WishlistBookSearch';
 
 interface AddWishlistFormProps {
-  onAdd: (title: string, author: string | null, notes: string | null) => Promise<{ error: Error | null }>;
+  onAdd: (title: string, author: string | null, notes: string | null, desiredMode: 'rent' | 'buy' | 'any') => Promise<{ error: Error | null }>;
   onCancel: () => void;
 }
 
 type FormMode = 'search' | 'manual' | 'confirm';
+type DesiredMode = 'rent' | 'buy' | 'any';
+
+const DESIRED_OPTIONS: { id: DesiredMode; label: string }[] = [
+  { id: 'rent', label: '빌리고 싶어요' },
+  { id: 'buy', label: '사고 싶어요' },
+  { id: 'any', label: '상관없어요' },
+];
 
 export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
   const [mode, setMode] = useState<FormMode>('search');
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [notes, setNotes] = useState('');
+  const [desiredMode, setDesiredMode] = useState<DesiredMode>('any');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
+  const DesiredSelect = () => (
+    <div>
+      <p className="text-[12px] font-medium text-muted-foreground mb-1.5">이 책을</p>
+      <div className="flex gap-2">
+        {DESIRED_OPTIONS.map((o) => (
+          <button
+            key={o.id}
+            type="button"
+            onClick={() => setDesiredMode(o.id)}
+            className={`flex-1 h-9 rounded-lg text-[13px] font-medium border transition-colors ${
+              desiredMode === o.id ? 'border-primary text-primary bg-primary/10' : 'border-border text-muted-foreground'
+            }`}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 
   const handleBookSelect = (selectedTitle: string, selectedAuthor: string | null) => {
     setTitle(selectedTitle);
@@ -40,7 +68,7 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
     }
 
     setIsSubmitting(true);
-    const { error } = await onAdd(title, author || null, notes || null);
+    const { error } = await onAdd(title, author || null, notes || null, desiredMode);
     setIsSubmitting(false);
 
     if (error) {
@@ -57,6 +85,7 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
       setTitle('');
       setAuthor('');
       setNotes('');
+      setDesiredMode('any');
       setMode('search');
       onCancel();
     }
@@ -149,6 +178,7 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
               maxLength={500}
               className="bg-muted border-0 min-h-[80px] resize-none"
             />
+            <DesiredSelect />
             <Button
               type="submit"
               disabled={isSubmitting || !title.trim()}
@@ -184,6 +214,7 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
               className="bg-muted border-0 min-h-[80px] resize-none"
               autoFocus
             />
+            <DesiredSelect />
             <Button
               type="submit"
               disabled={isSubmitting}

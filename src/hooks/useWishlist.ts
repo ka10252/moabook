@@ -8,6 +8,7 @@ export interface WishlistItem {
   title: string;
   author: string | null;
   notes: string | null;
+  desired_mode?: 'rent' | 'buy' | 'any';
   is_fulfilled: boolean;
   created_at: string;
   profile?: {
@@ -59,7 +60,12 @@ export const useWishlist = () => {
     fetchWishlists();
   }, [fetchWishlists]);
 
-  const addItem = async (title: string, author: string | null, notes: string | null) => {
+  const addItem = async (
+    title: string,
+    author: string | null,
+    notes: string | null,
+    desiredMode: 'rent' | 'buy' | 'any' = 'any',
+  ) => {
     if (!user) return { error: new Error('Must be logged in') };
 
     const { error } = await supabase.from('wishlists').insert({
@@ -67,7 +73,8 @@ export const useWishlist = () => {
       title: title.trim(),
       author: author?.trim() || null,
       notes: notes?.trim() || null,
-    });
+      desired_mode: desiredMode,
+    } as never);
 
     if (!error) {
       await fetchWishlists();

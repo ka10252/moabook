@@ -107,7 +107,15 @@ export const WishlistCard = ({
               )}
             </div>
             {item.author && <p className="text-[12px] text-faint mt-0.5 truncate">{item.author}</p>}
-            <p className="text-[12px] text-faint mt-1 truncate">{nickname}</p>
+            <div className="flex items-center gap-1.5 mt-1">
+              <p className="text-[12px] text-faint truncate">{nickname}</p>
+              {item.desired_mode === 'rent' && (
+                <span className="shrink-0 text-[11px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">대여 원함</span>
+              )}
+              {item.desired_mode === 'buy' && (
+                <span className="shrink-0 text-[11px] font-semibold text-amber-700 bg-amber-500/15 px-1.5 py-0.5 rounded-full">구입 원함</span>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
