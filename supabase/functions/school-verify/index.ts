@@ -55,27 +55,32 @@ serve(async (req) => {
       const { error: upErr } = await admin.from('school_email_codes').upsert({
         user_id: user.id, email: cleanEmail, code: genCode, expires_at: expires,
       });
-      if (upErr) throw upErr;
+      if (upErr) return json({ error: `db: ${upErr.message}` }, 500);
 
-      const smtp = new SMTPClient({
-        connection: {
-          hostname: Deno.env.get('SMTP_HOST')!,
-          port: 465,
-          tls: true,
-          auth: { username: Deno.env.get('SMTP_USER')!, password: Deno.env.get('SMTP_PASS')! },
-        },
-      });
-      await smtp.send({
-        from: Deno.env.get('SMTP_SENDER')!,
-        to: cleanEmail,
-        subject: `[MOA] 학교 인증 코드 ${genCode}`,
-        content: `MOA 학교 이메일 인증 코드는 ${genCode} 입니다. 10분 안에 입력해주세요.`,
-        html: `<div style="font-family:sans-serif;font-size:15px;line-height:1.6">
-          <p>MOA 학교 이메일 인증 코드입니다.</p>
-          <p style="font-size:28px;font-weight:700;letter-spacing:4px">${genCode}</p>
-          <p style="color:#666">10분 안에 앱에 입력해주세요. 본인이 요청하지 않았다면 무시하세요.</p></div>`,
-      });
-      await smtp.close();
+      // SMTP 발송은 별도 try로 감싸 원인을 구분해 돌려준다(엣지에서 raw SMTP가 막히는 환경 대비).
+      try {
+        const host = Deno.env.get('SMTP_HOST');
+        const smtpUser = Deno.env.get('SMTP_USER');
+        const smtpPass = Deno.env.get('SMTP_PASS');
+        const sender = Deno.env.get('SMTP_SENDER') || smtpUser;
+        if (!host || !smtpUser || !smtpPass) {
+          return json({ error: `smtp env missing (host:${!!host} user:${!!smtpUser} pass:${!!smtpPass})` }, 500);
+        }
+        const smtp = new SMTPClient({
+          connection: { hostname: host, port: 465, tls: true, auth: { username: smtpUser, password: smtpPass } },
+        });
+        await smtp.send({
+          from: sender!,
+          to: cleanEmail,
+          subject: `[MOA] 학교 인증 코드 ${genCode}`,
+          content: `MOA 학교 이메일 인증 코드는 ${genCode} 입니다. 10분 안에 입력해주세요.`,
+          html: `<div style="font-family:sans-serif;font-size:15px;line-height:1.6"><p>MOA 학교 이메일 인증 코드입니다.</p><p style="font-size:28px;font-weight:700;letter-spacing:4px">${genCode}</p><p style="color:#666">10분 안에 앱에 입력해주세요. 본인이 요청하지 않았다면 무시하세요.</p></div>`,
+        });
+        await smtp.close();
+      } catch (mailErr) {
+        const m = mailErr instanceof Error ? mailErr.message : JSON.stringify(mailErr);
+        return json({ error: `메일 발송 실패: ${m}` }, 500);
+      }
       return json({ ok: true });
     }
 
@@ -103,6 +108,6 @@ serve(async (req) => {
 
     return json({ error: 'unknown action' }, 400);
   } catch (e) {
-    return json({ error: e instanceof Error ? e.message : 'error' }, 500);
+    return json({ error: e instanceof Error ? e.message : `unexpected: ${JSON.stringify(e)}` }, 500);
   }
 });
