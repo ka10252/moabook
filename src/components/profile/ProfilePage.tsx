@@ -69,6 +69,7 @@ import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 import { Ban } from 'lucide-react';
 import { useBadges } from '@/hooks/useBadges';
 import { BadgeStamp, BADGE_META, BADGES, type BadgeId } from '@/components/BadgeStamp';
+import { PasswordRequirements } from '@/components/auth/PasswordRequirements';
 
 /** 탈퇴·문의 접수 채널. 자동 탈퇴가 실패해도 이 경로는 항상 열려 있어야 한다. */
 const SUPPORT_EMAIL = 'admin@moabook.app';
@@ -1169,6 +1170,8 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                 placeholder="새 비밀번호 입력"
                 className="h-12"
               />
+              {/* 가입 때와 동일하게 조건 충족 여부 표시 */}
+              {newPassword.length > 0 && <PasswordRequirements value={newPassword} />}
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm-password">비밀번호 확인</Label>
@@ -1180,6 +1183,9 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                 placeholder="새 비밀번호 확인"
                 className="h-12"
               />
+              {confirmPassword.length > 0 && newPassword !== confirmPassword && (
+                <p className="text-[12px] text-destructive">비밀번호가 일치하지 않아요</p>
+              )}
             </div>
           </div>
           <AlertDialogFooter>
