@@ -17,7 +17,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { useBackClose } from '@/hooks/useBackClose';
 import { supabase } from '@/integrations/supabase/client';
-import { ChevronDown, Loader2, BookOpen, Heart, History, Search, X, MapPin, SlidersHorizontal } from 'lucide-react';
+import { ChevronDown, Loader2, BookOpen, Heart, History, Search, X, MapPin, SlidersHorizontal, LayoutGrid, GalleryVerticalEnd } from 'lucide-react';
+import { BookCover } from './BookCover';
 
 import { toast } from 'sonner';
 import {
@@ -125,6 +126,17 @@ export const Bookshelf = ({
   // Dynamic booksPerShelf based on container width
   const bookcaseRef = useRef<HTMLDivElement>(null);
   const [booksPerShelf, setBooksPerShelf] = useState(4);
+  // 책등(spine) ↔ 표지(cover) 보기 모드
+  const [viewMode, setViewMode] = useState<'spine' | 'cover'>(() => {
+    try { return (localStorage.getItem('moa_shelf_view') as 'spine' | 'cover') || 'spine'; } catch { return 'spine'; }
+  });
+  const toggleViewMode = () => {
+    setViewMode((prev) => {
+      const next = prev === 'spine' ? 'cover' : 'spine';
+      try { localStorage.setItem('moa_shelf_view', next); } catch { /* ignore */ }
+      return next;
+    });
+  };
 
   const calcBooksPerShelf = useCallback((contentWidth: number) => {
     // contentWidth = content-box width of the outer scroll container (inside px-6 padding)
@@ -514,6 +526,18 @@ export const Bookshelf = ({
             ))}
           </div>
 
+          {/* 책등 ↔ 표지 보기 전환 */}
+          <button
+            onClick={toggleViewMode}
+            className="w-9 h-9 shrink-0 rounded-full border border-border text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"
+            aria-label={viewMode === 'spine' ? '표지로 보기' : '책등으로 보기'}
+            title={viewMode === 'spine' ? '표지로 보기' : '책등으로 보기'}
+          >
+            {viewMode === 'spine'
+              ? <LayoutGrid className="w-4 h-4" />
+              : <GalleryVerticalEnd className="w-4 h-4" />}
+          </button>
+
           {/* 정밀 필터 (지역·정렬) */}
           <button
             onClick={() => setShowFilterSheet(true)}
@@ -583,7 +607,27 @@ export const Bookshelf = ({
               >
                 {/* shelf-vignette: 가상 도서관 몰입감 — 서가 가장자리를 은은히 어둡게 */}
                 {/* data-onboarding: 온보딩 스포트라이트가 실제 서가를 조준한다 */}
-                <div data-onboarding="shelf" className="relative shelf-vignette space-y-3">
+                <div data-onboarding="shelf" className={viewMode === 'cover' ? 'relative' : 'relative shelf-vignette space-y-3'}>
+                  {viewMode === 'cover' ? (
+                    shelfGroups.map((group, idx) => (
+                      <div key={idx} className="mb-5">
+                        {group.label && <p className="font-display italic text-[16px] text-foreground mb-2">{group.label}</p>}
+                        <div className="grid grid-cols-3 gap-x-3 gap-y-5">
+                          {group.books.filter((b) => !b._isDummy).map((book) => (
+                            <BookCover
+                              key={book.id}
+                              book={book}
+                              onClick={() => { trackBrowse(); track('book_viewed', { book_id: book.id, from: 'shelf' }); setSelectedBook(book); }}
+                              isRented={book.status === 'rented'}
+                              isLent={!book._isBorrowed && lentBookIds.has(book.id)}
+                              isBorrowed={!!book._isBorrowed}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <>
                   {shelfGroups.map((group, idx) => (
                     <EditorialShelf key={idx} label={group.label || undefined}>
                       {group.books.map(book => {
@@ -627,6 +671,8 @@ export const Bookshelf = ({
                       <div className="h-full" />
                     </EditorialShelf>
                   ))}
+                    </>
+                  )}
                 </div>
 
                 {/* Dummy books banner */}
