@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MessageCircle, Heart, Edit2, Trash2, Loader2, Clock, Flag } from 'lucide-react';
+import { X, MessageCircle, Heart, Edit2, Trash2, Loader2, Clock, Flag, BookOpen } from 'lucide-react';
 import { Book } from '@/types/book';
 import { BookMode, MODE_EYEBROW, MODE_CTA, availabilityLabel } from '@/lib/bookMode';
 import { toast } from 'sonner';
