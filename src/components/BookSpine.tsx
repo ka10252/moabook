@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { differenceInCalendarDays } from 'date-fns';
 import { Book } from '@/types/book';
+import { cleanBookTitle } from '@/lib/bookTitle';
 
 interface BookSpineProps {
   book: Book;
@@ -95,7 +96,9 @@ export const BookSpine = ({
 }: BookSpineProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const colorClass = spineColors[(book.spineColor - 1) % spineColors.length];
-  const heightPct = useMemo(() => heightFromTitle(book.title), [book.title]);
+  // 표시용 제목 — (특별판)·[양장본] 등 판형 수식어 제거. 원본은 tooltip에 유지.
+  const displayTitle = useMemo(() => cleanBookTitle(book.title), [book.title]);
+  const heightPct = useMemo(() => heightFromTitle(displayTitle), [displayTitle]);
 
   const hasBookmark = (isLent && !!borrowerNickname) || (isBorrowed && !!lenderNickname);
   const chipName = isLent ? borrowerNickname : lenderNickname;
@@ -103,7 +106,7 @@ export const BookSpine = ({
 
   const r = isLent ? RIBBON.lent : RIBBON.borrowed;
   const unavailable = isUnavailable(book, isLent, isBorrowed);
-  const titleParts = useMemo(() => splitForVertical(book.title), [book.title]);
+  const titleParts = useMemo(() => splitForVertical(displayTitle), [displayTitle]);
 
   return (
     <motion.div
@@ -139,18 +142,20 @@ export const BookSpine = ({
       )}
 
       {/* ── 책등 제목 — 세로쓰기 ───────────────────────────────
-          긴 제목은 잘리지 않고 말줄임(…)으로 끝난다.
-          세로쓰기에서는 인라인 축이 세로라, text-overflow가 아래쪽 끝에 적용된다. */}
+          긴 제목은 최대 2줄(세로 2열)까지 흐르고, 넘치면 잘린다.
+          세로쓰기: 인라인축=세로(글자 위→아래), 블록축=가로(열이 오른→왼).
+          maxHeight로 한 열을 채우면 다음 열로 넘기고, maxWidth로 2열까지만 허용. */}
       <span
         title={book.title}
-        className="relative z-[3] mt-4 text-[14px] whitespace-nowrap overflow-hidden text-spine-text"
+        className="relative z-[3] mt-4 text-[14px] overflow-hidden text-spine-text"
         style={{
           fontFamily: "'Noto Sans KR', sans-serif",
           fontWeight: 500,
           writingMode: 'vertical-rl',
-          maxHeight: '90%',
-          textOverflow: 'ellipsis',
+          maxHeight: '88%',
+          maxWidth: '2.4em',   // 최대 2열
           letterSpacing: '0.02em',
+          lineHeight: 1.15,
           opacity: isLent ? 0.5 : 1,
         }}
       >
