@@ -613,8 +613,8 @@ export const Bookshelf = ({
                   className={
                     viewMode === 'cover'
                       ? 'relative'
-                      // 하나의 통짜 책꽂이 — 칸을 틈 없이 붙이고 모서리만 은은히 둥글게(외곽선 없음)
-                      : 'relative shelf-vignette overflow-hidden rounded-xl'
+                      // 하나의 통짜 책꽂이 — 칸을 틈 없이 붙이고 모서리만 살짝 둥글게(외곽선 없음)
+                      : 'relative shelf-vignette overflow-hidden rounded-lg'
                   }
                 >
                   {viewMode === 'cover' ? (
