@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface BookSearchResult {
@@ -24,6 +24,9 @@ export const useBookSearch = () => {
   const [results, setResults] = useState<BookSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 요청 순번 — 결과를 '도착하는 대로' 여러 번 setResults 할 때, 늦게 온 옛 검색이
+  // 최신 검색 결과를 덮어쓰지 않게 막는다.
+  const reqIdRef = useRef(0);
 
   // Detect if query contains Korean characters
   const containsKorean = (text: string) => /[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]/.test(text);
@@ -100,37 +103,50 @@ export const useBookSearch = () => {
       return;
     }
 
+    const myReq = ++reqIdRef.current;
+    const isLatest = () => reqIdRef.current === myReq;
     setIsSearching(true);
     setError(null);
 
+    // 도착하는 대로 화면에 반영 — 소스별로 먼저 온 결과를 즉시 보여주고, 뒤이어 합쳐 채운다.
+    // (기존엔 두 소스를 Promise.all로 다 기다린 뒤 한 번에 보여줘 느리게 느껴졌다.)
+    const merge = (a: BookSearchResult[], b: BookSearchResult[]) => {
+      const seen = new Set(a.map((x) => x.title.toLowerCase()));
+      return [...a, ...b.filter((x) => !seen.has(x.title.toLowerCase()))].slice(0, 10);
+    };
+
     try {
-      let books: BookSearchResult[];
-      
-      // 한글 검색 → 알라딘 우선, 결과 없으면 Google Books로 보완
       if (containsKorean(query)) {
-        books = await searchAladin(query).catch(() => []);
-        if (books.length === 0) {
-          books = await searchGoogleBooks(query).catch(() => []);
+        // 한글 → 알라딘 우선(빠름), 없으면 Google로 보완
+        const aladin = await searchAladin(query).catch(() => []);
+        if (!isLatest()) return;
+        if (aladin.length > 0) {
+          setResults(aladin.slice(0, 10));
+        } else {
+          const google = await searchGoogleBooks(query).catch(() => []);
+          if (!isLatest()) return;
+          setResults(google.slice(0, 10));
         }
       } else {
-        // For non-Korean, search both and combine
-        const [openLibResults, googleResults] = await Promise.all([
-          searchOpenLibrary(query).catch(() => []),
-          searchGoogleBooks(query).catch(() => []),
+        // 영문 → 먼저 온 소스를 바로 표시하고, 나머지가 오면 합쳐서 갱신
+        let shown: BookSearchResult[] = [];
+        await Promise.all([
+          searchOpenLibrary(query).catch(() => []).then((r) => {
+            if (!isLatest()) return;
+            shown = merge(r, shown);
+            setResults(shown);
+          }),
+          searchGoogleBooks(query).catch(() => []).then((r) => {
+            if (!isLatest()) return;
+            shown = merge(shown, r);
+            setResults(shown);
+          }),
         ]);
-        
-        // Prioritize Open Library results but add unique Google results
-        const seenTitles = new Set(openLibResults.map(b => b.title.toLowerCase()));
-        const uniqueGoogleResults = googleResults.filter(b => !seenTitles.has(b.title.toLowerCase()));
-        books = [...openLibResults, ...uniqueGoogleResults].slice(0, 10);
       }
-
-      setResults(books);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Search failed');
-      setResults([]);
+      if (isLatest()) { setError(err instanceof Error ? err.message : 'Search failed'); setResults([]); }
     } finally {
-      setIsSearching(false);
+      if (isLatest()) setIsSearching(false);
     }
   }, []);
 

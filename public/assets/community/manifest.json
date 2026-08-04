@@ -149,30 +149,6 @@
       "rowBottom": 7
     },
     {
-      "name": "low_table",
-      "col": 6,
-      "rowBottom": 8,
-      "dx": 6
-    },
-    {
-      "name": "cushion_a",
-      "col": 6,
-      "rowBottom": 9,
-      "dx": 4
-    },
-    {
-      "name": "cushion_b",
-      "col": 8,
-      "rowBottom": 8,
-      "dx": 2
-    },
-    {
-      "name": "cushion_c",
-      "col": 4,
-      "rowBottom": 9,
-      "dx": 6
-    },
-    {
       "name": "bench",
       "col": 9,
       "rowBottom": 8
@@ -196,11 +172,6 @@
       "name": "plant_b",
       "col": 13,
       "rowBottom": 6
-    },
-    {
-      "name": "snack_table",
-      "col": 12,
-      "rowBottom": 9
     }
   ]
 }

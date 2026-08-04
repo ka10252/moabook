@@ -24,12 +24,15 @@ export const ReadingBookPicker = ({ isOpen, onClose, onSaved }: Props) => {
   const [query, setQuery] = useState('');
   const [saving, setSaving] = useState(false);
   const [myBooks, setMyBooks] = useState<ReadingBook[]>([]);
+  const [current, setCurrent] = useState<ReadingBook | null>(null);
 
-  // 기본 옵션: 내가 소유한 책 + 대여 중인 책 (검색 전에 바로 고를 수 있게)
+  // 기본 옵션: 내가 소유한 책 + 대여 중인 책 (검색 전에 바로 고를 수 있게) + 현재 선택 표시
   useEffect(() => {
     if (!isOpen || !user) return;
     let cancelled = false;
     (async () => {
+      const { data: prof } = await supabase.from('profiles').select('reading_book').eq('id', user.id).maybeSingle();
+      if (!cancelled) setCurrent((prof as { reading_book?: ReadingBook | null } | null)?.reading_book ?? null);
       const [owned, borrowed] = await Promise.all([
         supabase.from('books').select('id, title, author, cover_url').eq('owner_id', user.id),
         supabase.from('transactions').select('book:books(id, title, author, cover_url)').eq('borrower_id', user.id).eq('status', 'active'),
@@ -49,6 +52,8 @@ export const ReadingBookPicker = ({ isOpen, onClose, onSaved }: Props) => {
   if (!isOpen) return null;
 
   const searching = query.trim().length >= 2;
+  const isCur = (b: ReadingBook) =>
+    !!current && ((b.id != null && current.id === b.id) || (!!current.title && current.title === b.title));
 
   const onQuery = (v: string) => {
     setQuery(v);
@@ -96,7 +101,22 @@ export const ReadingBookPicker = ({ isOpen, onClose, onSaved }: Props) => {
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted"><X className="w-5 h-5 text-muted-foreground" /></button>
         </div>
-        <p className="text-[12px] text-muted-foreground mb-3">캐릭터 머리 위 말풍선에 표지로 보여요.</p>
+        <p className="text-[12px] text-muted-foreground mb-2">캐릭터 머리 위 말풍선에 표지로 보여요.</p>
+
+        {/* 지금 선택된 책 */}
+        <div className="flex items-center gap-2 mb-3 px-2.5 py-2 rounded-xl bg-primary/[0.07] border border-primary/25">
+          {current ? (
+            current.coverUrl
+              ? <img src={current.coverUrl} alt="" className="w-7 h-10 object-cover rounded shrink-0 bg-muted" />
+              : <div className="w-7 h-10 rounded bg-muted shrink-0" />
+          ) : (
+            <span className="w-7 h-10 rounded bg-muted shrink-0 flex items-center justify-center"><BookOpen className="w-3.5 h-3.5 text-muted-foreground" /></span>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-bold text-primary">지금 읽는 책</p>
+            <p className="text-[13px] font-medium text-foreground truncate">{current ? current.title : '아직 선택 안 함'}</p>
+          </div>
+        </div>
 
         <div className="relative mb-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -127,15 +147,16 @@ export const ReadingBookPicker = ({ isOpen, onClose, onSaved }: Props) => {
                   key={b.id}
                   onClick={() => save(b)}
                   disabled={saving}
-                  className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-muted/60 text-left"
+                  className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-left ${isCur(b) ? 'bg-primary/10' : 'hover:bg-muted/60'}`}
                 >
                   {b.coverUrl
                     ? <img src={b.coverUrl} alt="" loading="lazy" className="w-7 h-10 object-cover rounded shrink-0 bg-muted" />
                     : <div className="w-7 h-10 rounded bg-muted shrink-0" />}
                   <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-medium text-foreground truncate">{b.title}</p>
+                    <p className={`text-[13px] font-medium truncate ${isCur(b) ? 'text-primary' : 'text-foreground'}`}>{b.title}</p>
                     {b.author && <p className="text-[12px] text-muted-foreground truncate">{b.author}</p>}
                   </div>
+                  {isCur(b) && <Check className="w-4 h-4 text-primary shrink-0" />}
                 </button>
               ))}
             </>

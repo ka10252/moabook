@@ -150,6 +150,11 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
           setIsLoading(false);
           return;
         }
+        if (!region) {
+          toast.error('사는 지역을 선택해주세요');
+          setIsLoading(false);
+          return;
+        }
         const validation = signUpSchema.safeParse({ email, password, nickname });
         if (!validation.success) {
           toast.error(validation.error.errors[0].message);
@@ -348,18 +353,18 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
                   </div>
                 </div>
 
-                {/* 권역 — 옵셔널. 거주 중일 때만 노출. 하이퍼로컬 매칭 참고용. */}
+                {/* 권역 — 필수. 거주 중일 때만 노출. 하이퍼로컬 매칭·필터용(정확 주소 대신 권역). */}
                 {residence === 'yes' && (
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>사는 지역 <span className="text-muted-foreground/60">(선택)</span></span>
+                      <span>사는 지역 <span className="text-primary">*</span></span>
                     </div>
                     <select
                       value={region}
                       onChange={(e) => setRegion(e.target.value)}
                       className="w-full h-12 px-4 rounded-xl bg-muted/50 border-0 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-primary outline-none"
                     >
-                      <option value="">선택 안 함</option>
+                      <option value="" disabled>지역을 선택하세요</option>
                       {SG_REGIONS.map((r) => (
                         <option key={r} value={r}>{r}</option>
                       ))}

@@ -271,18 +271,19 @@ export default function VirtualSpacePage() {
         {title}
       </div>
 
-      {/* 캐릭터는 상단 오른쪽, 읽는 책은 그 아래로 — 룸 이름(가운데)과 겹치지 않게 세로 배치 */}
+      {/* 캐릭터는 상단 오른쪽, 읽는 책은 그 아래로 — 룸 이름(가운데)과 겹치지 않게 세로 배치.
+          두 버튼 폭을 min-w로 맞춰 나란히 정렬되게 한다. */}
       <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-2">
         <button
           onClick={() => setEditorOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 shadow-md text-sm font-medium text-gray-800 hover:bg-white"
+          className="flex items-center justify-center gap-1.5 min-w-[104px] px-3 py-2 rounded-xl bg-white/90 shadow-md text-sm font-medium text-gray-800 hover:bg-white"
         >
           <UserRound className="w-4 h-4" /> 캐릭터
         </button>
         {/* 읽는 책 — 캐릭터 설정과 분리된 독립 진입점 */}
         <button
           onClick={() => setReadingPickerOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 shadow-md text-sm font-medium text-gray-800 hover:bg-white"
+          className="flex items-center justify-center gap-1.5 min-w-[104px] px-3 py-2 rounded-xl bg-white/90 shadow-md text-sm font-medium text-gray-800 hover:bg-white"
         >
           <BookOpen className="w-4 h-4" /> 읽는 책
         </button>

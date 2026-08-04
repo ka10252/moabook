@@ -187,13 +187,25 @@ export const BookDetailWithActions = ({
   const isOwner = currentUserId === book.owner_id;
   const hasValidCover = book.cover && book.cover.length > 0;
 
-  // 상태 줄에 쓸 한글 라벨. 대여중 / 대여 가능(+대기) / 나눔·판매 라벨.
+  // 이 책이 허용하는 거래 방식(중복 가능). allow_* 우선, 없으면 대표 mode.
+  const enabledModes: BookMode[] = ([
+    book.allowRent ? 'rent' : null,
+    book.allowGive ? 'give' : null,
+    book.allowSell ? 'sell' : null,
+  ].filter(Boolean) as BookMode[]);
+  const modesForLabel: BookMode[] = enabledModes.length ? enabledModes : [book.mode];
+
+  // 상태 줄 라벨 — 여러 방식이면 "대여 가능 · 무료 나눔"처럼 모두 표기.
   const statusText =
     book.status === 'rented'
       ? '대여중'
-      : book.mode === 'rent'
-      ? `대여 가능${waitlistCount > 0 ? ` · ${waitlistCount}명 대기` : ''}`
-      : availabilityLabel(book.mode, book.price);
+      : modesForLabel
+          .map((m) =>
+            m === 'rent'
+              ? `대여 가능${waitlistCount > 0 ? ` · ${waitlistCount}명 대기` : ''}`
+              : availabilityLabel(m, book.price),
+          )
+          .join(' · ');
 
   // 책 상태(S/A/B)를 뜻과 3단계 눈금으로. "상태 A"만 보면 뜻을 모른다.
   const CONDITION_META = {
@@ -283,7 +295,7 @@ export const BookDetailWithActions = ({
                             : 'bg-muted-foreground'
                         )}
                       />
-                      <span className="eyebrow">{MODE_EYEBROW[book.mode]}</span>
+                      <span className="eyebrow">{modesForLabel.map((m) => MODE_EYEBROW[m]).join(' · ')}</span>
                       <span
                         className={cn(
                           'text-[13px] font-semibold',
@@ -441,11 +453,7 @@ export const BookDetailWithActions = ({
                     </button>
                   ) : (
                     <div className="flex-1 flex flex-col gap-2">
-                      {(([
-                        book.allowRent && 'rent',
-                        book.allowGive && 'give',
-                        book.allowSell && 'sell',
-                      ].filter(Boolean)) as BookMode[]).map((m, i) => (
+                      {enabledModes.map((m, i) => (
                         <button
                           key={m}
                           className={`flex items-center justify-center gap-2 ${i === 0 ? 'btn-hip' : 'py-3 px-4 rounded-full border border-primary/50 text-primary font-semibold hover:bg-primary/5 transition-colors'}`}
