@@ -141,8 +141,8 @@ export const Bookshelf = ({
   const calcBooksPerShelf = useCallback((contentWidth: number) => {
     // contentWidth = content-box width of the outer scroll container (inside px-6 padding)
     // On wide screens clamp to 520px so the shelf doesn't stretch beyond a readable width
-    // 서가 프레임 border-2(4px) + 칸 뒷판 px-3(24px) = 좌우 28px → 예산에서 뺀다.
-    const effectiveWidth = Math.min(contentWidth, 520) - 28;
+    // 칸 뒷판 px-3(24px) 좌우 패딩 → 예산에서 뺀다.
+    const effectiveWidth = Math.min(contentWidth, 520) - 24;
     // 책등 max-w 52px + gap 6px = 슬롯당 58px
     const n = Math.max(2, Math.floor((effectiveWidth + 6) / 58));
     setBooksPerShelf(n);
@@ -613,8 +613,8 @@ export const Bookshelf = ({
                   className={
                     viewMode === 'cover'
                       ? 'relative'
-                      // 하나의 통짜 책꽂이 — 칸을 틈 없이 붙이고, 우드 프레임으로 감싼다(모서리 각짐)
-                      : 'relative shelf-vignette overflow-hidden border-2 border-[#CBAF84] dark:border-[#463a24]'
+                      // 하나의 통짜 책꽂이 — 칸을 틈 없이 붙이고 모서리만 은은히 둥글게(외곽선 없음)
+                      : 'relative shelf-vignette overflow-hidden rounded-xl'
                   }
                 >
                   {viewMode === 'cover' ? (
