@@ -79,7 +79,10 @@ export const BookDetailWithActions = ({
    */
   const tryRequest = (ownerId: string, bookId: string, mode: BookMode) => {
     if (!requireAuth()) return;
-    if ((mode === 'rent' || mode === 'give') && myBookCount === 0 && (myBorrowCount ?? 0) >= 1) {
+    // 첫 요청은 무료, 그 뒤부터 책 0권이면 등록 유도.
+    // "이미 해봤는지"는 과거 요청 메시지(hasRequestedBefore) 또는 승인된 대여(myBorrowCount)로 판단.
+    const usedFreeBorrow = hasRequestedBefore || (myBorrowCount ?? 0) >= 1;
+    if ((mode === 'rent' || mode === 'give') && myBookCount === 0 && usedFreeBorrow) {
       track('borrow_gate_shown', { book_id: bookId, mode });
       setShowBorrowGate(true);
       return;
@@ -94,6 +97,9 @@ export const BookDetailWithActions = ({
   const [waitlistCount, setWaitlistCount] = useState(0);
   const [waitlistLoading, setWaitlistLoading] = useState(false);
   const [siblingBooks, setSiblingBooks] = useState<SiblingBook[]>([]);
+  // 내가 이미 대여/나눔 요청을 보낸 적 있는지 — "첫 요청은 무료" 게이트 판단용.
+  // 요청은 거래(transactions)가 아니라 메시지로 남으므로 메시지에서 센다.
+  const [hasRequestedBefore, setHasRequestedBefore] = useState(false);
 
   useEffect(() => {
     if (!book) return;
@@ -139,6 +145,26 @@ export const BookDetailWithActions = ({
     };
     load();
   }, [book?.id, book?.status, currentUserId]);
+
+  // 게이트 판단: 책 0권인 사람이 상세를 열면, 과거 대여/나눔 요청 이력이 있는지 확인.
+  // (책이 1권 이상이면 게이트가 아예 없으니 조회하지 않는다.)
+  useEffect(() => {
+    if (!book || !currentUserId || myBookCount !== 0) { setHasRequestedBefore(false); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('messages')
+        .select('content')
+        .eq('sender_id', currentUserId)
+        .ilike('content', '%요청]%')
+        .limit(20);
+      if (cancelled) return;
+      const requested = (data ?? []).some((m: { content: string }) =>
+        /^\[(대여|나눔) 요청\]/.test(m.content ?? ''));
+      setHasRequestedBefore(requested);
+    })();
+    return () => { cancelled = true; };
+  }, [book?.id, currentUserId, myBookCount]);
 
   const handleWaitlist = async () => {
     if (!book || !currentUserId) return;
@@ -204,6 +230,7 @@ export const BookDetailWithActions = ({
       <AnimatePresence>
         {book && (
           <motion.div
+            data-ptr-ignore
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

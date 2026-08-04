@@ -111,9 +111,11 @@ export const useTransactions = () => {
 
     if (error) throw error;
 
-    // Update book status if needed
+    // 거래가 완료(반납)되거나 취소되면 책을 다시 '대여 가능'으로 되돌린다.
+    // (예전엔 completed만 처리해, 대여를 '취소'하면 book.status가 'rented'로 남아
+    //  얽힌 거래가 없는데도 책이 '대여중'으로 굳는 버그가 있었다.)
     const transaction = transactions.find(t => t.id === transactionId);
-    if (transaction && updates.status === 'completed') {
+    if (transaction && (updates.status === 'completed' || updates.status === 'cancelled')) {
       await supabase
         .from('books')
         .update({ status: 'available' })

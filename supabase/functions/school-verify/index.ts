@@ -96,6 +96,16 @@ serve(async (req) => {
       if (new Date(row.expires_at).getTime() < Date.now()) {
         return json({ error: '코드가 만료됐어요. 다시 받아주세요.' }, 400);
       }
+      // 같은 학교 이메일은 한 계정만 인증 가능(계정 삭제 시 값이 사라져 자동 리셋).
+      const { data: taken } = await admin
+        .from('profiles')
+        .select('id')
+        .eq('school_email', cleanEmail)
+        .neq('id', user.id)
+        .maybeSingle();
+      if (taken) {
+        return json({ error: '이미 다른 계정에서 인증된 학교 이메일이에요.' }, 409);
+      }
       const { error: updErr } = await admin.from('profiles').update({
         school: schoolName,
         school_email: cleanEmail,

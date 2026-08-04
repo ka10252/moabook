@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { track } from '@/lib/analytics';
-import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EditorialShelf } from './EditorialShelf';
 import { BookSpine } from './BookSpine';
@@ -176,9 +175,8 @@ export const Bookshelf = ({
   const { myCommunities } = useCommunities();
   const { books: allBooks, loading, error: booksError, deleteBook, updateBook, refresh } = useBooks({});
 
-  const { containerRef: pullRef, refreshing: pullRefreshing, pullDistance } = usePullToRefresh({
-    onRefresh: async () => { await refresh(); },
-  });
+  // 당겨서 새로고침은 이제 앱 전역(window 스크롤 기준) <PullToRefresh/>가 담당한다.
+  // (예전의 컨테이너 scrollTop 기반 PtR은 문서 레벨 스크롤 구조에서 오작동했다.)
   const {
     loading: txLoading,
     getLentBookIds,
@@ -563,19 +561,9 @@ export const Bookshelf = ({
       <div
         ref={(el) => {
           (bookcaseRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
-          (pullRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
         }}
         className="flex-1 px-6 py-4"
       >
-        {/* Pull-to-refresh indicator */}
-        {(pullDistance > 0 || pullRefreshing) && (
-          <div
-            className="flex items-center justify-center text-muted-foreground"
-            style={{ height: pullDistance || 44, transition: pullRefreshing ? 'none' : 'height 0.2s' }}
-          >
-            <Loader2 className={`w-5 h-5 ${pullRefreshing ? 'animate-spin text-primary' : 'opacity-50'}`} />
-          </div>
-        )}
         {booksError ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-6">
             <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center">

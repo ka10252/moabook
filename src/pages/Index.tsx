@@ -4,6 +4,7 @@ import { track, trackSessionStart } from '@/lib/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bookshelf } from '@/components/Bookshelf';
 import { BottomNav } from '@/components/BottomNav';
+import { PullToRefresh } from '@/components/PullToRefresh';
 
 // 유저는 한 번에 탭 하나만 본다. 첫 화면(책장)만 즉시 로드하고
 // 나머지 탭·오버레이는 실제로 열 때 내려받는다.
@@ -352,6 +353,8 @@ const Index = () => {
         }}
       />
 
+      <PullToRefresh enabled={!showChatModal} />
+
       <main className="flex-1 pt-14 pb-20">
         <AnimatePresence mode="wait">
           <motion.div
@@ -384,7 +387,7 @@ const Index = () => {
 
       {/* Chat overlay — fixed so it's immune to main's pb-20 */}
       {showChatModal && (
-        <div className="fixed inset-x-0 top-14 bottom-20 z-[45] bg-background overflow-hidden">
+        <div data-ptr-ignore className="fixed inset-x-0 top-14 bottom-20 z-[45] bg-background overflow-hidden">
           <div className="h-full max-w-[520px] mx-auto w-full">
             <Suspense fallback={<TabFallback />}>
               <ChatModal

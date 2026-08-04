@@ -175,7 +175,7 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
               className="bg-muted border-0"
             />
             <Textarea
-              placeholder="이웃에게 한마디 — 왜 찾고 있는지, 어떤 판본이면 좋은지 (선택)"
+              placeholder="요청사항 한마디 (선택)"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               maxLength={500}
@@ -210,7 +210,7 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
               {author && <p className="text-sm text-muted-foreground">{author}</p>}
             </div>
             <Textarea
-              placeholder="이웃에게 한마디 — 왜 찾고 있는지, 어떤 판본이면 좋은지 (선택)"
+              placeholder="요청사항 한마디 (선택)"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               maxLength={500}
