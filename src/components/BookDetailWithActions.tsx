@@ -297,7 +297,10 @@ export const BookDetailWithActions = ({
                             : 'bg-muted-foreground'
                         )}
                       />
-                      <span className="eyebrow">{modesForLabel.map((m) => MODE_EYEBROW[m]).join(' · ')}</span>
+                      {/* 여러 방식이면 기본 0.3em 자간이 너무 넓어 줄바꿈을 유발 → 자간을 좁혀 한 줄에 담기게 */}
+                      <span className="eyebrow" style={modesForLabel.length > 1 ? { letterSpacing: '0.08em' } : undefined}>
+                        {modesForLabel.map((m) => MODE_EYEBROW[m]).join(' · ')}
+                      </span>
                       <span
                         className={cn(
                           'text-[13px] font-semibold',

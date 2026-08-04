@@ -256,7 +256,6 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
             결과가 없으면 입력한 텍스트가 그대로 제목이 된다. */}
         <div className="space-y-2">
           <p className="text-[12px] font-bold tracking-wide text-muted-foreground">책 제목</p>
-          <p className="text-[13px] text-primary font-medium">책 제목을 입력하면 정보가 자동으로 채워져요</p>
           <BookTitleSearch
             title={formData.title}
             onTitleChange={handleTitleChange}
