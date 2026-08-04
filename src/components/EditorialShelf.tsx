@@ -7,16 +7,16 @@ interface EditorialShelfProps {
 }
 
 /**
- * 라이트 내추럴 우드 서가 (시안 F).
+ * 라이트 내추럴 우드 서가의 "한 칸"(시안 F).
  *
- * 밝은 자작나무 톤의 뒷판(stage) 위에 책이 서고, 아래에 나뭇결 선반(plank)이
- * 받쳐 준다. 배경 크림톤과 구분되는 "책꽂이 한 칸" 인상을 주되, 무겁지 않게.
- * 라이트/다크 테마 모두 대응한다.
+ * 모서리·테두리는 이 컴포넌트가 아니라 바깥 서가 프레임(Bookshelf)이 담당한다.
+ * 여기서는 뒷판(stage) + 나뭇결 선반(plank)만 그려서, 칸을 여러 개 붙이면
+ * 하나의 통짜 책꽂이처럼 이어지게 한다. 라이트/다크 테마 모두 대응.
  */
 export const EditorialShelf = ({ children, label }: EditorialShelfProps) => (
   <div>
-    {/* 뒷판 — 옅은 우드 그라데이션 + 얇은 테두리, 위쪽만 둥글게 */}
-    <div className="rounded-t-xl border border-b-0 px-3 pt-2.5 bg-gradient-to-b from-[#EFE3CE] to-[#F6EEDE] border-[#E7D9BF] dark:from-[#2b2418] dark:to-[#332a1b] dark:border-[#3d3320]">
+    {/* 뒷판 — 옅은 우드 그라데이션 (모서리 없음) */}
+    <div className="px-3 pt-2.5 bg-gradient-to-b from-[#EFE3CE] to-[#F6EEDE] dark:from-[#2b2418] dark:to-[#332a1b]">
       {label && (
         <p className="font-display italic text-[16px] text-foreground mb-0.5">{label}</p>
       )}
@@ -25,9 +25,9 @@ export const EditorialShelf = ({ children, label }: EditorialShelfProps) => (
       <div className="flex items-end gap-1.5 h-[184px] pt-6">{children}</div>
     </div>
 
-    {/* 나뭇결 선반 */}
+    {/* 나뭇결 선반 — 칸과 칸을 나누는 가로 판. 아래로 은은한 그림자를 드리운다 */}
     <div
-      className="h-[13px] rounded-b-lg bg-gradient-to-b from-[#E6CFA3] to-[#CBAF84]"
+      className="h-[13px] bg-gradient-to-b from-[#E6CFA3] to-[#CBAF84]"
       style={{ boxShadow: '0 6px 9px -6px rgba(120, 95, 55, 0.4)' }}
     />
   </div>
