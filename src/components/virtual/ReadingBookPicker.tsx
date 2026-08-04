@@ -116,6 +116,16 @@ export const ReadingBookPicker = ({ isOpen, onClose, onSaved }: Props) => {
             <p className="text-[11px] font-bold text-primary">지금 읽는 책</p>
             <p className="text-[13px] font-medium text-foreground truncate">{current ? current.title : '아직 선택 안 함'}</p>
           </div>
+          {current && (
+            <button
+              onClick={() => save(null)}
+              disabled={saving}
+              aria-label="읽는 책 지우기"
+              className="shrink-0 p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         <div className="relative mb-2">
@@ -130,14 +140,6 @@ export const ReadingBookPicker = ({ isOpen, onClose, onSaved }: Props) => {
         </div>
 
         <div className="flex-1 overflow-y-auto moa-thin-scroll">
-          <button
-            onClick={() => save(null)}
-            disabled={saving}
-            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-muted/60 text-left text-[13px] text-muted-foreground"
-          >
-            <span className="w-7 h-10 rounded bg-muted shrink-0 flex items-center justify-center"><X className="w-3.5 h-3.5" /></span>
-            읽는 책 없음(지우기)
-          </button>
           {/* 검색 전: 내 책 + 대여 중인 책을 기본 옵션으로 */}
           {!searching && myBooks.length > 0 && (
             <>

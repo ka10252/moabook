@@ -46,6 +46,9 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
   // 판매인데 사진이 없으면 제출을 시도한 뒤에야 붉게 알린다 (입력 전부터 빨갛게 하지 않는다)
   const [coverMissing, setCoverMissing] = useState(false);
+  // 제목 검색으로 채우기 전엔 저자·설명을 잠가, 사람들이 저자를 손으로 먼저 입력하지 않도록 유도.
+  // 검색에 없는 책은 '직접 입력'으로 잠금 해제.
+  const [manualEntry, setManualEntry] = useState(false);
 
   const [formData, setFormData] = useState<BookFormData>({
     title: '',
@@ -253,6 +256,7 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
             결과가 없으면 입력한 텍스트가 그대로 제목이 된다. */}
         <div className="space-y-2">
           <p className="text-[12px] font-bold tracking-wide text-muted-foreground">책 제목</p>
+          <p className="text-[13px] text-primary font-medium">책 제목을 입력하면 정보가 자동으로 채워져요</p>
           <BookTitleSearch
             title={formData.title}
             onTitleChange={handleTitleChange}
@@ -260,9 +264,6 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
             matched={!!matched}
             matchedCover={matched?.cover}
           />
-          <p className="text-[13px] text-faint">
-            입력하면 책을 검색해요. 목록에서 고르면 저자·설명이 자동으로 채워집니다.
-          </p>
           {isFetchingDetails && (
             <p className="text-[13px] text-muted-foreground flex items-center gap-1">
               <Loader2 className="w-3 h-3 animate-spin" />
@@ -271,26 +272,47 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
           )}
         </div>
 
-        <div className="space-y-2">
-          <p className="text-[12px] font-bold tracking-wide text-muted-foreground">저자</p>
-          <Input
-            value={formData.author}
-            onChange={(e) => setFormData((prev) => ({ ...prev, author: e.target.value }))}
-            placeholder="저자 이름"
-            className="h-11 text-[15px] bg-card border-border rounded-xl"
-          />
-        </div>
+        {/* 제목 검색으로 채우기 전엔 저자·설명을 잠근다(사람들이 저자를 손으로 먼저 넣는 문제 방지).
+            책을 고르면(matched) 자동으로 열려 수정 가능. 검색에 없으면 '직접 입력'으로 해제. */}
+        {(() => {
+          const fieldsLocked = !manualEntry && !matched && !formData.author.trim() && !formData.description.trim();
+          return (
+            <>
+              <div className="space-y-2">
+                <p className="text-[12px] font-bold tracking-wide text-muted-foreground">저자</p>
+                <Input
+                  value={formData.author}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, author: e.target.value }))}
+                  placeholder={fieldsLocked ? '제목을 검색해 고르면 자동으로 채워져요' : '저자 이름'}
+                  disabled={fieldsLocked}
+                  className="h-11 text-[15px] bg-card border-border rounded-xl disabled:opacity-60 disabled:cursor-not-allowed"
+                />
+              </div>
 
-        <div className="space-y-2">
-          <p className="text-[12px] font-bold tracking-wide text-muted-foreground">설명 (선택)</p>
-          <Textarea
-            value={formData.description}
-            onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-            placeholder="책에 대한 간단한 설명…"
-            rows={3}
-            className="text-[15px] bg-card border-border rounded-xl resize-none"
-          />
-        </div>
+              <div className="space-y-2">
+                <p className="text-[12px] font-bold tracking-wide text-muted-foreground">설명 (선택)</p>
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                  placeholder={fieldsLocked ? '제목을 검색해 고르면 자동으로 채워져요' : '책에 대한 간단한 설명…'}
+                  disabled={fieldsLocked}
+                  rows={3}
+                  className="text-[15px] bg-card border-border rounded-xl resize-none disabled:opacity-60 disabled:cursor-not-allowed"
+                />
+              </div>
+
+              {fieldsLocked && (
+                <button
+                  type="button"
+                  onClick={() => setManualEntry(true)}
+                  className="text-[13px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                >
+                  검색에 안 나오는 책인가요? 직접 입력하기
+                </button>
+              )}
+            </>
+          );
+        })()}
       </div>
 
       <ConditionSelector
