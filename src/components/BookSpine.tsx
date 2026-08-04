@@ -95,20 +95,34 @@ const heightFromTitle = (title: string) => {
  * 상수는 책등 픽셀 높이(선반 h-184 - pt-6 = 약 160px 콘텐츠) 기준 근사치 — 필요 시 여기만 조정.
  */
 const SHELF_CONTENT_PX = 160;
-const PER_CHAR_PX = 14;   // 세로쓰기 한 글자당 세로 advance(≈ font-size)
-const TOP_PX = 6;         // 상단 여백(mt-1.5)
-const USABLE_PX = SHELF_CONTENT_PX * 0.92;
-const CAP_AT_FULL = Math.floor((USABLE_PX - TOP_PX) / PER_CHAR_PX);  // 100% 책등에 담기는 글자 수
-const heightNeeded = (len: number) => Math.ceil(((len * PER_CHAR_PX + TOP_PX) / USABLE_PX) * 100);
+const PER_UNIT_PX = 14;   // 세로쓰기에서 '전각 1글자'의 세로 advance(≈ font-size)
+const USABLE_PX = SHELF_CONTENT_PX * 0.9;   // 위아래 여백 몫을 빼고 실제 글자 영역
+const CAP_AT_FULL = USABLE_PX / PER_UNIT_PX;   // 100% 책등이 담는 '전각 단위' 수
+
+// 세로쓰기에서 라틴/숫자/공백/문장부호는 눕혀져 반각(약 0.55칸)만 차지한다.
+// 한글·한자 등은 전각(1칸). 이 가중치로 길이를 재야 "Zero to One"이 잘못 잘리지 않는다.
+const charUnit = (ch: string) => (ch.charCodeAt(0) < 256 ? 0.55 : 1);
+const visualUnits = (t: string) => [...t].reduce((s, ch) => s + charUnit(ch), 0);
+
+const truncateToUnits = (t: string, budget: number) => {
+  let acc = 0, out = '';
+  for (const ch of t) {
+    const u = charUnit(ch);
+    if (acc + u > budget) break;
+    acc += u; out += ch;
+  }
+  return out.trimEnd() + '…';
+};
 
 const fitTitle = (title: string): { heightPct: number; shown: string } => {
   const t = title || '';
-  const need = heightNeeded(t.length);
-  if (need <= 100) {
-    // 해시 변주 높이와 '필요 높이' 중 큰 값 — 짧으면 변주, 길면 필요만큼.
+  const units = visualUnits(t);
+  if (units <= CAP_AT_FULL) {
+    // 필요 높이(글자 영역) — 짧으면 해시 변주가, 길면 필요 높이가 이긴다.
+    const need = Math.ceil(((units * PER_UNIT_PX) / USABLE_PX) * 100);
     return { heightPct: Math.min(100, Math.max(heightFromTitle(t), need)), shown: t };
   }
-  return { heightPct: 100, shown: t.slice(0, Math.max(1, CAP_AT_FULL - 1)).trimEnd() + '…' };
+  return { heightPct: 100, shown: truncateToUnits(t, CAP_AT_FULL - 1) };
 };
 
 export const BookSpine = ({
@@ -176,7 +190,7 @@ export const BookSpine = ({
           전체 제목은 탭하면 상세에서 보인다(title 속성/tooltip 유지). */}
       <span
         title={book.title}
-        className="relative z-[3] mt-1.5 text-[14px] overflow-hidden text-spine-text"
+        className="relative z-[3] text-[14px] overflow-hidden text-spine-text"
         style={{
           fontFamily: "'Noto Sans KR', sans-serif",
           fontWeight: 500,
