@@ -16,7 +16,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { useBackClose } from '@/hooks/useBackClose';
 import { supabase } from '@/integrations/supabase/client';
-import { ChevronDown, Loader2, BookOpen, Heart, History, Search, X, MapPin, SlidersHorizontal, LayoutGrid, GalleryVerticalEnd } from 'lucide-react';
+import { ChevronDown, Loader2, BookOpen, Heart, History, Search, X, MapPin, SlidersHorizontal, LayoutGrid, Library } from 'lucide-react';
 import { BookCover } from './BookCover';
 
 import { toast } from 'sonner';
@@ -540,7 +540,7 @@ export const Bookshelf = ({
                 viewMode === 'spine' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <GalleryVerticalEnd className="w-4 h-4" />
+              <Library className="w-4 h-4" />
             </button>
             <button
               onClick={() => { if (viewMode !== 'cover') toggleViewMode(); }}
