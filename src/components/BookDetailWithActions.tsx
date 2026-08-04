@@ -284,8 +284,8 @@ export const BookDetailWithActions = ({
                   <div className="flex-1 min-w-0 pt-1">
                     {/* 상태등 + 영문 모드 + 한글 상태를 한 줄로. 예전엔 이 정보가
                         eyebrow·배지·배지 세 곳에 흩어져 같은 말을 세 번 했다. */}
-                    {/* 여러 방식이면 영문 eyebrow는 대표 하나만(길게 겹쳐 못생기지 않게),
-                        한글 상태줄이 '대여 가능 · 무료 나눔'처럼 전부 나열한다. flex-wrap으로 X와 안 겹침. */}
+                    {/* 여러 방식이면 영문 eyebrow(FOR RENT · FREE TO TAKE)와 한글 상태를 모두 표기.
+                        길어지면 flex-wrap으로 다음 줄로 자연스럽게 감기고, pr-6으로 X와 겹치지 않게 한다. */}
                     <div className="flex items-center gap-1.5 flex-wrap pr-6">
                       <span
                         className={cn(
@@ -297,7 +297,7 @@ export const BookDetailWithActions = ({
                             : 'bg-muted-foreground'
                         )}
                       />
-                      <span className="eyebrow">{MODE_EYEBROW[modesForLabel[0]]}</span>
+                      <span className="eyebrow">{modesForLabel.map((m) => MODE_EYEBROW[m]).join(' · ')}</span>
                       <span
                         className={cn(
                           'text-[13px] font-semibold',

@@ -28,7 +28,7 @@ export const MODE_LABEL: Record<BookMode, string> = {
 export const MODE_EYEBROW: Record<BookMode, string> = {
   rent: 'FOR RENT',
   sell: 'FOR SALE',
-  give: 'FREE TO TAKE',
+  give: 'GIVEAWAY',
 };
 
 /** 상세 시트의 행동 버튼 */

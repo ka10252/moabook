@@ -272,10 +272,27 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
           )}
         </div>
 
-        {/* 제목 검색으로 채우기 전엔 저자·설명을 잠근다(사람들이 저자를 손으로 먼저 넣는 문제 방지).
-            책을 고르면(matched) 자동으로 열려 수정 가능. 검색에 없으면 '직접 입력'으로 해제. */}
+        {/* 책을 고르기 전엔 저자·설명 칸을 아예 숨기고 안내 카드만 둔다(잠긴 회색 칸보다 자연스럽고,
+            저자를 손으로 먼저 입력하는 문제도 방지). 책을 고르면(matched) 자동으로 나타나 수정 가능.
+            검색에 없는 책은 '직접 입력'으로 칸을 연다. */}
         {(() => {
-          const fieldsLocked = !manualEntry && !matched && !formData.author.trim() && !formData.description.trim();
+          const fieldsReady = manualEntry || !!matched || !!formData.author.trim() || !!formData.description.trim();
+          if (!fieldsReady) {
+            return (
+              <div className="rounded-xl border border-dashed border-border bg-muted/30 p-4 text-center space-y-2">
+                <p className="text-[13px] text-muted-foreground leading-relaxed">
+                  위에서 <b className="text-foreground">책 제목을 검색해 고르면</b><br />저자·설명이 자동으로 채워져요.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setManualEntry(true)}
+                  className="text-[13px] text-primary font-medium underline underline-offset-2"
+                >
+                  검색에 없는 책은 직접 입력하기
+                </button>
+              </div>
+            );
+          }
           return (
             <>
               <div className="space-y-2">
@@ -283,9 +300,8 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
                 <Input
                   value={formData.author}
                   onChange={(e) => setFormData((prev) => ({ ...prev, author: e.target.value }))}
-                  placeholder={fieldsLocked ? '제목을 검색해 고르면 자동으로 채워져요' : '저자 이름'}
-                  disabled={fieldsLocked}
-                  className="h-11 text-[15px] bg-card border-border rounded-xl disabled:opacity-60 disabled:cursor-not-allowed"
+                  placeholder="저자 이름"
+                  className="h-11 text-[15px] bg-card border-border rounded-xl"
                 />
               </div>
 
@@ -294,22 +310,11 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
                 <Textarea
                   value={formData.description}
                   onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                  placeholder={fieldsLocked ? '제목을 검색해 고르면 자동으로 채워져요' : '책에 대한 간단한 설명…'}
-                  disabled={fieldsLocked}
+                  placeholder="책에 대한 간단한 설명…"
                   rows={3}
-                  className="text-[15px] bg-card border-border rounded-xl resize-none disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="text-[15px] bg-card border-border rounded-xl resize-none"
                 />
               </div>
-
-              {fieldsLocked && (
-                <button
-                  type="button"
-                  onClick={() => setManualEntry(true)}
-                  className="text-[13px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
-                >
-                  검색에 안 나오는 책인가요? 직접 입력하기
-                </button>
-              )}
             </>
           );
         })()}
