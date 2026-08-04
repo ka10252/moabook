@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface Announcement {
   id: string;
@@ -13,7 +13,6 @@ interface Announcement {
 const LAST_SEEN_KEY = 'announcement_last_seen';
 
 export const useAnnouncement = () => {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [hasNewAnnouncement, setHasNewAnnouncement] = useState(false);
 
@@ -100,17 +99,12 @@ export const useAnnouncement = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['announcement'] });
-      toast({
-        title: '공지 업데이트 완료',
+      toast.success('공지 업데이트 완료', {
         description: '관리자 메시지가 성공적으로 업데이트되었습니다.',
       });
     },
     onError: (error) => {
-      toast({
-        title: '업데이트 실패',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('업데이트 실패', { description: error.message });
     },
   });
 

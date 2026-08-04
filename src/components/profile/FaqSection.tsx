@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { ChevronDown, Search, Heart, Share } from 'lucide-react';
+import { ChevronDown, Search, Heart, Share, BookOpen } from 'lucide-react';
 
 /** 버튼/탭 이름은 볼드 대신 '박스 칩'으로 표시 */
 const Chip = ({ children }: { children: ReactNode }) => (
@@ -103,7 +103,7 @@ const FAQS: { q: string; a: ReactNode }[] = [
   {
     q: "'지금 읽는 책'은 어떻게 지정하나요?",
     a: (
-      <>프로필 › <Chip>캐릭터 꾸미기</Chip>(또는 가상 도서관 입장 시)에서 책을 검색해 지정하면, 캐릭터 머리 위 말풍선에 표지가 떠요.</>
+      <>가상 도서관 상단 <Chip>읽는 책</Chip> 버튼에서 내 책·대여 중인 책을 고르거나 검색해 지정하면, 캐릭터 머리 위 말풍선에 표지가 떠요.</>
     ),
   },
   {
@@ -130,6 +130,14 @@ export const FaqSection = () => {
   const [open, setOpen] = useState<number | null>(0);
   return (
     <div className="mt-4 space-y-2">
+      {/* 온보딩 다시 보기 — 처음 안내를 언제든 다시 볼 수 있게 */}
+      <button
+        onClick={() => window.dispatchEvent(new Event('moa:replay-onboarding'))}
+        className="w-full flex items-center gap-2.5 text-left px-4 py-3.5 rounded-[14px] border border-primary/30 bg-primary/[0.06] text-primary font-bold text-[15px] hover:bg-primary/10 transition-colors"
+      >
+        <BookOpen className="w-4 h-4 shrink-0" />
+        처음 안내(온보딩) 다시 보기
+      </button>
       {FAQS.map((item, i) => {
         const isOpen = open === i;
         return (

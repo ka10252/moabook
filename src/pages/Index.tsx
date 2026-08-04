@@ -187,6 +187,13 @@ const Index = () => {
     if (user) localStorage.setItem(`moa_onboarded_${user.id}`, '1');
     setShowOnboarding(false);
   };
+
+  // FAQ '온보딩 다시 보기' → 책장 탭으로 이동 후 온보딩 재생(스포트라이트 대상이 책장에 있음)
+  useEffect(() => {
+    const replay = () => { goToTab('shelf'); setShowOnboarding(true); };
+    window.addEventListener('moa:replay-onboarding', replay);
+    return () => window.removeEventListener('moa:replay-onboarding', replay);
+  }, [goToTab]);
   useEffect(() => {
     // ?onboarding=1 → 로그인 여부와 무관하게 온보딩을 다시 볼 수 있다 (검수·디자인 확인용)
     if (new URLSearchParams(window.location.search).has('onboarding')) {

@@ -245,13 +245,24 @@ export class LibraryScene extends Phaser.Scene {
     // ---- 충돌체 그룹 (가구 발밑) ----
     const solids = this.physics.add.staticGroup();
 
+    // 바닥에 놓인 소품(쿠션·방석)은 밟고 지나갈 수 있게 충돌에서 제외한다.
+    const WALKABLE = new Set(['cushion_a', 'cushion_b', 'cushion_c']);
+
     // ---- 가구 ----
     this.manifest.furniture.forEach((item) => {
-      const [w, h] = this.manifest.furniture_sizes[item.name];
+      const [fullW, h] = this.manifest.furniture_sizes[item.name];
+      let w = fullW;
       const x = item.col * T + (item.dx ?? 0);
       const y = (item.rowBottom + 1) * T + (item.dy ?? 0);
       const img = this.add.image(x, y, `f_${item.name}`).setOrigin(0, 1);
-      img.setDepth(y); // 아래에 있을수록 앞에 그려져 캐릭터와 겹침 처리
+      // low_shelf 스프라이트는 책장 3구역이 한 이미지에 붙어 있다 → 왼쪽 1구역만 잘라 '책장 1개'로 보이게.
+      if (item.name === 'low_shelf') {
+        w = Math.round(fullW / 3);
+        img.setCrop(0, 0, w, h);
+      }
+      // 기본은 발밑 y로 깊이 정렬(아래일수록 앞). 단 벽에 붙은 큰 책장은 키가 커서
+      // 그 앞을 지나는 캐릭터를 가려버리므로 낮은 깊이(벽 장식처럼)로 둬 항상 캐릭터가 앞에 오게 한다.
+      img.setDepth(item.action === 'shelf' ? 0 : y);
 
       // 상호작용 가구(예: 게시판) → 클릭 시 액션 발생, 반짝이는 힌트
       if (item.action) {
@@ -287,7 +298,7 @@ export class LibraryScene extends Phaser.Scene {
       } else {
         // 발밑 충돌 박스 (상호작용 벽면 게시판/포스터는 벽쪽이라 충돌 불필요)
         const isWallDecor = item.rowBottom < this.manifest.wall_rows;
-        if (!isWallDecor) {
+        if (!isWallDecor && !WALKABLE.has(item.name)) {
           const footH = Math.min(h * 0.4, 22);
           const rect = this.add.rectangle(x + w / 2, y - footH / 2, w * 0.9, footH);
           solids.add(rect);

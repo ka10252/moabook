@@ -50,6 +50,17 @@ serve(async (req) => {
     }
 
     if (action === 'send') {
+      // 같은 학교 이메일을 다른 계정이 이미 인증했으면 코드 발송 자체를 막는다.
+      const { data: takenOnSend } = await admin
+        .from('profiles')
+        .select('id')
+        .eq('school_email', cleanEmail)
+        .neq('id', user.id)
+        .maybeSingle();
+      if (takenOnSend) {
+        return json({ error: '이미 다른 계정에서 인증된 학교 이메일이에요.' }, 409);
+      }
+
       const genCode = String(Math.floor(100000 + Math.random() * 900000));
       const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
       const { error: upErr } = await admin.from('school_email_codes').upsert({

@@ -1,9 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
-import { Check, Loader2, Shuffle, X, Search, BookOpen } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Check, Loader2, Shuffle, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useBookSearch } from '@/hooks/useBookSearch';
-import type { ReadingBook } from '@/components/virtual/LibraryScene';
 import { toast } from 'sonner';
 import {
   type AvatarConfig,
@@ -109,11 +107,6 @@ export function CharacterEditor({ isOpen, onClose, onSaved }: CharacterEditorPro
   const [config, setConfig] = useState<AvatarConfig>(defaultAvatar());
   const [saving, setSaving] = useState(false);
   const [asProfile, setAsProfile] = useState(true);
-  const [readingBook, setReadingBook] = useState<ReadingBook | null>(null);
-  const [myBooks, setMyBooks] = useState<ReadingBook[]>([]);
-  const [bookQuery, setBookQuery] = useState('');
-  const { results, isSearching, searchBooks, fetchBookDetails, clearResults } = useBookSearch();
-  const bookDebounce = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -123,30 +116,11 @@ export function CharacterEditor({ isOpen, onClose, onSaved }: CharacterEditorPro
       if (cancelled) return;
       setManifest(m);
       if (user) {
-        // 아바타는 반드시 있는 컬럼만 조회(reading_book 컬럼 미생성 시에도 아바타가 초기화되지 않게 분리)
-        const { data } = await supabase.from('profiles').select('pixel_avatar, reading_book_id').eq('id', user.id).maybeSingle();
-        // reading_book(jsonb 스냅샷)은 별도 조회 — 컬럼이 아직 없으면 에러만 나고 아바타엔 영향 없음
-        const { data: rbData } = await supabase.from('profiles').select('reading_book').eq('id', user.id).maybeSingle();
+        // 아바타(pixel_avatar)만 조회. '지금 읽는 책'은 이제 별도 ReadingBookPicker가 담당한다.
+        const { data } = await supabase.from('profiles').select('pixel_avatar').eq('id', user.id).maybeSingle();
         if (!cancelled) {
-          const row = data as { pixel_avatar?: unknown; reading_book_id?: string | null } | null;
-          const snap = (rbData as { reading_book?: ReadingBook | null } | null)?.reading_book;
+          const row = data as { pixel_avatar?: unknown } | null;
           setConfig(clampToManifest(normalizeAvatar(row?.pixel_avatar), m));
-          // 새 스냅샷 우선, 없으면 구버전 reading_book_id로 대체(제목은 아래 myBooks에서 못 채우면 빈값)
-          setReadingBook(snap?.title ? snap : (row?.reading_book_id ? { id: row.reading_book_id, title: '' } : null));
-        }
-        // 내 책 + 대여 중인 책 (지금 읽는 책 후보) — 표지·저자까지 스냅샷용으로 가져온다
-        const [owned, borrowed] = await Promise.all([
-          supabase.from('books').select('id, title, author, cover_url').eq('owner_id', user.id),
-          supabase.from('transactions').select('book:books(id, title, author, cover_url)').eq('borrower_id', user.id).eq('status', 'active'),
-        ]);
-        if (!cancelled) {
-          type BookRow = { id: string; title: string; author?: string | null; cover_url?: string | null };
-          const toRB = (b: BookRow): ReadingBook => ({ id: b.id, title: b.title, author: b.author ?? null, coverUrl: b.cover_url ?? null });
-          const list: ReadingBook[] = [
-            ...((owned.data ?? []) as BookRow[]).map(toRB),
-            ...((borrowed.data ?? []) as Array<{ book: BookRow | null }>).map((t) => t.book).filter(Boolean).map((b) => toRB(b!)),
-          ];
-          setMyBooks(Array.from(new Map(list.map((b) => [b.id, b])).values()));
         }
       }
     })();
@@ -160,25 +134,6 @@ export function CharacterEditor({ isOpen, onClose, onSaved }: CharacterEditorPro
       if (!manifest.options.hair[next.hairShape]?.includes(next.hairColor)) next.hairColor = manifest.options.hair[next.hairShape][0];
       return next;
     });
-  };
-
-  // 지금 읽는 책 검색 (디바운스) — 우리 책이 아니어도 아무 책이나 지정 가능
-  const onBookQuery = (q: string) => {
-    setBookQuery(q);
-    if (bookDebounce.current) clearTimeout(bookDebounce.current);
-    if (q.trim().length < 2) { clearResults(); return; }
-    bookDebounce.current = setTimeout(() => searchBooks(q), 350);
-  };
-
-  const pickSearchResult = async (r: { key: string; title: string; author: string; cover: string | null; description: string | null }) => {
-    // 검색으로 찾은 임의의 책은 우리 books에 없으므로 id 없이 스냅샷으로 저장한다
-    setReadingBook({ id: null, title: r.title, author: r.author, coverUrl: r.cover, description: r.description });
-    setBookQuery(''); clearResults();
-    // 소개가 비어 있으면 상세를 한 번 더 시도해 보강
-    if (!r.description) {
-      const desc = await fetchBookDetails(r.key).catch(() => null);
-      if (desc) setReadingBook((prev) => (prev && prev.id == null && prev.title === r.title ? { ...prev, description: desc } : prev));
-    }
   };
 
   const randomize = () => {
@@ -199,19 +154,7 @@ export function CharacterEditor({ isOpen, onClose, onSaved }: CharacterEditorPro
     if (!user) { toast.error('로그인이 필요해요'); return; }
     setSaving(true);
     try {
-      // reading_book(jsonb) 컬럼이 아직 없어도 캐릭터(아바타)는 반드시 저장되게 단계적으로 시도한다.
-      // (컬럼 하나 때문에 저장 전체가 실패해 "저장하지 못했어요"가 뜨던 문제 방어)
-      const attempts: Record<string, unknown>[] = [
-        { pixel_avatar: config, reading_book: readingBook, reading_book_id: readingBook?.id ?? null },
-        { pixel_avatar: config, reading_book_id: readingBook?.id ?? null },
-        { pixel_avatar: config },
-      ];
-      let error: unknown = null;
-      for (const patch of attempts) {
-        const res = await supabase.from('profiles').update(patch as never).eq('id', user.id);
-        if (!res.error) { error = null; break; }
-        error = res.error;
-      }
+      const { error } = await supabase.from('profiles').update({ pixel_avatar: config } as never).eq('id', user.id);
       if (error) throw error;
       if (asProfile) {
         const blob = await renderAvatarBlob(config);
@@ -305,73 +248,6 @@ export function CharacterEditor({ isOpen, onClose, onSaved }: CharacterEditorPro
             <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
           ) : (
             <>
-            {/* 지금 읽는 책 — 외형 옵션들과 섞이지 않게 강조 카드로 구분(캐릭터 머리 위 말풍선으로 표시됨) */}
-            <div className="rounded-xl border border-primary/30 bg-primary/[0.05] p-3">
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <BookOpen className="w-4 h-4 text-primary" />
-                <p className="text-[14px] font-bold text-foreground">지금 읽는 책</p>
-              </div>
-              <p className="text-[11px] text-muted-foreground mb-2.5">캐릭터 머리 위 말풍선에 표지로 보여요</p>
-
-              {/* 검색: 우리 책이 아니어도 아무 책이나 찾아서 지정 */}
-              <div className="relative mb-2">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  value={bookQuery}
-                  onChange={(e) => onBookQuery(e.target.value)}
-                  placeholder="책 제목·저자로 검색"
-                  className="w-full h-9 pl-9 pr-3 rounded-full bg-muted/50 border-0 text-xs text-foreground outline-none focus:ring-2 focus:ring-primary/40"
-                />
-                {(isSearching || results.length > 0) && bookQuery.trim().length >= 2 && (
-                  <div className="absolute z-20 left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-xl border border-border bg-card shadow-lg">
-                    {isSearching && results.length === 0 ? (
-                      <div className="flex items-center gap-2 px-3 py-3 text-xs text-muted-foreground">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> 검색 중…
-                      </div>
-                    ) : (
-                      results.map((r) => (
-                        <button
-                          key={r.key}
-                          onClick={() => pickSearchResult(r)}
-                          className="w-full flex items-center gap-2 px-2.5 py-2 hover:bg-muted/60 text-left"
-                        >
-                          {r.cover ? (
-                            <img src={r.cover} alt="" loading="lazy" decoding="async" className="w-7 h-10 object-cover rounded shrink-0 bg-muted" />
-                          ) : (
-                            <div className="w-7 h-10 rounded bg-muted shrink-0" />
-                          )}
-                          <div className="min-w-0">
-                            <p className="text-xs font-medium text-foreground truncate">{r.title}</p>
-                            <p className="text-[13px] text-muted-foreground truncate">{r.author}</p>
-                          </div>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* 빠른 선택: 없음 + 내 책/대여 중인 책 + (검색으로 고른 임의의 책) */}
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                <button
-                  onClick={() => setReadingBook(null)}
-                  className={`shrink-0 px-3 h-9 rounded-full border text-xs font-medium ${!readingBook ? 'border-primary text-primary bg-primary/10' : 'border-border text-muted-foreground bg-muted/40'}`}
-                >없음</button>
-                {/* 검색으로 고른(우리 책이 아닌) 책도 선택 상태로 보여준다 */}
-                {readingBook && readingBook.id == null && (
-                  <button
-                    className="shrink-0 px-3 h-9 rounded-full border text-xs font-medium max-w-[180px] truncate border-primary text-primary bg-primary/10"
-                  >📖 {readingBook.title}</button>
-                )}
-                {myBooks.map((b) => (
-                  <button
-                    key={b.id}
-                    onClick={() => setReadingBook(b)}
-                    className={`shrink-0 px-3 h-9 rounded-full border text-xs font-medium max-w-[160px] truncate ${readingBook?.id === b.id ? 'border-primary text-primary bg-primary/10' : 'border-border text-foreground bg-muted/40'}`}
-                  >📖 {b.title}</button>
-                ))}
-              </div>
-            </div>
             {sections.map((sec) => (
               <div key={sec.label}>
                 <p className="text-xs font-semibold text-muted-foreground mb-2">{sec.label}</p>

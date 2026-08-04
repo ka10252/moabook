@@ -9,7 +9,7 @@ import { ConditionSelector } from '@/components/upload/ConditionSelector';
 import { ModeToggle } from '@/components/upload/ModeToggle';
 import { CommunitySelector } from '@/components/upload/CommunitySelector';
 import { CoverUploader } from '@/components/upload/CoverUploader';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { BookMode } from '@/lib/bookMode';
 
@@ -20,7 +20,6 @@ interface EditBookModalProps {
 }
 
 export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => {
-  const { toast } = useToast();
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -29,11 +28,16 @@ export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => 
     description: '',
     coverUrl: '',
     condition: 'A' as 'S' | 'A' | 'B',
-    mode: 'rent' as BookMode,
+    allowRent: true,
+    allowSell: false,
+    allowGive: false,
     price: '',
     isPublic: true,
     communityId: null as string | null,
   });
+
+  // 대표 모드(호환용): 판매 > 대여 > 나눔 우선순위
+  const primaryMode = (): BookMode => (formData.allowSell ? 'sell' : formData.allowRent ? 'rent' : 'give');
 
   // Populate form when book changes
   useEffect(() => {
@@ -44,7 +48,9 @@ export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => 
         description: book.description || '',
         coverUrl: book.cover || '',
         condition: book.condition,
-        mode: book.mode,
+        allowRent: book.allowRent,
+        allowSell: book.allowSell,
+        allowGive: book.allowGive,
         price: book.price?.toString() || '',
         isPublic: book.is_public,
         communityId: book.community_id,
@@ -57,28 +63,22 @@ export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => 
     if (!book) return;
 
     if (!formData.title.trim() || !formData.author.trim()) {
-      toast({
-        title: 'Missing fields',
-        description: 'Title and author are required.',
-        variant: 'destructive',
-      });
+      toast.error('제목과 저자를 입력해주세요');
       return;
     }
 
-    if (formData.mode === 'sell' && !formData.price) {
-      toast({
-        title: '판매 가격을 입력해주세요',
-        variant: 'destructive',
-      });
+    if (!formData.allowRent && !formData.allowSell && !formData.allowGive) {
+      toast.error('거래 방식을 하나 이상 선택해주세요');
+      return;
+    }
+
+    if (formData.allowSell && (!formData.price || parseFloat(formData.price) <= 0)) {
+      toast.error('판매 가격을 입력해주세요');
       return;
     }
 
     if (!formData.isPublic && !formData.communityId) {
-      toast({
-        title: 'Community required',
-        description: 'Please select a community for private listings.',
-        variant: 'destructive',
-      });
+      toast.error('비공개 책은 커뮤니티를 선택해주세요');
       return;
     }
 
@@ -89,24 +89,20 @@ export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => 
       description: formData.description.trim() || null,
       cover: formData.coverUrl || null,
       condition: formData.condition,
-      mode: formData.mode,
-      price: formData.mode === 'sell' ? parseFloat(formData.price) : null,
+      mode: primaryMode(),
+      allowRent: formData.allowRent,
+      allowSell: formData.allowSell,
+      allowGive: formData.allowGive,
+      price: formData.allowSell ? parseFloat(formData.price) : null,
       is_public: formData.isPublic,
       community_id: formData.isPublic ? null : formData.communityId,
     });
     setSaving(false);
 
     if (error) {
-      toast({
-        title: 'Failed to update',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('수정에 실패했어요', { description: error.message });
     } else {
-      toast({
-        title: 'Book updated!',
-        description: 'Your changes have been saved.',
-      });
+      toast.success('책 정보를 수정했어요');
       onClose();
     }
   };
@@ -203,15 +199,24 @@ export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => 
                   onChange={(condition) => setFormData(prev => ({ ...prev, condition }))}
                 />
 
-                {/* Mode */}
+                {/* Mode — 여러 개 선택 가능 */}
                 <ModeToggle
-                  value={formData.mode}
-                  onChange={(mode) => setFormData(prev => ({ ...prev, mode, price: mode === 'sell' ? prev.price : '' }))}
+                  allowRent={formData.allowRent}
+                  allowSell={formData.allowSell}
+                  allowGive={formData.allowGive}
+                  onToggle={(mode) => setFormData(prev => ({
+                    ...prev,
+                    allowRent: mode === 'rent' ? !prev.allowRent : prev.allowRent,
+                    allowSell: mode === 'sell' ? !prev.allowSell : prev.allowSell,
+                    allowGive: mode === 'give' ? !prev.allowGive : prev.allowGive,
+                    // 판매를 끄면 가격 초기화
+                    price: mode === 'sell' && prev.allowSell ? '' : prev.price,
+                  }))}
                 />
 
                 {/* Price (for sell mode) */}
                 <AnimatePresence>
-                  {formData.mode === 'sell' && (
+                  {formData.allowSell && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}

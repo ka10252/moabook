@@ -222,8 +222,8 @@ export default function VirtualSpacePage() {
             const nick = (data as { nickname?: string } | null)?.nickname;
             if (nick) nicknameRef.current = nick;
             readingBookRef.current = await fetchReadingBook();
-            // 아직 캐릭터를 안 만든 유저 → 첫 입장 시 에디터를 먼저 띄운다
-            if (data && (raw === null || raw === undefined) && !cancelled) setEditorOpen(true);
+            // 캐릭터 설정은 강제로 띄우지 않는다 — 입장(룸 온보딩)이 먼저,
+            // 캐릭터 꾸미기는 원하는 사람이 '캐릭터' 버튼으로 연다.
           } catch { /* 컬럼 미생성 시 기본값 */ }
         }
         if (cancelled || !containerRef.current) return;
@@ -271,19 +271,20 @@ export default function VirtualSpacePage() {
         {title}
       </div>
 
-      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+      {/* 캐릭터는 상단 오른쪽, 읽는 책은 그 아래로 — 룸 이름(가운데)과 겹치지 않게 세로 배치 */}
+      <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-2">
+        <button
+          onClick={() => setEditorOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 shadow-md text-sm font-medium text-gray-800 hover:bg-white"
+        >
+          <UserRound className="w-4 h-4" /> 캐릭터
+        </button>
         {/* 읽는 책 — 캐릭터 설정과 분리된 독립 진입점 */}
         <button
           onClick={() => setReadingPickerOpen(true)}
           className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 shadow-md text-sm font-medium text-gray-800 hover:bg-white"
         >
           <BookOpen className="w-4 h-4" /> 읽는 책
-        </button>
-        <button
-          onClick={() => setEditorOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 shadow-md text-sm font-medium text-gray-800 hover:bg-white"
-        >
-          <UserRound className="w-4 h-4" /> 캐릭터
         </button>
       </div>
 

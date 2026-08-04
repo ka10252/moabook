@@ -8,7 +8,6 @@ import { Mail, Save, Loader2, History, Send } from 'lucide-react';
 import { useAnnouncement } from '@/hooks/useAnnouncement';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 

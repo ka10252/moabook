@@ -6,9 +6,9 @@ import { z } from 'zod';
  */
 export const PASSWORD_RULES = [
   { id: 'length', label: '6자 이상', test: (v: string) => v.length >= 6 },
-  { id: 'letter', label: '영문자 포함', test: (v: string) => /[A-Za-z]/.test(v) },
-  { id: 'number', label: '숫자 포함', test: (v: string) => /[0-9]/.test(v) },
-  { id: 'special', label: '특수문자 포함', test: (v: string) => /[^A-Za-z0-9]/.test(v) },
+  { id: 'letter', label: '영문', test: (v: string) => /[A-Za-z]/.test(v) },
+  { id: 'number', label: '숫자', test: (v: string) => /[0-9]/.test(v) },
+  { id: 'special', label: '특수문자', test: (v: string) => /[^A-Za-z0-9]/.test(v) },
 ] as const;
 
 export const passwordSchema = z

@@ -4,7 +4,7 @@ import { Plus, Loader2, X, Search, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { WishlistBookSearch } from './WishlistBookSearch';
 
 interface AddWishlistFormProps {
@@ -29,7 +29,6 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
   const [cover, setCover] = useState<string | null>(null);
   const [desiredMode, setDesiredMode] = useState<DesiredMode>('any');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
 
   const DesiredSelect = () => (
     <div>
@@ -62,10 +61,12 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
     e.preventDefault();
     
     if (!title.trim()) {
-      toast({
-        title: '책 제목을 입력해주세요',
-        variant: 'destructive',
-      });
+      toast.error('책 제목을 입력해주세요');
+      return;
+    }
+
+    if (!author.trim()) {
+      toast.error('저자를 입력해주세요');
       return;
     }
 
@@ -74,14 +75,9 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
     setIsSubmitting(false);
 
     if (error) {
-      toast({
-        title: '추가에 실패했습니다',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('추가에 실패했습니다', { description: error.message });
     } else {
-      toast({
-        title: '위시리스트에 추가했어요',
+      toast.success('위시리스트에 추가했어요', {
         description: '이웃들이 어떤 책을 찾고 있는지 볼 수 있습니다.',
       });
       setTitle('');
@@ -168,7 +164,7 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
               autoFocus
             />
             <Input
-              placeholder="저자 (선택)"
+              placeholder="저자 *"
               value={author}
               onChange={(e) => setAuthor(e.target.value)}
               maxLength={100}
@@ -205,17 +201,22 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
             exit={{ opacity: 0 }}
             className="space-y-3"
           >
-            <div className="bg-muted rounded-xl p-3 space-y-1">
+            <div className="bg-muted rounded-xl p-3">
               <p className="font-medium text-foreground">{title}</p>
-              {author && <p className="text-sm text-muted-foreground">{author}</p>}
             </div>
+            <Input
+              placeholder="저자 *"
+              value={author}
+              onChange={(e) => setAuthor(e.target.value)}
+              maxLength={100}
+              className="bg-muted border-0"
+            />
             <Textarea
               placeholder="요청사항 한마디 (선택)"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               maxLength={500}
               className="bg-muted border-0 min-h-[80px] resize-none"
-              autoFocus
             />
             <DesiredSelect />
             <Button

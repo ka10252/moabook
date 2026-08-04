@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, Search, Loader2, BookOpen, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,8 +23,32 @@ export const ReadingBookPicker = ({ isOpen, onClose, onSaved }: Props) => {
   const { results, isSearching, searchBooks, clearResults } = useBookSearch();
   const [query, setQuery] = useState('');
   const [saving, setSaving] = useState(false);
+  const [myBooks, setMyBooks] = useState<ReadingBook[]>([]);
+
+  // 기본 옵션: 내가 소유한 책 + 대여 중인 책 (검색 전에 바로 고를 수 있게)
+  useEffect(() => {
+    if (!isOpen || !user) return;
+    let cancelled = false;
+    (async () => {
+      const [owned, borrowed] = await Promise.all([
+        supabase.from('books').select('id, title, author, cover_url').eq('owner_id', user.id),
+        supabase.from('transactions').select('book:books(id, title, author, cover_url)').eq('borrower_id', user.id).eq('status', 'active'),
+      ]);
+      if (cancelled) return;
+      type BookRow = { id: string; title: string; author?: string | null; cover_url?: string | null };
+      const toRB = (b: BookRow): ReadingBook => ({ id: b.id, title: b.title, author: b.author ?? null, coverUrl: b.cover_url ?? null });
+      const list: ReadingBook[] = [
+        ...((owned.data ?? []) as BookRow[]).map(toRB),
+        ...((borrowed.data ?? []) as Array<{ book: BookRow | null }>).map((t) => t.book).filter(Boolean).map((b) => toRB(b!)),
+      ];
+      setMyBooks(Array.from(new Map(list.map((b) => [b.id, b])).values()));
+    })();
+    return () => { cancelled = true; };
+  }, [isOpen, user]);
 
   if (!isOpen) return null;
+
+  const searching = query.trim().length >= 2;
 
   const onQuery = (v: string) => {
     setQuery(v);
@@ -94,10 +118,32 @@ export const ReadingBookPicker = ({ isOpen, onClose, onSaved }: Props) => {
             <span className="w-7 h-10 rounded bg-muted shrink-0 flex items-center justify-center"><X className="w-3.5 h-3.5" /></span>
             읽는 책 없음(지우기)
           </button>
+          {/* 검색 전: 내 책 + 대여 중인 책을 기본 옵션으로 */}
+          {!searching && myBooks.length > 0 && (
+            <>
+              <p className="px-2.5 pt-2 pb-1 text-[11px] font-bold text-faint">내 책 · 대여 중인 책</p>
+              {myBooks.map((b) => (
+                <button
+                  key={b.id}
+                  onClick={() => save(b)}
+                  disabled={saving}
+                  className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-muted/60 text-left"
+                >
+                  {b.coverUrl
+                    ? <img src={b.coverUrl} alt="" loading="lazy" className="w-7 h-10 object-cover rounded shrink-0 bg-muted" />
+                    : <div className="w-7 h-10 rounded bg-muted shrink-0" />}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-medium text-foreground truncate">{b.title}</p>
+                    {b.author && <p className="text-[12px] text-muted-foreground truncate">{b.author}</p>}
+                  </div>
+                </button>
+              ))}
+            </>
+          )}
           {isSearching && results.length === 0 && (
             <div className="flex items-center gap-2 px-3 py-3 text-[13px] text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> 검색 중…</div>
           )}
-          {results.map((r) => (
+          {searching && results.map((r) => (
             <button
               key={r.key}
               onClick={() => save({ id: null, title: r.title, author: r.author, coverUrl: r.cover, description: r.description })}
