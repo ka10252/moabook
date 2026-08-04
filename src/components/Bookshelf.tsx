@@ -525,17 +525,35 @@ export const Bookshelf = ({
             ))}
           </div>
 
-          {/* 책등 ↔ 표지 보기 전환 */}
-          <button
-            onClick={toggleViewMode}
-            className="w-9 h-9 shrink-0 rounded-full border border-border text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"
-            aria-label={viewMode === 'spine' ? '표지로 보기' : '책등으로 보기'}
-            title={viewMode === 'spine' ? '표지로 보기' : '책등으로 보기'}
+          {/* 책등 ↔ 표지 보기 — 두 모드가 다 보이는 세그먼트 토글(현재 모드가 채워져 보임) */}
+          <div
+            role="group"
+            aria-label="보기 방식"
+            className="flex items-center shrink-0 rounded-full border border-border p-0.5"
           >
-            {viewMode === 'spine'
-              ? <LayoutGrid className="w-4 h-4" />
-              : <GalleryVerticalEnd className="w-4 h-4" />}
-          </button>
+            <button
+              onClick={() => { if (viewMode !== 'spine') toggleViewMode(); }}
+              aria-pressed={viewMode === 'spine'}
+              aria-label="책등으로 보기"
+              title="책등으로 보기"
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                viewMode === 'spine' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <GalleryVerticalEnd className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => { if (viewMode !== 'cover') toggleViewMode(); }}
+              aria-pressed={viewMode === 'cover'}
+              aria-label="표지로 보기"
+              title="표지로 보기"
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                viewMode === 'cover' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+          </div>
 
           {/* 정밀 필터 (지역·정렬) */}
           <button

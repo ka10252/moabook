@@ -96,7 +96,7 @@ const heightFromTitle = (title: string) => {
  */
 const SHELF_CONTENT_PX = 160;
 const PER_UNIT_PX = 14;   // 세로쓰기에서 '전각 1글자'의 세로 advance(≈ font-size)
-const USABLE_PX = SHELF_CONTENT_PX * 0.9;   // 위아래 여백 몫을 빼고 실제 글자 영역
+const USABLE_PX = SHELF_CONTENT_PX * 0.92;   // 위아래 여백 몫(각 4%)을 빼고 실제 글자 영역 — CSS maxHeight와 맞춤
 const CAP_AT_FULL = USABLE_PX / PER_UNIT_PX;   // 100% 책등이 담는 '전각 단위' 수
 
 // 세로쓰기에서 라틴/숫자/공백/문장부호는 눕혀져 반각(약 0.55칸)만 차지한다.
