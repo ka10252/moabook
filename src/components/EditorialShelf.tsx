@@ -7,29 +7,28 @@ interface EditorialShelfProps {
 }
 
 /**
- * 에디토리얼 미니멀 서가.
+ * 라이트 내추럴 우드 서가 (시안 F).
  *
- * 나무 판자가 아니다. 책은 크림 배경 위에 서 있고, 바닥은
- *   ① 2px 잉크 선  ② 7px 크림 선반
- * 두 겹으로만 표현된다. 책의 물성은 서가가 아니라 책등 자체가 만든다.
+ * 밝은 자작나무 톤의 뒷판(stage) 위에 책이 서고, 아래에 나뭇결 선반(plank)이
+ * 받쳐 준다. 배경 크림톤과 구분되는 "책꽂이 한 칸" 인상을 주되, 무겁지 않게.
+ * 라이트/다크 테마 모두 대응한다.
  */
 export const EditorialShelf = ({ children, label }: EditorialShelfProps) => (
   <div>
-    {label && (
-      <p className="font-display italic text-[16px] text-foreground mb-0.5">{label}</p>
-    )}
+    {/* 뒷판 — 옅은 우드 그라데이션 + 얇은 테두리, 위쪽만 둥글게 */}
+    <div className="rounded-t-xl border border-b-0 px-3 pt-2.5 bg-gradient-to-b from-[#EFE3CE] to-[#F6EEDE] border-[#E7D9BF] dark:from-[#2b2418] dark:to-[#332a1b] dark:border-[#3d3320]">
+      {label && (
+        <p className="font-display italic text-[16px] text-foreground mb-0.5">{label}</p>
+      )}
 
-    {/* 책이 서는 자리 — 아래 정렬(flex-end)이라 책마다 높이가 달라도 바닥이 맞는다 */}
-    <div className="flex items-end gap-1.5 h-[184px] pt-6">{children}</div>
+      {/* 책이 서는 자리 — 아래 정렬(flex-end)이라 책마다 높이가 달라도 바닥이 맞는다 */}
+      <div className="flex items-end gap-1.5 h-[184px] pt-6">{children}</div>
+    </div>
 
-    {/* 바닥: 잉크 선 + 크림 선반 */}
-    <div className="h-[2px] bg-foreground" />
+    {/* 나뭇결 선반 */}
     <div
-      className="h-[7px]"
-      style={{
-        background: 'linear-gradient(#DDD6C4, #EFE9DB)',
-        boxShadow: '0 5px 9px -4px rgba(90, 70, 40, 0.4)',
-      }}
+      className="h-[13px] rounded-b-lg bg-gradient-to-b from-[#E6CFA3] to-[#CBAF84]"
+      style={{ boxShadow: '0 6px 9px -6px rgba(120, 95, 55, 0.4)' }}
     />
   </div>
 );

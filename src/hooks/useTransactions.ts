@@ -198,12 +198,19 @@ export const useTransactions = () => {
     );
   }, [transactions]);
 
+  // 내가 지금까지 빌린 횟수 (상태 무관) — "첫 대여는 무료" 게이트 판단용.
+  // 빌림 = 내가 소유자가 아닌(!isMine) rent 거래.
+  const getMyBorrowCount = useCallback((): number => {
+    return transactions.filter(t => !t.isMine && t.type === 'rent').length;
+  }, [transactions]);
+
   return {
     transactions,
     loading,
     refresh: fetchTransactions,
     updateTransaction,
     createTransaction,
+    getMyBorrowCount,
     getLentBookIds,
     getLentBooksInfo,
     getRentedBooksInfo,

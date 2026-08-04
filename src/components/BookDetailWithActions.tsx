@@ -33,8 +33,10 @@ interface BookDetailWithActionsProps {
   isLiked?: boolean;
   onToggleLike?: (book: Book) => Promise<void>;
   currentUserId?: string;
-  /** 내가 등록한 책 수 — 0이면 대여/나눔 요청을 막고 "책 1권 등록" 게이트를 띄운다 */
+  /** 내가 등록한 책 수 — 0이면 대여/나눔 요청 시 게이트 후보 */
   myBookCount?: number;
+  /** 내가 지금까지 빌린 횟수 — 첫 대여(0)는 무료, 그 뒤부터 책 1권 등록 요구 */
+  myBorrowCount?: number;
 }
 
 interface SiblingBook {
@@ -61,6 +63,7 @@ export const BookDetailWithActions = ({
   onToggleLike,
   currentUserId,
   myBookCount,
+  myBorrowCount,
 }: BookDetailWithActionsProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showReport, setShowReport] = useState(false);
@@ -70,12 +73,13 @@ export const BookDetailWithActions = ({
 
   /**
    * 요청(대여/나눔/구매) 시도. 대여·나눔은 "내 책 1권 이상 등록" 필요 —
-   * 서로 내놓는 책장이라, 등록 0이면 요청 대신 등록 유도 게이트를 띄운다.
+   * 서로 내놓는 책장이라서다. 단 첫 대여는 무료(부담 없이 시작),
+   * 두 번째부터는 책 0권이면 등록 유도 게이트를 띄운다.
    * (구매는 돈을 내는 거래라 게이트 없음)
    */
   const tryRequest = (ownerId: string, bookId: string, mode: BookMode) => {
     if (!requireAuth()) return;
-    if ((mode === 'rent' || mode === 'give') && myBookCount === 0) {
+    if ((mode === 'rent' || mode === 'give') && myBookCount === 0 && (myBorrowCount ?? 0) >= 1) {
       track('borrow_gate_shown', { book_id: bookId, mode });
       setShowBorrowGate(true);
       return;
@@ -521,10 +525,11 @@ export const BookDetailWithActions = ({
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
                 <BookOpen className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="font-display text-[20px] font-medium text-foreground mb-1.5">앗, 책이 필요해요</h3>
+              <h3 className="font-display text-[20px] font-medium text-foreground mb-1.5">이제 내 책도 한 권!</h3>
               <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-                모아북은 서로 책을 내놓는 책장이에요.<br />
-                <b className="text-foreground">내 책을 1권 이상 등록</b>하면 바로 빌릴 수 있어요.
+                첫 책은 부담 없이 빌려보셨죠? 🎉<br />
+                모아북은 서로 책을 내놓는 책장이라,<br />
+                다음 대여부터는 <b className="text-foreground">내 책을 1권 이상 등록</b>하면 바로 빌릴 수 있어요.
               </p>
               <div className="flex flex-col gap-2">
                 <button

@@ -141,8 +141,8 @@ export const Bookshelf = ({
   const calcBooksPerShelf = useCallback((contentWidth: number) => {
     // contentWidth = content-box width of the outer scroll container (inside px-6 padding)
     // On wide screens clamp to 520px so the shelf doesn't stretch beyond a readable width
-    const effectiveWidth = Math.min(contentWidth, 520);
-    // EditorialShelf는 내부 패딩이 없다 (나무 서가의 p-4 x2 = 64px 보정은 이제 불필요).
+    // EditorialShelf(시안 F) 뒷판은 좌우 px-3(=24px) 패딩이 있다 → 예산에서 뺀다.
+    const effectiveWidth = Math.min(contentWidth, 520) - 24;
     // 책등 max-w 52px + gap 6px = 슬롯당 58px
     const n = Math.max(2, Math.floor((effectiveWidth + 6) / 58));
     setBooksPerShelf(n);
@@ -186,6 +186,7 @@ export const Bookshelf = ({
     getRentedBooksInfo,
     getLentReturnDates,
     getBorrowedReturnDates,
+    getMyBorrowCount,
   } = useTransactions();
   const { isLiked, toggleLike, likedBooks } = useLikedBooks();
 
@@ -852,6 +853,7 @@ export const Bookshelf = ({
         onClose={() => setSelectedBook(null)}
         onChat={onOpenChat}
         myBookCount={user ? allBooks.filter((b) => b.owner_id === user.id).length : undefined}
+        myBorrowCount={user ? getMyBorrowCount() : undefined}
         onEdit={(book) => setEditingBook(book)}
         onDelete={async (bookId) => {
           const { error } = await deleteBook(bookId);
