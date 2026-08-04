@@ -81,7 +81,7 @@ const RIBBON = {
 const heightFromTitle = (title: string) => {
   const t = title || '';
   const hash = t.split('').reduce((acc, ch) => (acc * 31 + ch.charCodeAt(0)) >>> 0, 11);
-  // 제목이 길수록 책등을 길게(높게) 해서 긴 제목도 2줄 안에 담기게 한다. + 약간의 해시 변주로 서가 느낌.
+  // 제목이 길수록 책등을 높게 → 한 열에 더 많은 글자가 …전에 보인다. + 약간의 해시 변주로 서가 느낌.
   const base = 74 + (hash % 4) * 3;                 // 74~83% 기본 변주
   const lengthBoost = Math.min(Math.max(t.length - 6, 0), 18) * 0.95; // 6자 넘으면 길이만큼 최대 +17%
   return Math.min(100, Math.round(base + lengthBoost));
@@ -145,19 +145,22 @@ export const BookSpine = ({
         />
       )}
 
-      {/* ── 책등 제목 — 세로쓰기 ───────────────────────────────
-          긴 제목은 최대 2줄(세로 2열)까지 흐르고, 넘치면 잘린다.
-          세로쓰기: 인라인축=세로(글자 위→아래), 블록축=가로(열이 오른→왼).
-          maxHeight로 한 열을 채우면 다음 열로 넘기고, maxWidth로 2열까지만 허용. */}
+      {/* ── 책등 제목 — 세로쓰기 한 줄 ─────────────────────────
+          제목은 세로 한 열로만 흐르고, 책등 높이를 넘치면 …로 자른다(2열 금지).
+          세로쓰기라 -webkit-box-orient는 horizontal(=열 방향)로 두고 line-clamp:1로 한 열만.
+          전체 제목은 탭하면 상세에서 보인다(title 속성/tooltip 유지). */}
       <span
         title={book.title}
         className="relative z-[3] mt-4 text-[14px] overflow-hidden text-spine-text"
         style={{
           fontFamily: "'Noto Sans KR', sans-serif",
           fontWeight: 500,
-          writingMode: 'vertical-lr',   // 열이 왼→오로 진행(2줄일 때 첫 줄이 왼쪽)
+          writingMode: 'vertical-lr',
           maxHeight: '90%',
-          maxWidth: '2.4em',   // 최대 2열
+          maxWidth: '1.3em',   // 한 열만
+          display: '-webkit-box',
+          WebkitBoxOrient: 'horizontal',
+          WebkitLineClamp: 1,
           letterSpacing: '0.02em',
           lineHeight: 1.15,
           opacity: isLent ? 0.5 : 1,

@@ -552,11 +552,9 @@ export const BookDetailWithActions = ({
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
                 <BookOpen className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="font-display text-[20px] font-medium text-foreground mb-1.5">이제 내 책도 한 권!</h3>
+              <h3 className="font-display text-[20px] font-medium text-foreground mb-1.5">책을 한 권 등록해주세요</h3>
               <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-                첫 책은 부담 없이 빌려보셨죠? 🎉<br />
-                모아북은 서로 책을 내놓는 책장이라,<br />
-                다음 대여부터는 <b className="text-foreground">내 책을 1권 이상 등록</b>하면 바로 빌릴 수 있어요.
+                다음 대여부터는 내 책을 1권 이상 등록해야 빌릴 수 있어요.
               </p>
               <div className="flex flex-col gap-2">
                 <button
