@@ -87,6 +87,30 @@ const heightFromTitle = (title: string) => {
   return Math.min(100, Math.round(base + lengthBoost));
 };
 
+/**
+ * 세로 한 열에 담기게 제목을 맞춘다.
+ *  · 짧은 책: 해시 변주 높이 그대로(서가에 높낮이 다양성).
+ *  · 제목이 길어 그 높이에 안 들어가면, 필요한 만큼(최대 100%) 책등을 키워 전부 보여준다.
+ *  · 가장 긴 책등(100%)으로도 넘치면 …로 자른다.
+ * 상수는 책등 픽셀 높이(선반 h-184 - pt-6 = 약 160px 콘텐츠) 기준 근사치 — 필요 시 여기만 조정.
+ */
+const SHELF_CONTENT_PX = 160;
+const PER_CHAR_PX = 14;   // 세로쓰기 한 글자당 세로 advance(≈ font-size)
+const TOP_PX = 6;         // 상단 여백(mt-1.5)
+const USABLE_PX = SHELF_CONTENT_PX * 0.92;
+const CAP_AT_FULL = Math.floor((USABLE_PX - TOP_PX) / PER_CHAR_PX);  // 100% 책등에 담기는 글자 수
+const heightNeeded = (len: number) => Math.ceil(((len * PER_CHAR_PX + TOP_PX) / USABLE_PX) * 100);
+
+const fitTitle = (title: string): { heightPct: number; shown: string } => {
+  const t = title || '';
+  const need = heightNeeded(t.length);
+  if (need <= 100) {
+    // 해시 변주 높이와 '필요 높이' 중 큰 값 — 짧으면 변주, 길면 필요만큼.
+    return { heightPct: Math.min(100, Math.max(heightFromTitle(t), need)), shown: t };
+  }
+  return { heightPct: 100, shown: t.slice(0, Math.max(1, CAP_AT_FULL - 1)).trimEnd() + '…' };
+};
+
 export const BookSpine = ({
   book,
   onClick,
@@ -102,7 +126,8 @@ export const BookSpine = ({
   const colorClass = spineColors[(book.spineColor - 1) % spineColors.length];
   // 표시용 제목 — (특별판)·[양장본] 등 판형 수식어 제거. 원본은 tooltip에 유지.
   const displayTitle = useMemo(() => cleanBookTitle(book.title), [book.title]);
-  const heightPct = useMemo(() => heightFromTitle(displayTitle), [displayTitle]);
+  // 세로 한 열에 맞춘 표시 제목 + 그에 맞는 책등 높이(긴 제목은 가장 긴 책등 + …).
+  const { heightPct, shown: shownTitle } = useMemo(() => fitTitle(displayTitle), [displayTitle]);
 
   const hasBookmark = (isLent && !!borrowerNickname) || (isBorrowed && !!lenderNickname);
   const chipName = isLent ? borrowerNickname : lenderNickname;
@@ -110,7 +135,7 @@ export const BookSpine = ({
 
   const r = isLent ? RIBBON.lent : RIBBON.borrowed;
   const unavailable = isUnavailable(book, isLent, isBorrowed);
-  const titleParts = useMemo(() => splitForVertical(displayTitle), [displayTitle]);
+  const titleParts = useMemo(() => splitForVertical(shownTitle), [shownTitle]);
 
   return (
     <motion.div
@@ -146,21 +171,19 @@ export const BookSpine = ({
       )}
 
       {/* ── 책등 제목 — 세로쓰기 한 줄 ─────────────────────────
-          제목은 세로 한 열로만 흐르고, 책등 높이를 넘치면 …로 자른다(2열 금지).
-          세로쓰기라 -webkit-box-orient는 horizontal(=열 방향)로 두고 line-clamp:1로 한 열만.
+          제목은 세로 한 열로만 흐른다. 길면 fitTitle이 미리 …로 잘라 넣으므로
+          여기선 한 열 유지(maxWidth)와 넘침 방지(overflow)만 담당.
           전체 제목은 탭하면 상세에서 보인다(title 속성/tooltip 유지). */}
       <span
         title={book.title}
-        className="relative z-[3] mt-4 text-[14px] overflow-hidden text-spine-text"
+        className="relative z-[3] mt-1.5 text-[14px] overflow-hidden text-spine-text"
         style={{
           fontFamily: "'Noto Sans KR', sans-serif",
           fontWeight: 500,
           writingMode: 'vertical-lr',
-          maxHeight: '90%',
-          maxWidth: '1.3em',   // 한 열만
-          display: '-webkit-box',
-          WebkitBoxOrient: 'horizontal',
-          WebkitLineClamp: 1,
+          whiteSpace: 'nowrap',   // 한 열 고정(2열로 흐르지 않게)
+          maxHeight: '92%',
+          maxWidth: '1.3em',
           letterSpacing: '0.02em',
           lineHeight: 1.15,
           opacity: isLent ? 0.5 : 1,
