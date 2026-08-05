@@ -4,7 +4,6 @@ import { X, Users, Crown, Trash2, UserMinus, Loader2, Pencil, BookOpen, Lock, La
 import { useNavigate } from 'react-router-dom';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -522,8 +521,9 @@ export const CommunityDetailModal = ({
                 )}
               </div>
 
-              {/* Members List */}
-              <ScrollArea className="flex-1 min-h-0">
+              {/* Members List — 헤더/액션은 고정(shrink-0), 이 영역만 스크롤.
+                  radix ScrollArea가 모바일에서 스크롤이 안 먹던 문제 → 네이티브 overflow로 교체(B3) */}
+              <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
                 {!canViewMembers ? (
                   <div className="text-center py-12 text-muted-foreground px-4">
                     <Lock className="w-8 h-8 mx-auto mb-2 opacity-50" />
@@ -621,7 +621,7 @@ export const CommunityDetailModal = ({
                     </div>
                   </div>
                 )}
-              </ScrollArea>
+              </div>
             </div>
           </motion.div>
 

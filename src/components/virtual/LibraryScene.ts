@@ -792,7 +792,12 @@ export class LibraryScene extends Phaser.Scene {
   /** React 투어가 특정 가구를 강조/해제 (책장·게시판) */
   highlightFurniture(action: string | null) {
     if (this.tourHi) { this.tweens.killTweensOf(this.tourHi); this.tourHi.destroy(); this.tourHi = undefined; }
-    if (!action) return;
+    if (!action) {
+      // 투어 종료/해제 → 카메라를 다시 내 캐릭터로 (안내 대상이 화면 밖에 있었을 수 있음)
+      if (this.player) this.cameras.main.pan(this.player.x, this.player.y, 350, 'Sine.easeInOut');
+      this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+      return;
+    }
     const r = this.furnitureRectByAction.get(action);
     if (!r) return;
     const hi = this.add.graphics().setDepth(150000);
@@ -800,6 +805,9 @@ export class LibraryScene extends Phaser.Scene {
     hi.strokeRoundedRect(r.x - 4, r.y - 4, r.w + 8, r.h + 8, 6);
     this.tourHi = hi;
     this.tweens.add({ targets: hi, alpha: 0.25, duration: 550, yoyo: true, repeat: -1 });
+    // 안내 대상('이 책장' 등)이 화면 밖일 수 있으니 카메라를 그 위치로 이동해 보이게 한다.
+    this.cameras.main.stopFollow();
+    this.cameras.main.pan(r.x + r.w / 2, r.y + r.h / 2, 450, 'Sine.easeInOut');
   }
 
   update() {

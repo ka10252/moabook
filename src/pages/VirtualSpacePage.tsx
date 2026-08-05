@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, Suspense } from 'react';
 import { lazyRetry } from '@/lib/lazyRetry';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ArrowLeft, Loader2, UserRound, Smile, Send, BookOpen } from 'lucide-react';
 import Phaser from 'phaser';
@@ -74,6 +74,7 @@ export default function VirtualSpacePage() {
     return { id: b.id, title: b.title ?? '', author: b.author ?? null, coverUrl: b.cover_url ?? null, description: b.description ?? null };
   };
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
 
   const channelName = isCommunity ? `space:community:${communityId}` : 'space:global';
@@ -106,7 +107,8 @@ export default function VirtualSpacePage() {
   };
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [boardOpen, setBoardOpen] = useState(false);
+  // 게시판 열림을 URL(?board=1)로 유지 → 새로고침해도 게시판이 복원됨(B4)
+  const [boardOpen, setBoardOpen] = useState(() => searchParams.get('board') === '1');
   const [editorOpen, setEditorOpen] = useState(false);
   useEffect(() => { editorOpenRef.current = editorOpen; }, [editorOpen]);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
@@ -237,6 +239,9 @@ export default function VirtualSpacePage() {
           backgroundColor: '#e9e2d0',
           physics: { default: 'arcade', arcade: { debug: false } },
           scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
+          // windowEvents:false → Phaser가 window 레벨에서 캔버스 밖(=DOM 오버레이) 클릭까지
+          // 처리하던 걸 막는다. 이게 켜져 있으면 저장 버튼을 눌러도 뒤의 캐릭터/NPC가 클릭됐음(B1).
+          input: { windowEvents: false },
           scene: LibraryScene,
         });
         startScene(manifest, avatar);
@@ -255,6 +260,34 @@ export default function VirtualSpacePage() {
     // user 객체 전체가 아니라 id에만 의존 — 토큰 갱신으로 user 참조가 바뀌어도 게임을 재생성하지 않는다(깜빡임·presence churn 방지).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assetBase, communityId, isCommunity, user?.id]);
+
+  // 오버레이(캐릭터/읽는책/게시판/프로필)가 열려 있으면 Phaser 입력을 끈다.
+  //  · 마우스: windowEvents:false와 함께 클릭 관통 이중 차단(B1)
+  //  · 키보드: 게시판 글 입력 시 Phaser가 방향키·스페이스를 가로채(preventDefault) 한글 조합이
+  //    깨지고 문자가 누락되던 문제 해결 — disableGlobalCapture로 전역 캡처 해제(B2)
+  useEffect(() => {
+    const game = gameRef.current;
+    if (!game || !game.input) return;
+    const overlayOpen = boardOpen || editorOpen || readingPickerOpen || !!profileUserId;
+    game.input.enabled = !overlayOpen;
+    const kb = game.input.keyboard;
+    if (kb) {
+      kb.enabled = !overlayOpen;
+      if (overlayOpen) kb.disableGlobalCapture();
+      else kb.enableGlobalCapture();
+    }
+    // loading 의존: 새로고침으로 바로 게시판(board=1)에 진입한 경우, 게임 생성 완료(loading=false) 후
+    // 이 효과가 다시 돌아 키보드 캡처를 꺼준다.
+  }, [boardOpen, editorOpen, readingPickerOpen, profileUserId, loading]);
+
+  // 게시판 열림 상태를 URL에 반영(새로고침 복원용). 초기값은 위 useState에서 이미 URL로부터 읽었다.
+  useEffect(() => {
+    setSearchParams((p) => {
+      if (boardOpen) p.set('board', '1'); else p.delete('board');
+      return p;
+    }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boardOpen]);
 
   return (
     <div className="fixed inset-0 bg-[#e9e2d0] overflow-hidden">
