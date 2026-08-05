@@ -10,6 +10,20 @@ import { AddWishlistForm } from './AddWishlistForm';
 import { WishlistCard } from './WishlistCard';
 import { ChatModal } from '@/components/chat/ChatModal';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
+/** 위시 요청자에게 보낼 '이 책 가지고 있어요' 메시지 문안 */
+const buildOfferMessage = (item: WishlistItem) =>
+  `📚 위시리스트에 올리신 "${item.title}"${item.author ? ` · ${item.author}` : ''} 책을 제가 가지고 있어요!\n빌려드리거나 나눠드릴 수 있으니 편하게 답장 주세요 :)`;
 
 type Filter = 'all' | 'mine';
 
@@ -62,6 +76,9 @@ export const WishlistPage = () => {
   const [filter, setFilter] = useState<Filter>('all');
   const [chatOpen, setChatOpen] = useState(false);
   const [chatUserId, setChatUserId] = useState<string | null>(null);
+  // '가지고 있어요' 확인 팝업 대상 — 클릭 즉시 보내지 않고, 발송 내용 미리보기 후 확인받는다(F6)
+  const [msgTarget, setMsgTarget] = useState<WishlistItem | null>(null);
+  const [sendingMsg, setSendingMsg] = useState(false);
 
   const matches = (title: string, author?: string | null) =>
     title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -71,20 +88,30 @@ export const WishlistPage = () => {
   const mine = filteredItems.filter((item) => item.user_id === user?.id);
   const others = filteredItems.filter((item) => item.user_id !== user?.id);
 
-  const handleMessage = async (userId: string, bookTitle: string) => {
+  // 1단계: 버튼 클릭 → 확인 팝업만 연다(바로 발송하지 않음).
+  const handleMessage = (item: WishlistItem) => {
     if (!requireAuth()) return;
+    setMsgTarget(item);
+  };
 
-    const { conversation, error } = await startConversation(userId);
-    if (error || !conversation) {
-      toast.error('채팅을 시작할 수 없습니다');
-      return;
+  // 2단계: 확인 시 실제 발송 + 채팅 이동.
+  const confirmSendOffer = async () => {
+    if (!msgTarget) return;
+    setSendingMsg(true);
+    try {
+      const { conversation, error } = await startConversation(msgTarget.user_id);
+      if (error || !conversation) {
+        toast.error('채팅을 시작할 수 없습니다');
+        return;
+      }
+      await sendMessage(conversation.id, buildOfferMessage(msgTarget));
+      await refreshChat();
+      setChatUserId(msgTarget.user_id);
+      setChatOpen(true);
+      setMsgTarget(null);
+    } finally {
+      setSendingMsg(false);
     }
-
-    const contextMessage = `안녕하세요! 위시리스트에 있는 "${bookTitle}" 책에 대해 문의드립니다.`;
-    await sendMessage(conversation.id, contextMessage);
-    await refreshChat();
-    setChatUserId(userId);
-    setChatOpen(true);
   };
 
   const handleAddClick = () => {
@@ -221,7 +248,7 @@ export const WishlistPage = () => {
                     key={item.id}
                     item={item}
                     isOwner={false}
-                    onMessage={() => handleMessage(item.user_id, item.title)}
+                    onMessage={() => handleMessage(item)}
                   />
                 ))}
                 {/* 예시 카드에도 답장 버튼은 그대로 둔다 —
@@ -241,6 +268,35 @@ export const WishlistPage = () => {
           </>
         )}
       </div>
+
+      {/* '가지고 있어요' 확인 — 발송 내용을 미리 보여준 뒤 동의를 받고 보낸다(모르는 사이 전송 방지) */}
+      <AlertDialog open={!!msgTarget} onOpenChange={(o) => { if (!o) setMsgTarget(null); }}>
+        <AlertDialogContent className="rounded-2xl max-w-sm mx-4">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {msgTarget?.profile?.nickname || '이웃'}님에게 알릴까요?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              이 책을 가지고 있다고 알리는 메시지가 전송돼요. 이후 채팅에서 자유롭게 이야기할 수 있어요.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {msgTarget && (
+            <div className="rounded-xl bg-muted px-3 py-2.5 text-[13px] text-foreground whitespace-pre-wrap leading-relaxed">
+              {buildOfferMessage(msgTarget)}
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl" disabled={sendingMsg}>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); confirmSendOffer(); }}
+              disabled={sendingMsg}
+              className="rounded-xl"
+            >
+              {sendingMsg ? <Loader2 className="w-4 h-4 animate-spin" /> : '메시지 보내기'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <ChatModal
         isOpen={chatOpen}
