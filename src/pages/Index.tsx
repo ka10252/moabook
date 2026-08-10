@@ -159,7 +159,18 @@ const Index = () => {
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
   // 게시판 이름은 URL에 싣지 않는다 (지저분해진다) — id만 URL, 이름은 메모리에 둔다.
   const [boardName, setBoardName] = useState<string | null>(null);
-  const boardPage = boardId && boardName ? { communityId: boardId, communityName: boardName } : null;
+  // 새로고침하면 boardName(state)은 사라지지만 boardId(URL)는 남는다. 예전엔 이름이 없으면
+  // boardPage=null이 돼 게시판이 닫히고 커뮤니티 탭으로 보였다 → boardId만으로 열고 이름은 아래서 채운다.
+  const boardPage = boardId ? { communityId: boardId, communityName: boardName ?? '' } : null;
+
+  // 새로고침 복원: boardId만 있고 이름이 없으면 커뮤니티 이름을 조회해 채운다.
+  useEffect(() => {
+    if (!boardId || boardName) return;
+    let cancelled = false;
+    supabase.from('communities').select('name').eq('id', boardId).maybeSingle()
+      .then(({ data }) => { if (!cancelled && data?.name) setBoardName(data.name); });
+    return () => { cancelled = true; };
+  }, [boardId, boardName]);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   const { user, loading, signOut } = useAuth();

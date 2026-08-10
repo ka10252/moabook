@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Send, Loader2, Plus, Book as BookPickIcon, X, ChevronRight, Camera, ImageIcon } from 'lucide-react';
+import { ArrowLeft, Send, Loader2, Plus, Book as BookPickIcon, X, ChevronRight, Camera, ImageIcon, BookHeart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useMessages, Conversation } from '@/hooks/useChat';
@@ -32,7 +32,7 @@ interface ChatViewProps {
 }
 
 // Message type detection
-type MessageCategory = 'request' | 'accepted' | 'returned' | 'return_request' | 'image' | 'regular';
+type MessageCategory = 'request' | 'accepted' | 'returned' | 'return_request' | 'image' | 'wish_offer' | 'regular';
 
 interface ParsedMessage {
   category: MessageCategory;
@@ -199,6 +199,18 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
         mode: 'rent',
         bookId,
         displayText: cleanContent.replace(/^\[반납 요청\]\s*/, ''),
+      };
+    }
+
+    // 위시리스트 '이 책 가지고 있어요' 카드 — 책 등록물이 아니라 bookId가 없으므로
+    // 별도 경량 카드로 렌더한다(아래 wish_offer 블록).
+    if (content.startsWith('[위시 보유]')) {
+      return {
+        category: 'wish_offer',
+        transactionType: 'rent',
+        mode: 'rent',
+        bookId: null,
+        displayText: cleanContent.replace(/^\[위시 보유\]\s*/, ''),
       };
     }
 
@@ -582,6 +594,28 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
                             />
                           </a>
                           <p className={`text-xs ${isOwn ? 'text-right text-muted-foreground' : 'text-muted-foreground'}`}>
+                            {format(new Date(msg.created_at), 'a h:mm', { locale: ko })}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 위시 '가지고 있어요' 카드 — bookId가 없어 RentalMessageCard를 못 쓰므로 경량 카드 */}
+                    {parsed.category === 'wish_offer' && (
+                      <div className={`flex items-end gap-1 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+                        {isOwn && !msg.is_read && (
+                          <span className="text-[13px] font-bold text-primary leading-none mb-1 shrink-0">1</span>
+                        )}
+                        <div className="flex flex-col gap-1">
+                          <div className="rounded-2xl border border-primary/30 bg-primary/[0.06] px-3.5 py-3 max-w-[240px]">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <BookHeart className="w-4 h-4 text-primary shrink-0" />
+                              <p className="text-[13px] font-bold text-primary">위시 책을 가지고 있어요</p>
+                            </div>
+                            <p className="text-[14px] font-medium text-foreground leading-snug break-words">{parsed.displayText}</p>
+                            <p className="text-[12px] text-muted-foreground mt-1.5">빌려주거나 나눠줄 수 있어요. 편하게 답장 주세요.</p>
+                          </div>
+                          <p className={`text-xs ${isOwn ? 'text-right' : ''} text-muted-foreground`}>
                             {format(new Date(msg.created_at), 'a h:mm', { locale: ko })}
                           </p>
                         </div>

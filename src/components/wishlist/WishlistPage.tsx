@@ -21,9 +21,11 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-/** 위시 요청자에게 보낼 '이 책 가지고 있어요' 메시지 문안 */
-const buildOfferMessage = (item: WishlistItem) =>
-  `📚 위시리스트에 올리신 "${item.title}"${item.author ? ` · ${item.author}` : ''} 책을 제가 가지고 있어요!\n빌려드리거나 나눠드릴 수 있으니 편하게 답장 주세요 :)`;
+/** 카드에 보일 책 한 줄(제목 · 저자) */
+const offerBookLine = (item: WishlistItem) =>
+  `${item.title}${item.author ? ` · ${item.author}` : ''}`;
+/** 실제 전송 메시지 — [위시 보유] 접두사로 상대 채팅에서 카드로 렌더된다(ChatView) */
+const offerMessage = (item: WishlistItem) => `[위시 보유] ${offerBookLine(item)}`;
 
 type Filter = 'all' | 'mine';
 
@@ -104,7 +106,7 @@ export const WishlistPage = () => {
         toast.error('채팅을 시작할 수 없습니다');
         return;
       }
-      await sendMessage(conversation.id, buildOfferMessage(msgTarget));
+      await sendMessage(conversation.id, offerMessage(msgTarget));
       await refreshChat();
       setChatUserId(msgTarget.user_id);
       setChatOpen(true);
@@ -277,12 +279,14 @@ export const WishlistPage = () => {
               {msgTarget?.profile?.nickname || '이웃'}님에게 알릴까요?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              이 책을 가지고 있다고 알리는 메시지가 전송돼요. 이후 채팅에서 자유롭게 이야기할 수 있어요.
+              아래 카드가 전송돼요. 확인 후 채팅에서 자유롭게 이야기할 수 있어요.
             </AlertDialogDescription>
           </AlertDialogHeader>
           {msgTarget && (
-            <div className="rounded-xl bg-muted px-3 py-2.5 text-[13px] text-foreground whitespace-pre-wrap leading-relaxed">
-              {buildOfferMessage(msgTarget)}
+            <div className="rounded-2xl border border-primary/30 bg-primary/[0.06] px-3.5 py-3">
+              <p className="text-[12px] font-bold text-primary mb-1">📚 위시 책을 가지고 있어요</p>
+              <p className="text-[14px] font-medium text-foreground leading-snug break-words">{offerBookLine(msgTarget)}</p>
+              <p className="text-[12px] text-muted-foreground mt-1.5">빌려주거나 나눠줄 수 있어요. 편하게 답장 주세요.</p>
             </div>
           )}
           <AlertDialogFooter>
