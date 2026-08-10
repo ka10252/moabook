@@ -270,12 +270,11 @@ export default function VirtualSpacePage() {
     if (!game || !game.input) return;
     const overlayOpen = boardOpen || editorOpen || readingPickerOpen || !!profileUserId;
     game.input.enabled = !overlayOpen;
+    // game.input.keyboard 는 Keyboard'매니저'(씬 플러그인이 아님). enabled=false면 onKeyDown이
+    // preventDefault 이전에 early-return → 방향키·스페이스 가로채기가 멈춰 DOM 입력이 정상화된다.
+    // (enableGlobalCapture/disableGlobalCapture 는 매니저엔 없어서 호출 시 크래시했음)
     const kb = game.input.keyboard;
-    if (kb) {
-      kb.enabled = !overlayOpen;
-      if (overlayOpen) kb.disableGlobalCapture();
-      else kb.enableGlobalCapture();
-    }
+    if (kb) kb.enabled = !overlayOpen;
     // loading 의존: 새로고침으로 바로 게시판(board=1)에 진입한 경우, 게임 생성 완료(loading=false) 후
     // 이 효과가 다시 돌아 키보드 캡처를 꺼준다.
   }, [boardOpen, editorOpen, readingPickerOpen, profileUserId, loading]);
