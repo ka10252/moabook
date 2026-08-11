@@ -43,6 +43,8 @@ interface ParsedMessage {
   displayText: string;
   /** 위시 '가지고 있어요' 카드의 표지 URL(있으면). 없으면 placeholder */
   wishCover?: string | null;
+  /** 위시 카드에서 제안한 거래방식들(중복 가능) */
+  wishModes?: ('rent' | 'give' | 'sell')[];
 }
 
 export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
@@ -205,21 +207,24 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     }
 
     // 위시리스트 '이 책 가지고 있어요' 카드 — 책 등록물이 아니라 bookId가 없으므로 별도 경량 카드.
-    // 형식: [위시 보유:rent|give|sell] {제목 · 저자} [WISHCOVER:url]
+    // 형식: [위시 보유:rent,give,sell] {제목 · 저자} [WISHCOVER:url]  (모드 중복 가능)
     if (content.startsWith('[위시 보유')) {
-      const wishMode = (content.match(/^\[위시 보유(?::(\w+))?\]/)?.[1] as 'rent' | 'give' | 'sell') ?? 'rent';
+      const raw = content.match(/^\[위시 보유(?::([\w,]+))?\]/)?.[1] ?? 'rent';
+      const wishModes = raw.split(',').filter((m): m is 'rent' | 'give' | 'sell' =>
+        m === 'rent' || m === 'give' || m === 'sell');
       const wishCover = content.match(/\[WISHCOVER:([^\]]+)\]/)?.[1] ?? null;
       const text = content
-        .replace(/^\[위시 보유(?::\w+)?\]\s*/, '')
+        .replace(/^\[위시 보유(?::[\w,]+)?\]\s*/, '')
         .replace(/\s*\[WISHCOVER:[^\]]+\]/, '')
         .trim();
       return {
         category: 'wish_offer',
         transactionType: 'rent',
-        mode: wishMode,
+        mode: wishModes[0] ?? 'rent',
         bookId: null,
         displayText: text,
         wishCover,
+        wishModes: wishModes.length ? wishModes : ['rent'],
       };
     }
 
@@ -632,7 +637,9 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
                               <div className="min-w-0">
                                 <p className="text-[14px] font-medium text-foreground leading-snug break-words">{parsed.displayText}</p>
                                 <p className="text-[12px] text-primary font-semibold mt-1">
-                                  {parsed.mode === 'give' ? '나눠줄 수 있어요' : parsed.mode === 'sell' ? '팔 수 있어요' : '빌려줄 수 있어요'}
+                                  {(parsed.wishModes ?? [parsed.mode])
+                                    .map((m) => (m === 'give' ? '나눔' : m === 'sell' ? '판매' : '대여'))
+                                    .join(' · ')}{' 가능해요'}
                                 </p>
                               </div>
                             </div>

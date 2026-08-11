@@ -32,9 +32,10 @@ const OFFER_OPTIONS: { id: OfferMode; label: string }[] = [
 /** 카드에 보일 책 한 줄(제목 · 저자) */
 const offerBookLine = (item: WishlistItem) =>
   `${item.title}${item.author ? ` · ${item.author}` : ''}`;
-/** 실제 전송 메시지 — [위시 보유:mode] ... [WISHCOVER:url] 형식으로 상대 채팅에서 카드로 렌더된다(ChatView) */
-const offerMessage = (item: WishlistItem, mode: OfferMode) =>
-  `[위시 보유:${mode}] ${offerBookLine(item)}${item.cover_url ? ` [WISHCOVER:${item.cover_url}]` : ''}`;
+/** 실제 전송 메시지 — [위시 보유:rent,give] ... [WISHCOVER:url] (모드 중복 가능) → ChatView 카드로 렌더 */
+const offerMessage = (item: WishlistItem, modes: OfferMode[]) =>
+  `[위시 보유:${modes.join(',')}] ${offerBookLine(item)}${item.cover_url ? ` [WISHCOVER:${item.cover_url}]` : ''}`;
+const OFFER_LABEL: Record<OfferMode, string> = { rent: '대여', give: '나눔', sell: '판매' };
 
 type Filter = 'all' | 'mine';
 
@@ -89,8 +90,10 @@ export const WishlistPage = () => {
   const [chatUserId, setChatUserId] = useState<string | null>(null);
   // '가지고 있어요' 확인 팝업 대상 — 클릭 즉시 보내지 않고, 발송 내용 미리보기 후 확인받는다(F6)
   const [msgTarget, setMsgTarget] = useState<WishlistItem | null>(null);
-  const [offerMode, setOfferMode] = useState<OfferMode>('rent');
+  const [offerModes, setOfferModes] = useState<OfferMode[]>(['rent']);
   const [sendingMsg, setSendingMsg] = useState(false);
+  const toggleOfferMode = (m: OfferMode) =>
+    setOfferModes((prev) => (prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]));
 
   const matches = (title: string, author?: string | null) =>
     title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -104,13 +107,14 @@ export const WishlistPage = () => {
   // 요청자가 '사고 싶어요'면 기본을 판매로, 그 외엔 대여로 맞춰준다.
   const handleMessage = (item: WishlistItem) => {
     if (!requireAuth()) return;
-    setOfferMode(item.desired_mode === 'buy' ? 'sell' : 'rent');
+    setOfferModes(item.desired_mode === 'buy' ? ['sell'] : ['rent']);
     setMsgTarget(item);
   };
 
   // 2단계: 확인 시 실제 발송 + 채팅 이동.
   const confirmSendOffer = async () => {
     if (!msgTarget) return;
+    if (offerModes.length === 0) { toast.error('거래 방식을 하나 이상 선택해주세요'); return; }
     setSendingMsg(true);
     try {
       const { conversation, error } = await startConversation(msgTarget.user_id);
@@ -118,7 +122,7 @@ export const WishlistPage = () => {
         toast.error('채팅을 시작할 수 없습니다');
         return;
       }
-      await sendMessage(conversation.id, offerMessage(msgTarget, offerMode));
+      await sendMessage(conversation.id, offerMessage(msgTarget, offerModes));
       await refreshChat();
       setChatUserId(msgTarget.user_id);
       setChatOpen(true);
@@ -295,15 +299,15 @@ export const WishlistPage = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          {/* 거래방식 선택 */}
+          {/* 거래방식 선택 — 중복 가능 */}
           <div className="flex gap-2">
             {OFFER_OPTIONS.map((o) => (
               <button
                 key={o.id}
                 type="button"
-                onClick={() => setOfferMode(o.id)}
+                onClick={() => toggleOfferMode(o.id)}
                 className={`flex-1 h-9 rounded-lg text-[13px] font-medium border transition-colors ${
-                  offerMode === o.id ? 'border-primary text-primary bg-primary/10' : 'border-border text-muted-foreground'
+                  offerModes.includes(o.id) ? 'border-primary text-primary bg-primary/10' : 'border-border text-muted-foreground'
                 }`}
               >
                 {o.label}
@@ -324,7 +328,7 @@ export const WishlistPage = () => {
                 <div className="min-w-0">
                   <p className="text-[14px] font-medium text-foreground leading-snug break-words">{offerBookLine(msgTarget)}</p>
                   <p className="text-[12px] text-primary font-semibold mt-1">
-                    {offerMode === 'give' ? '나눠줄 수 있어요' : offerMode === 'sell' ? '팔 수 있어요' : '빌려줄 수 있어요'}
+                    {offerModes.length ? `${offerModes.map((m) => OFFER_LABEL[m]).join(' · ')} 가능해요` : '거래방식을 골라주세요'}
                   </p>
                 </div>
               </div>
@@ -334,7 +338,7 @@ export const WishlistPage = () => {
             <AlertDialogCancel className="rounded-xl" disabled={sendingMsg}>취소</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => { e.preventDefault(); confirmSendOffer(); }}
-              disabled={sendingMsg}
+              disabled={sendingMsg || offerModes.length === 0}
               className="rounded-xl"
             >
               {sendingMsg ? <Loader2 className="w-4 h-4 animate-spin" /> : '메시지 보내기'}

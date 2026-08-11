@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Send, MessageCircle, Trash2, Loader2, ChevronDown, ChevronUp, BookOpen, BookPlus, X, Search } from 'lucide-react';
+import { ArrowLeft, Send, MessageCircle, Trash2, Pencil, Loader2, ChevronDown, ChevronUp, BookOpen, BookPlus, X, Search } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -86,10 +86,12 @@ function PostItem({
   post,
   currentUserId,
   onDelete,
+  onEdit,
 }: {
   post: Post;
   currentUserId: string | undefined;
   onDelete: (id: string) => void;
+  onEdit: (id: string, content: string) => Promise<void> | void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -97,6 +99,16 @@ function PostItem({
   const [loadingComments, setLoadingComments] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(post.content);
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const saveEdit = async () => {
+    if (!draft.trim() || savingEdit) return;
+    setSavingEdit(true);
+    try { await onEdit(post.id, draft.trim()); setEditing(false); }
+    finally { setSavingEdit(false); }
+  };
 
   const loadComments = async () => {
     if (commentsLoaded) return;
@@ -152,17 +164,50 @@ function PostItem({
               </span>
               <div className="flex items-center gap-1 shrink-0">
                 <span className="text-[13px] text-muted-foreground">{timeAgo(post.created_at)}</span>
-                {post.author_id === currentUserId && (
-                  <button
-                    onClick={() => onDelete(post.id)}
-                    className="p-1 rounded text-muted-foreground hover:text-destructive transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                {post.author_id === currentUserId && !editing && (
+                  <>
+                    <button
+                      onClick={() => { setDraft(post.content); setEditing(true); }}
+                      className="p-1 rounded text-muted-foreground hover:text-primary transition-colors"
+                      aria-label="수정"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => onDelete(post.id)}
+                      className="p-1 rounded text-muted-foreground hover:text-destructive transition-colors"
+                      aria-label="삭제"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </>
                 )}
               </div>
             </div>
-            <p className="text-sm text-foreground mt-1 whitespace-pre-wrap break-words">{post.content}</p>
+            {editing ? (
+              <div className="mt-1.5">
+                <Textarea
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  rows={3}
+                  maxLength={2000}
+                  autoFocus
+                  className="text-sm bg-muted border-0 resize-none"
+                />
+                <div className="flex justify-end gap-1.5 mt-1.5">
+                  <button onClick={() => setEditing(false)} className="text-[13px] text-muted-foreground px-2 py-1">취소</button>
+                  <button
+                    onClick={saveEdit}
+                    disabled={savingEdit || !draft.trim()}
+                    className="text-[13px] font-semibold text-primary-foreground bg-primary rounded-full px-3 py-1 flex items-center gap-1 disabled:opacity-60"
+                  >
+                    {savingEdit && <Loader2 className="w-3 h-3 animate-spin" />} 저장
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-foreground mt-1 whitespace-pre-wrap break-words">{post.content}</p>
+            )}
             {post.book && <BookCard book={post.book} />}
           </div>
         </div>
@@ -390,6 +435,13 @@ export const CommunityBoard = ({ isOpen, onClose, communityId, communityName }: 
     setSubmitting(false);
   };
 
+  const handleEditPost = async (postId: string, content: string) => {
+    const { error } = await supabase.from('community_posts').update({ content }).eq('id', postId);
+    if (error) { toast.error('수정에 실패했어요'); throw error; }
+    setPosts(prev => prev.map(p => (p.id === postId ? { ...p, content } : p)));
+    toast.success('게시글을 수정했어요');
+  };
+
   const handleDeletePost = async (postId: string) => {
     await supabase.from('community_posts').delete().eq('id', postId);
     setPosts(prev => prev.filter(p => p.id !== postId));
@@ -540,7 +592,7 @@ export const CommunityBoard = ({ isOpen, onClose, communityId, communityName }: 
             ) : (
               <div className="p-4 space-y-3 pb-20">
                 {posts.map(post => (
-                  <PostItem key={post.id} post={post} currentUserId={user?.id} onDelete={handleDeletePost} />
+                  <PostItem key={post.id} post={post} currentUserId={user?.id} onDelete={handleDeletePost} onEdit={handleEditPost} />
                 ))}
               </div>
             )}
