@@ -9,6 +9,7 @@ import { useGuestGate } from '@/hooks/useGuestGate';
 import { AddWishlistForm } from './AddWishlistForm';
 import { WishlistCard } from './WishlistCard';
 import { ChatModal } from '@/components/chat/ChatModal';
+import { spineClassFrom } from '@/lib/spineColor';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -21,11 +22,19 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+type OfferMode = 'rent' | 'give' | 'sell';
+const OFFER_OPTIONS: { id: OfferMode; label: string }[] = [
+  { id: 'rent', label: '빌려줄게요' },
+  { id: 'give', label: '나눠줄게요' },
+  { id: 'sell', label: '팔게요' },
+];
+
 /** 카드에 보일 책 한 줄(제목 · 저자) */
 const offerBookLine = (item: WishlistItem) =>
   `${item.title}${item.author ? ` · ${item.author}` : ''}`;
-/** 실제 전송 메시지 — [위시 보유] 접두사로 상대 채팅에서 카드로 렌더된다(ChatView) */
-const offerMessage = (item: WishlistItem) => `[위시 보유] ${offerBookLine(item)}`;
+/** 실제 전송 메시지 — [위시 보유:mode] ... [WISHCOVER:url] 형식으로 상대 채팅에서 카드로 렌더된다(ChatView) */
+const offerMessage = (item: WishlistItem, mode: OfferMode) =>
+  `[위시 보유:${mode}] ${offerBookLine(item)}${item.cover_url ? ` [WISHCOVER:${item.cover_url}]` : ''}`;
 
 type Filter = 'all' | 'mine';
 
@@ -80,6 +89,7 @@ export const WishlistPage = () => {
   const [chatUserId, setChatUserId] = useState<string | null>(null);
   // '가지고 있어요' 확인 팝업 대상 — 클릭 즉시 보내지 않고, 발송 내용 미리보기 후 확인받는다(F6)
   const [msgTarget, setMsgTarget] = useState<WishlistItem | null>(null);
+  const [offerMode, setOfferMode] = useState<OfferMode>('rent');
   const [sendingMsg, setSendingMsg] = useState(false);
 
   const matches = (title: string, author?: string | null) =>
@@ -91,8 +101,10 @@ export const WishlistPage = () => {
   const others = filteredItems.filter((item) => item.user_id !== user?.id);
 
   // 1단계: 버튼 클릭 → 확인 팝업만 연다(바로 발송하지 않음).
+  // 요청자가 '사고 싶어요'면 기본을 판매로, 그 외엔 대여로 맞춰준다.
   const handleMessage = (item: WishlistItem) => {
     if (!requireAuth()) return;
+    setOfferMode(item.desired_mode === 'buy' ? 'sell' : 'rent');
     setMsgTarget(item);
   };
 
@@ -106,7 +118,7 @@ export const WishlistPage = () => {
         toast.error('채팅을 시작할 수 없습니다');
         return;
       }
-      await sendMessage(conversation.id, offerMessage(msgTarget));
+      await sendMessage(conversation.id, offerMessage(msgTarget, offerMode));
       await refreshChat();
       setChatUserId(msgTarget.user_id);
       setChatOpen(true);
@@ -279,14 +291,43 @@ export const WishlistPage = () => {
               {msgTarget?.profile?.nickname || '이웃'}님에게 알릴까요?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              아래 카드가 전송돼요. 확인 후 채팅에서 자유롭게 이야기할 수 있어요.
+              어떻게 줄 수 있는지 고르면, 아래 카드가 전송돼요. 확인 후 채팅에서 자유롭게 이야기할 수 있어요.
             </AlertDialogDescription>
           </AlertDialogHeader>
+
+          {/* 거래방식 선택 */}
+          <div className="flex gap-2">
+            {OFFER_OPTIONS.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => setOfferMode(o.id)}
+                className={`flex-1 h-9 rounded-lg text-[13px] font-medium border transition-colors ${
+                  offerMode === o.id ? 'border-primary text-primary bg-primary/10' : 'border-border text-muted-foreground'
+                }`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+
+          {/* 전송될 카드 미리보기 (표지 있으면 표지, 없으면 placeholder) */}
           {msgTarget && (
             <div className="rounded-2xl border border-primary/30 bg-primary/[0.06] px-3.5 py-3">
-              <p className="text-[12px] font-bold text-primary mb-1">📚 위시 책을 가지고 있어요</p>
-              <p className="text-[14px] font-medium text-foreground leading-snug break-words">{offerBookLine(msgTarget)}</p>
-              <p className="text-[12px] text-muted-foreground mt-1.5">빌려주거나 나눠줄 수 있어요. 편하게 답장 주세요.</p>
+              <p className="text-[12px] font-bold text-primary mb-2">📚 위시 책을 가지고 있어요</p>
+              <div className="flex gap-2.5">
+                {msgTarget.cover_url ? (
+                  <img src={msgTarget.cover_url} alt="" className="w-11 h-16 object-cover rounded shrink-0 bg-muted" />
+                ) : (
+                  <div className={`w-11 h-16 rounded shrink-0 ${spineClassFrom(msgTarget.title)}`} />
+                )}
+                <div className="min-w-0">
+                  <p className="text-[14px] font-medium text-foreground leading-snug break-words">{offerBookLine(msgTarget)}</p>
+                  <p className="text-[12px] text-primary font-semibold mt-1">
+                    {offerMode === 'give' ? '나눠줄 수 있어요' : offerMode === 'sell' ? '팔 수 있어요' : '빌려줄 수 있어요'}
+                  </p>
+                </div>
+              </div>
             </div>
           )}
           <AlertDialogFooter>

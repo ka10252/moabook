@@ -41,6 +41,8 @@ interface ParsedMessage {
   mode: 'rent' | 'sell' | 'give';
   bookId: string | null;
   displayText: string;
+  /** 위시 '가지고 있어요' 카드의 표지 URL(있으면). 없으면 placeholder */
+  wishCover?: string | null;
 }
 
 export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
@@ -202,15 +204,22 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
       };
     }
 
-    // 위시리스트 '이 책 가지고 있어요' 카드 — 책 등록물이 아니라 bookId가 없으므로
-    // 별도 경량 카드로 렌더한다(아래 wish_offer 블록).
-    if (content.startsWith('[위시 보유]')) {
+    // 위시리스트 '이 책 가지고 있어요' 카드 — 책 등록물이 아니라 bookId가 없으므로 별도 경량 카드.
+    // 형식: [위시 보유:rent|give|sell] {제목 · 저자} [WISHCOVER:url]
+    if (content.startsWith('[위시 보유')) {
+      const wishMode = (content.match(/^\[위시 보유(?::(\w+))?\]/)?.[1] as 'rent' | 'give' | 'sell') ?? 'rent';
+      const wishCover = content.match(/\[WISHCOVER:([^\]]+)\]/)?.[1] ?? null;
+      const text = content
+        .replace(/^\[위시 보유(?::\w+)?\]\s*/, '')
+        .replace(/\s*\[WISHCOVER:[^\]]+\]/, '')
+        .trim();
       return {
         category: 'wish_offer',
         transactionType: 'rent',
-        mode: 'rent',
+        mode: wishMode,
         bookId: null,
-        displayText: cleanContent.replace(/^\[위시 보유\]\s*/, ''),
+        displayText: text,
+        wishCover,
       };
     }
 
@@ -607,13 +616,26 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
                           <span className="text-[13px] font-bold text-primary leading-none mb-1 shrink-0">1</span>
                         )}
                         <div className="flex flex-col gap-1">
-                          <div className="rounded-2xl border border-primary/30 bg-primary/[0.06] px-3.5 py-3 max-w-[240px]">
-                            <div className="flex items-center gap-1.5 mb-1">
+                          <div className="rounded-2xl border border-primary/30 bg-primary/[0.06] px-3.5 py-3 max-w-[260px]">
+                            <div className="flex items-center gap-1.5 mb-2">
                               <BookHeart className="w-4 h-4 text-primary shrink-0" />
                               <p className="text-[13px] font-bold text-primary">위시 책을 가지고 있어요</p>
                             </div>
-                            <p className="text-[14px] font-medium text-foreground leading-snug break-words">{parsed.displayText}</p>
-                            <p className="text-[12px] text-muted-foreground mt-1.5">빌려주거나 나눠줄 수 있어요. 편하게 답장 주세요.</p>
+                            <div className="flex gap-2.5">
+                              {parsed.wishCover ? (
+                                <img src={parsed.wishCover} alt="" loading="lazy" className="w-11 h-16 object-cover rounded shrink-0 bg-muted" />
+                              ) : (
+                                <div className="w-11 h-16 rounded shrink-0 bg-muted flex items-center justify-center">
+                                  <BookPickIcon className="w-5 h-5 text-muted-foreground" />
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <p className="text-[14px] font-medium text-foreground leading-snug break-words">{parsed.displayText}</p>
+                                <p className="text-[12px] text-primary font-semibold mt-1">
+                                  {parsed.mode === 'give' ? '나눠줄 수 있어요' : parsed.mode === 'sell' ? '팔 수 있어요' : '빌려줄 수 있어요'}
+                                </p>
+                              </div>
+                            </div>
                           </div>
                           <p className={`text-xs ${isOwn ? 'text-right' : ''} text-muted-foreground`}>
                             {format(new Date(msg.created_at), 'a h:mm', { locale: ko })}
