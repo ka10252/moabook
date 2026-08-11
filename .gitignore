@@ -37,3 +37,7 @@ LAUNCH_ISSUES.md
 
 # Playwright MCP screenshots/logs
 .playwright-mcp/
+
+# build artefacts
+dev-dist
+Icon
