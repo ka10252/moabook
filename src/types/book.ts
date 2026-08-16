@@ -21,6 +21,10 @@ export interface Book {
   owner?: {
     nickname: string;
     avatar_url?: string | null;
+    /** 책 위치의 근거 — 주인이 고른 가까운 MRT역. 지도뷰가 이걸로 묶는다 */
+    mrtStation?: string | null;
+    /** 지역 필터용 planning area. 역을 고르면 함께 채워진다 */
+    district?: string | null;
   };
   community?: {
     name: string;
@@ -56,7 +60,15 @@ export const transformDbBook = (row: any): Book => ({
   owner_id: row.owner_id,
   created_at: row.created_at,
   updated_at: row.updated_at,
-  owner: row.profile ? { nickname: row.profile.nickname, avatar_url: row.profile.avatar_url } : undefined,
+  // district를 여기서 빠뜨리면 서가의 지역 필터가 조용히 전부 걸러낸다(예전에 그랬다).
+  owner: row.profile
+    ? {
+        nickname: row.profile.nickname,
+        avatar_url: row.profile.avatar_url,
+        mrtStation: row.profile.mrt_station ?? null,
+        district: row.profile.district ?? null,
+      }
+    : undefined,
   community: row.community ? { name: row.community.name } : null,
   spineColor: row.spine_color ?? spineFromTitle(row.title),
 });

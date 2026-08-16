@@ -27,7 +27,7 @@ export const useBooks = (options: UseBooksOptions = {}) => {
         .from('books')
         .select(`
           *,
-          profile:profiles!books_owner_id_fkey(nickname, avatar_url, district),
+          profile:profiles!books_owner_id_fkey(nickname, avatar_url, district, mrt_station),
           community:communities(name)
         `)
         .neq('status', 'sold') // Exclude sold books from bookshelf

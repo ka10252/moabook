@@ -345,3 +345,159 @@
     display: none;
   }
 }
+
+/* ── 지도뷰(Leaflet) ────────────────────────────────────────────────
+   책이 있는 역에 찍히는 마커. 흰 알약 안에 책 아이콘 + 권수.
+   자전거 앱 핀과 같은 읽기 방식이다 — 무엇이 몇 개 있는지 한눈에.        */
+.moa-map {
+  --moa-marker: hsl(var(--primary));
+  --moa-marker-active: hsl(var(--foreground));
+  background: hsl(var(--muted));
+  z-index: 0;
+}
+/* Leaflet 기본 divIcon 배경 제거 */
+.moa-marker-wrap { background: none; border: 0; }
+
+.moa-marker {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 8px 4px 5px;
+  border-radius: 999px;
+  background: hsl(var(--card));
+  border: 2px solid var(--ring);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.22);
+  white-space: nowrap;
+  transform: translateX(-50%) translateY(-50%);
+  margin-left: 20px;
+  margin-top: 20px;
+  width: max-content;
+  transition: transform 0.12s ease;
+}
+.moa-marker.is-active {
+  transform: translateX(-50%) translateY(-50%) scale(1.12);
+  background: hsl(var(--primary));
+}
+.moa-marker svg {
+  width: 15px;
+  height: 15px;
+  fill: var(--ring);
+  flex: none;
+}
+.moa-marker.is-active svg { fill: hsl(var(--primary-foreground)); }
+.moa-marker-count {
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1;
+  color: hsl(var(--foreground));
+}
+.moa-marker.is-active .moa-marker-count { color: hsl(var(--primary-foreground)); }
+
+/* 타일은 CARTO Positron/Dark Matter를 테마별로 갈아끼운다(BookMapView).
+   CSS 반전 트릭은 글자색까지 뒤집혀 지저분해서 쓰지 않는다. */
+
+/* 마커를 누르면 뜨는 말풍선 — 그 역에 어떤 책이 있는지 지도 위에서 바로 본다 */
+.moa-map .leaflet-popup-content-wrapper {
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
+  padding: 0;
+}
+.moa-map .leaflet-popup-content { margin: 0; width: auto !important; }
+.moa-map .leaflet-popup-tip { background: hsl(var(--card)); }
+.moa-map .leaflet-popup-close-button { color: hsl(var(--muted-foreground)); padding: 6px 7px 0 0; }
+
+.moa-pop-head {
+  display: flex; align-items: baseline; gap: 5px;
+  padding: 11px 30px 8px 12px; border-bottom: 1px solid hsl(var(--border));
+}
+.moa-pop-head b { font-size: 13.5px; font-weight: 750; letter-spacing: -0.01em; }
+.moa-pop-head span { font-size: 11px; color: hsl(var(--muted-foreground)); }
+.moa-pop-head em { margin-left: auto; font-style: normal; font-size: 11px; color: hsl(var(--muted-foreground)); }
+
+.moa-pop-list { max-height: 200px; overflow-y: auto; padding: 4px; }
+.moa-pop-row {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 6px; border: 0; background: none; border-radius: 9px;
+  text-align: left; cursor: pointer; font: inherit; color: inherit;
+}
+.moa-pop-row:hover { background: hsl(var(--muted)); }
+.moa-pop-thumb { width: 26px; height: 36px; border-radius: 2px; overflow: hidden; flex: none; background: hsl(var(--muted)); }
+.moa-pop-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.moa-pop-noimg { display: block; width: 100%; height: 100%; background: hsl(var(--muted)); }
+.moa-pop-meta { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+.moa-pop-title {
+  font-size: 12.5px; font-weight: 650; line-height: 1.3;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.moa-pop-author {
+  font-size: 11px; color: hsl(var(--muted-foreground)); line-height: 1.3;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.moa-pop-tag {
+  flex: none; font-size: 9.5px; padding: 2px 6px; border-radius: 999px;
+  background: hsl(var(--muted)); color: hsl(var(--muted-foreground));
+}
+.moa-pop-more {
+  margin: 0; padding: 6px 12px 10px; font-size: 10.5px;
+  color: hsl(var(--muted-foreground)); text-align: center;
+}
+
+.moa-map .leaflet-control-attribution {
+  font-size: 9px;
+  background: hsl(var(--card) / 0.8);
+  color: hsl(var(--muted-foreground));
+}
+.moa-map .leaflet-control-attribution a { color: hsl(var(--muted-foreground)); }
+.moa-map .leaflet-control-zoom a {
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border));
+}
+
+/* MRT역 레이어 — 타일(Positron/Dark Matter)이 역을 안 그려서 우리가 직접 찍는다.
+   책이 있는 역은 책 마커가 대신하므로 여기 안 나온다. */
+.moa-st { background: none; border: 0; }
+.moa-st-dot {
+  display: block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: hsl(var(--muted-foreground));
+  border: 2px solid hsl(var(--card));
+  box-shadow: 0 0 0 1px hsl(var(--muted-foreground) / 0.35);
+  transform: translate(-50%, -50%);
+  margin-left: 7px; margin-top: 7px;
+}
+.moa-st-lbl {
+  position: absolute;
+  left: 15px; top: 7px;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  color: hsl(var(--muted-foreground));
+  /* 지도 배경 위에서 글자가 묻히지 않게 얇은 외곽을 준다 */
+  text-shadow:
+    0 0 3px hsl(var(--card)), 0 0 3px hsl(var(--card)),
+    0 0 3px hsl(var(--card)), 0 0 3px hsl(var(--card));
+  pointer-events: none;
+}
+
+/* 책이 있는 역의 이름 — 점 대신 책 마커가 서 있으므로 이름만 마커 아래에 둔다 */
+.moa-st-lbl-below {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  color: hsl(var(--foreground));
+  text-shadow:
+    0 0 3px hsl(var(--card)), 0 0 3px hsl(var(--card)),
+    0 0 3px hsl(var(--card)), 0 0 3px hsl(var(--card));
+  pointer-events: none;
+}

@@ -16,7 +16,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { useBackClose } from '@/hooks/useBackClose';
 import { supabase } from '@/integrations/supabase/client';
-import { ChevronDown, Loader2, BookOpen, Heart, History, Search, X, MapPin, SlidersHorizontal, LayoutGrid, Library } from 'lucide-react';
+// ⚠️ lucide의 Map은 반드시 별칭으로 가져온다. 그냥 `Map`으로 import 하면
+//    이 모듈 안에서 전역 Map 생성자를 가려 `new Map<...>()`이 "Map is not a constructor"로 터진다.
+import { ChevronDown, Loader2, BookOpen, Heart, History, Search, X, MapPin, SlidersHorizontal, LayoutGrid, Library, Map as MapIcon } from 'lucide-react';
+import { BookMapView } from '@/components/BookMapView';
+import { STATION_DISTRICTS, MRT_STATIONS, getStation } from '@/data/mrtStations';
 import { BookCover } from './BookCover';
 
 import { toast } from 'sonner';
@@ -109,6 +113,11 @@ export const Bookshelf = ({
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
   const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
   const [districtDropdownOpen, setDistrictDropdownOpen] = useState(false);
+  // 역 단위 필터. 지역(planning area)은 몇 km라 "이 역 근처"를 못 고른다.
+  const [selectedStations, setSelectedStations] = useState<string[]>([]);
+  const [stationDropdownOpen, setStationDropdownOpen] = useState(false);
+  const [stationQuery, setStationQuery] = useState('');
+  const [districtQuery, setDistrictQuery] = useState('');
   const [showLikedBooks, setShowLikedBooks] = useState(false);
   const [showTransactionDashboard, setShowTransactionDashboard] = useState(false);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
@@ -125,17 +134,34 @@ export const Bookshelf = ({
   // Dynamic booksPerShelf based on container width
   const bookcaseRef = useRef<HTMLDivElement>(null);
   const [booksPerShelf, setBooksPerShelf] = useState(4);
-  // 책등(spine) ↔ 표지(cover) 보기 모드
-  const [viewMode, setViewMode] = useState<'spine' | 'cover'>(() => {
-    try { return (localStorage.getItem('moa_shelf_view') as 'spine' | 'cover') || 'spine'; } catch { return 'spine'; }
+  // 보기 모드 — 책등(spine) · 표지(cover) · 지도(map)
+  type ShelfView = 'spine' | 'cover' | 'map';
+  const [viewMode, setViewMode] = useState<ShelfView>(() => {
+    try {
+      const v = localStorage.getItem('moa_shelf_view');
+      return v === 'cover' || v === 'map' ? v : 'spine';
+    } catch { return 'spine'; }
   });
-  const toggleViewMode = () => {
-    setViewMode((prev) => {
-      const next = prev === 'spine' ? 'cover' : 'spine';
-      try { localStorage.setItem('moa_shelf_view', next); } catch { /* ignore */ }
-      return next;
-    });
+  const changeView = (next: ShelfView) => {
+    setViewMode(next);
+    try { localStorage.setItem('moa_shelf_view', next); } catch { /* ignore */ }
   };
+
+  // 지도에서 "내 위치" 기준으로 쓸 내 역. 없으면 반경 표시만 빠진다.
+  const [myStation, setMyStation] = useState<string | null>(null);
+  useEffect(() => {
+    if (!user) { setMyStation(null); return; }
+    let cancelled = false;
+    supabase
+      .from('profiles')
+      .select('mrt_station')
+      .eq('id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setMyStation((data as { mrt_station?: string | null } | null)?.mrt_station ?? null);
+      });
+    return () => { cancelled = true; };
+  }, [user]);
 
   const calcBooksPerShelf = useCallback((contentWidth: number) => {
     // contentWidth = content-box width of the outer scroll container (inside px-6 padding)
@@ -205,16 +231,38 @@ export const Bookshelf = ({
     onDeepLinkConsumed?.();
   }, [openBookId, loading, allBooks]);
 
-  // Singapore planning areas — service region is SG only
+  /**
+   * 역·지역 선택지는 싱가포르 전체를 다 보여준다. 책이 있는 곳만 남기면
+   * "저 동네는 아예 서비스가 안 되나?"로 읽히고, 앞으로 생길 동네를 미리 볼 수도 없다.
+   * 대신 각 항목에 현재 권수를 같이 적어 빈 곳인지 바로 알 수 있게 한다.
+   */
+  const bookCountByStation = useMemo(() => {
+    const counts = new Map<string, number>();
+    allBooks.forEach((b) => {
+      const id = b.owner?.mrtStation;
+      if (id) counts.set(id, (counts.get(id) ?? 0) + 1);
+    });
+    return counts;
+  }, [allBooks]);
+
+  const bookCountByDistrict = useMemo(() => {
+    const counts = new Map<string, number>();
+    allBooks.forEach((b) => {
+      const d = b.owner?.district;
+      if (d) counts.set(d, (counts.get(d) ?? 0) + 1);
+    });
+    return counts;
+  }, [allBooks]);
+
+  // 책이 있는 역을 위로 올린다 — 전부 보여주되 쓸모 있는 것부터.
+  const stationOptions = useMemo(() => {
+    return MRT_STATIONS
+      .map((station) => ({ station, count: bookCountByStation.get(station.id) ?? 0 }))
+      .sort((a, b) => b.count - a.count || a.station.name.localeCompare(b.station.name));
+  }, [bookCountByStation]);
+
   useEffect(() => {
-    setAvailableDistricts([
-      'Ang Mo Kio', 'Bedok', 'Bishan', 'Bukit Batok', 'Bukit Merah',
-      'Bukit Panjang', 'Bukit Timah', 'Choa Chu Kang', 'Clementi',
-      'Geylang', 'Hougang', 'Jurong East', 'Jurong West', 'Kallang',
-      'Marine Parade', 'Novena', 'Pasir Ris', 'Punggol', 'Queenstown',
-      'Sembawang', 'Sengkang', 'Serangoon', 'Tampines', 'Tanglin',
-      'Toa Payoh', 'Woodlands', 'Yishun',
-    ]);
+    setAvailableDistricts(STATION_DISTRICTS);
   }, []);
 
   const getFilterLabel = () => {
@@ -274,10 +322,18 @@ export const Bookshelf = ({
       });
     }
 
+    // 역과 지역은 OR가 아니라 AND로 좁힌다 — 둘 다 고르면 "그 지역의 그 역"이 된다.
+    if (selectedStations.length > 0) {
+      books = books.filter(book => {
+        const s = book.owner?.mrtStation;
+        return !!s && selectedStations.includes(s);
+      });
+    }
+
     if (selectedDistricts.length > 0) {
       books = books.filter(book => {
-        const d = (book.owner as any)?.district;
-        return d && selectedDistricts.includes(d);
+        const d = book.owner?.district;
+        return !!d && selectedDistricts.includes(d);
       });
     }
 
@@ -287,7 +343,7 @@ export const Bookshelf = ({
     }
 
     return sortShelfBooks(applyStatusFilter(books));
-  }, [allBooks, activeFilter, user?.id, communityMemberIds, selectedDistricts, searchQuery, sortShelfBooks, applyStatusFilter]);
+  }, [allBooks, activeFilter, user?.id, communityMemberIds, selectedStations, selectedDistricts, searchQuery, sortShelfBooks, applyStatusFilter]);
 
   // 검색 로그는 타이핑 중이 아니라 "멈춘 뒤"에 한 번만 남긴다.
   // 글자마다 찍으면 "책"을 치는 동안 ㅊ,채,책 3번이 남아 노이즈가 된다.
@@ -412,7 +468,7 @@ export const Bookshelf = ({
 
   // 필터·검색을 걸었는데 0건이면 빈 서가만 보여선 안 된다 — 왜 비었는지 알려준다.
   const hasActiveQuery =
-    searchQuery.trim() !== '' || statusFilter !== 'all' || selectedDistricts.length > 0;
+    searchQuery.trim() !== '' || statusFilter !== 'all' || selectedDistricts.length > 0 || selectedStations.length > 0;
   const showNoResults = totalRealBooks === 0 && hasActiveQuery && !showDummyBanner;
 
   // 결과 없음 안내를 띄울 땐 장식용 빈 서가 필러를 숨겨 메시지가 붕 뜨지 않게 한다.
@@ -430,7 +486,8 @@ export const Bookshelf = ({
   // 뱃지는 "시트 안에 숨어 있는 필터가 몇 개 켜져 있나"만 알려야 한다.
   const activeFilterCount =
     (sortBy !== 'newest' ? 1 : 0) +
-    (selectedDistricts.length > 0 ? 1 : 0);
+    (selectedDistricts.length > 0 ? 1 : 0) +
+    (selectedStations.length > 0 ? 1 : 0);
 
   return (
     <div className="flex flex-col min-h-full relative">
@@ -525,34 +582,30 @@ export const Bookshelf = ({
             ))}
           </div>
 
-          {/* 책등 ↔ 표지 보기 — 두 모드가 다 보이는 세그먼트 토글(현재 모드가 채워져 보임) */}
+          {/* 책등 · 표지 · 지도 — 세 모드가 다 보이는 세그먼트 토글(현재 모드가 채워져 보임) */}
           <div
             role="group"
             aria-label="보기 방식"
             className="flex items-center shrink-0 rounded-full border border-border p-0.5"
           >
-            <button
-              onClick={() => { if (viewMode !== 'spine') toggleViewMode(); }}
-              aria-pressed={viewMode === 'spine'}
-              aria-label="책등으로 보기"
-              title="책등으로 보기"
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                viewMode === 'spine' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Library className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => { if (viewMode !== 'cover') toggleViewMode(); }}
-              aria-pressed={viewMode === 'cover'}
-              aria-label="표지로 보기"
-              title="표지로 보기"
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                viewMode === 'cover' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <LayoutGrid className="w-4 h-4" />
-            </button>
+            {([
+              { key: 'spine', Icon: Library, label: '책등으로 보기' },
+              { key: 'cover', Icon: LayoutGrid, label: '표지로 보기' },
+              { key: 'map', Icon: MapIcon, label: '지도로 보기' },
+            ] as const).map(({ key, Icon, label }) => (
+              <button
+                key={key}
+                onClick={() => { if (viewMode !== key) changeView(key); }}
+                aria-pressed={viewMode === key}
+                aria-label={label}
+                title={label}
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                  viewMode === key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+              </button>
+            ))}
           </div>
 
           {/* 정밀 필터 (지역·정렬) */}
@@ -602,6 +655,18 @@ export const Bookshelf = ({
         ) : loading || txLoading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : viewMode === 'map' ? (
+          <div className="max-w-[520px] mx-auto w-full -mx-2">
+            <BookMapView
+              books={filteredBooks}
+              myStationId={myStation}
+              onSelectBook={(book) => {
+                trackBrowse();
+                track('book_viewed', { book_id: book.id, from: 'map' });
+                setSelectedBook(book);
+              }}
+            />
           </div>
         ) : (
           <motion.div
@@ -726,7 +791,7 @@ export const Bookshelf = ({
                         ? <>‘{searchQuery.trim()}’ 검색 결과가 없어요. 다른 검색어나 필터를 바꿔보세요.</>
                         : '필터를 바꾸거나 초기화해보세요.'}
                     </p>
-                    {(statusFilter !== 'all' || selectedDistricts.length > 0) && (
+                    {(statusFilter !== 'all' || selectedDistricts.length > 0 || selectedStations.length > 0) && (
                       <button
                         onClick={() => { setStatusFilter('all'); setSelectedDistricts([]); }}
                         className="mt-3 text-xs font-semibold text-primary underline underline-offset-2"
@@ -756,7 +821,7 @@ export const Bookshelf = ({
       </motion.button>
 
       {/* Filter Dialog */}
-      <Dialog open={showFilterSheet} onOpenChange={v => { setShowFilterSheet(v); if (!v) setDistrictDropdownOpen(false); }}>
+      <Dialog open={showFilterSheet} onOpenChange={v => { setShowFilterSheet(v); if (!v) { setDistrictDropdownOpen(false); setStationDropdownOpen(false); setStationQuery(""); setDistrictQuery(""); } }}>
         <DialogContent className="w-[calc(100%-2rem)] max-w-sm rounded-2xl mb-[4vh] overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="text-left text-base">필터 / 정렬</DialogTitle>
@@ -777,6 +842,114 @@ export const Bookshelf = ({
 
             {/* 책 상태는 헤더 칩으로 상시 노출한다 — 시트에 두면 같은 필터가 두 곳에 생긴다 */}
 
+            {/* 역으로 찾기 — 지역보다 좁게. 목록엔 실제로 책이 있는 역만 나온다. */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">가까운 역</p>
+                {selectedStations.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStations([])}
+                    className="text-[13px] text-muted-foreground underline underline-offset-2"
+                  >
+                    선택 해제 ({selectedStations.length})
+                  </button>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground -mt-1">
+                책 주인이 설정한 가까운 역 기준이에요. 싱가포르 전체 역에서 고를 수 있어요.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setStationDropdownOpen(v => !v)}
+                className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-xl border border-border bg-background hover:bg-muted/50 transition-colors"
+              >
+                <span className="flex items-center gap-1.5 text-left min-w-0">
+                  <MapIcon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  {selectedStations.length === 0
+                    ? <span className="text-muted-foreground">역 선택 (복수 가능)</span>
+                    : <span className="text-foreground font-medium truncate">
+                        {selectedStations.map(id => getStation(id)?.name ?? id).join(', ')}
+                      </span>
+                  }
+                </span>
+                <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200 ${stationDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {stationDropdownOpen && (
+                <div className="rounded-xl border border-border bg-muted/30 overflow-hidden">
+                  {(
+                    <div className="p-2 border-b border-border bg-background sticky top-0 z-10">
+                      <input
+                        type="text"
+                        value={stationQuery}
+                        onChange={(e) => setStationQuery(e.target.value)}
+                        placeholder="역 이름 검색 (Clementi, 클레멘티, 노선 EW)"
+                        className="w-full h-9 px-3 rounded-lg bg-muted/50 border-0 text-xs text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary outline-none"
+                      />
+                    </div>
+                  )}
+                  <div className="max-h-56 overflow-y-auto">
+                    {stationOptions
+                      .filter(({ station }) => {
+                        const q = stationQuery.trim().toLowerCase();
+                        if (!q) return true;
+                        return station.name.toLowerCase().includes(q)
+                          || station.nameKo.includes(stationQuery.trim())
+                          || station.district.toLowerCase().includes(q)
+                          || station.region.includes(stationQuery.trim())
+                          || station.lines.some((l) => l.toLowerCase() === q);
+                      })
+                      .map(({ station, count }) => {
+                        const checked = selectedStations.includes(station.id);
+                        return (
+                          <button
+                            key={station.id}
+                            type="button"
+                            onClick={() => setSelectedStations(prev =>
+                              checked ? prev.filter(x => x !== station.id) : [...prev, station.id]
+                            )}
+                            className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left transition-colors ${
+                              checked ? 'bg-primary/10 text-primary font-medium' : 'bg-background hover:bg-muted/60 text-foreground/80'
+                            }`}
+                          >
+                            <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                              checked ? 'bg-primary border-primary' : 'border-border'
+                            }`}>
+                              {checked && (
+                                <svg className="w-2 h-2 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+                                </svg>
+                              )}
+                            </span>
+                            <span className="truncate text-xs">
+                              {station.name} <span className="text-muted-foreground">{station.nameKo}</span>
+                            </span>
+                            <span className={`ml-auto text-[11px] shrink-0 ${count > 0 ? 'text-muted-foreground' : 'text-faint'}`}>
+                              {count > 0 ? `${count}권` : '없음'}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    {stationOptions.filter(({ station }) => {
+                      const q = stationQuery.trim().toLowerCase();
+                      if (!q) return true;
+                      return station.name.toLowerCase().includes(q)
+                        || station.nameKo.includes(stationQuery.trim())
+                        || station.district.toLowerCase().includes(q)
+                        || station.region.includes(stationQuery.trim())
+                        || station.lines.some((l) => l.toLowerCase() === q);
+                    }).length === 0 && (
+                      <p className="px-3 py-4 text-[11px] text-muted-foreground text-center">
+                        그런 역이 없어요. 영문·한글 어느 쪽으로 쳐도 찾을 수 있어요.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* District multi-select — inline expand (no absolute, no overflow-clip issue) */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -792,7 +965,7 @@ export const Bookshelf = ({
                 )}
               </div>
               <p className="text-[11px] text-muted-foreground -mt-1">
-                현재 싱가포르 지역만 서비스해요. 지역은 책 등록·거래 위치 기준이에요.
+                역보다 넓은 범위로 찾을 때 써요. 싱가포르 전 지역에서 고를 수 있어요.
               </p>
 
               {/* Trigger button */}
@@ -814,9 +987,21 @@ export const Bookshelf = ({
               {/* Inline expanded list — in document flow so dialog can scroll */}
               {districtDropdownOpen && (
                 <div className="rounded-xl border border-border bg-muted/30 overflow-hidden">
-                  <div className="grid grid-cols-2 gap-px bg-border">
-                    {availableDistricts.map(d => {
+                  <div className="p-2 border-b border-border bg-background">
+                    <input
+                      type="text"
+                      value={districtQuery}
+                      onChange={(e) => setDistrictQuery(e.target.value)}
+                      placeholder="지역 검색 (Clementi, Tampines)"
+                      className="w-full h-9 px-3 rounded-lg bg-muted/50 border-0 text-xs text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary outline-none"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-px bg-border max-h-56 overflow-y-auto">
+                    {availableDistricts
+                      .filter(d => !districtQuery.trim() || d.toLowerCase().includes(districtQuery.trim().toLowerCase()))
+                      .map(d => {
                       const checked = selectedDistricts.includes(d);
+                      const dCount = bookCountByDistrict.get(d) ?? 0;
                       return (
                         <button
                           key={d}
@@ -838,10 +1023,18 @@ export const Bookshelf = ({
                             )}
                           </span>
                           <span className="truncate text-xs">{d}</span>
+                          <span className={`ml-auto text-[10.5px] shrink-0 ${dCount > 0 ? 'text-muted-foreground' : 'text-faint'}`}>
+                            {dCount > 0 ? dCount : ''}
+                          </span>
                         </button>
                       );
                     })}
                   </div>
+                  {availableDistricts.filter(d => !districtQuery.trim() || d.toLowerCase().includes(districtQuery.trim().toLowerCase())).length === 0 && (
+                    <p className="px-3 py-4 text-[11px] text-muted-foreground text-center bg-background">
+                      그런 지역이 없어요.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -849,7 +1042,7 @@ export const Bookshelf = ({
             {/* Reset */}
             {activeFilterCount > 0 && (
               <button
-                onClick={() => { setStatusFilter('all'); setSortBy('newest'); setSelectedDistricts([]); }}
+                onClick={() => { setStatusFilter('all'); setSortBy('newest'); setSelectedDistricts([]); setSelectedStations([]); }}
                 className="text-xs text-muted-foreground underline underline-offset-2"
               >
                 필터 초기화

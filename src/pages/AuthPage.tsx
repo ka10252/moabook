@@ -10,18 +10,11 @@ import { z } from 'zod';
 import { PasswordRequirements } from '@/components/auth/PasswordRequirements';
 import { passwordSchema } from '@/lib/passwordSchema';
 import { ALLOWED_COUNTRY } from '@/data/countries';
+import { MrtStationPicker } from '@/components/MrtStationPicker';
+import { getStation } from '@/data/mrtStations';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
-// 싱가포르 권역(옵셔널). 하이퍼로컬 매칭 참고용이라 대략적인 5개 권역 + 캠퍼스로 충분하다.
-const SG_REGIONS = [
-  '센트럴 (Orchard·Bugis·Novena)',
-  '동부 East (Tampines·Bedok·Katong)',
-  '북동부 North-East (Serangoon·Hougang·Punggol)',
-  '북부 North (Woodlands·Yishun·AMK)',
-  '서부 West (Jurong·Clementi·Bukit Batok)',
-  'NUS·Kent Ridge 인근',
-  '기타',
-];
+// 권역(region)은 이제 고른 역에서 유도한다 — 유저가 두 번 답하지 않게.
 
 const signUpSchema = z.object({
   email: z.string().trim().email({ message: "올바른 이메일 주소를 입력해주세요" }).max(255),
@@ -66,7 +59,10 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
   const [nickname, setNickname] = useState('');
   // 싱가포르 거주 여부(필수) + 권역(옵셔널). 국가 드롭다운을 대신한다.
   const [residence, setResidence] = useState<'' | 'yes' | 'no'>('');
-  const [region, setRegion] = useState('');
+  // 사는 지역 대신 "집에서 가까운 역"을 받는다. 지역은 범위가 몇 km라 지도에서 쓸모가 없고,
+  // 역은 누구나 아는 공공장소라 위치를 드러내지 않으면서 거리 감각이 산다.
+  // 지역(district)은 역에서 유도해 함께 저장한다 — 기존 지역 필터가 그대로 동작하게.
+  const [station, setStation] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showRegionBlock, setShowRegionBlock] = useState(false);
   /**
@@ -150,8 +146,8 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
           setIsLoading(false);
           return;
         }
-        if (!region) {
-          toast.error('사는 지역을 선택해주세요');
+        if (!station) {
+          toast.error('집에서 가까운 역을 선택해주세요');
           setIsLoading(false);
           return;
         }
@@ -162,7 +158,10 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
           return;
         }
 
-        const { error, needsEmailConfirmation } = await signUp(email, password, nickname, ALLOWED_COUNTRY, region);
+        const picked = getStation(station);
+        const { error, needsEmailConfirmation } = await signUp(
+          email, password, nickname, ALLOWED_COUNTRY, picked?.region, station, picked?.district
+        );
         if (error) {
           toast.error(authErrorMessage(error.message));
         } else if (needsEmailConfirmation) {
@@ -353,22 +352,18 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
                   </div>
                 </div>
 
-                {/* 권역 — 필수. 거주 중일 때만 노출. 하이퍼로컬 매칭·필터용(정확 주소 대신 권역). */}
+                {/* 가까운 역 — 필수. 거주 중일 때만 노출.
+                    책이 지도에 뜨는 자리이자, 실제로 만나서 주고받는 지점이 된다.
+                    집 주소는 묻지 않는다 — 역까지만 공개된다. */}
                 {residence === 'yes' && (
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>사는 지역 <span className="text-primary">*</span></span>
+                      <span>집에서 가까운 역 <span className="text-primary">*</span></span>
                     </div>
-                    <select
-                      value={region}
-                      onChange={(e) => setRegion(e.target.value)}
-                      className="w-full h-12 px-4 rounded-xl bg-muted/50 border-0 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-primary outline-none"
-                    >
-                      <option value="" disabled>지역을 선택하세요</option>
-                      {SG_REGIONS.map((r) => (
-                        <option key={r} value={r}>{r}</option>
-                      ))}
-                    </select>
+                    <MrtStationPicker value={station} onChange={setStation} />
+                    <p className="text-[11px] text-faint pl-1">
+                      내 책이 이 역에 표시돼요. 집 위치는 다른 사람에게 보이지 않아요.
+                    </p>
                   </div>
                 )}
               </>

@@ -11,7 +11,11 @@ interface AuthContextType {
     password: string,
     nickname: string,
     country?: string,
-    region?: string
+    region?: string,
+    /** 집에서 가까운 MRT역 id — 책 위치의 기준 */
+    mrtStation?: string,
+    /** 역에서 유도한 planning area — 지역 필터용 */
+    district?: string
   ) => Promise<{ error: Error | null; needsEmailConfirmation: boolean }>;
   resendConfirmation: (email: string) => Promise<{ error: Error | null }>;
   requestPasswordReset: (email: string) => Promise<{ error: Error | null }>;
@@ -48,7 +52,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, nickname: string, country?: string, region?: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    nickname: string,
+    country?: string,
+    region?: string,
+    mrtStation?: string,
+    district?: string
+  ) => {
     // Check if nickname is unique (case-insensitive)
     const { data: existingProfile } = await supabase
       .from('profiles')
@@ -73,6 +85,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           nickname,
           ...(country ? { country } : {}),
           ...(region ? { region } : {}),
+          ...(mrtStation ? { mrt_station: mrtStation } : {}),
+          ...(district ? { district } : {}),
         },
       },
     });

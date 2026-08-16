@@ -58,7 +58,8 @@ import { usePushNotifications, pushResultMessage } from '@/hooks/usePushNotifica
 import { toast } from 'sonner';
 import { CountrySelector } from '@/components/auth/CountrySelector';
 import { ALLOWED_COUNTRY } from '@/data/countries';
-import { SINGAPORE_DISTRICTS } from '@/data/singaporeDistricts';
+import { MrtStationPicker } from '@/components/MrtStationPicker';
+import { getStation } from '@/data/mrtStations';
 import { spineClassFrom } from '@/lib/spineColor';
 import { TelegramSettings } from '@/components/profile/TelegramSettings';
 import { CharacterEditor } from '@/components/virtual/CharacterEditor';
@@ -164,6 +165,8 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   const avatarFileRef = useRef<HTMLInputElement>(null);
   const [country, setCountry] = useState('');
   const [district, setDistrict] = useState('');
+  // 가까운 역. 지도뷰가 이걸로 책을 묶는다. district는 역에서 유도해 같이 저장한다.
+  const [station, setStation] = useState('');
   const [school, setSchool] = useState<string | null>(null);
   // 학교 이메일 인증(별도 이메일 OTP) 인라인 플로우
   const [schoolStep, setSchoolStep] = useState<'idle' | 'email' | 'code'>('idle');
@@ -200,7 +203,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
         .from('profiles')
         // 명시 컬럼만. telegram_link_code(보안)·gender·age·telegram_chat_id는 base에서 회수됨
         // → gender/age는 아래 get_my_private_profile RPC로 본인만 읽는다.
-        .select('id, nickname, avatar_url, bio, gender_public, age_public, country, district, region, pixel_avatar, reading_book, reading_book_id, telegram_opt_in, school, featured_badge, badges_public, created_at, updated_at')
+        .select('id, nickname, avatar_url, bio, gender_public, age_public, country, district, region, mrt_station, pixel_avatar, reading_book, reading_book_id, telegram_opt_in, school, featured_badge, badges_public, created_at, updated_at')
         .eq('id', user.id)
         .single();
 
@@ -223,6 +226,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
         setAvatarUrl(profileData.avatar_url);
         setCountry(profileData.country || '');
         setDistrict(profileData.district || '');
+        setStation((profileData as { mrt_station?: string | null }).mrt_station || '');
         const schoolFromDb = (profileData as { school?: string | null }).school ?? null;
         setSchool(schoolFromDb);
         // 가입 이메일이 학교 도메인이면 코드 없이 바로 인증(멱등, 매치될 때만 세팅).
@@ -372,7 +376,10 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
           gender_public: genderPublic,
           age_public: agePublic,
           country: country || null,
-          district: country === 'SG' ? district || null : null,
+          // 역을 고르면 지역은 거기서 유도한다 — 둘이 어긋나면 지도와 필터가 다른 말을 하게 된다.
+          district: country === 'SG' ? (getStation(station)?.district || district || null) : null,
+          region: country === 'SG' ? (getStation(station)?.region || null) : null,
+          mrt_station: country === 'SG' ? station || null : null,
         } as Record<string, unknown>)
         .eq('id', user.id);
 
@@ -557,10 +564,10 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                 )}
               </h1>
               {bio && <p className="text-xs text-muted-foreground mt-1.5">{bio}</p>}
-              {district && (
+              {(getStation(station) || district) && (
                 <p className="text-[12.5px] text-faint mt-1.5 flex items-center justify-center gap-1">
                   <MapPin className="w-3 h-3" />
-                  {district}
+                  {getStation(station)?.name ?? district}
                 </p>
               )}
 
@@ -870,22 +877,12 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                 <div className="space-y-2">
                   <Label className="text-[12px] font-bold tracking-wide text-muted-foreground flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5" />
-                    거주 지역
+                    집에서 가까운 역
                   </Label>
-                  <Select value={district} onValueChange={setDistrict}>
-                    <SelectTrigger className="h-11 text-[15px] bg-card border-border rounded-xl">
-                      <SelectValue placeholder="지역을 선택하세요" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-64 overflow-y-auto">
-                      {SINGAPORE_DISTRICTS.map((d) => (
-                        <SelectItem key={d} value={d}>
-                          {d}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <MrtStationPicker value={station} onChange={setStation} />
                   <p className="text-[12px] text-faint">
-                    지역을 설정하면 이웃 책장 필터를 사용할 수 있습니다
+                    내 책이 이 역에 표시돼요. 집 위치는 다른 사람에게 보이지 않아요.
+                    {district && !station && ` (지금은 ${district}로 설정돼 있어요)`}
                   </p>
                 </div>
               )}
