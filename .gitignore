@@ -41,3 +41,20 @@ LAUNCH_ISSUES.md
 # build artefacts
 dev-dist
 Icon?
+
+# ── 네이티브 셸 (Capacitor) ───────────────────────────────
+# android/ · ios/ 자체는 커밋한다 — 서명 설정·권한·아이콘이 여기 들어가고,
+# 지우면 다시 만들 때 그 설정이 전부 날아간다.
+# 대신 빌드 산물과 동기화되는 웹 자산은 제외한다.
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/app/src/main/assets/public/
+android/app/src/main/res/xml/config.xml
+ios/App/build/
+ios/App/App/public/
+ios/App/App/capacitor.config.json
+ios/App/Pods/
+ios/App/App.xcworkspace/xcuserdata/
+ios/.swiftpm/

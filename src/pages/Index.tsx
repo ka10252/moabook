@@ -57,7 +57,7 @@ const Header = ({
   markAnnouncementAsSeen: () => void;
   onLogoClick: () => void;
 }) => (
-  <header className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+  <header className="safe-top fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
     <div className="flex items-center justify-between px-4 h-14 max-w-[520px] mx-auto w-full">
       <img src="/moa-logo.png"      alt="MOA Book" className="h-8 block dark:hidden cursor-pointer" onClick={onLogoClick} />
       <img src="/moa-logo-dark.png" alt="MOA Book" className="h-8 hidden dark:block cursor-pointer" onClick={onLogoClick} />

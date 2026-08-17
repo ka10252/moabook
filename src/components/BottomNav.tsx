@@ -18,7 +18,7 @@ const navItems = [
 
 export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
   return (
-    <nav className="nav-bar fixed bottom-0 left-0 right-0 z-40 h-20">
+    <nav className="nav-bar safe-bottom fixed bottom-0 left-0 right-0 z-40 min-h-20">
       <div className="flex items-center justify-around px-2 max-w-[520px] mx-auto w-full h-full">
         {navItems.map((item) => {
           const Icon = item.icon;

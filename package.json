@@ -17,9 +17,19 @@
     "config:push": "supabase config push",
     "smoke": "node scripts/smoke.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
-    "badges:sql": "node scripts/badges-sql.mjs"
+    "badges:sql": "node scripts/badges-sql.mjs",
+    "native:sync": "vite build && cap sync",
+    "native:ios": "vite build && cap sync ios && cap open ios",
+    "native:android": "vite build && cap sync android && cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
+    "@capacitor/keyboard": "^8.0.5",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.3",
     "@fontsource/noto-sans-kr": "^5.2.9",
     "@fontsource/plus-jakarta-sans": "^5.2.8",
     "@radix-ui/react-alert-dialog": "^1.1.14",
@@ -58,6 +68,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.0",
     "@eslint/js": "^9.32.0",
     "@tailwindcss/typography": "^0.5.16",
     "@testing-library/jest-dom": "^6.6.0",

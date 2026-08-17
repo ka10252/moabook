@@ -317,6 +317,20 @@
     @apply bg-primary text-primary-foreground;
   }
 
+  /* ── 안전영역 (노치 · 홈 인디케이터) ───────────────────
+     index.html에 viewport-fit=cover가 이미 있어서 웹뷰가 화면 끝까지 그린다.
+     그 상태로 두면 iPhone에서 **상단이 상태바에 가리고 하단 탭이 홈 인디케이터에 겹친다.**
+     웹(PWA)에서는 env(safe-area-*)가 0이라 아무 변화가 없다 — 한 규칙으로 둘 다 덮는다.
+
+     ⚠️ 높이를 h-20처럼 고정한 요소에는 padding만 더하면 안 된다. 안쪽이 그만큼 눌린다.
+        그래서 탭바는 min-height + padding 조합으로 늘어나게 둔다. */
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
   /* ── 터치 타깃 44px ────────────────────────────────────
      Fitts's law(1954) · Apple HIG 44pt · WCAG 2.5.5 Target Size.
      아이콘 자체를 44px로 키우면 촘촘한 줄(뷰 전환 세그먼트, 카드 액션)에서
