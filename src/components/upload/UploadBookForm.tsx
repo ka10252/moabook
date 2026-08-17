@@ -243,6 +243,18 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
   // 이름이 길면 줄이 넘치고, 펼치면 바로 보인다.
   const detailSummary = `${conditionLabel(formData.condition)} · ${formData.isPublic ? '전체 공개' : '커뮤니티'}`;
 
+  /**
+   * 책을 고르기 전에는 제목 검색창 하나만 보여준다.
+   *
+   * 등록 탭 안내가 "제목만 입력하면 끝!"이라고 약속하는데, 예전엔 닫자마자 섹션 6개가
+   * 한꺼번에 펼쳐져서 약속과 화면이 어긋났다. 제목을 정하기 전에는 나머지를 정할 수도 없다 —
+   * 어떤 책인지 모르는 채로 '상태'를 고르는 건 순서가 뒤바뀐 것이다.
+   *
+   * 기준은 저자·설명 칸을 여는 조건과 같게 둔다. 한 글자만 쳐도 아래가 우르르 나타나면
+   * 검색 목록이 떠 있는 동안 화면이 튄다.
+   */
+  const bookChosen = manualEntry || !!matched || !!formData.author.trim();
+
   return (
     <>
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -315,105 +327,120 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
         })()}
       </div>
 
-      {/* 사진 — 제목 다음, 상태 앞. 제목을 고르면 표지가 자동으로 채워지므로
-          "이미 표지가 있는데 왜 또 찍지?"를 막으려면 제목이 먼저 와야 한다.
-          판매는 실물 사진이 필수, 대여·나눔은 권장이다. */}
-      {user && (
-        <CoverUploader
-          coverUrl={formData.coverUrl}
-          userId={user.id}
-          onCoverChange={(url) => {
-            setFormData((prev) => ({ ...prev, coverUrl: url }));
-            if (url) setCoverMissing(false);
-          }}
-          disabled={isSubmitting}
-          required={isSell}
-          invalid={coverMissing && isSell && !formData.coverUrl}
-        />
-      )}
-
-      <ModeToggle
-        allowRent={formData.allowRent}
-        allowSell={formData.allowSell}
-        allowGive={formData.allowGive}
-        onToggle={(mode) => {
-          toggleMode(mode);
-          // 판매를 끄면 가격/사진경고 초기화
-          if (mode === 'sell' && formData.allowSell) {
-            setFormData((prev) => ({ ...prev, price: '' }));
-            setCoverMissing(false);
-          }
-        }}
-      />
-
-      {/* Price (for sell mode) */}
-      <AnimatePresence>
-        {isSell && (
+      {/* 책을 고른 뒤에 나타나는 부분 — 사진·거래 방식·(접힌) 상태·공개 범위 */}
+      <AnimatePresence initial={false}>
+        {bookChosen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="space-y-2 overflow-hidden"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="space-y-5"
           >
-            <p className="text-[13px] font-bold tracking-wide text-muted-foreground">판매 가격 ({CURRENCY})</p>
-            <Input
-              type="number"
-              min="0"
-              step="0.5"
-              value={formData.price}
-              onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
-              placeholder="0"
-              className="h-11 text-[15px] bg-card border-border rounded-xl"
+          {/* 사진 — 제목 다음, 상태 앞. 제목을 고르면 표지가 자동으로 채워지므로
+              "이미 표지가 있는데 왜 또 찍지?"를 막으려면 제목이 먼저 와야 한다.
+              판매는 실물 사진이 필수, 대여·나눔은 권장이다. */}
+          {user && (
+            <CoverUploader
+              coverUrl={formData.coverUrl}
+              userId={user.id}
+              onCoverChange={(url) => {
+                setFormData((prev) => ({ ...prev, coverUrl: url }));
+                if (url) setCoverMissing(false);
+              }}
+              disabled={isSubmitting}
+              required={isSell}
+              invalid={coverMissing && isSell && !formData.coverUrl}
             />
+          )}
+
+          <ModeToggle
+            allowRent={formData.allowRent}
+            allowSell={formData.allowSell}
+            allowGive={formData.allowGive}
+            onToggle={(mode) => {
+              toggleMode(mode);
+              // 판매를 끄면 가격/사진경고 초기화
+              if (mode === 'sell' && formData.allowSell) {
+                setFormData((prev) => ({ ...prev, price: '' }));
+                setCoverMissing(false);
+              }
+            }}
+          />
+
+          {/* Price (for sell mode) */}
+          <AnimatePresence>
+            {isSell && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-2 overflow-hidden"
+              >
+                <p className="text-[13px] font-bold tracking-wide text-muted-foreground">판매 가격 ({CURRENCY})</p>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={formData.price}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
+                  placeholder="0"
+                  className="h-11 text-[15px] bg-card border-border rounded-xl"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* 상태·공개 범위는 기본값이 이미 정해져 있다(양호 · 전체 공개) — 손대지 않아도 등록된다.
+              첫 화면에 6개 섹션이 같은 목소리로 말을 걸던 것을 4개로 줄인다(Cowan: 4±1).
+              ⚠️ 접힌 줄에 **현재 값을 같이 적는다.** 이게 없으면 접기는 정보를 숨기는 것이 되고,
+                 있으면 확인은 되면서 손댈 필요만 없어진다. */}
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowDetails((v) => !v)}
+              aria-expanded={showDetails}
+              className="w-full min-h-11 px-3.5 py-3 flex items-center gap-2 text-left"
+            >
+              <span className="text-[13px] font-bold tracking-wide text-muted-foreground">상태 · 공개 범위</span>
+              {!showDetails && (
+                <span className="text-[13px] text-faint truncate">{detailSummary}</span>
+              )}
+              <ChevronDown
+                className={`w-4 h-4 text-muted-foreground shrink-0 ml-auto transition-transform ${showDetails ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            <AnimatePresence initial={false}>
+              {showDetails && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-3.5 pb-3.5 pt-1 space-y-4 border-t border-border">
+                    <ConditionSelector
+                      value={formData.condition}
+                      onChange={(condition) => setFormData((prev) => ({ ...prev, condition }))}
+                    />
+                    <CommunitySelector
+                      isPublic={formData.isPublic}
+                      selectedCommunityId={formData.communityId}
+                      onPublicChange={(isPublic) => setFormData((prev) => ({ ...prev, isPublic }))}
+                      onCommunityChange={(communityId) => setFormData((prev) => ({ ...prev, communityId }))}
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* 상태·공개 범위는 기본값이 이미 정해져 있다(양호 · 전체 공개) — 손대지 않아도 등록된다.
-          첫 화면에 6개 섹션이 같은 목소리로 말을 걸던 것을 4개로 줄인다(Cowan: 4±1).
-          ⚠️ 접힌 줄에 **현재 값을 같이 적는다.** 이게 없으면 접기는 정보를 숨기는 것이 되고,
-             있으면 확인은 되면서 손댈 필요만 없어진다. */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setShowDetails((v) => !v)}
-          aria-expanded={showDetails}
-          className="w-full min-h-11 px-3.5 py-3 flex items-center gap-2 text-left"
-        >
-          <span className="text-[13px] font-bold tracking-wide text-muted-foreground">상태 · 공개 범위</span>
-          {!showDetails && (
-            <span className="text-[13px] text-faint truncate">{detailSummary}</span>
-          )}
-          <ChevronDown
-            className={`w-4 h-4 text-muted-foreground shrink-0 ml-auto transition-transform ${showDetails ? 'rotate-180' : ''}`}
-          />
-        </button>
-
-        <AnimatePresence initial={false}>
-          {showDetails && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden"
-            >
-              <div className="px-3.5 pb-3.5 pt-1 space-y-4 border-t border-border">
-                <ConditionSelector
-                  value={formData.condition}
-                  onChange={(condition) => setFormData((prev) => ({ ...prev, condition }))}
-                />
-                <CommunitySelector
-                  isPublic={formData.isPublic}
-                  selectedCommunityId={formData.communityId}
-                  onPublicChange={(isPublic) => setFormData((prev) => ({ ...prev, isPublic }))}
-                  onCommunityChange={(communityId) => setFormData((prev) => ({ ...prev, communityId }))}
-                />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
+      {/* 등록 버튼도 책을 고른 뒤에 나온다 — 누를 수 없는 버튼을 미리 보여줄 이유가 없다 */}
+      {bookChosen && (
       <Button
         type="submit"
         disabled={isSubmitting || !formData.title || !formData.author}
@@ -431,6 +458,8 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
           </>
         )}
       </Button>
+      )}
+
     </form>
     <FirstBookNotifPrompt
       isOpen={showNotifPrompt}
