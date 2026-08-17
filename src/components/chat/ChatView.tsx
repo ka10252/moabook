@@ -646,7 +646,10 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
                   animate={{ opacity: 1, y: 0 }}
                   className={`flex ${isOwn ? 'justify-end' : 'justify-start'} w-full`}
                 >
-                  <div className={`${isSpecialMessage && bookInfo ? 'w-[85%]' : 'max-w-[85%]'} min-w-0 ${isOwn ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
+                  {/* 대여 요청·반납 완료 같은 카드는 화면 폭의 60%만 쓴다.
+                      85%는 가로를 거의 다 먹어서 '메시지'가 아니라 '화면'처럼 보였다.
+                      min-w: 좁은 폰에서 책 표지 + 제목 두 줄이 뭉개지지 않는 최소치. */}
+                  <div className={`${isSpecialMessage && bookInfo ? 'w-[60%] min-w-[196px]' : 'max-w-[85%]'} min-w-0 ${isOwn ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
                     {/* Special Card Messages */}
                     {isSpecialMessage && bookInfo && (
                       <div className="w-full">

@@ -530,7 +530,73 @@ export const Bookshelf = ({
     return out;
   }, [shelfGroups]);
 
-  const emptyShelvesNeeded = showNoResults ? 1 : Math.max(0, 3 - shelfGroups.length);
+  /**
+   * 서가는 책이 없어도 **화면을 채운다.**
+   *
+   * 예전엔 결과가 없으면 빈 선반을 1칸만 그리고 그 아래 안내문을 뒀다. 그러면
+   * 서가가 화면 위쪽에 조각처럼 떠 있고 아래가 텅 비어서, "책장"이 아니라
+   * "오류 화면"으로 읽혔다. 조건을 바꾸면 다시 책이 들어올 자리라는 게 보여야 한다.
+   *
+   * 몇 칸이 필요한지는 폰마다 다르므로 **남은 높이를 재서** 계산한다.
+   * 3칸 같은 고정값을 쓰면 큰 폰에서는 남고 작은 폰에서는 넘친다.
+   */
+  const SHELF_ROW_H = 207; // EditorialShelf 한 칸: 뒷판 여백 10 + 책 자리 184 + 선반 판 13
+  const SHELF_CHROME = 23; // 한 칸에서 책 자리를 뺀 나머지(뒷판 여백 + 선반 판)
+  const [shelfFillRows, setShelfFillRows] = useState(3);
+  /** 빈 칸 하나의 책 자리 높이 — 남는 높이를 칸 수로 나눠 아래에 빈 배경이 안 남게 한다 */
+  const [shelfFillRowH, setShelfFillRowH] = useState(184);
+  const shelfFrameRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (viewMode === 'map') return;
+    const measure = () => {
+      const frameEl = shelfFrameRef.current;
+      const container = bookcaseRef.current;
+      if (!frameEl || !container) return;
+
+      /**
+       * 쓸 수 있는 높이 = (탭바 위 경계) − (프레임의 위) − (프레임 아래 남는 것)
+       *
+       * ⚠️ 세 값 모두 **프레임 높이와 무관해야 한다.** 아니면 되먹임이 생긴다.
+       *    실제로 두 번 틀렸다:
+       *     · `main`의 아래 빈 공간을 뺐다 → 내용이 줄면 그 값이 커져 서가가 70px로 쪼그라듦
+       *     · `main.bottom`을 아래 경계로 썼다 → main은 내용과 함께 늘어나 경계도 같이 내려가
+       *       3칸에 고정된 채 화면을 넘음
+       *    그래서 아래 경계는 **화면(뷰포트) 기준**으로만 잡는다.
+       */
+      const vh = window.visualViewport?.height ?? window.innerHeight;
+      const nav = document.querySelector<HTMLElement>('nav.nav-bar');
+      const navH = nav?.getBoundingClientRect().height ?? 0;
+      const contentBottom = vh - navH;
+      const fr = frameEl.getBoundingClientRect();
+      const belowFrame = Math.max(0, container.getBoundingClientRect().bottom - fr.bottom);
+      const avail = contentBottom - fr.top - belowFrame;
+
+      const rows = Math.max(1, Math.floor(avail / SHELF_ROW_H));
+      setShelfFillRows(rows);
+      // 남는 자투리는 칸들이 나눠 가진다 — 안 그러면 서가 아래에 빈 배경이 남아
+      // "채워진 책장"이 아니라 "잘린 책장"으로 보인다.
+      // rows는 avail을 207로 나눈 몫이라 floor(avail/rows) ≥ 207, 즉 rowH ≥ 184가 보장된다.
+      setShelfFillRowH(Math.floor(avail / rows) - SHELF_CHROME);
+    };
+    // 프레임은 로딩 중에는 렌더되지 않는다 → 첫 실행에서 ref가 null이면 조용히 빠진다.
+    // 다음 프레임에 한 번 더 재고, 레이아웃이 바뀔 때마다 다시 잰다.
+    // avail은 프레임 높이와 무관하므로 몇 번 재도 같은 값이 나온다(되먹임 없음).
+    measure();
+    const raf = requestAnimationFrame(measure);
+    window.addEventListener('resize', measure);
+    window.visualViewport?.addEventListener('resize', measure);
+    const container = bookcaseRef.current;
+    const ro = container ? new ResizeObserver(measure) : null;
+    if (container && ro) ro.observe(container);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro?.disconnect();
+      window.removeEventListener('resize', measure);
+      window.visualViewport?.removeEventListener('resize', measure);
+    };
+  }, [viewMode, shelfGroups.length, loading, txLoading]);
+
+  const emptyShelvesNeeded = Math.max(0, shelfFillRows - shelfGroups.length);
 
   const statusFilterLabels: Record<StatusFilter, string> = {
     // 한 줄에 네 개가 다 들어가야 해서 짧게 쓴다 — '대여 가능'·'판매중'은 옆으로 밀려
@@ -553,7 +619,7 @@ export const Bookshelf = ({
     <div className="flex flex-col min-h-full relative">
       {/* Header — 페이지 스크롤 시 상단(앱 헤더 아래)에 고정 */}
       <header
-        className="flex flex-col gap-3 px-5 pt-4 pb-3 bg-background/85 backdrop-blur-md sticky z-30 border-b border-border/40"
+        className="flex flex-col gap-1 px-5 pt-4 pb-3 bg-background/85 backdrop-blur-md sticky z-30 border-b border-border/40"
         style={{ top: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}
       >
         {/* Title block — 제목 자체가 '책장 범위' 선택기다.
@@ -758,12 +824,21 @@ export const Bookshelf = ({
                 {/* shelf-vignette: 가상 도서관 몰입감 — 서가 가장자리를 은은히 어둡게 */}
                 {/* data-onboarding: 온보딩 스포트라이트가 실제 서가를 조준한다 */}
                 <div
+                  ref={shelfFrameRef}
                   data-onboarding="shelf"
                   // 표지 보기도 책등과 같은 서가 프레임을 쓴다(F18).
                   // 표지만 허공에 떠 있으면 '책장'으로 안 읽힌다.
                   className="relative shelf-vignette overflow-hidden rounded-lg"
                 >
                   {viewMode === 'cover' ? (
+                    // 결과가 0건이면 빈 선반만 그린다 — 표지 보기에서도 서가 틀은 남아야 한다
+                    coverSections.length === 0 ? (
+                      Array.from({ length: shelfFillRows }).map((_, i) => (
+                        <CoverShelf key={`empty-cover-${i}`}>
+                          <div style={{ height: shelfFillRowH }} />
+                        </CoverShelf>
+                      ))
+                    ) : (
                     coverSections.map((group, gi) => {
                       // 3권씩 끊어 한 줄로. 줄 하나가 선반 한 칸이 된다.
                       const shown = group.books.filter((b) => !b._isDummy);
@@ -784,6 +859,7 @@ export const Bookshelf = ({
                         </CoverShelf>
                       ));
                     })
+                    )
                   ) : (
                     <>
                   {shelfGroups.map((group, idx) => (
@@ -846,43 +922,47 @@ export const Bookshelf = ({
                   ))}
 
                   {Array.from({ length: emptyShelvesNeeded }).map((_, i) => (
-                    <EditorialShelf key={`empty-${i}`}>
+                    <EditorialShelf key={`empty-${i}`} bookAreaH={shelfFillRowH}>
                       <div className="h-full" />
                     </EditorialShelf>
                   ))}
                     </>
+                  )}
+
+                  {/* 결과 없음 — 필터/검색으로 0건일 때.
+                      서가 **위에 겹쳐서** 띄운다. 아래에 두면 서가가 위쪽 조각으로 남고
+                      화면 아래가 비어 "책장이 비었다"가 아니라 "화면이 깨졌다"로 읽힌다.
+                      pointer-events-none: 뒤 서가의 스크롤·드래그를 막지 않는다. */}
+                  {showNoResults && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-5 pointer-events-none [&>*]:pointer-events-auto"
+                    >
+                      <div className="w-12 h-12 mx-auto rounded-full bg-muted flex items-center justify-center mb-3">
+                        <Search className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm font-semibold text-foreground">조건에 맞는 책이 없어요</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {searchQuery.trim()
+                          ? <>‘{searchQuery.trim()}’ 검색 결과가 없어요. 다른 검색어나 필터를 바꿔보세요.</>
+                          : '필터를 바꾸거나 초기화해보세요.'}
+                      </p>
+                      {(statusFilter !== 'all' || selectedDistricts.length > 0 || selectedStations.length > 0) && (
+                        <button
+                          onClick={() => { setStatusFilter('all'); setSelectedDistricts([]); }}
+                          className="mt-3 text-xs font-semibold text-primary underline underline-offset-2"
+                        >
+                          필터 초기화
+                        </button>
+                      )}
+                    </motion.div>
                   )}
                 </div>
 
                 {/* 예시 화면 안내 배너는 없앴다 — 책 카드마다 '예시' 배지가 붙어 있어
                     오해할 일이 없고, 첫 화면에 설명문이 먼저 보이는 게 더 거슬렸다. */}
 
-                {/* 결과 없음 — 필터/검색으로 0건일 때 */}
-                {showNoResults && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-4 mx-auto max-w-[520px] text-center px-5 py-8"
-                  >
-                    <div className="w-12 h-12 mx-auto rounded-full bg-muted flex items-center justify-center mb-3">
-                      <Search className="w-6 h-6 text-muted-foreground" />
-                    </div>
-                    <p className="text-sm font-semibold text-foreground">조건에 맞는 책이 없어요</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {searchQuery.trim()
-                        ? <>‘{searchQuery.trim()}’ 검색 결과가 없어요. 다른 검색어나 필터를 바꿔보세요.</>
-                        : '필터를 바꾸거나 초기화해보세요.'}
-                    </p>
-                    {(statusFilter !== 'all' || selectedDistricts.length > 0 || selectedStations.length > 0) && (
-                      <button
-                        onClick={() => { setStatusFilter('all'); setSelectedDistricts([]); }}
-                        className="mt-3 text-xs font-semibold text-primary underline underline-offset-2"
-                      >
-                        필터 초기화
-                      </button>
-                    )}
-                  </motion.div>
-                )}
               </motion.div>
         )}
       </div>

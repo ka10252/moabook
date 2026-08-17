@@ -376,7 +376,9 @@
   .search-underline {
     @apply flex items-center gap-2;
     border-bottom: 1.5px solid hsl(var(--foreground));
-    padding: 12px 2px 8px;
+    /* 위쪽 여백을 줄였다(12→2). 입력칸 자체가 min-h-11(터치 타깃)이라 이미 충분히 높고,
+       그 위에 12px을 더하면 제목과 검색창 사이가 통째로 비어 보인다. */
+    padding: 2px 2px 6px;
     transition: border-color 0.2s ease;
   }
   .search-underline:focus-within {
