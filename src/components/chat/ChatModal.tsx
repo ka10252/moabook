@@ -27,6 +27,10 @@ export const ChatModal = ({
   initialConversationId,
   onResetInitialValues,
 }: ChatModalProps) => {
+  // ⚠️ 여기에 useBackClose를 넣지 말 것.
+  //    이 모달은 URL(?chat=1)로 열린다 — 라우터가 이미 히스토리 항목을 하나 쌓는다.
+  //    훅을 더하면 항목이 둘이 되어, 다른 오버레이가 닫히며 부르는 history.back()이
+  //    방금 연 채팅을 즉시 닫아버린다(대여 신청 → 채팅 이동이 안 되던 원인).
   const { user } = useAuth();
   const { conversations, loading, startConversationWithRequest, refresh } = useChat();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);

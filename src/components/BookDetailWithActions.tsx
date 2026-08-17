@@ -1,7 +1,9 @@
+import { conditionMeta, CONDITION_LEVELS } from '@/lib/bookCondition';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, MessageCircle, Heart, Edit2, Trash2, Loader2, Clock, Flag, BookOpen } from 'lucide-react';
 import { Book } from '@/types/book';
+import { BookReviewSection } from '@/components/review/BookReviewSection';
 import { BookMode, MODE_EYEBROW, MODE_CTA, availabilityLabel } from '@/lib/bookMode';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,6 +39,8 @@ interface BookDetailWithActionsProps {
   myBookCount?: number;
   /** 내가 지금까지 빌린 횟수 — 첫 대여(0)는 무료, 그 뒤부터 책 1권 등록 요구 */
   myBorrowCount?: number;
+  /** 반납 직후 "리뷰 남기기"로 들어온 경우 리뷰 입력창을 펼친 채로 연다 */
+  openReviewForm?: boolean;
 }
 
 interface SiblingBook {
@@ -64,6 +68,7 @@ export const BookDetailWithActions = ({
   currentUserId,
   myBookCount,
   myBorrowCount,
+  openReviewForm,
 }: BookDetailWithActionsProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showReport, setShowReport] = useState(false);
@@ -207,13 +212,8 @@ export const BookDetailWithActions = ({
           )
           .join(' · ');
 
-  // 책 상태(S/A/B)를 뜻과 3단계 눈금으로. "상태 A"만 보면 뜻을 모른다.
-  const CONDITION_META = {
-    S: { word: '새 책', level: 3, good: true },
-    A: { word: '양호', level: 2, good: true },
-    B: { word: '보통', level: 1, good: false },
-  } as const;
-  const cond = CONDITION_META[book.condition] ?? CONDITION_META.A;
+  // 알파벳 대신 뜻과 눈금만 보여준다. 등급 문자는 보는 사람에게 아무 정보가 아니다.
+  const cond = conditionMeta(book.condition);
 
   const handleDelete = async () => {
     if (!onDelete) return;
@@ -338,14 +338,14 @@ export const BookDetailWithActions = ({
                       cond.good ? 'text-green-600 dark:text-green-500' : 'text-amber-600 dark:text-amber-500'
                     )}
                   >
-                    {cond.word}
+                    {cond.label}
                   </span>
                   <div className="flex gap-1 items-center">
-                    {[1, 2, 3].map((i) => (
+                    {Array.from({ length: CONDITION_LEVELS }, (_, idx) => idx + 1).map((i) => (
                       <span
                         key={i}
                         className={cn(
-                          'w-5 h-1.5 rounded-full',
+                          'w-4 h-1.5 rounded-full',
                           i <= cond.level
                             ? cond.good
                               ? 'bg-green-500'
@@ -380,12 +380,27 @@ export const BookDetailWithActions = ({
                   <span className="ml-auto text-[13.5px] font-bold text-primary shrink-0">프로필 ›</span>
                 </button>
 
+                {/* 관리자가 숨긴 책 — 주인에게만 보인다. 왜 안 보이는지 알려주지 않으면
+                    주인은 사라진 줄 알고 같은 책을 다시 올린다. */}
+                {book.hiddenAt && book.owner_id === currentUserId && (
+                  <div className="mt-4 rounded-xl border border-destructive/40 bg-destructive/5 p-3">
+                    <p className="text-[13px] font-semibold text-destructive">관리자가 숨긴 책이에요</p>
+                    <p className="text-[12.5px] text-muted-foreground mt-1 leading-relaxed">
+                      지금은 나에게만 보이고 다른 이웃에게는 보이지 않아요.
+                      문의는 프로필 &gt; 의견 보내기로 남겨주세요.
+                    </p>
+                  </div>
+                )}
+
                 {/* 5. 소개 */}
                 {book.description && (
                   <p className="text-[15px] leading-[1.6] text-muted-foreground mt-4">
                     {truncateDescription(book.description)}
                   </p>
                 )}
+
+                {/* 6. 리뷰 — 설명 바로 아래. 빌릴지 말지 정하는 자리라 여기가 맞다. */}
+                <BookReviewSection bookId={book.id} autoOpenForm={openReviewForm} />
 
                 {/* 이 책을 가진 다른 이웃 */}
                 {siblingBooks.length > 0 && (

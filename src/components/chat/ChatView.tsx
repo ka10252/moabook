@@ -11,6 +11,11 @@ import { format, isToday, isYesterday } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { AcceptRentalModal } from './AcceptRentalModal';
 import { ReturnConfirmModal } from './ReturnConfirmModal';
+import { ReturnReviewPrompt } from '@/components/review/ReturnReviewPrompt';
+import { MannerReviewModal } from '@/components/review/MannerReviewModal';
+import { useMannerReview } from '@/hooks/useMannerReview';
+import { BookDetailWithActions } from '@/components/BookDetailWithActions';
+import { transformDbBook, type Book } from '@/types/book';
 import { TransactionDashboard } from '../transaction/TransactionDashboard';
 import { RentalMessageCard, RentalMessageType, TransactionType } from './RentalMessageCard';
 import { handleReturnCompletion } from '@/utils/transactionHelpers';
@@ -18,6 +23,8 @@ import { toast } from 'sonner';
 
 interface BookInfo {
   id: string;
+  /** 리뷰 버튼을 빌린 사람에게만 띄우려면 주인이 누구인지 알아야 한다 */
+  owner_id?: string;
   title: string;
   author?: string;
   cover_url: string | null;
@@ -63,6 +70,49 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     returnDate?: string | null;
   } | null>(null);
   const [bookInfoCache, setBookInfoCache] = useState<Record<string, BookInfo>>({});
+  // 이미 리뷰한 책 — 버튼 문구를 '리뷰 남기기'/'내 리뷰 보기'로 가른다
+  const [reviewedBooks, setReviewedBooks] = useState<Set<string>>(new Set());
+  const [reviewTarget, setReviewTarget] = useState<{ id: string; title: string } | null>(null);
+
+  const openBookDetail = async (bookId: string) => {
+    const { data, error } = await supabase
+      .from('books')
+      .select(`
+        id, title, author, cover_url, condition, mode, price, description,
+        is_public, community_id, owner_id, status, created_at, updated_at,
+        profile:profiles!books_owner_id_fkey(nickname, avatar_url), community:communities(name)
+      `)
+      .eq('id', bookId)
+      .single();
+    if (error || !data) {
+      toast.error('책 정보를 불러오지 못했습니다');
+      return;
+    }
+    setDetailBook(transformDbBook(data as never));
+  };
+  const [showManner, setShowManner] = useState(false);
+  // 채팅창 위에 덮어 띄우는 책 상세. bookInfoCache는 카드용 최소 필드만 갖고 있어서
+  // 상세를 그리려면 책을 한 번 더 통째로 읽어야 한다.
+  const [detailBook, setDetailBook] = useState<Book | null>(null);
+  const otherUserId = conversation.other_user?.id ?? null;
+  const { hasReviewed: mannerReviewed, reload: reloadManner } = useMannerReview(otherUserId);
+
+  // 이 대화에 등장한 책들 중 내가 리뷰한 것 확인
+  useEffect(() => {
+    const ids = Object.keys(bookInfoCache);
+    if (!user || ids.length === 0) return;
+    let cancelled = false;
+    supabase
+      .from('book_reviews' as never)
+      .select('book_id')
+      .eq('user_id', user.id)
+      .in('book_id', ids)
+      .then(({ data }) => {
+        if (cancelled) return;
+        setReviewedBooks(new Set(((data ?? []) as unknown as Array<{ book_id: string }>).map(r => r.book_id)));
+      });
+    return () => { cancelled = true; };
+  }, [bookInfoCache, user]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showMore, setShowMore] = useState(false);
   const [showTransactionDashboard, setShowTransactionDashboard] = useState(false);
@@ -253,7 +303,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     const fetchBookInfo = async () => {
       const { data } = await supabase
         .from('books')
-        .select('id, title, author, cover_url, mode, status')
+        .select('id, owner_id, title, author, cover_url, mode, status')
         .in('id', Array.from(bookIdsToFetch));
       
       if (data) {
@@ -516,6 +566,14 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
               activeTransaction.isMine &&
               !isOwn;
 
+            // 반납 완료 카드 → 빌린 사람(=책 주인이 아닌 쪽)에게만 리뷰 버튼.
+            // owner_id로 판단한다. 메시지를 누가 보냈는지로 가르면, 빌린 사람이 직접
+            // 반납 완료를 눌렀을 때 주인에게 리뷰 버튼이 뜨는 뒤집힘이 생긴다.
+            const canLeaveReview = parsed.category === 'returned' &&
+              !!bookInfo?.owner_id &&
+              !!user &&
+              bookInfo.owner_id !== user.id;
+
             // 빌린 사람의 '반납했어요' 버튼은 제거함 — 책 주인이 실제로 돌려받고 '반납 완료'를 누른다.
 
             return (
@@ -585,6 +643,23 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
                               setShowReturnModal(true);
                             }
                           }}
+                          showReviewButton={canLeaveReview}
+                          hasReviewed={!!bookInfo && reviewedBooks.has(bookInfo.id)}
+                          onReviewClick={() => {
+                            if (!bookInfo) return;
+                            // 이미 썼으면 폼을 또 띄우지 않는다. 유저가 기대하는 건
+                            // "내가 뭐라고 썼더라"이지 다시 쓰는 화면이 아니다.
+                            // 대화 밖으로 튕겨보내지 않고 채팅창 위에 책 상세를 덮는다 —
+                            // 화면이 통째로 바뀌면 대화로 돌아오는 길이 없어진다.
+                            if (reviewedBooks.has(bookInfo.id)) {
+                              void openBookDetail(bookInfo.id);
+                              return;
+                            }
+                            setReviewTarget({ id: bookInfo.id, title: bookInfo.title });
+                          }}
+                          showMannerButton={parsed.category === 'returned' && !!otherUserId}
+                          hasMannerReviewed={mannerReviewed}
+                          onMannerClick={() => setShowManner(true)}
                         />
                         {/* Timestamp for card messages */}
                         <p className={`text-xs mt-1 ${isOwn ? 'text-right' : 'text-left'} text-muted-foreground`}>
@@ -956,6 +1031,36 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
            }}
          />
        )}
+
+      {/* 반납 완료 카드에서 연 리뷰 입력 */}
+      <BookDetailWithActions
+        book={detailBook}
+        onClose={() => setDetailBook(null)}
+        currentUserId={user?.id}
+        // 이미 이 사람과 대화 중이다. 여기서 또 채팅을 열면 같은 방이 겹쳐 쌓인다.
+        onChat={() => setDetailBook(null)}
+      />
+
+      {showManner && otherUserId && (
+        <MannerReviewModal
+          userId={otherUserId}
+          nickname={conversation.other_user?.nickname ?? '상대'}
+          onClose={() => setShowManner(false)}
+          onSaved={() => reloadManner()}
+        />
+      )}
+
+      {reviewTarget && (
+        <ReturnReviewPrompt
+          bookId={reviewTarget.id}
+          bookTitle={reviewTarget.title}
+          onClose={() => setReviewTarget(null)}
+          onSaved={() => {
+            setReviewedBooks((prev) => new Set([...prev, reviewTarget.id]));
+            setReviewTarget(null);
+          }}
+        />
+      )}
 
       {/* Transaction Dashboard Modal */}
       <TransactionDashboard

@@ -14,7 +14,8 @@
     "db:check": "supabase db query --linked --agent=no -o table -f scripts/check_schema.sql",
     "db:push": "supabase db push",
     "check:notifications": "node scripts/check_notification_routes.mjs",
-    "config:push": "supabase config push"
+    "config:push": "supabase config push",
+    "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
     "@fontsource/noto-sans-kr": "^5.2.9",
@@ -70,6 +71,7 @@
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
     "jsdom": "^20.0.3",
+    "playwright-core": "^1.62.1",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",

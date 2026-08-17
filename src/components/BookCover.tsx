@@ -62,19 +62,10 @@ export const BookCover = ({ book, onClick, isRented = false, isLent = false, isB
           <p className="text-white/70 text-xs">{book.author}</p>
         </div>
         
-        {/* Condition badge */}
-        <div className="absolute top-2 right-2">
-          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-            book.condition === 'S' 
-              ? 'bg-accent text-accent-foreground' 
-              : book.condition === 'A'
-              ? 'bg-secondary text-secondary-foreground'
-              : 'bg-muted text-muted-foreground'
-          }`}>
-            {book.condition}
-          </span>
-        </div>
-        
+        {/* 책 상태(S·A·B) 배지는 여기 두지 않는다.
+            글자만 봐서는 뜻을 알 수 없고(S가 좋은 건지 나쁜 건지), 무엇보다
+            책을 고르는 단계에서 중요한 정보가 아니다. 상세로 들어가면 나온다. */}
+
         {/* Mode badge — 판매는 가격(S$), 나눔은 '무료'. 대여는 배지 없음(기본값이라). */}
         {book.mode !== 'rent' && (
           <div className="absolute top-2 left-2">

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useBackClose } from '@/hooks/useBackClose';
 import { Check, Loader2, Shuffle, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -102,6 +103,7 @@ async function renderAvatarBlob(config: AvatarConfig): Promise<Blob | null> {
 }
 
 export function CharacterEditor({ isOpen, onClose, onSaved }: CharacterEditorProps) {
+  useBackClose(isOpen, onClose);
   const { user } = useAuth();
   const [manifest, setManifest] = useState<AvatarManifest | null>(null);
   const [config, setConfig] = useState<AvatarConfig>(defaultAvatar());

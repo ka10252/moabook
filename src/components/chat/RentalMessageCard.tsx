@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { Book as BookIcon, Calendar, CheckCircle2, Clock, PackageCheck } from 'lucide-react';
+import { Book as BookIcon, Calendar, CheckCircle2, Clock, PackageCheck, ShieldCheck, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 
@@ -30,6 +30,16 @@ interface RentalMessageCardProps {
   // For return_request cards (owner side) — 레거시: 예전 대여자 '반납 요청' 메시지 처리용
   showAcceptReturnButton?: boolean;
   onAcceptReturnClick?: () => void;
+  /** 반납 완료 카드에서 빌린 사람에게만 보이는 '리뷰 남기기' */
+  showReviewButton?: boolean;
+  onReviewClick?: () => void;
+  /** 이미 리뷰를 남겼으면 문구를 바꿔 다시 쓰라고 조르지 않는다 */
+  hasReviewed?: boolean;
+  /** 반납 완료 카드에서 양쪽 모두에게 보이는 '상대 평가하기' (F3) */
+  showMannerButton?: boolean;
+  onMannerClick?: () => void;
+  /** 이미 상대를 평가했으면 문구를 바꾼다 */
+  hasMannerReviewed?: boolean;
 }
 
 export const RentalMessageCard = ({
@@ -46,6 +56,12 @@ export const RentalMessageCard = ({
   onReturnClick,
   showAcceptReturnButton = false,
   onAcceptReturnClick,
+  showReviewButton = false,
+  onReviewClick,
+  hasReviewed = false,
+  showMannerButton = false,
+  onMannerClick,
+  hasMannerReviewed = false,
 }: RentalMessageCardProps) => {
   const isPurchase = transactionType === 'purchase';
   // mode가 있으면 그걸 우선한다 (나눔·판매 구분). 없으면 기존 transactionType로 폴백.
@@ -186,6 +202,49 @@ export const RentalMessageCard = ({
             <span className="text-[12px] text-muted-foreground">
               반납받았으면 눌러주세요
             </span>
+          </div>
+        )}
+
+        {/* 반납 완료 → 빌린 사람에게 리뷰 요청.
+            반납은 책 주인이 확인하므로, 빌린 사람이 리뷰를 남길 자연스러운 지점이
+            이 메시지밖에 없다. 팝업으로 띄우면 맥락 없이 튀어나와 그냥 닫힌다. */}
+        {type === 'returned' && showReviewButton && onReviewClick && (
+          <div className="w-full flex flex-col items-center gap-1">
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full rounded-xl border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-900/50"
+              onClick={onReviewClick}
+            >
+              <Star className="w-3.5 h-3.5 mr-1.5" />
+              {hasReviewed ? '내 리뷰 보기' : '리뷰 남기기'}
+            </Button>
+            {!hasReviewed && (
+              <span className="text-[12px] text-muted-foreground">
+                이 책 어땠는지 한 줄 남겨주세요
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* 거래 상대 매너 평가 — 빌린 쪽·빌려준 쪽 모두에게 보인다.
+            책 리뷰와 달리 양방향이다. 책을 험하게 보고 돌려주는 사람도 걸러져야 한다. */}
+        {type === 'returned' && showMannerButton && onMannerClick && (
+          <div className="w-full flex flex-col items-center gap-1">
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full rounded-xl border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-900/50"
+              onClick={onMannerClick}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
+              {hasMannerReviewed ? '내가 남긴 평가 수정' : '거래 상대 평가하기'}
+            </Button>
+            {!hasMannerReviewed && (
+              <span className="text-[12px] text-muted-foreground">
+                익명이에요. 상대는 누가 남겼는지 몰라요
+              </span>
+            )}
           </div>
         )}
 

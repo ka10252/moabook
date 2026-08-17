@@ -1,3 +1,4 @@
+import type { BookCondition } from '@/lib/bookCondition';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, Loader2 } from 'lucide-react';
@@ -22,7 +23,7 @@ interface BookFormData {
   author: string;
   description: string;
   coverUrl: string;
-  condition: 'S' | 'A' | 'B';
+  condition: BookCondition;
   allowRent: boolean;
   allowSell: boolean;
   allowGive: boolean;
@@ -235,21 +236,6 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
   return (
     <>
     <form onSubmit={handleSubmit} className="space-y-5">
-      {/* 사진 — 판매는 필수, 대여는 권장 */}
-      {user && (
-        <CoverUploader
-          coverUrl={formData.coverUrl}
-          userId={user.id}
-          onCoverChange={(url) => {
-            setFormData((prev) => ({ ...prev, coverUrl: url }));
-            if (url) setCoverMissing(false);
-          }}
-          disabled={isSubmitting}
-          required={isSell}
-          invalid={coverMissing && isSell && !formData.coverUrl}
-        />
-      )}
-
       {/* Manual Entry Fields */}
       <div className="space-y-4">
         {/* 제목 입력 = 검색. 결과를 고르면 저자·설명이 자동으로 채워지고,
@@ -318,6 +304,23 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
           );
         })()}
       </div>
+
+      {/* 사진 — 제목 다음, 상태 앞. 제목을 고르면 표지가 자동으로 채워지므로
+          "이미 표지가 있는데 왜 또 찍지?"를 막으려면 제목이 먼저 와야 한다.
+          판매는 실물 사진이 필수, 대여·나눔은 권장이다. */}
+      {user && (
+        <CoverUploader
+          coverUrl={formData.coverUrl}
+          userId={user.id}
+          onCoverChange={(url) => {
+            setFormData((prev) => ({ ...prev, coverUrl: url }));
+            if (url) setCoverMissing(false);
+          }}
+          disabled={isSubmitting}
+          required={isSell}
+          invalid={coverMissing && isSell && !formData.coverUrl}
+        />
+      )}
 
       <ConditionSelector
         value={formData.condition}

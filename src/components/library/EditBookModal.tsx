@@ -1,3 +1,4 @@
+import type { BookCondition } from '@/lib/bookCondition';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, Save } from 'lucide-react';
@@ -27,7 +28,7 @@ export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => 
     author: '',
     description: '',
     coverUrl: '',
-    condition: 'A' as 'S' | 'A' | 'B',
+    condition: 'A' as BookCondition,
     allowRent: true,
     allowSell: false,
     allowGive: false,

@@ -1,24 +1,21 @@
 import { cn } from '@/lib/utils';
-
-type Condition = 'S' | 'A' | 'B';
+import { CONDITIONS, type BookCondition } from '@/lib/bookCondition';
 
 interface ConditionSelectorProps {
-  value: Condition;
-  onChange: (condition: Condition) => void;
+  value: BookCondition;
+  onChange: (condition: BookCondition) => void;
 }
 
-const conditions: { value: Condition; label: string; description: string }[] = [
-  { value: 'S', label: 'S', description: '새 책' },
-  { value: 'A', label: 'A', description: '양호' },
-  { value: 'B', label: 'B', description: '보통' },
-];
-
+/**
+ * 네 칸을 한 줄에 늘어놓는다. '사용감 많음'이 다른 것보다 길어서
+ * flex-1로 균등 분배하면 두 줄로 접히므로 글자 크기를 조금 줄였다.
+ */
 export const ConditionSelector = ({ value, onChange }: ConditionSelectorProps) => {
   return (
     <div className="space-y-2">
       <p className="text-[12px] font-bold tracking-wide text-muted-foreground">상태</p>
-      <div className="flex gap-2">
-        {conditions.map((condition) => {
+      <div className="grid grid-cols-4 gap-1.5">
+        {CONDITIONS.map((condition) => {
           const isActive = value === condition.value;
           return (
             <button
@@ -26,25 +23,17 @@ export const ConditionSelector = ({ value, onChange }: ConditionSelectorProps) =
               type="button"
               onClick={() => onChange(condition.value)}
               className={cn(
-                'flex-1 py-2.5 rounded-[11px] border transition-colors',
+                'py-2.5 px-1 rounded-[11px] border transition-colors',
                 isActive ? 'bg-primary border-primary' : 'bg-card border-border'
               )}
             >
               <span
                 className={cn(
-                  'block font-display text-[18px] leading-none',
+                  'block text-[12px] font-bold leading-tight break-keep',
                   isActive ? 'text-primary-foreground' : 'text-foreground'
                 )}
               >
                 {condition.label}
-              </span>
-              <span
-                className={cn(
-                  'block text-[11px] mt-1',
-                  isActive ? 'text-primary-foreground/85' : 'text-faint'
-                )}
-              >
-                {condition.description}
               </span>
             </button>
           );

@@ -15,40 +15,15 @@ interface AddWishlistFormProps {
 type FormMode = 'search' | 'manual' | 'confirm';
 type DesiredMode = 'rent' | 'buy' | 'any';
 
-const DESIRED_OPTIONS: { id: DesiredMode; label: string }[] = [
-  { id: 'rent', label: '빌리고 싶어요' },
-  { id: 'buy', label: '사고 싶어요' },
-  { id: 'any', label: '상관없어요' },
-];
-
 export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
   const [mode, setMode] = useState<FormMode>('search');
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [notes, setNotes] = useState('');
   const [cover, setCover] = useState<string | null>(null);
-  const [desiredMode, setDesiredMode] = useState<DesiredMode>('any');
+  // 대여/구매 구분은 받지 않는다 — 메신저에서 서로 합의하면 될 일이다.
+  const desiredMode: DesiredMode = 'any';
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const DesiredSelect = () => (
-    <div>
-      <p className="text-[12px] font-medium text-muted-foreground mb-1.5">이 책을</p>
-      <div className="flex gap-2">
-        {DESIRED_OPTIONS.map((o) => (
-          <button
-            key={o.id}
-            type="button"
-            onClick={() => setDesiredMode(o.id)}
-            className={`flex-1 h-9 rounded-lg text-[13px] font-medium border transition-colors ${
-              desiredMode === o.id ? 'border-primary text-primary bg-primary/10' : 'border-border text-muted-foreground'
-            }`}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
 
   const handleBookSelect = (selectedTitle: string, selectedAuthor: string | null, selectedCover: string | null) => {
     setTitle(selectedTitle);
@@ -118,9 +93,9 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
             </button>
           )}
           <h3 className="font-semibold text-foreground">
-            {mode === 'search' && '책 찾기'}
+            {mode === 'search' && '읽고 싶은 책 요청하기'}
             {mode === 'manual' && '직접 입력'}
-            {mode === 'confirm' && '한마디 남기기'}
+            {mode === 'confirm' && '읽고 싶은 책 요청하기'}
           </h3>
         </div>
         <button
@@ -177,7 +152,6 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
               maxLength={500}
               className="bg-muted border-0 min-h-[80px] resize-none"
             />
-            <DesiredSelect />
             <Button
               type="submit"
               disabled={isSubmitting || !title.trim()}
@@ -218,7 +192,6 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
               maxLength={500}
               className="bg-muted border-0 min-h-[80px] resize-none"
             />
-            <DesiredSelect />
             <Button
               type="submit"
               disabled={isSubmitting}

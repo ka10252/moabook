@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback, Fragment } from 'react';
 import { track } from '@/lib/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EditorialShelf } from './EditorialShelf';
@@ -18,7 +18,7 @@ import { useBackClose } from '@/hooks/useBackClose';
 import { supabase } from '@/integrations/supabase/client';
 // ⚠️ lucide의 Map은 반드시 별칭으로 가져온다. 그냥 `Map`으로 import 하면
 //    이 모듈 안에서 전역 Map 생성자를 가려 `new Map<...>()`이 "Map is not a constructor"로 터진다.
-import { ChevronDown, Loader2, BookOpen, Heart, History, Search, X, MapPin, SlidersHorizontal, LayoutGrid, Library, Map as MapIcon } from 'lucide-react';
+import { ChevronDown, Loader2, BookOpen, Heart, History, Search, X, MapPin, SlidersHorizontal, LayoutGrid, Library, Map as MapIcon, ArrowLeft } from 'lucide-react';
 import { BookMapView } from '@/components/BookMapView';
 import { STATION_DISTRICTS, MRT_STATIONS, getStation } from '@/data/mrtStations';
 import { BookCover } from './BookCover';
@@ -39,7 +39,12 @@ import {
 } from '@/components/ui/dialog';
 import { BookMode } from '@/lib/bookMode';
 
-type ShelfBook = Book & { _isBorrowed?: boolean; _isDummy?: boolean };
+type ShelfBook = Book & {
+  _isBorrowed?: boolean;
+  _isDummy?: boolean;
+  /** 이 책 앞에 칸막이를 그린다. 값은 칸막이에 세로로 적히는 이름 */
+  _divider?: string;
+};
 type ShelfGroup = { label?: string; books: ShelfBook[] };
 
 const DUMMY_BOOKS: ShelfBook[] = [
@@ -109,6 +114,9 @@ export const Bookshelf = ({
       });
     return () => { cancelled = true; };
   }, [activeFilter]);
+  // 커뮤니티에서 넘어왔는지 — 딥링크로 받은 커뮤니티를 계속 보고 있을 때만 뒤로가기를 띄운다.
+  // 유저가 드롭다운으로 직접 커뮤니티를 고른 경우엔 돌아갈 곳이 없다.
+  const cameFromCommunity = !!initialCommunityId && activeFilter === initialCommunityId;
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
   const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
@@ -441,14 +449,22 @@ export const Bookshelf = ({
       const lent     = filteredMySection.filter(b => !b._isBorrowed &&  lentBookIds.has(b.id));
       const borrowed = filteredMySection.filter(b =>  b._isBorrowed);
 
-      // 카테고리가 둘 이상이거나 커뮤니티 책장이 함께 뜰 때만 라벨을 붙인다.
-      // 한 종류뿐이면 굳이 나누지 않고 깔끔하게.
+      // 예전엔 세 종류를 각각 별도 섹션으로 넣었다. 그러면 빌린 책 한 권 때문에
+      // 서가 한 칸이 통째로 새로 생겨 휑해 보였다. 이제는 한 줄기로 잇고
+      // 종류가 바뀌는 지점에만 칸막이를 세운다.
       const nonEmpty = [own, lent, borrowed].filter(a => a.length > 0).length;
       const labelize = nonEmpty > 1 || hasCommunity;
 
-      if (own.length)      addSection(own,      labelize ? '내 책'      : undefined);
-      if (lent.length)     addSection(lent,     labelize ? '빌려준 책'  : undefined);
-      if (borrowed.length) addSection(borrowed, labelize ? '빌린 책'    : undefined);
+      const personal: ShelfBook[] = [...own];
+      const appendWithDivider = (arr: ShelfBook[], name: string) => {
+        arr.forEach((b, i) => {
+          personal.push(i === 0 && personal.length > 0 ? { ...b, _divider: name } : b);
+        });
+      };
+      appendWithDivider(lent, '빌려준 책');
+      appendWithDivider(borrowed, '빌린 책');
+
+      if (personal.length) addSection(personal, labelize ? '내 서가' : undefined);
     }
     if (hasCommunity) addSection(dedupedCommunityBooks, hasPersonal ? getFilterLabel() : undefined);
 
@@ -472,6 +488,24 @@ export const Bookshelf = ({
   const showNoResults = totalRealBooks === 0 && hasActiveQuery && !showDummyBanner;
 
   // 결과 없음 안내를 띄울 땐 장식용 빈 서가 필러를 숨겨 메시지가 붕 뜨지 않게 한다.
+  /**
+   * 표지 보기용 섹션.
+   *
+   * shelfGroups는 booksPerShelf(책등 한 칸에 몇 권 들어가나) 단위로 잘려 있다.
+   * 그 값을 표지 보기에도 쓰면, 그룹마다 grid-cols-3을 새로 그리게 되어
+   * 그룹 끝에서 줄이 남고 다음 그룹은 새 줄에서 시작한다(3+1, 그리고 1 ...).
+   * 청킹은 책등 보기에서만 의미가 있으므로, 여기서는 라벨을 기준으로 도로 합친다.
+   */
+  const coverSections = useMemo(() => {
+    const out: ShelfGroup[] = [];
+    shelfGroups.forEach((g, i) => {
+      const startsNewSection = i === 0 || !!g.label;
+      if (startsNewSection) out.push({ label: g.label, books: [...g.books] });
+      else out[out.length - 1].books.push(...g.books);
+    });
+    return out;
+  }, [shelfGroups]);
+
   const emptyShelvesNeeded = showNoResults ? 1 : Math.max(0, 3 - shelfGroups.length);
 
   const statusFilterLabels: Record<StatusFilter, string> = {
@@ -497,6 +531,19 @@ export const Bookshelf = ({
             예전엔 제목과 드롭다운이 같은 값을 두 번 보여줬다(중복). 제목을 컨트롤로 만들면
             드롭다운이 컨트롤 줄에서 빠지고, 그 자리를 상태 칩이 쓴다 → 줄 수는 그대로. */}
         <div className="flex items-end justify-between gap-2">
+          {/* 커뮤니티에서 책장을 눌러 들어온 경우 돌아갈 길을 만든다.
+              여기는 모달이 아니라 다른 화면으로 '이동'한 것이라, 안 만들면
+              하단 탭을 눌러 커뮤니티를 다시 찾아 들어가야 한다. */}
+          {cameFromCommunity && (
+            <button
+              type="button"
+              onClick={() => window.history.back()}
+              aria-label="커뮤니티로 돌아가기"
+              className="mb-1 -ml-1 mr-0.5 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted shrink-0"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger className="group text-left outline-none">
               <p className="eyebrow">BOOKSHELF</p>
@@ -689,7 +736,7 @@ export const Bookshelf = ({
                   }
                 >
                   {viewMode === 'cover' ? (
-                    shelfGroups.map((group, idx) => (
+                    coverSections.map((group, idx) => (
                       <div key={idx} className="mb-5">
                         {group.label && <p className="font-display italic text-[16px] text-foreground mb-2">{group.label}</p>}
                         <div className="grid grid-cols-3 gap-x-3 gap-y-5">
@@ -728,7 +775,7 @@ export const Bookshelf = ({
                           : isBorrowedBook
                           ? borrowedReturnDates.get(book.id)
                           : undefined;
-                        return (
+                        const spine = (
                           <BookSpine
                             key={book.id}
                             book={book}
@@ -741,6 +788,27 @@ export const Bookshelf = ({
                             returnDate={retDate}
                             duplicateCount={communityDuplicateCounts.get(book.id)}
                           />
+                        );
+                        // 종류가 바뀌는 자리에만 칸막이. 같은 칸 안에서 경계를 알린다.
+                        if (!book._divider) return spine;
+                        return (
+                          <Fragment key={`div-${book.id}`}>
+                            <div
+                              aria-hidden="true"
+                              className="self-stretch flex items-end justify-center shrink-0 px-1.5"
+                            >
+                              <div className="relative h-full flex items-center">
+                                <span className="block w-px h-[78%] bg-border" />
+                                <span
+                                  className="absolute left-1/2 -translate-x-1/2 bottom-1 text-[9px] tracking-tight text-muted-foreground bg-background px-0.5"
+                                  style={{ writingMode: 'vertical-rl' }}
+                                >
+                                  {book._divider}
+                                </span>
+                              </div>
+                            </div>
+                            {spine}
+                          </Fragment>
                         );
                       })}
                     </EditorialShelf>

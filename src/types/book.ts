@@ -1,3 +1,4 @@
+import type { BookCondition } from '@/lib/bookCondition';
 import { BookMode } from '@/lib/bookMode';
 // Unified Book type for the app - works with both DB and UI
 export interface Book {
@@ -6,7 +7,7 @@ export interface Book {
   author: string;
   cover: string;
   description: string | null;
-  condition: 'S' | 'A' | 'B';
+  condition: BookCondition;
   mode: BookMode;               // 대표 모드(호환용). 실제 허용 방식은 아래 3개.
   allowRent: boolean;
   allowSell: boolean;
@@ -29,6 +30,8 @@ export interface Book {
   community?: {
     name: string;
   } | null;
+  /** 관리자가 숨긴 시각. 값이 있으면 남에게 안 보이고 주인에게만 보인다 */
+  hiddenAt?: string | null;
   spineColor: number;
 }
 
@@ -47,7 +50,7 @@ export const transformDbBook = (row: any): Book => ({
   author: row.author,
   cover: row.cover_url || '', // Empty string signals to use DefaultBookCover component
   description: row.description,
-  condition: row.condition as 'S' | 'A' | 'B',
+  condition: row.condition as BookCondition,
   mode: row.mode as BookMode,
   // 새 컬럼(allow_*)이 있으면 그걸, 없으면 대표 mode에서 유도(마이그 전 호환).
   allowRent: row.allow_rent ?? (row.mode === 'rent'),
@@ -70,5 +73,6 @@ export const transformDbBook = (row: any): Book => ({
       }
     : undefined,
   community: row.community ? { name: row.community.name } : null,
+  hiddenAt: row.hidden_at ?? null,
   spineColor: row.spine_color ?? spineFromTitle(row.title),
 });

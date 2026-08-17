@@ -209,7 +209,7 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
     setPassword('');
     setNickname('');
     setResidence('');
-    setRegion('');
+    setStation('');
   };
 
   return (

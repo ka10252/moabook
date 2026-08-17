@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useBackClose } from '@/hooks/useBackClose';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { handleReturnCompletion } from '@/utils/transactionHelpers';
 import { toast } from 'sonner';
 
+import { ReturnReviewPrompt } from '@/components/review/ReturnReviewPrompt';
+
 interface TransactionEditModalProps {
   transaction: Transaction | null;
   onClose: () => void;
@@ -48,6 +51,9 @@ export const TransactionEditModal = ({
   const [returnDate, setReturnDate] = useState('');
   const [saving, setSaving] = useState(false);
   const [showReturnConfirm, setShowReturnConfirm] = useState(false);
+  const [showReviewPrompt, setShowReviewPrompt] = useState(false);
+  // 오버레이는 뒤로가기로 닫힌다. 안 그러면 모달을 둔 채 뒤 페이지만 넘어간다.
+  useBackClose(!!transaction, onClose);
 
   useEffect(() => {
     if (transaction) {
@@ -109,9 +115,16 @@ export const TransactionEditModal = ({
     try {
       // Send return complete message to chat
       await sendReturnCompleteMessage();
-      
+
       toast.success('반납이 완료되었습니다');
-      onClose();
+      // 방금 책을 돌려준 사람에게만 리뷰를 묻는다.
+      // 책 주인에게 물으면 자기 책에 별점을 매기는 꼴이 된다.
+      // 하루만 지나도 그 책을 다시 찾아 들어오는 사람은 거의 없어서, 지금이 유일한 기회다.
+      if (!transaction?.isMine && transaction?.book?.id) {
+        setShowReviewPrompt(true);
+      } else {
+        onClose();
+      }
     } catch (error) {
       toast.error('업데이트에 실패했습니다');
     } finally {
@@ -251,6 +264,15 @@ export const TransactionEditModal = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* 반납 직후 리뷰 — 건너뛰기도 항상 열어둔다 */}
+      {showReviewPrompt && transaction?.book?.id && (
+        <ReturnReviewPrompt
+          bookId={transaction.book.id}
+          bookTitle={transaction.book.title}
+          onClose={() => { setShowReviewPrompt(false); onClose(); }}
+        />
+      )}
     </motion.div>
     </AnimatePresence>
   );

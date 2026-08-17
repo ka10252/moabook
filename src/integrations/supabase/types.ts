@@ -814,7 +814,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
-      book_condition: "S" | "A" | "B"
+      book_condition: "S" | "A" | "B" | "C"
       book_mode: "give" | "rent" | "sell"
       book_status: "available" | "rented" | "sold"
       community_role: "admin" | "member"
@@ -951,7 +951,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
-      book_condition: ["S", "A", "B"],
+      book_condition: ["S", "A", "B", "C"],
       book_mode: ["give", "rent", "sell"],
       book_status: ["available", "rented", "sold"],
       community_role: ["admin", "member"],

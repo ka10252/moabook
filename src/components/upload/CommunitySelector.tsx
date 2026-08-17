@@ -33,8 +33,8 @@ export const CommunitySelector = ({
   };
 
   return (
-    <div className="space-y-3">
-      <label className="text-sm font-medium text-foreground">공개 범위</label>
+    <div className="space-y-2">
+      <p className="text-[12px] font-bold tracking-wide text-muted-foreground">공개 범위</p>
       
       <div className="relative flex p-1 bg-muted rounded-xl">
         <motion.div
@@ -47,11 +47,11 @@ export const CommunitySelector = ({
           type="button"
           onClick={() => handlePublicToggle(true)}
           className={cn(
-            "relative flex-1 py-3 flex items-center justify-center gap-2 text-sm font-semibold rounded-lg transition-colors z-10",
+            "relative flex-1 py-2.5 flex items-center justify-center gap-1.5 text-[12px] font-bold rounded-lg transition-colors z-10",
             isPublic ? "text-foreground" : "text-muted-foreground"
           )}
         >
-          <Globe className="w-4 h-4" />
+          <Globe className="w-3.5 h-3.5" />
           전체 공개
         </button>
         
@@ -59,11 +59,11 @@ export const CommunitySelector = ({
           type="button"
           onClick={() => handlePublicToggle(false)}
           className={cn(
-            "relative flex-1 py-3 flex items-center justify-center gap-2 text-sm font-semibold rounded-lg transition-colors z-10",
+            "relative flex-1 py-2.5 flex items-center justify-center gap-1.5 text-[12px] font-bold rounded-lg transition-colors z-10",
             !isPublic ? "text-foreground" : "text-muted-foreground"
           )}
         >
-          <Users className="w-4 h-4" />
+          <Users className="w-3.5 h-3.5" />
           커뮤니티
         </button>
       </div>

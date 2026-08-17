@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Search, Loader2 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
 import { useWishlist, type WishlistItem } from '@/hooks/useWishlist';
 import { useAuth } from '@/hooks/useAuth';
 import { useChat } from '@/hooks/useChat';
@@ -84,7 +83,6 @@ export const WishlistPage = () => {
   const { items, myItems, loading, addItem, updateNotes, removeItem, markFulfilled } = useWishlist();
   const { startConversation, sendMessage, refresh: refreshChat } = useChat();
   const [showAddForm, setShowAddForm] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [chatOpen, setChatOpen] = useState(false);
   const [chatUserId, setChatUserId] = useState<string | null>(null);
@@ -95,13 +93,9 @@ export const WishlistPage = () => {
   const toggleOfferMode = (m: OfferMode) =>
     setOfferModes((prev) => (prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]));
 
-  const matches = (title: string, author?: string | null) =>
-    title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (author || '').toLowerCase().includes(searchQuery.toLowerCase());
-
-  const filteredItems = items.filter((item) => matches(item.title, item.author));
-  const mine = filteredItems.filter((item) => item.user_id === user?.id);
-  const others = filteredItems.filter((item) => item.user_id !== user?.id);
+  // 상단 검색창은 없앴다(F4) — 위시리스트에서 할 일은 '원하는 책 올리기' 하나다.
+  const mine = items.filter((item) => item.user_id === user?.id);
+  const others = items.filter((item) => item.user_id !== user?.id);
 
   // 1단계: 버튼 클릭 → 확인 팝업만 연다(바로 발송하지 않음).
   // 요청자가 '사고 싶어요'면 기본을 판매로, 그 외엔 대여로 맞춰준다.
@@ -148,9 +142,9 @@ export const WishlistPage = () => {
   const showMineSection = filter === 'all' || filter === 'mine';
   const showOthersSection = filter === 'all';
 
-  // 실제 요청이 적을 때만 예시로 채운다. 검색 중이거나 요청이 쌓이면 사라진다.
+  // 실제 요청이 적을 때만 예시로 채운다. 요청이 쌓이면 사라진다.
   const demoItems =
-    showOthersSection && !searchQuery.trim() && items.length < DEMO_THRESHOLD
+    showOthersSection && items.length < DEMO_THRESHOLD
       ? DEMO_ITEMS.slice(0, DEMO_THRESHOLD - items.length)
       : [];
 
@@ -168,24 +162,18 @@ export const WishlistPage = () => {
               아직 책장에서 못 찾은, 읽고 싶은 책을 남기는 곳이에요.
             </p>
           </div>
-          <button
-            onClick={handleAddClick}
-            className="flex items-center gap-1.5 bg-primary text-primary-foreground text-[13px] font-bold px-3.5 py-2 rounded-full shrink-0"
-          >
-            <Plus className="w-3.5 h-3.5" />책 추가
-          </button>
         </div>
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-faint" />
-          <Input
-            placeholder="위시리스트 검색…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-10 pl-9 text-xs bg-card border-border rounded-xl"
-          />
-        </div>
+        {/* 책 추가 — 검색창이 있던 자리.
+            검색창을 위에 두니 "책을 추가하려다 검색창을 먼저 누르는" 오인이 잦았다.
+            위시리스트에서 할 일은 '원하는 책 올리기' 하나라, 그 버튼이 이 자리를 갖는 게 맞다. */}
+        <button
+          onClick={handleAddClick}
+          className="w-full h-12 flex items-center justify-center gap-1.5 bg-primary text-primary-foreground text-[14px] font-bold rounded-xl active:scale-[0.99] transition-transform"
+        >
+          <Plus className="w-4 h-4" />
+          {showAddForm ? '닫기' : '책 추가'}
+        </button>
 
         {/* Filter chips — 한 줄, 활성은 코랄 */}
         <div className="flex gap-1.5">

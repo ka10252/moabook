@@ -60,11 +60,12 @@ export const WishlistBookSearch = ({ onBookSelect, onManualEntry }: WishlistBook
 
   return (
     <div ref={containerRef} className="relative space-y-2">
+      <label className="block text-[13px] font-semibold text-foreground">책 제목</label>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
         <Input
           type="text"
-          placeholder="책 제목을 검색하세요…"
+          placeholder="책 제목을 입력하세요"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => results.length > 0 && setIsOpen(true)}
@@ -75,17 +76,22 @@ export const WishlistBookSearch = ({ onBookSelect, onManualEntry }: WishlistBook
         )}
       </div>
 
-      {/* Manual entry button */}
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={onManualEntry}
-        className="text-muted-foreground hover:text-foreground gap-2"
-      >
-        <PenLine className="w-4 h-4" />
-        찾는 책이 없나요? 직접 입력하기
-      </Button>
+      {/* 아직 아무것도 안 고른 상태의 안내.
+          "왜 저자·설명을 안 물어보지?"에 먼저 답해줘야 유저가 빈 화면에서 멈추지 않는다. */}
+      <div className="rounded-xl border border-dashed border-border px-4 py-5 text-center">
+        <p className="text-[13.5px] text-muted-foreground leading-relaxed">
+          위에서 <b className="text-foreground font-semibold">책 제목을 검색해 고르면</b>
+          <br />
+          저자·설명이 자동으로 채워져요.
+        </p>
+        <button
+          type="button"
+          onClick={onManualEntry}
+          className="mt-3 text-[13.5px] font-medium text-primary underline underline-offset-4"
+        >
+          검색에 없는 책은 직접 입력하기
+        </button>
+      </div>
 
       <AnimatePresence>
         {isOpen && results.length > 0 && (

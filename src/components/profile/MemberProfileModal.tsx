@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useBackClose } from '@/hooks/useBackClose';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, BookOpen, Loader2, User, Flag, Ban, ShieldOff, GraduationCap, Handshake } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -24,6 +25,9 @@ import { toast } from 'sonner';
 import { Book, transformDbBook } from '@/types/book';
 import { BadgeStamp, BADGES, type BadgeId } from '@/components/BadgeStamp';
 import { fetchUserBadges, type EarnedBadge } from '@/hooks/useBadges';
+
+import { MannerSummary } from '@/components/review/MannerSummary';
+import { useMannerReview } from '@/hooks/useMannerReview';
 
 interface Profile {
   id: string;
@@ -52,6 +56,7 @@ export const MemberProfileModal = ({
   userId,
   onBookClick,
 }: MemberProfileModalProps) => {
+  useBackClose(isOpen, onClose);
   const { user } = useAuth();
   const { isBlocked, blockUser, unblockUser } = useBlockedUsers();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -63,6 +68,7 @@ export const MemberProfileModal = ({
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
 
   const isSelf = user?.id === userId;
+  const manner = useMannerReview(isSelf ? null : userId);
   const blocked = userId ? isBlocked(userId) : false;
 
   const handleToggleBlock = async () => {
@@ -239,6 +245,17 @@ export const MemberProfileModal = ({
                             <BadgeStamp id={b.badge_key} tier={(b.tier || undefined) as 1 | 2 | 3 | undefined} size={26} />
                           </span>
                         ))}
+                      </div>
+                    )}
+
+                    {/* 거래 매너 — 여기서는 결과만 보여준다. 평가를 남기는 입구는
+                        대화창의 반납 완료 카드 하나뿐이다.
+                        프로필에도 버튼을 두면 거래와 무관한 자리에서 남을 평가하는 화면이 되고,
+                        마음에 안 드는 사람 프로필을 찾아 들어가 별점을 주는 길이 열린다.
+                        본인은 자기 평가를 볼 수 없다(MannerSummary 위쪽에서 걸러진다). */}
+                    {!isSelf && user && (
+                      <div className="mt-4 text-left">
+                        <MannerSummary summary={manner.summary} loading={manner.loading} />
                       </div>
                     )}
 

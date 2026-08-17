@@ -1,3 +1,4 @@
+import { conditionLabel, type BookCondition } from '@/lib/bookCondition';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Send, MessageCircle, Trash2, Pencil, Loader2, ChevronDown, ChevronUp, BookOpen, BookPlus, X, Search } from 'lucide-react';
@@ -19,7 +20,7 @@ interface PostBook {
   author: string;
   cover_url: string | null;
   mode: BookMode;
-  condition: 'S' | 'A' | 'B';
+  condition: BookCondition;
 }
 
 interface Post {
@@ -74,7 +75,7 @@ function BookCard({ book }: { book: PostBook }) {
             {book.mode === 'rent' ? '대여' : '판매'}
           </span>
           <span className="text-[12px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
-            {book.condition === 'S' ? '새 책' : book.condition === 'A' ? '양호' : '보통'}
+            {conditionLabel(book.condition)}
           </span>
         </div>
       </div>
