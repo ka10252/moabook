@@ -26,17 +26,44 @@ export const CommunityShelfPanel = ({ communityId, communityName, onBack, onBook
     let alive = true;
     (async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('books')
-        .select(`
-          id, title, author, cover_url, condition, mode, price, description,
-          is_public, community_id, owner_id, status, created_at, updated_at,
-          profile:profiles!books_owner_id_fkey(nickname, avatar_url), community:communities(name)
-        `)
+
+      // 커뮤니티 책장 = ① 그 커뮤니티에 지정된 책(커뮤니티 전용 포함)
+      //              + ② 커뮤니티 멤버들의 공개책
+      // ②를 빠뜨리면 대부분의 커뮤니티가 빈 책장으로 보인다 — 사람들은 보통
+      // 책을 '전체 공개'로 올리지 커뮤니티 전용으로 올리지 않기 때문이다.
+      // 서가 탭의 커뮤니티 필터가 쓰는 규칙과 같아야 한다(Bookshelf의 filteredBooks).
+      const { data: memberRows } = await supabase
+        .from('community_members')
+        .select('user_id')
         .eq('community_id', communityId)
-        .order('created_at', { ascending: false });
+        .eq('is_banned', false);
+      const memberIds = (memberRows ?? []).map((r) => (r as { user_id: string }).user_id);
+
+      const cols = `
+        id, title, author, cover_url, condition, mode, price, description,
+        is_public, community_id, owner_id, status, created_at, updated_at,
+        profile:profiles!books_owner_id_fkey(nickname, avatar_url), community:communities(name)
+      `;
+
+      const [assigned, memberPublic] = await Promise.all([
+        supabase.from('books').select(cols).eq('community_id', communityId),
+        memberIds.length
+          ? supabase.from('books').select(cols).eq('is_public', true).in('owner_id', memberIds)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+
       if (!alive) return;
-      if (!error) setBooks((data ?? []).map((b) => transformDbBook(b as never)));
+
+      const byId = new Map<string, Book>();
+      for (const row of [...(assigned.data ?? []), ...(memberPublic.data ?? [])]) {
+        const book = transformDbBook(row as never);
+        byId.set(book.id, book);
+      }
+      setBooks(
+        [...byId.values()].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        ),
+      );
       setLoading(false);
     })();
     return () => { alive = false; };

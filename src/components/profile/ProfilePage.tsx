@@ -674,7 +674,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                 <div className="mt-3">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-[12px] text-muted-foreground">
-                      배지를 누르면 조건을 볼 수 있어요.
+                      대표 배지를 설정할 수 있습니다.
                     </p>
                     <label className="flex items-center gap-1.5 text-[12px] text-muted-foreground cursor-pointer shrink-0">
                       공개
