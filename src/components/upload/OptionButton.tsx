@@ -23,6 +23,12 @@ interface OptionButtonProps {
  * 서로 다른 모양으로 말을 걸면, 유저는 각각을 새로 배워야 한다.
  *
  * 이제 껍데기(높이·모서리·글자)는 완전히 같고, **여러 개 선택인지 여부만** 체크 표시로 갈린다.
+ *
+ * ⚠️ **선택 상태에 코랄을 채우지 않는다.** 바로 아래 '책장에 등록'이 코랄 채움이라,
+ *    선택 버튼까지 채우면 같은 색 덩어리가 한 화면에 여러 개 깔린다. 어느 게 눌러서
+ *    끝내는 버튼인지 구분이 안 되고, 쨍한 색이 반복돼 눈이 아프다.
+ *    선택 상태는 `--primary-soft`(#F1DED4) + 코랄 1px 테두리로 표시한다 —
+ *    강한 색은 선(線)으로만 쓰고 면(面)은 조용히 둔다. 위시리스트 탭과 같은 규칙이다.
  */
 export const OptionButton = ({ label, hint, active, onClick, multi }: OptionButtonProps) => (
   <button
@@ -31,18 +37,20 @@ export const OptionButton = ({ label, hint, active, onClick, multi }: OptionButt
     aria-pressed={active}
     className={cn(
       'relative min-h-11 py-2.5 px-1 rounded-[11px] border transition-colors text-center',
-      active ? 'bg-primary border-primary' : 'bg-card border-border',
+      active
+        ? 'bg-[hsl(var(--primary-soft))] border-primary'
+        : 'bg-card border-border',
     )}
   >
     {multi && active && (
-      <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-primary-foreground/25 flex items-center justify-center">
+      <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
         <Check className="w-2.5 h-2.5 text-primary-foreground" />
       </span>
     )}
     <span
       className={cn(
         'block text-[13px] font-bold leading-tight break-keep',
-        active ? 'text-primary-foreground' : 'text-foreground',
+        'text-foreground',
       )}
     >
       {label}
@@ -51,7 +59,7 @@ export const OptionButton = ({ label, hint, active, onClick, multi }: OptionButt
       <span
         className={cn(
           'block text-[11px] mt-0.5 leading-tight break-keep',
-          active ? 'text-primary-foreground/85' : 'text-faint',
+          active ? 'text-muted-foreground' : 'text-faint',
         )}
       >
         {hint}
