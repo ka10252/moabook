@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback, Fragment } from 'rea
 import { track } from '@/lib/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EditorialShelf } from './EditorialShelf';
+import { useFavoriteAreas } from '@/hooks/useFavoriteAreas';
 import { CoverShelf } from './CoverShelf';
 import { BookSpine } from './BookSpine';
 import { BookDetailWithActions } from './BookDetailWithActions';
@@ -19,7 +20,7 @@ import { useBackClose } from '@/hooks/useBackClose';
 import { supabase } from '@/integrations/supabase/client';
 // ⚠️ lucide의 Map은 반드시 별칭으로 가져온다. 그냥 `Map`으로 import 하면
 //    이 모듈 안에서 전역 Map 생성자를 가려 `new Map<...>()`이 "Map is not a constructor"로 터진다.
-import { ChevronDown, Loader2, BookOpen, Heart, History, Search, X, MapPin, SlidersHorizontal, LayoutGrid, Library, Map as MapIcon, ArrowLeft } from 'lucide-react';
+import { ChevronDown, Loader2, BookOpen, Heart, History, Search, X, MapPin, SlidersHorizontal, LayoutGrid, Library, Map as MapIcon, ArrowLeft, Star } from 'lucide-react';
 import { BookMapView } from '@/components/BookMapView';
 import { STATION_DISTRICTS, MRT_STATIONS, getStation } from '@/data/mrtStations';
 import { BookCover } from './BookCover';
@@ -125,6 +126,19 @@ export const Bookshelf = ({
   // 역 단위 필터. 지역(planning area)은 몇 km라 "이 역 근처"를 못 고른다.
   const [selectedStations, setSelectedStations] = useState<string[]>([]);
   const [stationDropdownOpen, setStationDropdownOpen] = useState(false);
+  const { favStations, favDistricts, hasFavorites, toggleStation: toggleFavStation, toggleDistrict: toggleFavDistrict } = useFavoriteAreas();
+  // 즐겨찾기 칩이 켜져 있는지 = 지금 선택이 즐겨찾기와 정확히 같은지.
+  // 별도 상태로 두면 유저가 역을 하나 더 고를 때 칩이 켜진 채로 남아 거짓말을 한다.
+  const sameSet = (a: string[], b: string[]) =>
+    a.length === b.length && a.every((x) => b.includes(x));
+  const favoritesApplied =
+    hasFavorites && sameSet(selectedStations, favStations) && sameSet(selectedDistricts, favDistricts);
+  const applyFavorites = () => {
+    if (favoritesApplied) { setSelectedStations([]); setSelectedDistricts([]); return; }
+    setSelectedStations(favStations);
+    setSelectedDistricts(favDistricts);
+  };
+
   const [stationQuery, setStationQuery] = useState('');
   const [districtQuery, setDistrictQuery] = useState('');
   const [showLikedBooks, setShowLikedBooks] = useState(false);
@@ -628,6 +642,19 @@ export const Bookshelf = ({
                 {label}
               </button>
             ))}
+
+            {/* 즐겨찾기 지역 — 저장해둔 역·지역을 한 번에 적용한다.
+                즐겨찾기가 하나도 없으면 아예 안 보인다(눌러도 아무 일 없는 칩은 두지 않는다). */}
+            {hasFavorites && (
+              <button
+                onClick={applyFavorites}
+                aria-pressed={favoritesApplied}
+                className={`chip shrink-0 flex items-center gap-1 ${favoritesApplied ? 'chip-active' : ''}`}
+              >
+                <Star className={`w-3 h-3 ${favoritesApplied ? 'fill-current' : ''}`} />
+                즐겨찾기
+              </button>
+            )}
           </div>
 
           {/* 책등 · 표지 · 지도 — 세 모드가 다 보이는 세그먼트 토글(현재 모드가 채워져 보임) */}
@@ -972,16 +999,21 @@ export const Bookshelf = ({
                       })
                       .map(({ station, count }) => {
                         const checked = selectedStations.includes(station.id);
+                        const faved = favStations.includes(station.id);
                         return (
-                          <button
+                          // 행 안에 별 버튼을 넣어야 해서 div다 — button 안에 button은 못 넣는다
+                          <div
                             key={station.id}
+                            className={`w-full flex items-center gap-2 px-3 text-sm transition-colors ${
+                              checked ? 'bg-primary/10 text-primary font-medium' : 'bg-background hover:bg-muted/60 text-foreground/80'
+                            }`}
+                          >
+                          <button
                             type="button"
                             onClick={() => setSelectedStations(prev =>
                               checked ? prev.filter(x => x !== station.id) : [...prev, station.id]
                             )}
-                            className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left transition-colors ${
-                              checked ? 'bg-primary/10 text-primary font-medium' : 'bg-background hover:bg-muted/60 text-foreground/80'
-                            }`}
+                            className="flex-1 min-w-0 flex items-center gap-2 py-2.5 text-left"
                           >
                             <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors ${
                               checked ? 'bg-primary border-primary' : 'border-border'
@@ -999,6 +1031,16 @@ export const Bookshelf = ({
                               {count > 0 ? `${count}권` : '없음'}
                             </span>
                           </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleFavStation(station.id)}
+                            aria-label={faved ? `${station.name} 즐겨찾기 해제` : `${station.name} 즐겨찾기`}
+                            aria-pressed={faved}
+                            className="shrink-0 p-1.5 -mr-1"
+                          >
+                            <Star className={`w-3.5 h-3.5 ${faved ? 'fill-primary text-primary' : 'text-border'}`} />
+                          </button>
+                          </div>
                         );
                       })}
                     {stationOptions.filter(({ station }) => {
@@ -1071,16 +1113,20 @@ export const Bookshelf = ({
                       .map(d => {
                       const checked = selectedDistricts.includes(d);
                       const dCount = bookCountByDistrict.get(d) ?? 0;
+                      const dFaved = favDistricts.includes(d);
                       return (
-                        <button
+                        <div
                           key={d}
+                          className={`flex items-center gap-2 px-3 text-sm transition-colors ${
+                            checked ? 'bg-primary/10 text-primary font-medium' : 'bg-background hover:bg-muted/60 text-foreground/80'
+                          }`}
+                        >
+                        <button
                           type="button"
                           onClick={() => setSelectedDistricts(prev =>
                             checked ? prev.filter(x => x !== d) : [...prev, d]
                           )}
-                          className={`flex items-center gap-2 px-3 py-2.5 text-sm text-left transition-colors ${
-                            checked ? 'bg-primary/10 text-primary font-medium' : 'bg-background hover:bg-muted/60 text-foreground/80'
-                          }`}
+                          className="flex-1 min-w-0 flex items-center gap-2 py-2.5 text-left"
                         >
                           <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors ${
                             checked ? 'bg-primary border-primary' : 'border-border'
@@ -1096,6 +1142,16 @@ export const Bookshelf = ({
                             {dCount > 0 ? dCount : ''}
                           </span>
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleFavDistrict(d)}
+                          aria-label={dFaved ? `${d} 즐겨찾기 해제` : `${d} 즐겨찾기`}
+                          aria-pressed={dFaved}
+                          className="shrink-0 p-1.5 -mr-1"
+                        >
+                          <Star className={`w-3.5 h-3.5 ${dFaved ? 'fill-primary text-primary' : 'text-border'}`} />
+                        </button>
+                        </div>
                       );
                     })}
                   </div>

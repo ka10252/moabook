@@ -25,6 +25,8 @@ interface WishlistCardProps {
   onEditNotes?: (notes: string) => Promise<void> | void;
   /** 실제 요청이 아직 적을 때 채워 넣는 예시 카드 — 진짜인 척하면 안 된다 */
   isDemo?: boolean;
+  /** 내 책장에 같은 제목이 있음 — 바로 빌려줄 수 있는 요청이다(F5) */
+  canOffer?: boolean;
 }
 
 /**
@@ -39,6 +41,7 @@ export const WishlistCard = ({
   onMessage,
   onEditNotes,
   isDemo = false,
+  canOffer = false,
 }: WishlistCardProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showFulfillConfirm, setShowFulfillConfirm] = useState(false);
@@ -113,6 +116,12 @@ export const WishlistCard = ({
               {isDemo && (
                 <span className="text-[11px] font-bold text-faint bg-muted px-1.5 py-0.5 rounded-full shrink-0">
                   예시
+                </span>
+              )}
+              {/* 내 책장에 같은 제목이 있다 — 이 목록에서 유일하게 행동으로 이어지는 신호다 */}
+              {canOffer && !isDemo && (
+                <span className="text-[11px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full shrink-0">
+                  내 책장에 있어요
                 </span>
               )}
             </div>

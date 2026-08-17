@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Search, Loader2 } from 'lucide-react';
 import { useWishlist, type WishlistItem } from '@/hooks/useWishlist';
 import { useAuth } from '@/hooks/useAuth';
 import { useChat } from '@/hooks/useChat';
+import { useBooks } from '@/hooks/useBooks';
+import { supabase } from '@/integrations/supabase/client';
 import { useGuestGate } from '@/hooks/useGuestGate';
 import { AddWishlistForm } from './AddWishlistForm';
 import { WishlistCard } from './WishlistCard';
@@ -84,6 +86,26 @@ export const WishlistPage = () => {
   const { startConversation, sendMessage, refresh: refreshChat } = useChat();
   const [showAddForm, setShowAddForm] = useState(false);
   const [filter, setFilter] = useState<Filter>('all');
+  const [sort, setSort] = useState<'recommended' | 'newest'>('recommended');
+  const { books: myBooks } = useBooks();
+  const [myStation, setMyStation] = useState<string | null>(null);
+  const [myDistrict, setMyDistrict] = useState<string | null>(null);
+  useEffect(() => {
+    if (!user) { setMyStation(null); setMyDistrict(null); return; }
+    let alive = true;
+    supabase
+      .from('profiles')
+      .select('mrt_station, district')
+      .eq('id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!alive || !data) return;
+        const row = data as { mrt_station?: string | null; district?: string | null };
+        setMyStation(row.mrt_station ?? null);
+        setMyDistrict(row.district ?? null);
+      });
+    return () => { alive = false; };
+  }, [user?.id]);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatUserId, setChatUserId] = useState<string | null>(null);
   // '가지고 있어요' 확인 팝업 대상 — 클릭 즉시 보내지 않고, 발송 내용 미리보기 후 확인받는다(F6)
@@ -95,7 +117,43 @@ export const WishlistPage = () => {
 
   // 상단 검색창은 없앴다(F4) — 위시리스트에서 할 일은 '원하는 책 올리기' 하나다.
   const mine = items.filter((item) => item.user_id === user?.id);
-  const others = items.filter((item) => item.user_id !== user?.id);
+
+  /**
+   * F5 · '모든 위시리스트' 정렬.
+   *
+   * 기본값을 최신순으로 두면 목록이 그냥 게시판이 된다. 여기서 유저가 할 수 있는 건
+   * "내가 도와줄 수 있는 요청을 찾는 것" 하나뿐이라, 그 순서로 세운다.
+   *   ① 내가 이미 가진 책 — 제목이 겹치면 바로 빌려줄 수 있다
+   *   ② 나와 가까운 사람 — 같은 역이 같은 지역보다 가깝다
+   *   ③ 최신
+   *
+   * 제목 매칭은 공백·대소문자만 지운 단순 비교다. 판형·부제까지 맞추려면 정규화가
+   * 필요한데, 지금은 잘못 매칭돼도 "혹시 이 책 있나요?" 정도의 비용이라 이걸로 둔다.
+   */
+  const norm = (t: string) => t.toLowerCase().replace(/\s+/g, '');
+  const myBookTitles = useMemo(
+    () => new Set(myBooks.filter((b) => b.owner_id === user?.id).map((b) => norm(b.title))),
+    [myBooks, user?.id],
+  );
+
+  const others = useMemo(() => {
+    const list = items.filter((item) => item.user_id !== user?.id);
+    if (sort === 'newest') return list;
+    const score = (it: WishlistItem) => {
+      let s = 0;
+      if (myBookTitles.has(norm(it.title))) s += 100;
+      if (myStation && it.profile?.mrt_station === myStation) s += 20;
+      else if (myDistrict && it.profile?.district === myDistrict) s += 10;
+      return s;
+    };
+    return [...list].sort((a, b) => {
+      const d = score(b) - score(a);
+      if (d !== 0) return d;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  }, [items, user?.id, sort, myBookTitles, myStation, myDistrict]);
+
+  const canOffer = (it: WishlistItem) => myBookTitles.has(norm(it.title));
 
   // 1단계: 버튼 클릭 → 확인 팝업만 연다(바로 발송하지 않음).
   // 요청자가 '사고 싶어요'면 기본을 판매로, 그 외엔 대여로 맞춰준다.
@@ -250,14 +308,30 @@ export const WishlistPage = () => {
 
             {showOthersSection && (others.length > 0 || demoItems.length > 0) && (
               <section className="space-y-2">
-                <p className="text-[13px] font-semibold text-muted-foreground px-0.5 pt-2">
-                  이웃의 요청
-                </p>
+                <div className="flex items-center justify-between gap-2 px-0.5 pt-2">
+                  <p className="text-[13px] font-semibold text-muted-foreground">이웃의 요청</p>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {([['recommended', '추천'], ['newest', '최신']] as const).map(([key, label]) => (
+                      <button
+                        key={key}
+                        onClick={() => setSort(key)}
+                        className={`text-[12px] font-bold px-2 py-1 rounded-full transition-colors ${
+                          sort === key
+                            ? 'bg-[hsl(var(--primary-soft))] text-foreground'
+                            : 'text-muted-foreground'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 {others.map((item) => (
                   <WishlistCard
                     key={item.id}
                     item={item}
                     isOwner={false}
+                    canOffer={canOffer(item)}
                     onMessage={() => handleMessage(item)}
                   />
                 ))}
