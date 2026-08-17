@@ -385,13 +385,16 @@ export const CommunityDetailModal = ({
           {/* Modal */}
           <motion.div
             key="community-detail-modal"
-            className="w-[calc(100%-2rem)] max-w-md h-fit box-border"
+            className="w-[calc(100%-2rem)] max-w-md box-border"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-card rounded-2xl flex flex-col shadow-xl overflow-hidden max-h-[80vh]">
+            {/* 높이를 80vh로 고정한다(max-h가 아니다). 멤버·책·게시글이 적으면 팝업이
+                 쪼그라들어서, 같은 커뮤니티 탭 안에서 화면 크기가 계속 바뀌었다.
+                 책장·게시판처럼 팝업 안에서 화면을 전환하는 구조라 틀이 흔들리면 안 된다. */}
+            <div className="bg-card rounded-2xl flex flex-col shadow-xl overflow-hidden h-[80vh]">
               {/* Hero — 커뮤니티 정체성 (커버 있으면 배경, 없으면 코랄 그라데이션) */}
               <div
                 className="relative shrink-0 px-5 pt-5 pb-4 text-primary-foreground bg-gradient-to-br from-primary to-primary/70"

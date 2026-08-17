@@ -190,7 +190,7 @@ export const WishlistPage = () => {
               // 실행 버튼인지 헷갈린다. 탭은 선택 상태만 보이면 되므로 무채색으로 낮춘다.
               className={`flex-1 text-[13px] font-bold py-2 rounded-[9px] transition-colors ${
                 filter === key
-                  ? 'bg-foreground text-background'
+                  ? 'bg-[hsl(var(--primary-soft))] text-foreground'
                   : 'bg-muted text-muted-foreground'
               }`}
             >

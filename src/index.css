@@ -42,6 +42,9 @@
 
     /* Primary — Coral (브랜드 포인트) */
     --primary: 11.1 86.5% 62.2%;         /* #F26A4B sunset coral */
+    /* 코랄에서 채도를 뺀 톤. 탭처럼 '선택 상태'만 알리면 되는 곳에 쓴다 —
+       실행 버튼(코랄)과 같은 색이면 어느 쪽을 눌러야 하는지 헷갈린다. */
+    --primary-soft: 11 42% 80%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary — 배지 배경 */
@@ -108,6 +111,7 @@
 
     /* Primary — Coral (다크에선 살짝 밝혀 대비 확보) */
     --primary: 12 85% 68%;           /* #F58163 — 다크에선 한 톤 밝게 */
+    --primary-soft: 11 30% 40%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary — raised wood */
