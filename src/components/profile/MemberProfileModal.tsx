@@ -24,6 +24,7 @@ import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 import { toast } from 'sonner';
 import { Book, transformDbBook } from '@/types/book';
 import { BadgeStamp, BADGES, type BadgeId } from '@/components/BadgeStamp';
+import { BadgeDetailSheet } from './BadgeDetailSheet';
 import { fetchUserBadges, type EarnedBadge } from '@/hooks/useBadges';
 
 import { MannerSummary } from '@/components/review/MannerSummary';
@@ -69,6 +70,7 @@ export const MemberProfileModal = ({
 
   const isSelf = user?.id === userId;
   const manner = useMannerReview(isSelf ? null : userId);
+  const [badgeDetail, setBadgeDetail] = useState<{ id: BadgeId; tier: number | null } | null>(null);
   const blocked = userId ? isBlocked(userId) : false;
 
   const handleToggleBlock = async () => {
@@ -241,9 +243,14 @@ export const MemberProfileModal = ({
                     {memberBadges.length > 0 && (
                       <div className="flex items-center justify-center gap-1.5 mt-3 flex-wrap">
                         {memberBadges.map((b) => (
-                          <span key={b.badge_key} title={BADGES[b.badge_key]?.name}>
+                          <button
+                            key={b.badge_key}
+                            onClick={() => setBadgeDetail({ id: b.badge_key, tier: b.tier || 1 })}
+                            aria-label={BADGES[b.badge_key]?.name}
+                            className="p-0.5 -m-0.5 rounded"
+                          >
                             <BadgeStamp id={b.badge_key} tier={(b.tier || undefined) as 1 | 2 | 3 | undefined} size={26} />
-                          </span>
+                          </button>
                         ))}
                       </div>
                     )}
@@ -332,6 +339,14 @@ export const MemberProfileModal = ({
               )}
             </div>
           </motion.div>
+
+          {badgeDetail && (
+            <BadgeDetailSheet
+              id={badgeDetail.id}
+              tier={badgeDetail.tier}
+              onClose={() => setBadgeDetail(null)}
+            />
+          )}
 
           <ReportModal
             isOpen={showReport}

@@ -70,6 +70,7 @@ import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 import { Ban } from 'lucide-react';
 import { useBadges } from '@/hooks/useBadges';
 import { BadgeStamp, BADGE_META, BADGES, type BadgeId } from '@/components/BadgeStamp';
+import { BadgeDetailSheet } from './BadgeDetailSheet';
 import { PasswordRequirements } from '@/components/auth/PasswordRequirements';
 
 /** 탈퇴·문의 접수 채널. 자동 탈퇴가 실패해도 이 경로는 항상 열려 있어야 한다. */
@@ -175,6 +176,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   const [schoolBusy, setSchoolBusy] = useState(false);
   const [featuredBadge, setFeaturedBadge] = useState<string | null>(null);
   const [badgesPublic, setBadgesPublic] = useState(true);
+  const [badgeDetail, setBadgeDetail] = useState<{ id: BadgeId; tier: number | null } | null>(null);
   const [badgesOpen, setBadgesOpen] = useState(false); // 진열장 기본 접힘
   const { badges: myBadges } = useBadges();
   const [showRegionBlock, setShowRegionBlock] = useState(false);
@@ -672,7 +674,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                 <div className="mt-3">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-[12px] text-muted-foreground">
-                      획득한 배지를 눌러 이름 옆 <span className="text-foreground font-medium">대표 배지</span>로.
+                      배지를 누르면 조건을 볼 수 있어요.
                     </p>
                     <label className="flex items-center gap-1.5 text-[12px] text-muted-foreground cursor-pointer shrink-0">
                       공개
@@ -695,13 +697,12 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                           return (
                             <button
                               key={id}
-                              onClick={() => has && chooseFeatured(id)}
-                              disabled={!has}
-                              className={`flex flex-col items-center gap-1 text-center rounded-lg py-1.5 transition-colors ${has ? 'cursor-pointer hover:bg-muted/50' : 'cursor-default'} ${isFeatured ? 'bg-primary/10 ring-1 ring-primary/40' : ''}`}
+                              onClick={() => setBadgeDetail({ id, tier: has ? (tier ?? 1) : null })}
+                              className={`flex flex-col items-center gap-1 text-center rounded-lg py-1.5 transition-colors cursor-pointer hover:bg-muted/50 ${isFeatured ? 'bg-primary/10 ring-1 ring-primary/40' : ''}`}
                             >
                               <BadgeStamp id={id} tier={(tier || undefined) as 1 | 2 | 3 | undefined} size={44} muted={!has} />
                               <span className={`text-[10.5px] leading-tight ${has ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-                                {has ? BADGES[id].name : cond}
+                                {BADGES[id].name}
                               </span>
                             </button>
                           );
@@ -712,6 +713,16 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                 </div>
               )}
             </div>
+
+            {badgeDetail && (
+              <BadgeDetailSheet
+                id={badgeDetail.id}
+                tier={badgeDetail.tier}
+                isFeatured={featuredBadge === badgeDetail.id}
+                onSetFeatured={() => chooseFeatured(badgeDetail.id)}
+                onClose={() => setBadgeDetail(null)}
+              />
+            )}
 
             {/* 메뉴 */}
             <div className="mt-4">

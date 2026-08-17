@@ -1,3 +1,4 @@
+import type { BookMode } from '@/lib/bookMode';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Plus } from 'lucide-react';
@@ -30,9 +31,10 @@ interface Community {
 interface CommunityPageProps {
   onNavigateToBookshelf?: (communityId: string) => void;
   onOpenBoard?: (communityId: string, communityName: string) => void;
+  onOpenChatForBook?: (ownerId: string, bookId: string, bookMode: BookMode) => void;
 }
 
-export const CommunityPage = ({ onNavigateToBookshelf, onOpenBoard }: CommunityPageProps = {}) => {
+export const CommunityPage = ({ onNavigateToBookshelf, onOpenBoard, onOpenChatForBook }: CommunityPageProps = {}) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [view, setView] = useState<View>('list');
@@ -269,6 +271,7 @@ export const CommunityPage = ({ onNavigateToBookshelf, onOpenBoard }: CommunityP
         onCommunityUpdated={fetchCommunities}
         onNavigateToBookshelf={onNavigateToBookshelf}
         onOpenBoard={onOpenBoard}
+        onOpenChatForBook={onOpenChatForBook}
       />
     </div>
   );

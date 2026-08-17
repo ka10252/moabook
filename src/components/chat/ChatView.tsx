@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Send, Loader2, Plus, Book as BookPickIcon, X, ChevronRight, Camera, ImageIcon, BookHeart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -114,6 +114,8 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     return () => { cancelled = true; };
   }, [bookInfoCache, user]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const firstScrollDoneRef = useRef(false);
   const [showMore, setShowMore] = useState(false);
   const [showTransactionDashboard, setShowTransactionDashboard] = useState(false);
   const showMoreRef = useRef<HTMLDivElement>(null);
@@ -318,10 +320,59 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     fetchBookInfo();
   }, [messages]);
 
-  // Auto-scroll to bottom
+  /**
+   * 대화방은 항상 맨 아래(가장 최신)에서 열려야 한다.
+   *
+   * 예전엔 messages가 바뀔 때마다 scrollIntoView({behavior:'smooth'}) 하나로 끝냈는데,
+   * 방에 들어가면 중간쯤에서 멈춰 있었다. 이유가 두 가지다.
+   *  1. 책 표지·카드 이미지가 **나중에** 로드되면서 위쪽 높이가 늘어나 내려둔 위치가 밀린다.
+   *  2. smooth 애니메이션이 도는 중에 그 높이 변화가 일어나면 목적지가 어긋난 채로 끝난다.
+   * 그래서 첫 진입은 즉시 붙이고, 그 뒤 높이가 변할 때마다 다시 붙인다.
+   */
+  const pinnedToBottomRef = useRef(true);
+
+  const scrollToBottom = useCallback((smooth: boolean) => {
+    const el = scrollAreaRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+  }, []);
+
+  // 대화방이 바뀌면 다시 '바닥에 붙은' 상태로 시작한다
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    pinnedToBottomRef.current = true;
+  }, [conversation.id]);
+
+  useEffect(() => {
+    if (!messages.length) return;
+    // 첫 진입은 애니메이션 없이 바로 바닥으로. 스르륵 내려가는 걸 볼 이유가 없다.
+    scrollToBottom(!firstScrollDoneRef.current ? false : pinnedToBottomRef.current);
+    firstScrollDoneRef.current = true;
+  }, [messages, scrollToBottom]);
+
+  // 위로 올려 예전 대화를 읽는 중이면 새 메시지가 와도 끌어내리지 않는다
+  useEffect(() => {
+    const el = scrollAreaRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const gap = el.scrollHeight - el.scrollTop - el.clientHeight;
+      pinnedToBottomRef.current = gap < 80;
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // 이미지가 늦게 로드돼 높이가 늘어나면 다시 바닥으로 붙인다 — 이게 없으면
+  // 표지가 큰 카드가 있는 방은 항상 중간에서 멈춘다.
+  useEffect(() => {
+    const el = scrollAreaRef.current;
+    const content = el?.firstElementChild;
+    if (!el || !content) return;
+    const ro = new ResizeObserver(() => {
+      if (pinnedToBottomRef.current) scrollToBottom(false);
+    });
+    ro.observe(content);
+    return () => ro.disconnect();
+  }, [scrollToBottom]);
 
   // Close "더보기" popup on outside click
   useEffect(() => {
@@ -519,7 +570,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+      <div ref={scrollAreaRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
         <div className="flex flex-col justify-end min-h-full p-4 space-y-3">
         {loading ? (
           <div className="flex items-center justify-center py-8">

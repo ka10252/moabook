@@ -9,6 +9,12 @@
  * 셋 다 실제로 이 프로젝트에서 화면을 통째로 죽였고, 빌드는 전부 통과했다.
  * 기능을 붙였으면 커밋 전에 이걸 돌린다.
  *
+ * ⚠️ 타입체크는 반드시 `npm run typecheck`(= tsc -p tsconfig.app.json)로 돌린다.
+ *    루트의 `npx tsc --noEmit`은 tsconfig.json이 `"files": []` + 프로젝트 참조라
+ *    **아무 파일도 검사하지 않고 조용히 통과한다.** 실제로 그걸 믿고 넘긴 적이 있다.
+ *    현재 기존 에러 42개(대부분 supabase 생성 타입이 마이그레이션보다 낡아서 나는 것)가
+ *    깔려 있으니, 개수가 늘었는지로 본다.
+ *
  * 사용법:
  *   npm run dev                      # 다른 터미널에서
  *   MOA_EMAIL=... MOA_PW=... node scripts/smoke.mjs [http://localhost:8081]
@@ -148,8 +154,27 @@ async function run() {
     await click('위시 추가 폼', 'button:has-text("책 추가")');
     await page.keyboard.press('Escape').catch(() => {});
     await go('커뮤니티(로그인)', '/?tab=community', 3000);
-    await click('커뮤니티 상세', 'main button:has-text("명")', 3000, true);
+    // 커뮤니티 상세 → 그 안에서 책장까지(F15). 팝업 안 화면 전환이라 열기만 해선 안 잡힌다.
+    await click('커뮤니티 상세', 'text=/^멤버 \\d+명$/', 3000, true);
+    if (await click('커뮤니티 책장', 'button:has-text("책장")', 3000, true)) {
+      const t = await page.locator('body').innerText().catch(() => '');
+      if (!/책장 \(\d+\)|아직 등록된 책이 없습니다/.test(t)) {
+        note('커뮤니티 책장', '안 열림', '팝업 안에 책장이 안 떴다');
+      }
+      if (page.url().includes('tab=shelf')) {
+        note('커뮤니티 책장', '메인으로 튕김', '팝업 안에서 열려야 한다(F15)');
+      }
+    }
     await page.keyboard.press('Escape').catch(() => {});
+
+    // 배지 상세(F17) — 프로필에서 배지를 눌러 조건이 뜨는지
+    await go('프로필 배지', '/?tab=profile', 3000);
+    await click('활동 배지 펼치기', 'text=활동 배지', 1500, true);
+    if (await click('배지 상세', 'svg[role="img"]', 1800, true)) {
+      const t = await page.locator('body').innerText().catch(() => '');
+      if (!/달성|단계 ·|등록|가입|반납|나눔/.test(t)) note('배지 상세', '내용 없음', '조건 문구가 안 보인다');
+      await page.keyboard.press('Escape').catch(() => {});
+    }
     await go('프로필(로그인)', '/?tab=profile', 3000);
     await click('책 등록 폼', 'nav button:has-text("등록")', 2500);
   } else {

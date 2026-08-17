@@ -327,6 +327,7 @@ const Index = () => {
               setBoardName(name);
               patchParams({ board: id });
             }}
+            onOpenChatForBook={handleOpenChat}
           />
         );
       case 'profile':

@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback, Fragment } from 'rea
 import { track } from '@/lib/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EditorialShelf } from './EditorialShelf';
+import { CoverShelf } from './CoverShelf';
 import { BookSpine } from './BookSpine';
 import { BookDetailWithActions } from './BookDetailWithActions';
 import { EditBookModal } from './library/EditBookModal';
@@ -728,19 +729,19 @@ export const Bookshelf = ({
                 {/* data-onboarding: 온보딩 스포트라이트가 실제 서가를 조준한다 */}
                 <div
                   data-onboarding="shelf"
-                  className={
-                    viewMode === 'cover'
-                      ? 'relative'
-                      // 하나의 통짜 책꽂이 — 칸을 틈 없이 붙이고 모서리만 살짝 둥글게(외곽선 없음)
-                      : 'relative shelf-vignette overflow-hidden rounded-lg'
-                  }
+                  // 표지 보기도 책등과 같은 서가 프레임을 쓴다(F18).
+                  // 표지만 허공에 떠 있으면 '책장'으로 안 읽힌다.
+                  className="relative shelf-vignette overflow-hidden rounded-lg"
                 >
                   {viewMode === 'cover' ? (
-                    coverSections.map((group, idx) => (
-                      <div key={idx} className="mb-5">
-                        {group.label && <p className="font-display italic text-[16px] text-foreground mb-2">{group.label}</p>}
-                        <div className="grid grid-cols-3 gap-x-3 gap-y-5">
-                          {group.books.filter((b) => !b._isDummy).map((book) => (
+                    coverSections.map((group, gi) => {
+                      // 3권씩 끊어 한 줄로. 줄 하나가 선반 한 칸이 된다.
+                      const shown = group.books.filter((b) => !b._isDummy);
+                      const rows: typeof shown[] = [];
+                      for (let i = 0; i < shown.length; i += 3) rows.push(shown.slice(i, i + 3));
+                      return rows.map((row, ri) => (
+                        <CoverShelf key={`${gi}-${ri}`} label={ri === 0 ? group.label || undefined : undefined}>
+                          {row.map((book) => (
                             <BookCover
                               key={book.id}
                               book={book}
@@ -750,9 +751,9 @@ export const Bookshelf = ({
                               isBorrowed={!!book._isBorrowed}
                             />
                           ))}
-                        </div>
-                      </div>
-                    ))
+                        </CoverShelf>
+                      ));
+                    })
                   ) : (
                     <>
                   {shelfGroups.map((group, idx) => (

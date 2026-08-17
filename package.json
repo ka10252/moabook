@@ -15,7 +15,8 @@
     "db:push": "supabase db push",
     "check:notifications": "node scripts/check_notification_routes.mjs",
     "config:push": "supabase config push",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {
     "@fontsource/noto-sans-kr": "^5.2.9",

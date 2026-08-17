@@ -10,6 +10,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { MemberProfileModal } from '@/components/profile/MemberProfileModal';
 import { EditCommunityModal } from './EditCommunityModal';
+import { CommunityShelfPanel } from './CommunityShelfPanel';
+import { BookDetailWithActions } from '@/components/BookDetailWithActions';
+import type { Book } from '@/types/book';
+import type { BookMode } from '@/lib/bookMode';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,6 +59,8 @@ interface CommunityDetailModalProps {
   onCommunityUpdated?: () => void;
   onNavigateToBookshelf?: (communityId: string) => void;
   onOpenBoard?: (communityId: string, communityName: string) => void;
+  /** 커뮤니티 책장에서 책을 눌러 대여를 신청할 때 — 모달을 닫고 그 사람과의 채팅으로 보낸다 */
+  onOpenChatForBook?: (ownerId: string, bookId: string, bookMode: BookMode) => void;
 }
 
 export const CommunityDetailModal = ({
@@ -65,6 +71,7 @@ export const CommunityDetailModal = ({
   onCommunityUpdated,
   onNavigateToBookshelf,
   onOpenBoard,
+  onOpenChatForBook,
 }: CommunityDetailModalProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -327,13 +334,15 @@ export const CommunityDetailModal = ({
     setInviteLoading(false);
   };
 
+  const [shelfOpen, setShelfOpen] = useState(false);
+  const [shelfBook, setShelfBook] = useState<Book | null>(null);
+
   const handleNavigateToBookshelf = () => {
     if (!community) return;
 
-    // If public (no PIN) or user is member, navigate directly
+    // 팝업 안에서 연다(F15). 메인 서가로 넘기면 커뮤니티 밖으로 튕긴 것처럼 보인다.
     if (!requiresPin || isMember || isOwner) {
-      onClose();
-      onNavigateToBookshelf?.(community.id);
+      setShelfOpen(true);
     } else {
       // Show PIN dialog
       setShowPinDialog(true);
@@ -351,8 +360,7 @@ export const CommunityDetailModal = ({
     });
     if (!error && ok) {
       setShowPinDialog(false);
-      onClose();
-      onNavigateToBookshelf?.(community.id);
+      setShelfOpen(true);
     } else {
       setPinError(true);
       toast.error('잘못된 비밀번호입니다');
@@ -413,6 +421,15 @@ export const CommunityDetailModal = ({
                 )}
               </div>
 
+              {shelfOpen ? (
+                <CommunityShelfPanel
+                  communityId={community.id}
+                  communityName={community.name}
+                  onBack={() => setShelfOpen(false)}
+                  onBookClick={setShelfBook}
+                />
+              ) : (
+              <>
               {/* 액션 타일 — 책장 · 게시판 · 커뮤니티룸(최우측). flex-1로 개수에 맞춰 자동 정렬 */}
               <div className="px-4 pt-4 pb-1 shrink-0">
                 <div className="flex gap-2">
@@ -622,8 +639,21 @@ export const CommunityDetailModal = ({
                   </div>
                 )}
               </div>
+              </>
+              )}
             </div>
           </motion.div>
+
+          <BookDetailWithActions
+            book={shelfBook}
+            onClose={() => setShelfBook(null)}
+            currentUserId={user?.id}
+            onChat={(ownerId, bookId, bookMode) => {
+              setShelfBook(null);
+              onClose();
+              onOpenChatForBook?.(ownerId, bookId, bookMode);
+            }}
+          />
 
           {/* Delete Community Confirmation */}
           <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
