@@ -33,29 +33,29 @@ export function MannerSummary({ summary, loading, isSelf }: Props) {
       <div className="flex items-center justify-between">
         <p className="text-[13px] font-bold">거래 매너</p>
         {hasData && (
-          <span className="text-[12px] text-muted-foreground">평가 {summary!.total}개</span>
+          <span className="text-[13px] text-muted-foreground">평가 {summary!.total}개</span>
         )}
       </div>
 
       {loading ? (
-        <p className="text-[12.5px] text-muted-foreground mt-2">불러오는 중…</p>
+        <p className="text-[13px] text-muted-foreground mt-2">불러오는 중…</p>
       ) : !hasData ? (
-        <p className="text-[12.5px] text-muted-foreground mt-2">
+        <p className="text-[13px] text-muted-foreground mt-2">
           거래 리뷰가 더 쌓이면 확인 가능합니다
         </p>
       ) : (
         <>
           <div className="flex items-center gap-2 mt-2">
-            <span className="text-[24px] font-bold leading-none">{summary!.avgOverall!.toFixed(1)}</span>
+            <span className="text-[22px] font-bold leading-none">{summary!.avgOverall!.toFixed(1)}</span>
             <StarRating value={summary!.avgOverall!} size={16} />
           </div>
           <div className="mt-3 space-y-1.5">
             {rows.map((r) => (
               <div key={r.label} className="flex items-center justify-between gap-3">
-                <span className="text-[12.5px] text-muted-foreground">{r.label}</span>
+                <span className="text-[13px] text-muted-foreground">{r.label}</span>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <StarRating value={r.value} size={12} />
-                  <span className="text-[12px] tabular-nums text-muted-foreground w-6 text-right">
+                  <span className="text-[13px] tabular-nums text-muted-foreground w-6 text-right">
                     {r.value.toFixed(1)}
                   </span>
                 </div>

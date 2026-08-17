@@ -98,7 +98,7 @@ export const JoinCommunityForm = ({ community, onSuccess, onBack }: JoinCommunit
           <Users className="w-7 h-7 text-primary" />
         </div>
         <p className="eyebrow">Join community</p>
-        <h2 className="font-display text-[24px] font-medium tracking-tight text-foreground mt-1.5">커뮤니티 가입</h2>
+        <h2 className="font-display text-[22px] font-medium tracking-tight text-foreground mt-1.5">커뮤니티 가입</h2>
         <p className="text-sm text-muted-foreground mt-1">
           {community.name}
         </p>

@@ -57,14 +57,14 @@ export function MannerReviewModal({ userId, nickname, onClose, onSaved }: Props)
       <div className="relative w-full sm:max-w-[420px] bg-background rounded-t-3xl sm:rounded-3xl p-5 pb-7 max-h-[90vh] overflow-y-auto">
         <div className="flex items-start justify-between gap-3">
           <h2 className="text-[17px] font-bold">{nickname}님과의 거래는 어땠나요?</h2>
-          <button onClick={onClose} aria-label="닫기" className="p-1 -m-1 text-muted-foreground shrink-0">
+          <button onClick={onClose} aria-label="닫기" className="tap-44 p-1 -m-1 text-muted-foreground shrink-0">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="mt-3 flex items-start gap-2 rounded-xl bg-muted/60 px-3 py-2.5">
           <ShieldCheck className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-          <p className="text-[12.5px] text-muted-foreground">익명 리뷰입니다</p>
+          <p className="text-[13px] text-muted-foreground">익명 리뷰입니다</p>
         </div>
 
         {/* 같은 사람과 또 거래했을 때 — 평가는 사람당 하나라 쌓이지 않고 덮인다.
@@ -72,7 +72,7 @@ export function MannerReviewModal({ userId, nickname, onClose, onSaved }: Props)
         {hasReviewed && (
           <div className="mt-2 flex items-start gap-2 rounded-xl bg-primary/10 px-3 py-2.5">
             <RefreshCw className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-            <p className="text-[12.5px] text-muted-foreground leading-relaxed">
+            <p className="text-[13px] text-muted-foreground leading-relaxed">
               이전에 거래했던 이웃입니다. 아래에 남긴 별점으로 평가가 수정됩니다.
             </p>
           </div>
@@ -90,7 +90,7 @@ export function MannerReviewModal({ userId, nickname, onClose, onSaved }: Props)
             <div className="mt-4 space-y-4">
               {questions.map((q, i) => (
                 <div key={q} className="rounded-2xl border border-border px-3.5 py-3">
-                  <p className="text-[14px] font-medium leading-snug">{q}</p>
+                  <p className="text-[15px] font-medium leading-snug">{q}</p>
                   <StarRating
                     value={answers[i]}
                     size={30}
@@ -115,7 +115,7 @@ export function MannerReviewModal({ userId, nickname, onClose, onSaved }: Props)
               {saving ? '저장 중…' : hasReviewed ? '평가 수정하기' : '평가 남기기'}
             </Button>
             {!allAnswered && (
-              <p className="text-[12px] text-muted-foreground text-center mt-2">
+              <p className="text-[13px] text-muted-foreground text-center mt-2">
                 세 항목 모두 별점을 눌러주세요
               </p>
             )}

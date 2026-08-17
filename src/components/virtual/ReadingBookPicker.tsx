@@ -97,11 +97,11 @@ export const ReadingBookPicker = ({ isOpen, onClose, onSaved }: Props) => {
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-1.5">
             <BookOpen className="w-4 h-4 text-primary" />
-            <h2 className="text-[16px] font-bold text-foreground">지금 읽는 책</h2>
+            <h2 className="text-[17px] font-bold text-foreground">지금 읽는 책</h2>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted"><X className="w-5 h-5 text-muted-foreground" /></button>
         </div>
-        <p className="text-[12px] text-muted-foreground mb-2">캐릭터 머리 위 말풍선에 표지로 보여요.</p>
+        <p className="text-[13px] text-muted-foreground mb-2">캐릭터 머리 위 말풍선에 표지로 보여요.</p>
 
         {/* 지금 선택된 책 */}
         <div className="flex items-center gap-2 mb-3 px-2.5 py-2 rounded-xl bg-primary/[0.07] border border-primary/25">
@@ -156,7 +156,7 @@ export const ReadingBookPicker = ({ isOpen, onClose, onSaved }: Props) => {
                     : <div className="w-7 h-10 rounded bg-muted shrink-0" />}
                   <div className="min-w-0 flex-1">
                     <p className={`text-[13px] font-medium truncate ${isCur(b) ? 'text-primary' : 'text-foreground'}`}>{b.title}</p>
-                    {b.author && <p className="text-[12px] text-muted-foreground truncate">{b.author}</p>}
+                    {b.author && <p className="text-[13px] text-muted-foreground truncate">{b.author}</p>}
                   </div>
                   {isCur(b) && <Check className="w-4 h-4 text-primary shrink-0" />}
                 </button>
@@ -178,7 +178,7 @@ export const ReadingBookPicker = ({ isOpen, onClose, onSaved }: Props) => {
                 : <div className="w-7 h-10 rounded bg-muted shrink-0" />}
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-medium text-foreground truncate">{r.title}</p>
-                <p className="text-[12px] text-muted-foreground truncate">{r.author}</p>
+                <p className="text-[13px] text-muted-foreground truncate">{r.author}</p>
               </div>
               {saving && <Check className="w-4 h-4 text-primary shrink-0" />}
             </button>

@@ -145,7 +145,7 @@ export const BookTitleSearch = ({
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-foreground text-[15px] truncate">{book.title}</p>
-                      <p className="text-[14px] text-muted-foreground truncate">
+                      <p className="text-[15px] text-muted-foreground truncate">
                         {book.author}
                         {book.firstPublishYear && ` · ${book.firstPublishYear}`}
                       </p>

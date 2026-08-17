@@ -334,7 +334,7 @@ export const BookDetailWithActions = ({
                   <span className="eyebrow">책 상태</span>
                   <span
                     className={cn(
-                      'text-[14px] font-bold',
+                      'text-[15px] font-bold',
                       cond.good ? 'text-green-600 dark:text-green-500' : 'text-amber-600 dark:text-amber-500'
                     )}
                   >
@@ -368,16 +368,16 @@ export const BookDetailWithActions = ({
                       {book.owner?.nickname?.charAt(0) || '?'}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-[15.5px] font-bold text-foreground truncate min-w-0">
+                  <span className="text-[15px] font-bold text-foreground truncate min-w-0">
                     {book.owner?.nickname || '알 수 없음'}
                   </span>
                   <span className="text-[13px] text-muted-foreground shrink-0">님의 책장</span>
                   {book.community && (
-                    <span className="px-2 py-0.5 rounded-full text-[12px] font-semibold shrink-0 bg-[#EFEAF6] text-[#6E5B9E]">
+                    <span className="px-2 py-0.5 rounded-full text-[13px] font-semibold shrink-0 bg-[#EFEAF6] text-[#6E5B9E]">
                       📚 {book.community.name}
                     </span>
                   )}
-                  <span className="ml-auto text-[13.5px] font-bold text-primary shrink-0">프로필 ›</span>
+                  <span className="ml-auto text-[13px] font-bold text-primary shrink-0">프로필 ›</span>
                 </button>
 
                 {/* 관리자가 숨긴 책 — 주인에게만 보인다. 왜 안 보이는지 알려주지 않으면
@@ -385,7 +385,7 @@ export const BookDetailWithActions = ({
                 {book.hiddenAt && book.owner_id === currentUserId && (
                   <div className="mt-4 rounded-xl border border-destructive/40 bg-destructive/5 p-3">
                     <p className="text-[13px] font-semibold text-destructive">관리자가 숨긴 책이에요</p>
-                    <p className="text-[12.5px] text-muted-foreground mt-1 leading-relaxed">
+                    <p className="text-[13px] text-muted-foreground mt-1 leading-relaxed">
                       지금은 나에게만 보이고 다른 이웃에게는 보이지 않아요.
                       문의는 프로필 &gt; 의견 보내기로 남겨주세요.
                     </p>
@@ -580,7 +580,7 @@ export const BookDetailWithActions = ({
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
                 <BookOpen className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="font-display text-[20px] font-medium text-foreground mb-1.5">책을 한 권 등록해주세요</h3>
+              <h3 className="font-display text-[22px] font-medium text-foreground mb-1.5">책을 한 권 등록해주세요</h3>
               <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
                 다음 대여부터는 내 책을 1권 이상 등록해야 빌릴 수 있어요.
               </p>

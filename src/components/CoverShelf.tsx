@@ -20,7 +20,7 @@ export const CoverShelf = ({ children, label }: CoverShelfProps) => (
   <div>
     <div className="px-3 pt-2.5 bg-gradient-to-b from-[#EFE3CE] to-[#F6EEDE] dark:from-[#2b2418] dark:to-[#332a1b]">
       {label && (
-        <p className="font-display italic text-[16px] text-foreground mb-0.5">{label}</p>
+        <p className="font-display italic text-[17px] text-foreground mb-0.5">{label}</p>
       )}
       <div className="grid grid-cols-3 gap-x-3 items-end pt-3 pb-1">{children}</div>
     </div>

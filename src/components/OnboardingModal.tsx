@@ -82,7 +82,7 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
       render: () => (
         <>
           <ShelfArt />
-          <h2 className="font-display text-[26px] leading-tight text-foreground">
+          <h2 className="font-display text-[30px] leading-tight text-foreground">
             싱가포르에서
             <br />
             한글책 구하기 어렵죠?
@@ -177,7 +177,7 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
           <div className="w-14 h-14 rounded-full bg-primary/12 flex items-center justify-center">
             <Sparkles className="w-6 h-6 text-primary" />
           </div>
-          <h2 className="font-display text-[26px] leading-tight text-foreground">
+          <h2 className="font-display text-[30px] leading-tight text-foreground">
             이제 이웃의 책장이
             <br />
             열렸어요
@@ -372,7 +372,7 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
               <div className="w-11 h-11 rounded-xl bg-primary/12 flex items-center justify-center mx-auto mb-3">
                 <Bell className="w-5 h-5 text-primary" />
               </div>
-              <h3 className="font-display text-[18px] text-foreground mb-1.5">언제든 다시 켤 수 있어요</h3>
+              <h3 className="font-display text-[17px] text-foreground mb-1.5">언제든 다시 켤 수 있어요</h3>
               <p className="text-[15px] text-muted-foreground mb-4 leading-relaxed">
                 프로필 › 알림 설정에서 켜면 돼요
               </p>
@@ -573,12 +573,12 @@ const BorrowDemo = () => (
       <div className="flex items-center gap-2">
         <div className="w-[22px] h-[30px] rounded-[2px] bg-book-2 shrink-0" />
         <div className="min-w-0">
-          <p className="font-display text-[14px] text-foreground leading-none truncate">데미안</p>
+          <p className="font-display text-[15px] text-foreground leading-none truncate">데미안</p>
           <p className="text-[11px] text-faint mt-0.5 truncate">헤르만 헤세 · 대여 가능</p>
         </div>
       </div>
       <div className="mt-2 h-[22px] rounded-[3px] bg-primary flex items-center justify-center">
-        <span className="text-[12px] font-bold text-primary-foreground">대여 신청</span>
+        <span className="text-[13px] font-bold text-primary-foreground">대여 신청</span>
       </div>
     </div>
   </div>

@@ -79,7 +79,7 @@ export const WishlistBookSearch = ({ onBookSelect, onManualEntry }: WishlistBook
       {/* 아직 아무것도 안 고른 상태의 안내.
           "왜 저자·설명을 안 물어보지?"에 먼저 답해줘야 유저가 빈 화면에서 멈추지 않는다. */}
       <div className="rounded-xl border border-dashed border-border px-4 py-5 text-center">
-        <p className="text-[13.5px] text-muted-foreground leading-relaxed">
+        <p className="text-[13px] text-muted-foreground leading-relaxed">
           위에서 <b className="text-foreground font-semibold">책 제목을 검색해 고르면</b>
           <br />
           저자·설명이 자동으로 채워져요.
@@ -87,7 +87,7 @@ export const WishlistBookSearch = ({ onBookSelect, onManualEntry }: WishlistBook
         <button
           type="button"
           onClick={onManualEntry}
-          className="mt-3 text-[13.5px] font-medium text-primary underline underline-offset-4"
+          className="mt-3 text-[13px] font-medium text-primary underline underline-offset-4"
         >
           검색에 없는 책은 직접 입력하기
         </button>

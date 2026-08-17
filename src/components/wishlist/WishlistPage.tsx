@@ -229,7 +229,7 @@ export const WishlistPage = () => {
             위시리스트에서 할 일은 '원하는 책 올리기' 하나라, 그 버튼이 이 자리를 갖는 게 맞다. */}
         <button
           onClick={handleAddClick}
-          className="w-full h-12 flex items-center justify-center gap-1.5 bg-primary text-primary-foreground text-[14px] font-bold rounded-xl active:scale-[0.99] transition-transform"
+          className="w-full h-12 flex items-center justify-center gap-1.5 bg-primary text-primary-foreground text-[15px] font-bold rounded-xl active:scale-[0.99] transition-transform"
         >
           <Plus className="w-4 h-4" />
           {showAddForm ? '닫기' : '책 추가'}
@@ -246,7 +246,7 @@ export const WishlistPage = () => {
               onClick={() => setFilter(key)}
               // 활성색을 코랄로 두면 바로 위 '책 추가'와 똑같아서 어느 쪽이
               // 실행 버튼인지 헷갈린다. 탭은 선택 상태만 보이면 되므로 무채색으로 낮춘다.
-              className={`flex-1 text-[13px] py-2 rounded-[9px] transition-colors ${
+              className={`flex-1 text-[13px] py-3 rounded-[9px] transition-colors ${
                 filter === key
                   ? 'bg-[hsl(var(--primary-soft))] text-foreground'
                   : 'bg-muted text-muted-foreground'
@@ -315,7 +315,7 @@ export const WishlistPage = () => {
                       <button
                         key={key}
                         onClick={() => setSort(key)}
-                        className={`text-[12px] px-2 py-1 rounded-full transition-colors ${
+                        className={`tap-44 text-[13px] px-2 py-1 rounded-full transition-colors ${
                           sort === key
                             ? 'bg-[hsl(var(--primary-soft))] text-foreground'
                             : 'text-muted-foreground'
@@ -384,7 +384,7 @@ export const WishlistPage = () => {
           {/* 전송될 카드 미리보기 (표지 있으면 표지, 없으면 placeholder) */}
           {msgTarget && (
             <div className="rounded-2xl border border-primary/30 bg-primary/[0.06] px-3.5 py-3">
-              <p className="text-[12px] font-bold text-primary mb-2">📚 위시 책을 가지고 있어요</p>
+              <p className="text-[13px] font-bold text-primary mb-2">📚 위시 책을 가지고 있어요</p>
               <div className="flex gap-2.5">
                 {msgTarget.cover_url ? (
                   <img src={msgTarget.cover_url} alt="" className="w-11 h-16 object-cover rounded shrink-0 bg-muted" />
@@ -392,8 +392,8 @@ export const WishlistPage = () => {
                   <div className={`w-11 h-16 rounded shrink-0 ${spineClassFrom(msgTarget.title)}`} />
                 )}
                 <div className="min-w-0">
-                  <p className="text-[14px] font-medium text-foreground leading-snug break-words">{offerBookLine(msgTarget)}</p>
-                  <p className="text-[12px] text-primary font-semibold mt-1">
+                  <p className="text-[15px] font-medium text-foreground leading-snug break-words">{offerBookLine(msgTarget)}</p>
+                  <p className="text-[13px] text-primary font-semibold mt-1">
                     {offerModes.length ? `${offerModes.map((m) => OFFER_LABEL[m]).join(' · ')} 가능해요` : '거래방식을 골라주세요'}
                   </p>
                 </div>

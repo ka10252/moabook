@@ -16,7 +16,7 @@ export const PasswordRequirements = ({ value }: PasswordRequirementsProps) => {
           <li
             key={rule.id}
             className={cn(
-              'flex items-center gap-1 text-[12px] whitespace-nowrap transition-colors',
+              'flex items-center gap-1 text-[13px] whitespace-nowrap transition-colors',
               passed ? 'text-primary font-medium' : 'text-muted-foreground'
             )}
           >

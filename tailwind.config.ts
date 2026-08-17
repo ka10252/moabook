@@ -72,13 +72,16 @@ export default {
         "spine-text": "hsl(var(--book-spine-text))",
         "ghost-dash": "hsl(var(--ghost-dash))",
       },
+      // 전부 px. rem으로 두면 html{font-size:108.5%}에 따라 모서리까지 커진다.
+      // 값은 현재 렌더되는 값(rem × 1.085)을 그대로 굳힌 것 — 겉모습은 안 바뀐다.
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-        "2xl": "1rem",
-        "3xl": "1.5rem",
-        "4xl": "2rem",
+        lg: "var(--radius)",              /* 15px — 카드 */
+        md: "calc(var(--radius) - 2px)",  /* 13px */
+        sm: "calc(var(--radius) - 4px)",  /* 11px */
+        xl: "13px",                       /* 0.75rem → 13.02px 였다 */
+        "2xl": "17px",                    /* 1rem   → 17.36px */
+        "3xl": "26px",                    /* 1.5rem → 26.04px */
+        "4xl": "35px",                    /* 2rem   → 34.72px */
       },
       boxShadow: {
         "book": "2px 0 8px rgba(0,0,0,0.15), inset -2px 0 4px rgba(0,0,0,0.2)",

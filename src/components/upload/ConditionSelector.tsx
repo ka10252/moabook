@@ -13,7 +13,7 @@ interface ConditionSelectorProps {
 export const ConditionSelector = ({ value, onChange }: ConditionSelectorProps) => {
   return (
     <div className="space-y-2">
-      <p className="text-[12px] font-bold tracking-wide text-muted-foreground">상태</p>
+      <p className="text-[13px] font-bold tracking-wide text-muted-foreground">상태</p>
       <div className="grid grid-cols-4 gap-1.5">
         {CONDITIONS.map((condition) => {
           const isActive = value === condition.value;
@@ -29,7 +29,7 @@ export const ConditionSelector = ({ value, onChange }: ConditionSelectorProps) =
             >
               <span
                 className={cn(
-                  'block text-[12px] font-bold leading-tight break-keep',
+                  'block text-[13px] font-bold leading-tight break-keep',
                   isActive ? 'text-primary-foreground' : 'text-foreground'
                 )}
               >

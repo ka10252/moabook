@@ -69,12 +69,12 @@ function BookCard({ book }: { book: PostBook }) {
         <p className="text-sm font-semibold text-foreground truncate leading-tight">{book.title}</p>
         <p className="text-xs text-muted-foreground truncate mt-0.5">{book.author}</p>
         <div className="flex gap-1.5 mt-1.5">
-          <span className={`text-[12px] px-1.5 py-0.5 rounded-full font-medium ${
+          <span className={`text-[13px] px-1.5 py-0.5 rounded-full font-medium ${
             book.mode === 'rent' ? 'bg-primary/10 text-primary' : 'bg-accent/20 text-accent-foreground'
           }`}>
             {book.mode === 'rent' ? '대여' : '판매'}
           </span>
-          <span className="text-[12px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
+          <span className="text-[13px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
             {conditionLabel(book.condition)}
           </span>
         </div>
@@ -246,7 +246,7 @@ function PostItem({
                   <div key={c.id} className="flex items-start gap-2">
                     <Avatar className="w-7 h-7 shrink-0">
                       <AvatarImage src={c.author?.avatar_url || undefined} />
-                      <AvatarFallback className="bg-secondary text-[12px]">
+                      <AvatarFallback className="bg-secondary text-[13px]">
                         {c.author?.nickname?.charAt(0) || '?'}
                       </AvatarFallback>
                     </Avatar>
@@ -256,7 +256,7 @@ function PostItem({
                           {c.author?.nickname || '알 수 없음'}
                         </span>
                         <div className="flex items-center gap-1 shrink-0">
-                          <span className="text-[12px] text-muted-foreground">{timeAgo(c.created_at)}</span>
+                          <span className="text-[13px] text-muted-foreground">{timeAgo(c.created_at)}</span>
                           {c.author_id === currentUserId && (
                             <button
                               onClick={() => handleDeleteComment(c.id)}

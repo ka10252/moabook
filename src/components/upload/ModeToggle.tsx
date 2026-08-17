@@ -21,7 +21,7 @@ export const ModeToggle = ({ allowRent, allowSell, allowGive, onToggle }: ModeTo
   const on: Record<BookMode, boolean> = { rent: allowRent, sell: allowSell, give: allowGive };
   return (
     <div className="space-y-2">
-      <p className="text-[12px] font-bold tracking-wide text-muted-foreground">거래 방식 <span className="text-faint font-medium">(여러 개 선택 가능)</span></p>
+      <p className="text-[13px] font-bold tracking-wide text-muted-foreground">거래 방식 <span className="text-faint font-medium">(여러 개 선택 가능)</span></p>
       <div className="grid grid-cols-3 gap-2">
         {MODES.map((mode) => {
           const isActive = on[mode.value];

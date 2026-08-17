@@ -48,7 +48,7 @@ export const AuthPromptModal = () => {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <p className="eyebrow">{promptReason === 'page' ? 'MEMBERS ONLY' : 'JOIN MOA BOOK'}</p>
-                <h2 className="font-display text-[26px] leading-tight text-foreground mt-1">
+                <h2 className="font-display text-[30px] leading-tight text-foreground mt-1">
                   {promptReason === 'page'
                     ? '로그인이 필요한 화면이에요'
                     : promptReason === 'action'

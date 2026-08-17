@@ -146,12 +146,12 @@ export const FaqSection = () => {
               onClick={() => setOpen(isOpen ? null : i)}
               className="w-full flex items-center gap-2.5 text-left px-4 py-3.5"
             >
-              <span className="shrink-0 text-[14px] font-bold text-primary tabular-nums">Q{i + 1}.</span>
+              <span className="shrink-0 text-[15px] font-bold text-primary tabular-nums">Q{i + 1}.</span>
               <span className="flex-1 text-[15px] font-bold text-foreground">{item.q}</span>
               <ChevronDown className={`w-4 h-4 text-faint shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </button>
             {isOpen && (
-              <div className="px-4 pb-4 -mt-1 text-[14.5px] text-muted-foreground leading-relaxed">
+              <div className="px-4 pb-4 -mt-1 text-[15px] text-muted-foreground leading-relaxed">
                 {item.a}
               </div>
             )}

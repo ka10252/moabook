@@ -51,7 +51,7 @@ export const MyCommunities = ({
   return (
     <>
       <section className="space-y-2">
-        <p className="font-display italic text-[16px] text-foreground px-0.5">내 커뮤니티</p>
+        <p className="font-display italic text-[17px] text-foreground px-0.5">내 커뮤니티</p>
 
         {communities.length === 0 ? (
           <div className="bg-muted/60 rounded-[14px] p-5 text-center">
@@ -78,7 +78,7 @@ export const MyCommunities = ({
                   />
                 ) : (
                   <span
-                    className={`w-[42px] h-[42px] rounded-[11px] flex items-center justify-center shrink-0 font-display text-[19px] text-spine-text ${spineClassFrom(community.name)}`}
+                    className={`w-[42px] h-[42px] rounded-[11px] flex items-center justify-center shrink-0 font-display text-[22px] text-spine-text ${spineClassFrom(community.name)}`}
                   >
                     {community.name.charAt(0)}
                   </span>
@@ -86,7 +86,7 @@ export const MyCommunities = ({
 
                 <div className="flex-1 min-w-0">
                   <p className="text-[15px] font-bold text-foreground truncate">{community.name}</p>
-                  <p className="text-[12.5px] text-faint mt-0.5">
+                  <p className="text-[13px] text-faint mt-0.5">
                     멤버 {community.member_count ?? 0}명
                   </p>
                 </div>

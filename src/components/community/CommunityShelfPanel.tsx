@@ -103,7 +103,7 @@ export const CommunityShelfPanel = ({ communityId, communityName, onBack, onBook
     // min-h-0 이 없으면 아래 스크롤 영역이 팝업 높이를 넘어 자라서 스크롤이 안 생긴다
     <div className="flex-1 min-h-0 flex flex-col">
       <div className="px-4 py-3 border-b border-border flex items-center gap-2 shrink-0">
-        <button onClick={onBack} aria-label="뒤로" className="p-1 -m-1 text-muted-foreground">
+        <button onClick={onBack} aria-label="뒤로" className="tap-44 p-1 -m-1 text-muted-foreground">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <span className="text-sm font-medium truncate">
@@ -117,7 +117,7 @@ export const CommunityShelfPanel = ({ communityId, communityName, onBack, onBook
               onClick={() => setView(id)}
               aria-label={label}
               className={cn(
-                'p-1.5 rounded-full transition-colors',
+                'tap-44 p-1.5 rounded-full transition-colors',
                 view === id ? 'bg-primary text-primary-foreground' : 'text-muted-foreground',
               )}
             >

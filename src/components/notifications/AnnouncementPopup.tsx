@@ -45,7 +45,7 @@ export const AnnouncementPopup = ({ isOpen, onClose }: AnnouncementPopupProps) =
               <header className="flex items-end justify-between px-5 pt-4 pb-3 border-b border-border shrink-0">
                 <div>
                   <p className="eyebrow flex items-center gap-1.5"><Mail className="w-3 h-3" /> From the team</p>
-                  <h3 className="font-display text-[20px] font-medium tracking-tight text-foreground mt-0.5">관리자의 한마디</h3>
+                  <h3 className="font-display text-[22px] font-medium tracking-tight text-foreground mt-0.5">관리자의 한마디</h3>
                 </div>
                 <button
                   onClick={handleClose}

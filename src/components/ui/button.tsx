@@ -16,11 +16,14 @@ const buttonVariants = cva(
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },
+      // 높이는 최소 44px — Apple HIG 44pt · WCAG 2.5.5 Target Size.
+      // sm 은 촘촘한 줄에서 쓰려고 두는 크기라 실제 높이는 그대로 두고
+      // tap-44 로 누를 수 있는 영역만 넓힌다(보이는 크기가 커지면 레이아웃이 깨진다).
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
-        icon: "h-10 w-10",
+        default: "h-11 px-4 py-2",
+        sm: "tap-44 h-9 rounded-md px-3",
+        lg: "h-12 rounded-md px-8",
+        icon: "h-11 w-11",
       },
     },
     defaultVariants: {

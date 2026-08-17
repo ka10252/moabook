@@ -183,7 +183,7 @@ export const CommunityPage = ({ onNavigateToBookshelf, onOpenBoard, onOpenChatFo
                     placeholder="커뮤니티 검색…"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 h-10 text-xs bg-card border-border rounded-xl"
+                    className="pl-9 h-11 text-xs bg-card border-border rounded-xl"
                   />
                 </div>
               </div>

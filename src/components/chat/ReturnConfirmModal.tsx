@@ -82,7 +82,7 @@ export const ReturnConfirmModal = ({
             <div className="bg-card rounded-2xl shadow-xl overflow-hidden max-h-[85vh] flex flex-col">
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-border">
-                <h2 className="font-display text-[20px] font-medium tracking-tight text-foreground">반납 확인</h2>
+                <h2 className="font-display text-[22px] font-medium tracking-tight text-foreground">반납 확인</h2>
                 <button
                   onClick={onClose}
                   className="p-2 rounded-full hover:bg-muted transition-colors"

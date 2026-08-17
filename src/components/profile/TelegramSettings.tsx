@@ -81,10 +81,10 @@ export function TelegramSettings() {
       </p>
       {linked ? (
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-[14px] font-medium text-primary">
+          <div className="flex items-center gap-1.5 text-[15px] font-medium text-primary">
             <Check className="w-4 h-4" /> 연결됨 {optIn ? '' : '(알림 꺼짐)'}
           </div>
-          <button onClick={disconnect} className="text-[14px] text-muted-foreground underline underline-offset-2">
+          <button onClick={disconnect} className="text-[15px] text-muted-foreground underline underline-offset-2">
             연결 해제
           </button>
         </div>

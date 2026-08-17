@@ -25,7 +25,7 @@ export function BadgeDetailSheet({ id, tier, onClose, onSetFeatured, isFeatured 
     <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative w-full sm:max-w-[360px] bg-background rounded-t-3xl sm:rounded-3xl p-5 pb-7">
-        <button onClick={onClose} aria-label="닫기" className="absolute top-4 right-4 p-1 text-muted-foreground">
+        <button onClick={onClose} aria-label="닫기" className="tap-44 absolute top-4 right-4 p-1 text-muted-foreground">
           <X className="w-5 h-5" />
         </button>
 
@@ -33,12 +33,12 @@ export function BadgeDetailSheet({ id, tier, onClose, onSetFeatured, isFeatured 
           <BadgeStamp id={id} tier={(tier || undefined) as 1 | 2 | 3 | undefined} size={72} muted={!earned} />
           <p className="mt-3 text-[17px] font-bold">{badge.name}</p>
           {tiered && earned && (
-            <p className="text-[12px] text-muted-foreground mt-0.5">{tier}단계 / {meta.tiers.length}단계</p>
+            <p className="text-[13px] text-muted-foreground mt-0.5">{tier}단계 / {meta.tiers.length}단계</p>
           )}
         </div>
 
         {/* 어떻게 하면 받는지 — 조건 숫자만 보여주면 '무엇이 세어지는지'를 알 수 없다 */}
-        <p className="mt-4 text-[13.5px] text-foreground leading-relaxed text-center">{meta.how}</p>
+        <p className="mt-4 text-[13px] text-foreground leading-relaxed text-center">{meta.how}</p>
 
         {id !== 'elder' && (
           <div className="mt-4 rounded-2xl bg-muted/60 px-3.5 py-3">
@@ -54,7 +54,7 @@ export function BadgeDetailSheet({ id, tier, onClose, onSetFeatured, isFeatured 
                       {done ? (
                         <Check className="w-4 h-4 text-primary shrink-0" />
                       ) : (
-                        <span className="text-[12px] text-faint shrink-0">아직</span>
+                        <span className="text-[13px] text-faint shrink-0">아직</span>
                       )}
                     </li>
                   );
@@ -68,7 +68,7 @@ export function BadgeDetailSheet({ id, tier, onClose, onSetFeatured, isFeatured 
                 {earned ? (
                   <Check className="w-4 h-4 text-primary shrink-0" />
                 ) : (
-                  <span className="text-[12px] text-faint shrink-0">아직</span>
+                  <span className="text-[13px] text-faint shrink-0">아직</span>
                 )}
               </div>
             )}

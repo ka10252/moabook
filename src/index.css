@@ -69,10 +69,17 @@
     --input: 41 30% 87%;
     --ring: 11.1 86.5% 62.2%;
 
-    --radius: 0.875rem;              /* 14px — 카드 12~16px 범위 */
+    /* 모서리는 글자 크기와 무관하게 고정한다. 아래 html{font-size:108.5%} 때문에
+       rem으로 두면 모서리도 8.5% 커져서, px로 박아둔 다른 모서리(2px 책등, 9px 칩)와
+       계속 어긋난다. 지금 렌더되는 값(0.875rem × 1.085 = 15.19px)을 그대로 굳혔다 —
+       보이는 모양은 그대로고, 글자 설정과의 결합만 끊는다. */
+    --radius: 15px;
 
     /* Editorial tokens */
-    --faint: 41.1 9.4% 60.2%;              /* #A39D90 eyebrow / 흐린 텍스트 */
+    /* 정보를 담는 흐린 글씨다(저자·권수·날짜). WCAG 1.4.3의 4.5:1을 맞춘다.
+       예전 값 41 9% 60%(#A39D90)는 크림 배경과 2.39:1로 절반도 안 됐다.
+       색조·채도는 그대로 두고 명도만 낮췄다 → #6F695D, 4.83:1. */
+    --faint: 41 9% 40%;              /* #A39D90 eyebrow / 흐린 텍스트 */
     --sheet-radius: 26px;            /* 하단 시트 상단 라운드 */
 
 
@@ -200,7 +207,7 @@
   }
   /* Section eyebrow / overline — VIRTUAL LIBRARY, BOOKSHELF */
   .eyebrow {
-    @apply text-[12px] font-bold uppercase;
+    @apply text-[13px] font-bold uppercase;
     color: hsl(var(--faint));
     letter-spacing: 0.3em;
   }
@@ -299,7 +306,7 @@
 
   /* ── Pill (filter chip / sort chip) ────────────────── */
   .pill {
-    @apply inline-flex items-center gap-1 px-3.5 py-2 rounded-full text-xs font-semibold;
+    @apply inline-flex items-center gap-1 px-3.5 py-[11px] rounded-full text-xs font-semibold;
     @apply bg-secondary text-foreground border border-border;
     @apply transition-colors hover:bg-muted;
   }
@@ -310,10 +317,29 @@
     @apply bg-primary text-primary-foreground;
   }
 
+  /* ── 터치 타깃 44px ────────────────────────────────────
+     Fitts's law(1954) · Apple HIG 44pt · WCAG 2.5.5 Target Size.
+     아이콘 자체를 44px로 키우면 촘촘한 줄(뷰 전환 세그먼트, 카드 액션)에서
+     서로 붙어 레이아웃이 깨진다. 그래서 **보이는 크기는 그대로 두고
+     누를 수 있는 영역만** 가상 요소로 넓힌다.
+     네이티브 앱에서는 손가락 조작 비중이 커서 이게 특히 중요하다. */
+  .tap-44 {
+    position: relative;
+  }
+  .tap-44::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+  }
+
   /* ── Filter chip ───────────────────────────────────────
      책등과 같은 2px 라운드. 알약형이 아니다 — 에디토리얼 무드의 각진 톤. */
   .chip {
-    @apply shrink-0 whitespace-nowrap text-[13px] font-semibold px-3.5 py-[7px];
+    @apply shrink-0 whitespace-nowrap text-[13px] font-semibold px-3.5 py-[11px];
     @apply border border-border text-muted-foreground bg-transparent;
     @apply transition-colors hover:text-foreground hover:border-foreground/30;
     border-radius: 2px;
@@ -326,7 +352,9 @@
   /* ── Search input ──────────────────────────────────────
      박스가 아니라 밑줄 하나. 에디토리얼 무드에서 검색창은 종이에 그은 선처럼 보인다. */
   .input-search {
-    @apply w-full bg-transparent border-0 outline-none text-[15px] text-foreground p-0;
+    /* 밑줄 하나만 남기는 에디토리얼 검색창이지만, 높이 23px은 손가락으로 짚기 어렵다.
+       테두리 없이 min-height만 줘서 보이는 모양은 그대로 두고 누를 자리를 확보한다. */
+    @apply w-full min-h-11 bg-transparent border-0 outline-none text-[15px] text-foreground p-0;
     @apply placeholder:text-[#9A9488];
   }
   .search-underline {

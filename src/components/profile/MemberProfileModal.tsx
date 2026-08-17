@@ -196,7 +196,7 @@ export const MemberProfileModal = ({
                         {profile.nickname?.charAt(0) || <User className="w-10 h-10" />}
                       </AvatarFallback>
                     </Avatar>
-                    <h2 className="font-display text-[24px] font-medium tracking-tight text-foreground mt-4 flex items-center justify-center gap-1.5">
+                    <h2 className="font-display text-[22px] font-medium tracking-tight text-foreground mt-4 flex items-center justify-center gap-1.5">
                       {profile.nickname}
                       {profile.featured_badge && memberBadges.some((b) => b.badge_key === profile.featured_badge) && (
                         <BadgeStamp

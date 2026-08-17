@@ -127,7 +127,7 @@ export const ChatModal = ({
             <button onClick={onClose} className="p-2 rounded-xl hover:bg-muted transition-colors">
               <ArrowLeft className="w-5 h-5 text-muted-foreground" />
             </button>
-            <h2 className="font-display text-[20px] font-medium tracking-tight text-foreground">메시지</h2>
+            <h2 className="font-display text-[22px] font-medium tracking-tight text-foreground">메시지</h2>
           </header>
 
           <div className="flex-1 overflow-y-auto">

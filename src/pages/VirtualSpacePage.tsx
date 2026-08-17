@@ -440,13 +440,13 @@ export default function VirtualSpacePage() {
             <div className="flex border-t-2 border-[#3a2d22]">
               <button
                 onClick={tourStep === 0 ? endTour : prevTour}
-                className="flex-1 py-2.5 text-[14px] text-[#6b5d50] border-r-2 border-[#3a2d22] active:bg-gray-100"
+                className="flex-1 py-2.5 text-[15px] text-[#6b5d50] border-r-2 border-[#3a2d22] active:bg-gray-100"
               >
                 {tourStep === 0 ? '닫기' : '◀ 이전'}
               </button>
               <button
                 onClick={nextTour}
-                className="flex-1 py-2.5 text-[14px] font-semibold text-[#F26A4B] active:bg-[#fff0ec]"
+                className="flex-1 py-2.5 text-[15px] font-semibold text-[#F26A4B] active:bg-[#fff0ec]"
               >
                 {tourStep === TOUR.length - 1 ? '완료' : '다음 ▶'}
               </button>

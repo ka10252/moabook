@@ -246,7 +246,7 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
         {/* 제목 입력 = 검색. 결과를 고르면 저자·설명이 자동으로 채워지고,
             결과가 없으면 입력한 텍스트가 그대로 제목이 된다. */}
         <div className="space-y-2">
-          <p className="text-[12px] font-bold tracking-wide text-muted-foreground">책 제목</p>
+          <p className="text-[13px] font-bold tracking-wide text-muted-foreground">책 제목</p>
           <BookTitleSearch
             title={formData.title}
             onTitleChange={handleTitleChange}
@@ -286,7 +286,7 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
           return (
             <>
               <div className="space-y-2">
-                <p className="text-[12px] font-bold tracking-wide text-muted-foreground">저자</p>
+                <p className="text-[13px] font-bold tracking-wide text-muted-foreground">저자</p>
                 <Input
                   value={formData.author}
                   onChange={(e) => setFormData((prev) => ({ ...prev, author: e.target.value }))}
@@ -296,7 +296,7 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
               </div>
 
               <div className="space-y-2">
-                <p className="text-[12px] font-bold tracking-wide text-muted-foreground">설명 (선택)</p>
+                <p className="text-[13px] font-bold tracking-wide text-muted-foreground">설명 (선택)</p>
                 <Textarea
                   value={formData.description}
                   onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
@@ -355,7 +355,7 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
             exit={{ opacity: 0, height: 0 }}
             className="space-y-2 overflow-hidden"
           >
-            <p className="text-[12px] font-bold tracking-wide text-muted-foreground">판매 가격 ({CURRENCY})</p>
+            <p className="text-[13px] font-bold tracking-wide text-muted-foreground">판매 가격 ({CURRENCY})</p>
             <Input
               type="number"
               min="0"

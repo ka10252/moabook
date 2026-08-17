@@ -110,7 +110,7 @@ export const WishlistCard = ({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 min-w-0">
-              <p className="font-display text-[16px] leading-tight text-foreground truncate">
+              <p className="font-display text-[17px] leading-tight text-foreground truncate">
                 {item.title}
               </p>
               {isDemo && (
@@ -125,9 +125,9 @@ export const WishlistCard = ({
                 </span>
               )}
             </div>
-            {item.author && <p className="text-[12px] text-faint mt-0.5 truncate">{item.author}</p>}
+            {item.author && <p className="text-[13px] text-faint mt-0.5 truncate">{item.author}</p>}
             <div className="flex items-center gap-1.5 mt-1">
-              <p className="text-[12px] text-faint truncate">{nickname}</p>
+              <p className="text-[13px] text-faint truncate">{nickname}</p>
               {item.desired_mode === 'rent' && (
                 <span className="shrink-0 text-[11px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">대여 원함</span>
               )}
@@ -142,7 +142,7 @@ export const WishlistCard = ({
               <button
                 onClick={handleMessageClick}
                 disabled={messaging}
-                className="p-2 rounded-full text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
+                className="tap-44 p-2 rounded-full text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
                 title="이 사람에게 메시지"
               >
                 {messaging ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : <MessageCircle className="w-[18px] h-[18px]" />}
@@ -152,7 +152,7 @@ export const WishlistCard = ({
             {isOwner && onMarkFulfilled && (
               <button
                 onClick={() => setShowFulfillConfirm(true)}
-                className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                className="tap-44 p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                 title="찾았어요"
               >
                 <Check className="w-[18px] h-[18px]" />
@@ -162,7 +162,7 @@ export const WishlistCard = ({
             {isOwner && onDelete && (
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                className="tap-44 p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                 title="삭제"
               >
                 <Trash2 className="w-[18px] h-[18px]" />
@@ -176,11 +176,11 @@ export const WishlistCard = ({
         {isOwner && !isDemo && onEditNotes ? (
           <div className="mt-2.5 rounded-xl bg-muted px-3 py-2.5">
             <div className="flex items-center justify-between mb-1">
-              <p className="text-[12px] font-bold text-faint">내 한마디</p>
+              <p className="text-[13px] font-bold text-faint">내 한마디</p>
               {!editingNote && (
                 <button
                   onClick={() => { setDraft(item.notes ?? ''); setEditingNote(true); }}
-                  className="text-[12px] font-semibold text-primary flex items-center gap-0.5 hover:underline"
+                  className="text-[13px] font-semibold text-primary flex items-center gap-0.5 hover:underline"
                 >
                   <Pencil className="w-3 h-3" /> {item.notes ? '수정' : '추가'}
                 </button>
@@ -195,7 +195,7 @@ export const WishlistCard = ({
                   maxLength={200}
                   autoFocus
                   placeholder="어떤 판본을 원하는지 등 한마디"
-                  className="w-full text-[14px] bg-card border border-border rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-primary/40 resize-none"
+                  className="w-full text-[15px] bg-card border border-border rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-primary/40 resize-none"
                 />
                 <div className="flex justify-end gap-1.5 mt-1.5">
                   <button onClick={() => setEditingNote(false)} className="text-[13px] text-muted-foreground px-2 py-1">취소</button>
@@ -209,15 +209,15 @@ export const WishlistCard = ({
                 </div>
               </>
             ) : item.notes ? (
-              <p className="text-[14px] text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">{item.notes}</p>
+              <p className="text-[15px] text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">{item.notes}</p>
             ) : (
               <p className="text-[13px] text-faint">한마디를 남겨보세요</p>
             )}
           </div>
         ) : item.notes ? (
           <div className="mt-2.5 rounded-xl bg-muted px-3 py-2.5">
-            <p className="text-[12px] font-bold text-faint mb-1">{nickname}님의 한마디</p>
-            <p className="text-[14px] text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">
+            <p className="text-[13px] font-bold text-faint mb-1">{nickname}님의 한마디</p>
+            <p className="text-[15px] text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">
               {item.notes}
             </p>
           </div>

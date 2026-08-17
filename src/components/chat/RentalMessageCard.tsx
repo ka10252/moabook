@@ -199,7 +199,7 @@ export const RentalMessageCard = ({
             >
               반납 확인
             </Button>
-            <span className="text-[12px] text-muted-foreground">
+            <span className="text-[13px] text-muted-foreground">
               반납받았으면 눌러주세요
             </span>
           </div>
@@ -220,7 +220,7 @@ export const RentalMessageCard = ({
               {hasReviewed ? '내 리뷰 보기' : '리뷰 남기기'}
             </Button>
             {!hasReviewed && (
-              <span className="text-[12px] text-muted-foreground">
+              <span className="text-[13px] text-muted-foreground">
                 이 책 어땠는지 한 줄 남겨주세요
               </span>
             )}
@@ -241,7 +241,7 @@ export const RentalMessageCard = ({
               {hasMannerReviewed ? '내가 남긴 평가 수정' : '거래 상대 평가하기'}
             </Button>
             {!hasMannerReviewed && (
-              <span className="text-[12px] text-muted-foreground">
+              <span className="text-[13px] text-muted-foreground">
                 익명이에요. 상대는 누가 남겼는지 몰라요
               </span>
             )}
@@ -259,7 +259,7 @@ export const RentalMessageCard = ({
             >
               반납 확인
             </Button>
-            <span className="text-[12px] text-muted-foreground">
+            <span className="text-[13px] text-muted-foreground">
               반납받았으면 눌러주세요
             </span>
           </div>

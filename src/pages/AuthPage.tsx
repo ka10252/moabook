@@ -241,7 +241,7 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
               <MailCheck className="w-7 h-7 text-primary" />
             </div>
             <p className="eyebrow">Check your inbox</p>
-            <h2 className="font-display text-[28px] font-medium tracking-tight text-foreground mt-1.5 mb-3">
+            <h2 className="font-display text-[30px] font-medium tracking-tight text-foreground mt-1.5 mb-3">
               메일함을 확인해주세요
             </h2>
             <p className="text-sm text-muted-foreground">
@@ -292,7 +292,7 @@ export const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
             <p className="eyebrow">
               {mode === 'signin' ? 'Welcome back' : mode === 'signup' ? 'Get started' : 'Reset password'}
             </p>
-            <h2 className="font-display text-[28px] font-medium tracking-tight text-foreground mt-1.5 mb-2">
+            <h2 className="font-display text-[30px] font-medium tracking-tight text-foreground mt-1.5 mb-2">
               {mode === 'signin'
                 ? '다시 오신 것을 환영합니다'
                 : mode === 'signup'

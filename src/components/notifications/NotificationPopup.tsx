@@ -61,19 +61,19 @@ const NotifSetupCard = () => {
       <div className="flex items-center gap-1.5 text-[15px] font-bold text-foreground pr-6">
         <Bell className="w-3.5 h-3.5 text-primary" /> 알림을 켜세요
       </div>
-      <p className="text-[13.5px] text-muted-foreground mt-1 leading-relaxed">
+      <p className="text-[13px] text-muted-foreground mt-1 leading-relaxed">
         대여 요청·반납일을 놓치지 않게, <span className="text-foreground font-medium">텔레그램</span>으로 받는 걸 추천해요.
       </p>
       <div className="flex gap-2 mt-2.5">
         {/* 1순위: 텔레그램(기본 채널) */}
         <button onClick={connectTelegram}
-          className="flex-1 h-9 rounded-lg bg-primary text-primary-foreground text-[14px] font-bold flex items-center justify-center gap-1.5">
+          className="flex-1 h-9 rounded-lg bg-primary text-primary-foreground text-[15px] font-bold flex items-center justify-center gap-1.5">
           <Send className="w-3.5 h-3.5" /> 텔레그램으로 받기
         </button>
         {/* 2순위: 앱 알림(텔레그램 없거나 앱처럼 쓰고 싶은 사람) */}
         {(isPushSupported || needsHomeScreenInstall) && (
           <button onClick={enablePush} disabled={loading}
-            className="flex-1 h-9 rounded-lg bg-card border border-primary/40 text-primary text-[14px] font-bold flex items-center justify-center gap-1.5 disabled:opacity-70">
+            className="flex-1 h-9 rounded-lg bg-card border border-primary/40 text-primary text-[15px] font-bold flex items-center justify-center gap-1.5 disabled:opacity-70">
             <Plus className="w-3.5 h-3.5" /> 앱 알림
           </button>
         )}
@@ -200,7 +200,7 @@ export const NotificationPopup = ({
               <header className="flex items-end justify-between px-5 pt-4 pb-3 border-b border-border shrink-0">
                 <div>
                   <p className="eyebrow flex items-center gap-1.5"><Bell className="w-3 h-3" /> Updates</p>
-                  <h3 className="font-display text-[20px] font-medium tracking-tight text-foreground mt-0.5">알림</h3>
+                  <h3 className="font-display text-[22px] font-medium tracking-tight text-foreground mt-0.5">알림</h3>
                 </div>
                 <div className="flex items-center gap-1">
                   {notifications.some(n => !n.is_read) && (

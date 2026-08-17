@@ -159,7 +159,7 @@ export const AdminCommunityDetailModal = ({
         <div className="bg-card rounded-2xl shadow-xl overflow-hidden max-h-[85vh] flex flex-col">
           {/* Header */}
           <div className="p-4 border-b border-border flex items-center justify-between">
-            <h2 className="font-display text-[20px] font-medium tracking-tight">커뮤니티 상세 정보</h2>
+            <h2 className="font-display text-[22px] font-medium tracking-tight">커뮤니티 상세 정보</h2>
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="w-5 h-5" />
             </Button>

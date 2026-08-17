@@ -568,7 +568,7 @@ export const Bookshelf = ({
           <DropdownMenu>
             <DropdownMenuTrigger className="group text-left outline-none">
               <p className="eyebrow">BOOKSHELF</p>
-              <h1 className="font-display text-[26px] leading-none text-foreground mt-1 flex items-center gap-1.5">
+              <h1 className="font-display text-[30px] leading-none text-foreground mt-1 flex items-center gap-1.5">
                 <span className="truncate max-w-[220px]">
                   {activeFilter === 'mine' ? '나의 서가' : activeFilter === 'everybody' ? '모두의 책장' : getFilterLabel()}
                 </span>
@@ -587,7 +587,7 @@ export const Bookshelf = ({
               {myCommunities.length > 0 && (
                 <>
                   <DropdownMenuSeparator />
-                  <div className="px-2 py-1.5 text-[12px] uppercase tracking-widest text-muted-foreground font-bold">내 커뮤니티</div>
+                  <div className="px-2 py-1.5 text-[13px] uppercase tracking-widest text-muted-foreground font-bold">내 커뮤니티</div>
                   {myCommunities.map(c => (
                     <DropdownMenuItem
                       key={c.id}
@@ -605,7 +605,7 @@ export const Bookshelf = ({
           {user && (
             <button
               onClick={() => { if (requireAuth()) setShowTransactionDashboard(true); }}
-              className="w-10 h-10 rounded-full bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors flex items-center justify-center shrink-0"
+              className="tap-44 w-10 h-10 rounded-full bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors flex items-center justify-center shrink-0"
               title="거래 현황"
             >
               <History className="w-[18px] h-[18px]" />
@@ -668,7 +668,7 @@ export const Bookshelf = ({
                 aria-pressed={viewMode === key}
                 aria-label={label}
                 title={label}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                className={`tap-44 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
                   viewMode === key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
@@ -680,7 +680,7 @@ export const Bookshelf = ({
           {/* 정밀 필터 (지역·정렬) */}
           <button
             onClick={() => setShowFilterSheet(true)}
-            className={`relative w-9 h-9 shrink-0 rounded-full border flex items-center justify-center transition-colors ${
+            className={`tap-44 relative w-9 h-9 shrink-0 rounded-full border flex items-center justify-center transition-colors ${
               activeFilterCount > 0
                 ? 'border-primary text-primary bg-primary/10'
                 : 'border-border text-muted-foreground hover:text-foreground'
@@ -689,7 +689,7 @@ export const Bookshelf = ({
           >
             <SlidersHorizontal className="w-4 h-4" />
             {activeFilterCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[12px] font-bold flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[13px] font-bold flex items-center justify-center">
                 {activeFilterCount}
               </span>
             )}
@@ -822,7 +822,7 @@ export const Bookshelf = ({
                               <div className="relative h-full flex items-center">
                                 <span className="block w-px h-[78%] bg-border" />
                                 <span
-                                  className="absolute left-1/2 -translate-x-1/2 bottom-1 text-[9px] tracking-tight text-muted-foreground bg-background px-0.5"
+                                  className="absolute left-1/2 -translate-x-1/2 bottom-1 text-[11px] tracking-tight text-muted-foreground bg-background px-0.5"
                                   style={{ writingMode: 'vertical-rl' }}
                                 >
                                   {book._divider}
@@ -1009,7 +1009,7 @@ export const Bookshelf = ({
                             onClick={() => toggleFavStation(station.id)}
                             aria-label={faved ? `${station.name} 즐겨찾기 해제` : `${station.name} 즐겨찾기`}
                             aria-pressed={faved}
-                            className="shrink-0 p-1.5 -mr-1"
+                            className="tap-44 shrink-0 p-1.5 -mr-1"
                           >
                             <Star className={`w-3.5 h-3.5 ${faved ? 'fill-primary text-primary' : 'text-border'}`} />
                           </button>
@@ -1108,7 +1108,7 @@ export const Bookshelf = ({
                             )}
                           </span>
                           <span className="truncate text-xs">{d}</span>
-                          <span className={`ml-auto text-[10.5px] shrink-0 ${dCount > 0 ? 'text-muted-foreground' : 'text-faint'}`}>
+                          <span className={`ml-auto text-[11px] shrink-0 ${dCount > 0 ? 'text-muted-foreground' : 'text-faint'}`}>
                             {dCount > 0 ? dCount : ''}
                           </span>
                         </button>
@@ -1117,7 +1117,7 @@ export const Bookshelf = ({
                           onClick={() => toggleFavDistrict(d)}
                           aria-label={dFaved ? `${d} 즐겨찾기 해제` : `${d} 즐겨찾기`}
                           aria-pressed={dFaved}
-                          className="shrink-0 p-1.5 -mr-1"
+                          className="tap-44 shrink-0 p-1.5 -mr-1"
                         >
                           <Star className={`w-3.5 h-3.5 ${dFaved ? 'fill-primary text-primary' : 'text-border'}`} />
                         </button>

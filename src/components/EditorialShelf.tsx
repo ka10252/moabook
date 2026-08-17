@@ -18,7 +18,7 @@ export const EditorialShelf = ({ children, label }: EditorialShelfProps) => (
     {/* 뒷판 — 옅은 우드 그라데이션 (모서리 없음) */}
     <div className="px-3 pt-2.5 bg-gradient-to-b from-[#EFE3CE] to-[#F6EEDE] dark:from-[#2b2418] dark:to-[#332a1b]">
       {label && (
-        <p className="font-display italic text-[16px] text-foreground mb-0.5">{label}</p>
+        <p className="font-display italic text-[17px] text-foreground mb-0.5">{label}</p>
       )}
 
       {/* 책이 서는 자리 — 아래 정렬(flex-end)이라 책마다 높이가 달라도 바닥이 맞는다 */}

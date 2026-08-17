@@ -190,7 +190,7 @@ export const BookSpine = ({
           전체 제목은 탭하면 상세에서 보인다(title 속성/tooltip 유지). */}
       <span
         title={book.title}
-        className="relative z-[3] text-[14px] overflow-hidden text-spine-text"
+        className="relative z-[3] text-[15px] overflow-hidden text-spine-text"
         style={{
           fontFamily: "'Noto Sans KR', sans-serif",
           fontWeight: 500,
@@ -233,7 +233,7 @@ export const BookSpine = ({
         >
           {/* D-day — 색이 아니라 텍스트로만 알린다 */}
           {dday && (
-            <span className="text-[10px] font-black leading-none" style={{ color: r.textColor }}>
+            <span className="text-[9px] font-black leading-none" style={{ color: r.textColor }}>
               {dday.label}
             </span>
           )}
@@ -243,7 +243,7 @@ export const BookSpine = ({
       {/* ── Name chip — 상시 노출 ─────────────────────────────── */}
       {hasBookmark && chipName && (
         <motion.div
-          className="absolute left-1/2 z-[6] pointer-events-none flex items-center gap-[3px] rounded-full whitespace-nowrap text-white text-[10px] font-extrabold"
+          className="absolute left-1/2 z-[6] pointer-events-none flex items-center gap-[3px] rounded-full whitespace-nowrap text-white text-[9px] font-extrabold"
           style={{
             top: -15,
             x: '-50%',

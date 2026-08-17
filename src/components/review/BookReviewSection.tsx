@@ -58,16 +58,16 @@ export function BookReviewSection({ bookId, autoOpenForm }: Props) {
           <div className="flex items-center gap-1.5">
             <StarRating value={average ?? 0} size={14} />
             <span className="text-[13px] font-semibold text-foreground">{average?.toFixed(1)}</span>
-            <span className="text-[12px] text-muted-foreground">({count})</span>
+            <span className="text-[13px] text-muted-foreground">({count})</span>
           </div>
         ) : (
-          <span className="text-[12px] text-muted-foreground">아직 없어요</span>
+          <span className="text-[13px] text-muted-foreground">아직 없어요</span>
         )}
         {others.length > 1 && (
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className="ml-auto text-[12.5px] font-semibold text-muted-foreground hover:text-foreground shrink-0"
+            className="ml-auto text-[13px] font-semibold text-muted-foreground hover:text-foreground shrink-0"
           >
             {expanded ? '접기' : `더보기 ${others.length - 1}`}
           </button>
@@ -109,7 +109,7 @@ export function BookReviewSection({ bookId, autoOpenForm }: Props) {
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="w-full h-11 rounded-xl border border-border text-[13.5px] font-semibold text-foreground hover:bg-muted/60 mb-3"
+            className="w-full h-11 rounded-xl border border-border text-[13px] font-semibold text-foreground hover:bg-muted/60 mb-3"
           >
             이 책 어땠어요?
           </button>
@@ -125,7 +125,7 @@ export function BookReviewSection({ bookId, autoOpenForm }: Props) {
             onChange={(e) => setComment(e.target.value.slice(0, 200))}
             placeholder="한 줄로 남겨주세요 (선택)"
             rows={2}
-            className="w-full px-3 py-2 rounded-lg bg-muted/50 border-0 text-[13.5px] text-foreground placeholder:text-muted-foreground resize-none focus-visible:ring-2 focus-visible:ring-primary outline-none"
+            className="w-full px-3 py-2 rounded-lg bg-muted/50 border-0 text-[13px] text-foreground placeholder:text-muted-foreground resize-none focus-visible:ring-2 focus-visible:ring-primary outline-none"
           />
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-faint">{comment.length}/200</span>
@@ -162,7 +162,7 @@ export function BookReviewSection({ bookId, autoOpenForm }: Props) {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[12.5px] font-semibold text-foreground truncate">
+                  <span className="text-[13px] font-semibold text-foreground truncate">
                     {r.author?.nickname ?? '이웃'}
                   </span>
                   <StarRating value={r.rating} size={12} />
@@ -177,7 +177,7 @@ export function BookReviewSection({ bookId, autoOpenForm }: Props) {
       )}
 
       {!user && count === 0 && (
-        <p className="text-[12px] text-faint">로그인하면 리뷰를 남길 수 있어요.</p>
+        <p className="text-[13px] text-faint">로그인하면 리뷰를 남길 수 있어요.</p>
       )}
     </section>
   );

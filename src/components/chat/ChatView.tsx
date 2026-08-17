@@ -489,7 +489,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
         )}
 
         <div className="flex-1 min-w-0">
-          <h2 className="font-display text-[16px] font-medium tracking-tight text-foreground truncate leading-tight">
+          <h2 className="font-display text-[17px] font-medium tracking-tight text-foreground truncate leading-tight">
             {conversation.other_user?.nickname}
           </h2>
           {conversationBook && (
@@ -555,7 +555,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
 
             {/* Direction badge + arrow */}
             {conversationTransactions.length === 1 && (
-              <span className={`text-[12px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+              <span className={`text-[13px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
                 conversationTransactions[0].isMine
                   ? 'bg-bookmark-lent/20 text-bookmark-lent'
                   : 'bg-primary/10 text-primary'
@@ -761,8 +761,8 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
                                 </div>
                               )}
                               <div className="min-w-0">
-                                <p className="text-[14px] font-medium text-foreground leading-snug break-words">{parsed.displayText}</p>
-                                <p className="text-[12px] text-primary font-semibold mt-1">
+                                <p className="text-[15px] font-medium text-foreground leading-snug break-words">{parsed.displayText}</p>
+                                <p className="text-[13px] text-primary font-semibold mt-1">
                                   {(parsed.wishModes ?? [parsed.mode])
                                     .map((m) => (m === 'give' ? '나눔' : m === 'sell' ? '판매' : '대여'))
                                     .join(' · ')}{' 가능해요'}
@@ -948,7 +948,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
                           <p className="text-xs text-muted-foreground mt-0.5 truncate">{book.author}</p>
                         </div>
                         {!isAvailable && (
-                          <span className="text-[12px] font-medium text-muted-foreground shrink-0 bg-muted px-2 py-0.5 rounded-full">
+                          <span className="text-[13px] font-medium text-muted-foreground shrink-0 bg-muted px-2 py-0.5 rounded-full">
                             {book.status === 'rented' ? '대여중' : '거래완료'}
                           </span>
                         )}

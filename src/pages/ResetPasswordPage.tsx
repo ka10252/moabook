@@ -93,7 +93,7 @@ export const ResetPasswordPage = () => {
               <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
                 <AlertTriangle className="w-7 h-7 text-destructive" />
               </div>
-              <h2 className="font-display text-[26px] font-medium tracking-tight text-foreground mb-2">
+              <h2 className="font-display text-[30px] font-medium tracking-tight text-foreground mb-2">
                 링크가 만료됐어요
               </h2>
               <p className="text-sm text-muted-foreground mb-6">
@@ -112,7 +112,7 @@ export const ResetPasswordPage = () => {
                   <KeyRound className="w-7 h-7 text-primary" />
                 </div>
                 <p className="eyebrow">New password</p>
-                <h2 className="font-display text-[26px] font-medium tracking-tight text-foreground mt-1.5">
+                <h2 className="font-display text-[30px] font-medium tracking-tight text-foreground mt-1.5">
                   새 비밀번호를 정해주세요
                 </h2>
               </div>

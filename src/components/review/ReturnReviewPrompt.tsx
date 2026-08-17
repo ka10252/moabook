@@ -61,14 +61,14 @@ export function ReturnReviewPrompt({ bookId, bookTitle, onClose, onSkip, onSaved
           onChange={(e) => setComment(e.target.value.slice(0, 200))}
           placeholder="한 줄로 남겨주세요 (선택)"
           rows={2}
-          className="w-full px-3 py-2.5 rounded-xl bg-muted/50 border-0 text-[14px] text-foreground placeholder:text-muted-foreground resize-none focus-visible:ring-2 focus-visible:ring-primary outline-none"
+          className="w-full px-3 py-2.5 rounded-xl bg-muted/50 border-0 text-[15px] text-foreground placeholder:text-muted-foreground resize-none focus-visible:ring-2 focus-visible:ring-primary outline-none"
         />
 
         <div className="flex gap-2">
           <button
             type="button"
             onClick={onSkip ?? onClose}
-            className="flex-1 h-12 rounded-xl border border-border text-[14px] text-muted-foreground"
+            className="flex-1 h-12 rounded-xl border border-border text-[15px] text-muted-foreground"
           >
             건너뛰기
           </button>
@@ -76,7 +76,7 @@ export function ReturnReviewPrompt({ bookId, bookTitle, onClose, onSkip, onSaved
             type="button"
             onClick={submit}
             disabled={saving}
-            className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground text-[14px] font-bold disabled:opacity-60 flex items-center justify-center"
+            className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground text-[15px] font-bold disabled:opacity-60 flex items-center justify-center"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : '남기기'}
           </button>

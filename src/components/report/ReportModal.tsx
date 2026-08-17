@@ -92,7 +92,7 @@ export const ReportModal = ({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between mb-1">
-              <h2 className="flex items-center gap-2 font-display text-[19px] font-medium text-foreground">
+              <h2 className="flex items-center gap-2 font-display text-[22px] font-medium text-foreground">
                 <Flag className="w-4 h-4 text-destructive" />
                 {TARGET_LABELS[targetType]} 신고
               </h2>

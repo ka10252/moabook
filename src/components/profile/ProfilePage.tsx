@@ -544,7 +544,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                   {avatarUrl ? (
                     <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="font-display text-[36px] text-spine-text leading-none">
+                    <span className="font-display text-[30px] text-spine-text leading-none">
                       {(nickname || '?').charAt(0)}
                     </span>
                   )}
@@ -555,7 +555,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
               </button>
               <input ref={avatarFileRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
 
-              <h1 className="font-display text-[28px] font-medium text-foreground mt-3 leading-none flex items-center justify-center gap-1.5">
+              <h1 className="font-display text-[30px] font-medium text-foreground mt-3 leading-none flex items-center justify-center gap-1.5">
                 {nickname || '이름 없음'}
                 {featuredBadge && new Map(myBadges.map((b) => [b.badge_key, b.tier])).has(featuredBadge as BadgeId) && (
                   <BadgeStamp
@@ -567,7 +567,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
               </h1>
               {bio && <p className="text-xs text-muted-foreground mt-1.5">{bio}</p>}
               {(getStation(station) || district) && (
-                <p className="text-[12.5px] text-faint mt-1.5 flex items-center justify-center gap-1">
+                <p className="text-[13px] text-faint mt-1.5 flex items-center justify-center gap-1">
                   <MapPin className="w-3 h-3" />
                   {getStation(station)?.name ?? district}
                 </p>
@@ -576,21 +576,21 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
               {/* 학교 인증(사실 태그) */}
               <div className="mt-2.5 flex flex-col items-center">
                 {school ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 text-primary text-[12px] font-semibold px-3 py-1">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 text-primary text-[13px] font-semibold px-3 py-1">
                     <GraduationCap className="w-3.5 h-3.5" />
                     {school} 인증
                   </span>
                 ) : schoolStep === 'idle' ? (
                   <button
                     onClick={() => { setSchoolStep('email'); }}
-                    className="inline-flex items-center gap-1 rounded-full border border-border text-[12px] text-muted-foreground px-3 py-1 hover:bg-muted/50 transition-colors"
+                    className="tap-44 inline-flex items-center gap-1 rounded-full border border-border text-[13px] text-muted-foreground px-3 py-1 hover:bg-muted/50 transition-colors"
                   >
                     <GraduationCap className="w-3.5 h-3.5" />
                     학교 이메일 인증
                   </button>
                 ) : (
                   <div className="w-full max-w-[280px] rounded-xl border border-border bg-card p-3 space-y-2 text-left">
-                    <p className="text-[12px] text-muted-foreground">
+                    <p className="text-[13px] text-muted-foreground">
                       학교 이메일(@u.nus.edu 등)로 코드를 받아 인증하면 학교 배지가 붙어요.
                     </p>
                     {schoolStep === 'email' ? (
@@ -651,8 +651,8 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                   onClick={s.onClick}
                   className={`flex-1 text-center ${i < 2 ? 'border-r border-border' : ''} ${s.onClick ? 'cursor-pointer hover:bg-muted/40 transition-colors' : ''}`}
                 >
-                  <p className="font-display text-[23px] text-primary leading-none">{s.n}</p>
-                  <p className="text-[12px] text-muted-foreground mt-1">{s.l}</p>
+                  <p className="font-display text-[22px] text-primary leading-none">{s.n}</p>
+                  <p className="text-[13px] text-muted-foreground mt-1">{s.l}</p>
                 </div>
               ))}
             </div>
@@ -661,10 +661,10 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
             <div className="mt-4 bg-card border border-border rounded-[14px] p-4">
               <button
                 onClick={() => setBadgesOpen((v) => !v)}
-                className="w-full flex items-center gap-2 text-left"
+                className="w-full min-h-11 flex items-center gap-2 text-left"
               >
                 <p className="text-[15px] font-bold text-foreground">활동 배지</p>
-                <span className="text-[12px] text-muted-foreground tabular-nums">
+                <span className="text-[13px] text-muted-foreground tabular-nums">
                   {myBadges.length} / {BADGE_META.length}
                 </span>
                 <ChevronDown className={`w-4 h-4 text-muted-foreground ml-auto transition-transform ${badgesOpen ? 'rotate-180' : ''}`} />
@@ -673,10 +673,10 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
               {badgesOpen && (
                 <div className="mt-3">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-[12px] text-muted-foreground">
+                    <p className="text-[13px] text-muted-foreground">
                       대표 배지를 설정할 수 있습니다.
                     </p>
-                    <label className="flex items-center gap-1.5 text-[12px] text-muted-foreground cursor-pointer shrink-0">
+                    <label className="flex items-center gap-1.5 text-[13px] text-muted-foreground cursor-pointer shrink-0">
                       공개
                       <input
                         type="checkbox"
@@ -698,10 +698,10 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                             <button
                               key={id}
                               onClick={() => setBadgeDetail({ id, tier: has ? (tier ?? 1) : null })}
-                              className={`flex flex-col items-center gap-1 text-center rounded-lg py-1.5 transition-colors cursor-pointer hover:bg-muted/50 ${isFeatured ? 'bg-primary/10 ring-1 ring-primary/40' : ''}`}
+                              className={`flex flex-col items-center gap-1 text-center rounded-lg py-2.5 transition-colors cursor-pointer hover:bg-muted/50 ${isFeatured ? 'bg-primary/10 ring-1 ring-primary/40' : ''}`}
                             >
                               <BadgeStamp id={id} tier={(tier || undefined) as 1 | 2 | 3 | undefined} size={44} muted={!has} />
-                              <span className={`text-[10.5px] leading-tight ${has ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                              <span className={`text-[11px] leading-tight ${has ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                                 {BADGES[id].name}
                               </span>
                             </button>
@@ -756,7 +756,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
 
             <button
               onClick={() => setShowDeleteDialog(true)}
-              className="w-full text-center text-[13px] text-faint hover:text-destructive transition-colors mt-6 py-2"
+              className="w-full min-h-11 text-center text-[13px] text-faint hover:text-destructive transition-colors mt-6 py-2"
             >
               회원 탈퇴
             </button>
@@ -775,7 +775,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
             <div className="space-y-5 mt-4">
               {/* 로그인 이메일 — 계정 식별자라 수정 불가, 확인용으로만 보여준다 */}
               <div className="space-y-2">
-                <Label className="text-[12px] font-bold tracking-wide text-muted-foreground">
+                <Label className="text-[13px] font-bold tracking-wide text-muted-foreground">
                   로그인 이메일
                 </Label>
                 <Input
@@ -784,11 +784,11 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                   disabled
                   className="h-11 text-[15px] bg-muted border-border rounded-xl text-muted-foreground cursor-not-allowed"
                 />
-                <p className="text-[12px] text-faint">이메일은 변경할 수 없어요.</p>
+                <p className="text-[13px] text-faint">이메일은 변경할 수 없어요.</p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="nickname" className="text-[12px] font-bold tracking-wide text-muted-foreground">
+                <Label htmlFor="nickname" className="text-[13px] font-bold tracking-wide text-muted-foreground">
                   닉네임 *
                 </Label>
                 <Input
@@ -801,7 +801,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bio" className="text-[12px] font-bold tracking-wide text-muted-foreground">
+                <Label htmlFor="bio" className="text-[13px] font-bold tracking-wide text-muted-foreground">
                   한 줄 소개
                 </Label>
                 <Textarea
@@ -813,12 +813,12 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                   className="text-[15px] bg-card border-border rounded-xl resize-none"
                   rows={2}
                 />
-                <p className="text-[12px] text-faint text-right">{bio.length}/100</p>
+                <p className="text-[13px] text-faint text-right">{bio.length}/100</p>
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-[12px] font-bold tracking-wide text-muted-foreground">성별</Label>
+                  <Label className="text-[13px] font-bold tracking-wide text-muted-foreground">성별</Label>
                   <div className="flex items-center gap-2">
                     {genderPublic ? (
                       <Eye className="w-3.5 h-3.5 text-primary" />
@@ -826,7 +826,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                       <EyeOff className="w-3.5 h-3.5 text-faint" />
                     )}
                     <Switch checked={genderPublic} onCheckedChange={setGenderPublic} />
-                    <span className="text-[12px] text-faint">{genderPublic ? '공개' : '비공개'}</span>
+                    <span className="text-[13px] text-faint">{genderPublic ? '공개' : '비공개'}</span>
                   </div>
                 </div>
                 <Select value={gender} onValueChange={setGender}>
@@ -844,7 +844,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="age" className="text-[12px] font-bold tracking-wide text-muted-foreground">
+                  <Label htmlFor="age" className="text-[13px] font-bold tracking-wide text-muted-foreground">
                     나이
                   </Label>
                   <div className="flex items-center gap-2">
@@ -854,7 +854,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                       <EyeOff className="w-3.5 h-3.5 text-faint" />
                     )}
                     <Switch checked={agePublic} onCheckedChange={setAgePublic} />
-                    <span className="text-[12px] text-faint">{agePublic ? '공개' : '비공개'}</span>
+                    <span className="text-[13px] text-faint">{agePublic ? '공개' : '비공개'}</span>
                   </div>
                 </div>
                 <Input
@@ -870,7 +870,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[12px] font-bold tracking-wide text-muted-foreground flex items-center gap-1.5">
+                <Label className="text-[13px] font-bold tracking-wide text-muted-foreground flex items-center gap-1.5">
                   <Globe className="w-3.5 h-3.5" />
                   거주 국가
                 </Label>
@@ -886,12 +886,12 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
 
               {country === 'SG' && (
                 <div className="space-y-2">
-                  <Label className="text-[12px] font-bold tracking-wide text-muted-foreground flex items-center gap-1.5">
+                  <Label className="text-[13px] font-bold tracking-wide text-muted-foreground flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5" />
                     집에서 가까운 역
                   </Label>
                   <MrtStationPicker value={station} onChange={setStation} />
-                  <p className="text-[12px] text-faint">
+                  <p className="text-[13px] text-faint">
                     내 책이 이 역에 표시돼요. 집 위치는 다른 사람에게 보이지 않아요.
                     {district && !station && ` (지금은 ${district}로 설정돼 있어요)`}
                   </p>
@@ -962,7 +962,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
 
               {needsHomeScreenInstall ? (
                 <div className="rounded-xl bg-muted p-3 space-y-1.5">
-                  <p className="text-[14px] font-bold text-foreground">
+                  <p className="text-[15px] font-bold text-foreground">
                     iPhone은 홈 화면에 추가해야 알림을 받을 수 있어요
                   </p>
                   <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
@@ -995,14 +995,14 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
               <div className="pt-1 border-t border-border">
                 <button
                   onClick={() => setShowInstallGuide((v) => !v)}
-                  className="w-full flex items-center gap-2 text-[14px] font-semibold text-primary pt-2.5"
+                  className="w-full flex items-center gap-2 text-[15px] font-semibold text-primary pt-2.5"
                 >
                   <Share className="w-3.5 h-3.5" />
                   iPhone 홈 화면에 추가하는 방법
                   <ChevronRight className={`w-3.5 h-3.5 ml-auto transition-transform ${showInstallGuide ? 'rotate-90' : ''}`} />
                 </button>
                 {showInstallGuide && (
-                  <ol className="mt-2.5 space-y-2 text-[14px] text-muted-foreground leading-relaxed">
+                  <ol className="mt-2.5 space-y-2 text-[15px] text-muted-foreground leading-relaxed">
                     <li>1. Safari 하단 공유 (Share) 버튼을 눌러요</li>
                     <li>2. 홈 화면에 추가 (Add to Home Screen)를 선택해요</li>
                     <li>3. 홈 화면의 MOA Book 아이콘으로 다시 열어요</li>
@@ -1064,7 +1064,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
               <Button
                 onClick={submitFeedback}
                 disabled={sendingFeedback || !feedbackText.trim()}
-                className="w-full h-12 rounded-xl text-[16px] font-bold"
+                className="w-full h-12 rounded-xl text-[17px] font-bold"
               >
                 {sendingFeedback ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -1192,7 +1192,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                 className="h-12"
               />
               {confirmPassword.length > 0 && newPassword !== confirmPassword && (
-                <p className="text-[12px] text-destructive">비밀번호가 일치하지 않아요</p>
+                <p className="text-[13px] text-destructive">비밀번호가 일치하지 않아요</p>
               )}
             </div>
           </div>
@@ -1305,7 +1305,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                 <span className="w-9 h-9 rounded-full bg-primary/12 flex items-center justify-center shrink-0">
                   <Camera className="w-4 h-4 text-primary" />
                 </span>
-                <span className="text-[16px] font-semibold text-foreground">사진 올리기</span>
+                <span className="text-[17px] font-semibold text-foreground">사진 올리기</span>
               </button>
               <button
                 onClick={() => { setShowAvatarOptions(false); setCharacterOpen(true); }}
@@ -1315,7 +1315,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                   <Sparkles className="w-4 h-4 text-primary" />
                 </span>
                 <div>
-                  <span className="text-[16px] font-semibold text-foreground">캐릭터 꾸미기</span>
+                  <span className="text-[17px] font-semibold text-foreground">캐릭터 꾸미기</span>
                   <p className="text-[13px] text-muted-foreground">픽셀 캐릭터를 만들어 프로필·가상공간에 사용</p>
                 </div>
               </button>
@@ -1356,7 +1356,7 @@ const SubHeader = ({ title, onBack }: { title: string; onBack: () => void }) => 
     >
       <ChevronLeft className="w-5 h-5" />
     </button>
-    <h1 className="font-display text-[24px] font-medium text-foreground leading-none">{title}</h1>
+    <h1 className="font-display text-[22px] font-medium text-foreground leading-none">{title}</h1>
   </div>
 );
 

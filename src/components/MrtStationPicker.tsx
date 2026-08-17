@@ -105,7 +105,7 @@ export function MrtStationPicker({ value, onChange, placeholder = '역 이름으
           ) : (
             grouped.map((g) => (
               <div key={g.region}>
-                <p className="sticky top-0 px-4 py-1.5 bg-muted/80 backdrop-blur text-[10px] tracking-wider text-muted-foreground">
+                <p className="sticky top-0 px-4 py-1.5 bg-muted/80 backdrop-blur text-[11px] tracking-wider text-muted-foreground">
                   {g.region}
                 </p>
                 {g.stations.map((s) => (
@@ -120,7 +120,7 @@ export function MrtStationPicker({ value, onChange, placeholder = '역 이름으
                     <span className="text-sm text-foreground truncate">
                       {s.name} <span className="text-muted-foreground">{s.nameKo}</span>
                     </span>
-                    <span className="ml-auto text-[10px] text-muted-foreground shrink-0">
+                    <span className="ml-auto text-[11px] text-muted-foreground shrink-0">
                       {s.lines.join('·')}
                     </span>
                   </button>

@@ -53,7 +53,7 @@ export const FirstBookNotifPrompt = ({ isOpen, onClose }: Props) => {
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
               <BookCheck className="w-6 h-6 text-primary" />
             </div>
-            <h3 className="font-display text-[21px] font-medium text-foreground mb-1.5">📚 첫 책 등록 완료!</h3>
+            <h3 className="font-display text-[22px] font-medium text-foreground mb-1.5">📚 첫 책 등록 완료!</h3>
             <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
               대여 요청을 놓치지 않으려면 알림을 켜세요.
             </p>

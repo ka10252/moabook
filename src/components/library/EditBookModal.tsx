@@ -134,7 +134,7 @@ export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => 
             >
               {/* Header */}
               <header className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-                <h2 className="font-display text-[20px] font-medium tracking-tight text-foreground">책 정보 수정</h2>
+                <h2 className="font-display text-[22px] font-medium tracking-tight text-foreground">책 정보 수정</h2>
                 <button
                   type="button"
                   onClick={onClose}
