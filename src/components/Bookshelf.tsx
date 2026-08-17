@@ -158,6 +158,9 @@ export const Bookshelf = ({
   });
   const changeView = (next: ShelfView) => {
     setViewMode(next);
+    // 지도는 화면에 꼭 맞게 그려진다. 스크롤이 내려간 상태로 바꾸면 높이 계산의
+    // 기준(컨테이너의 화면상 위치)이 어긋나므로 맨 위로 올린다.
+    if (next === 'map') window.scrollTo({ top: 0 });
     try { localStorage.setItem('moa_shelf_view', next); } catch { /* ignore */ }
   };
 
@@ -530,10 +533,12 @@ export const Bookshelf = ({
   const emptyShelvesNeeded = showNoResults ? 1 : Math.max(0, 3 - shelfGroups.length);
 
   const statusFilterLabels: Record<StatusFilter, string> = {
+    // 한 줄에 네 개가 다 들어가야 해서 짧게 쓴다 — '대여 가능'·'판매중'은 옆으로 밀려
+    // 스크롤해야 보였다. 뜻은 그대로다(대여 = 빌릴 수 있는 책).
     all: '전체',
-    available: '대여 가능',
+    available: '대여',
     giving: '나눔',
-    selling: '판매중',
+    selling: '판매',
     rented: '대여중',
   };
 
@@ -547,7 +552,10 @@ export const Bookshelf = ({
   return (
     <div className="flex flex-col min-h-full relative">
       {/* Header — 페이지 스크롤 시 상단(앱 헤더 아래)에 고정 */}
-      <header className="flex flex-col gap-3 px-5 pt-4 pb-3 bg-background/85 backdrop-blur-md sticky top-14 z-30 border-b border-border/40">
+      <header
+        className="flex flex-col gap-3 px-5 pt-4 pb-3 bg-background/85 backdrop-blur-md sticky z-30 border-b border-border/40"
+        style={{ top: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}
+      >
         {/* Title block — 제목 자체가 '책장 범위' 선택기다.
             예전엔 제목과 드롭다운이 같은 값을 두 번 보여줬다(중복). 제목을 컨트롤로 만들면
             드롭다운이 컨트롤 줄에서 빠지고, 그 자리를 상태 칩이 쓴다 → 줄 수는 그대로. */}
@@ -634,8 +642,9 @@ export const Bookshelf = ({
             자주 쓰는 상태 필터는 노출하고, 가끔 쓰는 정밀 필터(지역·정렬)와 뷰 전환은
             아이콘으로 접어 오른쪽 끝에 고정한다. */}
         <div className="flex items-center gap-2">
-          {/* 상태 칩 — 넘치면 가로 스크롤 */}
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-1 min-w-0">
+          {/* 상태 칩 — 네 개를 한 줄에 균등 분배한다. 예전엔 가로 스크롤이라
+              '판매중'이 화면 밖에 있어 있는 줄도 몰랐다. */}
+          <div className="grid grid-cols-4 gap-1 flex-1 min-w-0">
             {/* '대여중'은 칩에서 뺐다 — 대여중인 책은 어차피 서가 맨 뒤에 비활성으로 보인다 */}
             {(['all', 'available', 'giving', 'selling'] as StatusFilter[]).map((key) => (
               { key, label: statusFilterLabels[key] }

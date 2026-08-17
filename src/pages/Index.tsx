@@ -374,7 +374,16 @@ const Index = () => {
 
       <PullToRefresh enabled={!showChatModal} />
 
-      <main className="flex-1 pt-14 pb-20">
+      {/* 고정 헤더(3.5rem)와 탭바(5rem)만큼 비워둔다. 노치·홈 인디케이터가 있는 폰에서는
+          둘 다 안전영역만큼 더 커지므로 env()를 같이 더한다 — 안 하면 아래쪽 내용이 탭바 뒤로 숨는다.
+          웹에서는 env()가 0이라 예전과 같다. */}
+      <main
+        className="flex-1"
+        style={{
+          paddingTop: 'calc(3.5rem + env(safe-area-inset-top, 0px))',
+          paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))',
+        }}
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={contentKey}

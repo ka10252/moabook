@@ -144,6 +144,53 @@ export function BookMapView({ books, onSelectBook, myStationId }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * 지도 높이 = 화면에서 실제로 남은 공간.
+   *
+   * 예전엔 `clamp(400px, 66vh, 660px)`였다. 66vh는 **뷰포트 전체**의 66%라
+   * 상단 헤더·서가 헤더·하단 탭바를 셈에 넣지 않는다 → 지도가 탭바 뒤로 숨고
+   * 스크롤을 내려야 아래쪽이 보였다. 최소 400px도 작은 폰에서는 그 자체로 넘친다.
+   *
+   * 그래서 vh를 버리고 **컨테이너의 화면상 위치와 탭바 높이를 직접 재서** 뺀다.
+   * 폰 크기·노치 유무·브라우저 주소창 높이와 무관하게 맞는다.
+   */
+  const [mapH, setMapH] = useState<number | null>(null);
+  /**
+   * main의 하단 패딩을 상쇄할 값.
+   *
+   * 탭바는 fixed라 문서 흐름에 없고, 그 자리는 `main`의 padding-bottom이 비워둔다.
+   * 지도를 "탭바 위까지" 꽉 채우면 그 패딩이 지도 **아래에 그대로 남아** 문서가 화면보다
+   * 길어진다(실측 63px). 지도 뷰에서는 그 자리를 지도가 이미 쓰고 있으니 음수 마진으로 지운다.
+   * 값은 하드코딩하지 않고 실제 계산된 패딩을 읽는다 — 안전영역이 더해진 값까지 맞는다.
+   */
+  const [mainPad, setMainPad] = useState(0);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const measure = () => {
+      // visualViewport는 모바일 브라우저의 주소창이 접히는 것까지 반영한다(innerHeight는 안 한다)
+      const vh = window.visualViewport?.height ?? window.innerHeight;
+      const top = el.getBoundingClientRect().top;
+      const nav = document.querySelector<HTMLElement>('nav.nav-bar');
+      const navH = nav?.getBoundingClientRect().height ?? 0;
+      const main = el.closest('main');
+      setMainPad(main ? parseFloat(getComputedStyle(main).paddingBottom) || 0 : 0);
+      // 아래 여백 8px — 지도 테두리가 탭바에 딱 붙으면 닿을 듯해 불안해 보인다
+      setMapH(Math.max(220, Math.round(vh - top - navH - 8)));
+    };
+
+    measure();
+    window.addEventListener('resize', measure);
+    window.addEventListener('orientationchange', measure);
+    window.visualViewport?.addEventListener('resize', measure);
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('orientationchange', measure);
+      window.visualViewport?.removeEventListener('resize', measure);
+    };
+  }, []);
   const layerRef = useRef<L.LayerGroup | null>(null);
   const stationLayerRef = useRef<L.LayerGroup | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
@@ -318,14 +365,15 @@ export function BookMapView({ books, onSelectBook, myStationId }: Props) {
   }, [clusters, selectedId]);
 
   return (
-    <div className="px-4 pb-2">
+    <div className="px-4" style={{ marginBottom: -mainPad }}>
       {/* 지도가 주인공이다. 마커를 누르면 팝업에서 책을 볼 수 있으니
           아래에 목록을 또 두면 같은 정보가 두 번 나오고 지도만 좁아진다. */}
       <div className="relative rounded-2xl overflow-hidden border border-border">
         <div
           ref={containerRef}
           className="w-full moa-map"
-          style={{ height: 'clamp(400px, 66vh, 660px)' }}
+          // 첫 페인트 전에는 아직 재지 못했다. 그때만 안전한 임시값을 쓴다(곧 실측값으로 교체된다).
+          style={{ height: mapH ?? '60svh' }}
         />
       </div>
 

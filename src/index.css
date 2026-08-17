@@ -353,11 +353,13 @@
   /* ── Filter chip ───────────────────────────────────────
      책등과 같은 2px 라운드. 알약형이 아니다 — 에디토리얼 무드의 각진 톤. */
   .chip {
-    @apply shrink-0 whitespace-nowrap text-[13px] font-semibold px-3.5 py-[11px];
+    /* 4개를 한 줄에 넣으려고 좌우 패딩·자간을 줄였다(grid로 폭을 나누므로 px는 최소만).
+       높이 44px은 유지한다 — 터치 타깃 기준이다. */
+    @apply w-full whitespace-nowrap text-[13px] font-semibold px-1 py-[11px];
     @apply border border-border text-muted-foreground bg-transparent;
     @apply transition-colors hover:text-foreground hover:border-foreground/30;
     border-radius: 2px;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.01em;
   }
   .chip-active {
     @apply bg-primary text-primary-foreground border-primary font-bold;
