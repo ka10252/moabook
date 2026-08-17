@@ -126,17 +126,9 @@ export const Bookshelf = ({
   // 역 단위 필터. 지역(planning area)은 몇 km라 "이 역 근처"를 못 고른다.
   const [selectedStations, setSelectedStations] = useState<string[]>([]);
   const [stationDropdownOpen, setStationDropdownOpen] = useState(false);
-  const { favStations, favDistricts, hasFavorites, toggleStation: toggleFavStation, toggleDistrict: toggleFavDistrict } = useFavoriteAreas();
-  // 즐겨찾기 칩이 켜져 있는지 = 지금 선택이 즐겨찾기와 정확히 같은지.
-  // 별도 상태로 두면 유저가 역을 하나 더 고를 때 칩이 켜진 채로 남아 거짓말을 한다.
-  const sameSet = (a: string[], b: string[]) =>
-    a.length === b.length && a.every((x) => b.includes(x));
-  const favoritesApplied =
-    hasFavorites && sameSet(selectedStations, favStations) && sameSet(selectedDistricts, favDistricts);
-  const applyFavorites = () => {
-    setSelectedStations(favStations);
-    setSelectedDistricts(favDistricts);
-  };
+  const { favStations, favDistricts, toggleStation: toggleFavStation, toggleDistrict: toggleFavDistrict } = useFavoriteAreas();
+  // 즐겨찾기는 '한 번에 적용'이 아니라 목록 순서만 바꾼다 — 별을 누른 역·지역이
+  // 목록 맨 위로 올라와 바로 고를 수 있다. 지역 선택은 이 필터 시트 안에서만 한다.
 
   const [stationQuery, setStationQuery] = useState('');
   const [districtQuery, setDistrictQuery] = useState('');
@@ -276,16 +268,29 @@ export const Bookshelf = ({
     return counts;
   }, [allBooks]);
 
-  // 책이 있는 역을 위로 올린다 — 전부 보여주되 쓸모 있는 것부터.
+  // 별표한 역이 맨 위, 그다음 책이 있는 역. 전부 보여주되 쓸모 있는 것부터 보인다.
   const stationOptions = useMemo(() => {
     return MRT_STATIONS
       .map((station) => ({ station, count: bookCountByStation.get(station.id) ?? 0 }))
-      .sort((a, b) => b.count - a.count || a.station.name.localeCompare(b.station.name));
-  }, [bookCountByStation]);
+      .sort((a, b) => {
+        const fav = Number(favStations.includes(b.station.id)) - Number(favStations.includes(a.station.id));
+        if (fav !== 0) return fav;
+        return b.count - a.count || a.station.name.localeCompare(b.station.name);
+      });
+  }, [bookCountByStation, favStations]);
 
   useEffect(() => {
     setAvailableDistricts(STATION_DISTRICTS);
   }, []);
+
+  const districtOptions = useMemo(
+    () => [...availableDistricts].sort((a, b) => {
+      const fav = Number(favDistricts.includes(b)) - Number(favDistricts.includes(a));
+      if (fav !== 0) return fav;
+      return a.localeCompare(b);
+    }),
+    [availableDistricts, favDistricts],
+  );
 
   const getFilterLabel = () => {
     if (activeFilter === 'everybody') return '모두의 책장';
@@ -565,9 +570,7 @@ export const Bookshelf = ({
               <p className="eyebrow">BOOKSHELF</p>
               <h1 className="font-display text-[26px] leading-none text-foreground mt-1 flex items-center gap-1.5">
                 <span className="truncate max-w-[220px]">
-                  {favoritesApplied
-                    ? '즐겨찾는 지역의 서가'
-                    : activeFilter === 'mine' ? '나의 서가' : activeFilter === 'everybody' ? '모두의 책장' : getFilterLabel()}
+                  {activeFilter === 'mine' ? '나의 서가' : activeFilter === 'everybody' ? '모두의 책장' : getFilterLabel()}
                 </span>
                 <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0 transition-transform group-data-[state=open]:rotate-180" />
               </h1>
@@ -579,18 +582,6 @@ export const Bookshelf = ({
               {user && (
                 <DropdownMenuItem onClick={() => setActiveFilter('mine')} className={activeFilter === 'mine' ? 'bg-accent/15 text-foreground' : ''}>
                   나의 서가
-                </DropdownMenuItem>
-              )}
-              {/* 즐겨찾는 지역의 서가 — 저장해둔 역·지역을 한 번에 적용한다.
-                  즐겨찾기가 없으면 안 보인다(눌러도 아무 일 없는 항목은 두지 않는다).
-                  선택 상태는 별도 플래그가 아니라 "지금 선택 == 즐겨찾기"로 판정한다 —
-                  플래그로 두면 역을 하나 더 고를 때 여기 체크가 남아 거짓말을 한다. */}
-              {hasFavorites && (
-                <DropdownMenuItem
-                  onClick={() => { setActiveFilter('everybody'); applyFavorites(); }}
-                  className={favoritesApplied ? 'bg-accent/15 text-foreground' : ''}
-                >
-                  즐겨찾는 지역의 서가
                 </DropdownMenuItem>
               )}
               {myCommunities.length > 0 && (
@@ -927,7 +918,7 @@ export const Bookshelf = ({
             {/* 역으로 찾기 — 지역보다 좁게. 목록엔 실제로 책이 있는 역만 나온다. */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">가까운 역</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">가까운 MRT</p>
                 {selectedStations.length > 0 && (
                   <button
                     type="button"
@@ -938,10 +929,6 @@ export const Bookshelf = ({
                   </button>
                 )}
               </div>
-              <p className="text-[11px] text-muted-foreground -mt-1">
-                책 주인이 설정한 가까운 역 기준이에요. 싱가포르 전체 역에서 고를 수 있어요.
-              </p>
-
               <button
                 type="button"
                 onClick={() => setStationDropdownOpen(v => !v)}
@@ -1061,9 +1048,6 @@ export const Bookshelf = ({
                   </button>
                 )}
               </div>
-              <p className="text-[11px] text-muted-foreground -mt-1">
-                역보다 넓은 범위로 찾을 때 써요. 싱가포르 전 지역에서 고를 수 있어요.
-              </p>
 
               {/* Trigger button */}
               <button
@@ -1094,7 +1078,7 @@ export const Bookshelf = ({
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-px bg-border max-h-56 overflow-y-auto">
-                    {availableDistricts
+                    {districtOptions
                       .filter(d => !districtQuery.trim() || d.toLowerCase().includes(districtQuery.trim().toLowerCase()))
                       .map(d => {
                       const checked = selectedDistricts.includes(d);
@@ -1141,7 +1125,7 @@ export const Bookshelf = ({
                       );
                     })}
                   </div>
-                  {availableDistricts.filter(d => !districtQuery.trim() || d.toLowerCase().includes(districtQuery.trim().toLowerCase())).length === 0 && (
+                  {districtOptions.filter(d => !districtQuery.trim() || d.toLowerCase().includes(districtQuery.trim().toLowerCase())).length === 0 && (
                     <p className="px-3 py-4 text-[11px] text-muted-foreground text-center bg-background">
                       그런 지역이 없어요.
                     </p>
