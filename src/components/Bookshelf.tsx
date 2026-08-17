@@ -134,7 +134,6 @@ export const Bookshelf = ({
   const favoritesApplied =
     hasFavorites && sameSet(selectedStations, favStations) && sameSet(selectedDistricts, favDistricts);
   const applyFavorites = () => {
-    if (favoritesApplied) { setSelectedStations([]); setSelectedDistricts([]); return; }
     setSelectedStations(favStations);
     setSelectedDistricts(favDistricts);
   };
@@ -495,6 +494,8 @@ export const Bookshelf = ({
   }, [filteredMySection, dedupedCommunityBooks, activeFilter, statusFilter, user, booksPerShelf, getFilterLabel, searchQuery, lentBookIds]);
 
   const totalRealBooks = filteredMySection.length + dedupedCommunityBooks.length;
+  // 배너 자체는 없앴지만(설명문이 첫 화면에 먼저 보이는 게 거슬렸다) 이 조건은
+  // '결과 없음' 판정에 그대로 쓴다 — 예시 책이 깔린 화면은 빈 화면이 아니다.
   const showDummyBanner = canShowDummy(activeFilter, statusFilter, searchQuery, totalRealBooks);
 
   // 필터·검색을 걸었는데 0건이면 빈 서가만 보여선 안 된다 — 왜 비었는지 알려준다.
@@ -564,7 +565,9 @@ export const Bookshelf = ({
               <p className="eyebrow">BOOKSHELF</p>
               <h1 className="font-display text-[26px] leading-none text-foreground mt-1 flex items-center gap-1.5">
                 <span className="truncate max-w-[220px]">
-                  {activeFilter === 'mine' ? '나의 서가' : activeFilter === 'everybody' ? '모두의 책장' : getFilterLabel()}
+                  {favoritesApplied
+                    ? '즐겨찾는 지역의 서가'
+                    : activeFilter === 'mine' ? '나의 서가' : activeFilter === 'everybody' ? '모두의 책장' : getFilterLabel()}
                 </span>
                 <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0 transition-transform group-data-[state=open]:rotate-180" />
               </h1>
@@ -576,6 +579,18 @@ export const Bookshelf = ({
               {user && (
                 <DropdownMenuItem onClick={() => setActiveFilter('mine')} className={activeFilter === 'mine' ? 'bg-accent/15 text-foreground' : ''}>
                   나의 서가
+                </DropdownMenuItem>
+              )}
+              {/* 즐겨찾는 지역의 서가 — 저장해둔 역·지역을 한 번에 적용한다.
+                  즐겨찾기가 없으면 안 보인다(눌러도 아무 일 없는 항목은 두지 않는다).
+                  선택 상태는 별도 플래그가 아니라 "지금 선택 == 즐겨찾기"로 판정한다 —
+                  플래그로 두면 역을 하나 더 고를 때 여기 체크가 남아 거짓말을 한다. */}
+              {hasFavorites && (
+                <DropdownMenuItem
+                  onClick={() => { setActiveFilter('everybody'); applyFavorites(); }}
+                  className={favoritesApplied ? 'bg-accent/15 text-foreground' : ''}
+                >
+                  즐겨찾는 지역의 서가
                 </DropdownMenuItem>
               )}
               {myCommunities.length > 0 && (
@@ -643,18 +658,6 @@ export const Bookshelf = ({
               </button>
             ))}
 
-            {/* 즐겨찾기 지역 — 저장해둔 역·지역을 한 번에 적용한다.
-                즐겨찾기가 하나도 없으면 아예 안 보인다(눌러도 아무 일 없는 칩은 두지 않는다). */}
-            {hasFavorites && (
-              <button
-                onClick={applyFavorites}
-                aria-pressed={favoritesApplied}
-                className={`chip shrink-0 flex items-center gap-1 ${favoritesApplied ? 'chip-active' : ''}`}
-              >
-                <Star className={`w-3 h-3 ${favoritesApplied ? 'fill-current' : ''}`} />
-                즐겨찾기
-              </button>
-            )}
           </div>
 
           {/* 책등 · 표지 · 지도 — 세 모드가 다 보이는 세그먼트 토글(현재 모드가 채워져 보임) */}
@@ -851,25 +854,8 @@ export const Bookshelf = ({
                   )}
                 </div>
 
-                {/* Dummy books banner */}
-                {showDummyBanner && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="mt-4 mx-auto max-w-[520px] bg-primary/8 border border-primary/20 rounded-2xl px-5 py-4 flex items-center gap-4"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-                      <BookOpen className="w-5 h-5 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground">예시 화면입니다</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        책이 6권 이상 쌓이면 예시 책들이 사라져요. 지금 첫 책을 등록해보세요!
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
+                {/* 예시 화면 안내 배너는 없앴다 — 책 카드마다 '예시' 배지가 붙어 있어
+                    오해할 일이 없고, 첫 화면에 설명문이 먼저 보이는 게 더 거슬렸다. */}
 
                 {/* 결과 없음 — 필터/검색으로 0건일 때 */}
                 {showNoResults && (

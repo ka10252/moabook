@@ -246,7 +246,7 @@ export const WishlistPage = () => {
               onClick={() => setFilter(key)}
               // 활성색을 코랄로 두면 바로 위 '책 추가'와 똑같아서 어느 쪽이
               // 실행 버튼인지 헷갈린다. 탭은 선택 상태만 보이면 되므로 무채색으로 낮춘다.
-              className={`flex-1 text-[13px] font-bold py-2 rounded-[9px] transition-colors ${
+              className={`flex-1 text-[13px] py-2 rounded-[9px] transition-colors ${
                 filter === key
                   ? 'bg-[hsl(var(--primary-soft))] text-foreground'
                   : 'bg-muted text-muted-foreground'
@@ -311,11 +311,11 @@ export const WishlistPage = () => {
                 <div className="flex items-center justify-between gap-2 px-0.5 pt-2">
                   <p className="text-[13px] font-semibold text-muted-foreground">이웃의 요청</p>
                   <div className="flex items-center gap-1 shrink-0">
-                    {([['recommended', '추천'], ['newest', '최신']] as const).map(([key, label]) => (
+                    {([['recommended', '관련순'], ['newest', '최신순']] as const).map(([key, label]) => (
                       <button
                         key={key}
                         onClick={() => setSort(key)}
-                        className={`text-[12px] font-bold px-2 py-1 rounded-full transition-colors ${
+                        className={`text-[12px] px-2 py-1 rounded-full transition-colors ${
                           sort === key
                             ? 'bg-[hsl(var(--primary-soft))] text-foreground'
                             : 'text-muted-foreground'
