@@ -22,15 +22,17 @@ export const BADGES = {
 export type BadgeId = keyof typeof BADGES
 
 /**
- * 출시에 넣는 활성 배지 12종(순서 = 진열장 표시 순).
+ * 출시에 넣는 활성 배지 11종(순서 = 진열장 표시 순).
  * 11 책벌레 · 13 마당발 · 14 잡식가는 추적/장르 선행 필요라 첫 업데이트로 보류(여기 미포함).
- * cond = 미획득 시 보여줄 조건 문구.
+ * 1 새내기(책 1권 등록)는 가입 직후 자동으로 붙어 성취가 아니라 폐지했다(마이그 20260818000004).
+ *
+ * ⚠️ 여기 cond 문구와 실제 판정(award_badges SQL)이 두 곳에 나뉘어 있다.
+ *    한쪽만 고치면 화면에 적힌 조건과 실제 발급 기준이 어긋난다. 항상 같이 고친다.
  */
 export const BADGE_META: { id: BadgeId; cond: string }[] = [
-  { id: 'newbie',    cond: '책 1권 등록' },
   { id: 'shelf',     cond: '등록 3 / 10 / 30권' },
   { id: 'firstdeal', cond: '요청 → 수락 → 반납 1건 완주' },
-  { id: 'librarian', cond: '빌려준 횟수 1 / 5 / 15' },
+  { id: 'librarian', cond: '빌려준 횟수 5 / 15 / 30' },
   { id: 'ontime',    cond: '빌린 책 5권 반납' },
   { id: 'giver',     cond: '나눔으로 3권 전달' },
   { id: 'resident',  cond: '커뮤니티 1곳 가입' },

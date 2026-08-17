@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { MemberProfileModal } from '@/components/profile/MemberProfileModal';
 import { EditCommunityModal } from './EditCommunityModal';
 import { CommunityShelfPanel } from './CommunityShelfPanel';
+import { CommunityBoard } from './CommunityBoard';
 import { BookDetailWithActions } from '@/components/BookDetailWithActions';
 import type { Book } from '@/types/book';
 import type { BookMode } from '@/lib/bookMode';
@@ -335,6 +336,7 @@ export const CommunityDetailModal = ({
   };
 
   const [shelfOpen, setShelfOpen] = useState(false);
+  const [boardOpen, setBoardOpen] = useState(false);
   const [shelfBook, setShelfBook] = useState<Book | null>(null);
 
   const handleNavigateToBookshelf = () => {
@@ -421,7 +423,18 @@ export const CommunityDetailModal = ({
                 )}
               </div>
 
-              {shelfOpen ? (
+              {boardOpen ? (
+                // CommunityBoard의 루트가 h-full flex-col이라 여기서 높이만 잡아주면 된다.
+                // 게시판도 커뮤니티 안에 있는 것으로 읽혀야 한다(책장과 같은 이유).
+                <div className="flex-1 min-h-0 flex flex-col">
+                  <CommunityBoard
+                    isOpen
+                    onClose={() => setBoardOpen(false)}
+                    communityId={community.id}
+                    communityName={community.name}
+                  />
+                </div>
+              ) : shelfOpen ? (
                 <CommunityShelfPanel
                   communityId={community.id}
                   communityName={community.name}
@@ -445,10 +458,7 @@ export const CommunityDetailModal = ({
                   </button>
                   {(isMember || isOwner) && (
                     <button
-                      onClick={() => {
-                        onClose();
-                        onOpenBoard?.(community.id, community.name);
-                      }}
+                      onClick={() => setBoardOpen(true)}
                       className="flex-1 flex flex-col items-center gap-1.5 py-3.5 rounded-xl bg-muted/60 hover:bg-muted transition-colors"
                     >
                       <LayoutList className="w-[22px] h-[22px] text-primary" />

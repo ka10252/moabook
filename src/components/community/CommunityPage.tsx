@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MyCommunities } from './MyCommunities';
 import { ExploreCommunities } from './ExploreCommunities';
 import { CreateCommunityForm } from './CreateCommunityForm';
 import { JoinCommunityForm } from './JoinCommunityForm';
@@ -141,9 +140,13 @@ export const CommunityPage = ({ onNavigateToBookshelf, onOpenBoard, onOpenChatFo
     c.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const myCommunities = filteredCommunities.filter((c) => myCommunityIds.has(c.id));
-  // Show all communities in explore section (including joined ones)
-  const exploreCommunities = filteredCommunities;
+  // 목록은 하나만 둔다. 예전엔 '내 커뮤니티'와 '탐색'을 따로 그렸는데,
+  // 탐색이 가입 여부와 무관하게 전부 보여줘서 가입한 커뮤니티가 두 곳에 중복으로 떴다.
+  // 커뮤니티 수가 많지 않은 동안은 한 목록에 두고, 내가 속한 곳을 위로 올린다.
+  const exploreCommunities = [...filteredCommunities].sort((a, b) => {
+    const mine = (c: typeof a) => (myCommunityIds.has(c.id) ? 0 : 1);
+    return mine(a) - mine(b);
+  });
 
   return (
     <div className="flex flex-col h-full max-h-full overflow-hidden">
@@ -191,17 +194,6 @@ export const CommunityPage = ({ onNavigateToBookshelf, onOpenBoard, onOpenChatFo
                   {/* 전역 버추얼 도서관 진입은 숨김 — 커뮤니티룸 중심으로 전환.
                       (커뮤니티룸은 커뮤니티 상세에서 입장) 되돌리려면 이 버튼 복구. */}
 
-                  {/* My Communities */}
-                  <MyCommunities
-                    communities={myCommunities}
-                    isLoading={isLoading}
-                    leavingId={leavingId}
-                    onLeave={handleLeaveCommunity}
-                    onViewAll={() => {}}
-                    onCommunityClick={(community) => setDetailCommunity(community)}
-                  />
-
-                  {/* Explore Communities */}
                   <ExploreCommunities
                     communities={exploreCommunities}
                     isLoading={isLoading}

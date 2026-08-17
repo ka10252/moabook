@@ -41,7 +41,7 @@ export const ExploreCommunities = ({
     return (
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
         <Users className="w-12 h-12 text-faint mx-auto mb-3" />
-        <p className="text-sm text-muted-foreground">탐색할 커뮤니티가 없습니다</p>
+        <p className="text-sm text-muted-foreground">커뮤니티가 없습니다</p>
         <p className="text-xs text-faint mt-1">직접 커뮤니티를 만들어보세요</p>
       </motion.div>
     );
@@ -49,7 +49,7 @@ export const ExploreCommunities = ({
 
   return (
     <section className="space-y-1">
-      <p className="font-display italic text-[16px] text-foreground px-0.5 mb-2">탐색</p>
+      <p className="font-display italic text-[16px] text-foreground px-0.5 mb-2">커뮤니티</p>
 
       {communities.map((community, index) => {
         const isJoined = joinedCommunityIds.has(community.id);
@@ -60,7 +60,12 @@ export const ExploreCommunities = ({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: Math.min(index * 0.04, 0.3) }}
-            className="flex items-center gap-3 py-2.5 px-0.5 border-b border-border"
+            // 가입한 커뮤니티는 줄 전체를 눌러 들어간다. 예전엔 '내 커뮤니티' 섹션이
+            // 따로 있어 줄을 눌러 열 수 있었는데, 목록을 합치면서 그 경로가 사라졌었다.
+            onClick={isJoined ? () => onEnter(community) : undefined}
+            className={`flex items-center gap-3 py-2.5 px-0.5 border-b border-border ${
+              isJoined ? 'cursor-pointer' : ''
+            }`}
           >
             {community.cover_url ? (
               <img
@@ -82,7 +87,10 @@ export const ExploreCommunities = ({
             </div>
 
             <button
-              onClick={() => (isJoined ? onEnter(community) : onJoin(community))}
+              onClick={(e) => {
+                e.stopPropagation();
+                isJoined ? onEnter(community) : onJoin(community);
+              }}
               className={`shrink-0 text-[13px] font-bold px-3 py-1.5 rounded-full transition-colors ${
                 isJoined
                   ? 'bg-primary text-primary-foreground'
