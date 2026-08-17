@@ -690,7 +690,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                     const earned = new Map(myBadges.map((b) => [b.badge_key, b.tier]));
                     return (
                       <div className="grid grid-cols-4 gap-x-2 gap-y-4">
-                        {BADGE_META.map(({ id, cond }) => {
+                        {BADGE_META.map(({ id }) => {
                           const has = earned.has(id);
                           const tier = earned.get(id);
                           const isFeatured = featuredBadge === id;

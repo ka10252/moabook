@@ -44,11 +44,10 @@ export const useWishlist = () => {
 
       if (fetchError) throw fetchError;
 
-      const realItems: WishlistItem[] = (data || []).map(item => ({
+      const realItems = ((data || []) as unknown as Record<string, unknown>[]).map(item => ({
         ...item,
-        // 생성된 supabase 타입이 마이그레이션보다 낡아 mrt_station을 모른다 → unknown 경유
-        profile: item.profile as unknown as WishlistItem['profile']
-      }));
+        profile: item.profile as WishlistItem['profile'],
+      })) as unknown as WishlistItem[];
 
       setItems(realItems);
       setMyItems(realItems.filter(item => item.user_id === user?.id));

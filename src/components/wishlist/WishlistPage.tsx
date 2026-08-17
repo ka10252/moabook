@@ -344,7 +344,7 @@ export const WishlistPage = () => {
                     item={item}
                     isOwner={false}
                     isDemo
-                    onMessage={() => toast.info('예시 카드예요. 실제 이웃의 요청에서 답장할 수 있습니다.')}
+                    onMessage={() => { toast.info('예시 카드예요. 실제 이웃의 요청에서 답장할 수 있습니다.'); }}
                   />
                 ))}
               </section>

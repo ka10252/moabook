@@ -12,8 +12,9 @@
  * ⚠️ 타입체크는 반드시 `npm run typecheck`(= tsc -p tsconfig.app.json)로 돌린다.
  *    루트의 `npx tsc --noEmit`은 tsconfig.json이 `"files": []` + 프로젝트 참조라
  *    **아무 파일도 검사하지 않고 조용히 통과한다.** 실제로 그걸 믿고 넘긴 적이 있다.
- *    현재 기존 에러 42개(대부분 supabase 생성 타입이 마이그레이션보다 낡아서 나는 것)가
- *    깔려 있으니, 개수가 늘었는지로 본다.
+ *    2026-08-19에 supabase 타입을 재생성해 **에러 0개**로 만들었다. 하나라도 늘면 그건 새 오류다.
+ *    마이그레이션을 추가하면 타입도 같이 재생성한다:
+ *      supabase gen types typescript --project-id <ref> > src/integrations/supabase/types.ts
  *
  * 사용법:
  *   npm run dev                      # 다른 터미널에서

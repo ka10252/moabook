@@ -59,7 +59,6 @@ export const AddWishlistForm = ({ onAdd, onCancel }: AddWishlistFormProps) => {
       setAuthor('');
       setNotes('');
       setCover(null);
-      setDesiredMode('any');
       setMode('search');
       onCancel();
     }

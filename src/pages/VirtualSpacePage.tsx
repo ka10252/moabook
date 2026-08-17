@@ -61,7 +61,7 @@ export default function VirtualSpacePage() {
     if (!user) return null;
     // reading_book(jsonb)은 별도 조회 — 컬럼 미생성 시에도 reading_book_id 경로가 살아있게 분리
     const { data: rbData } = await supabase.from('profiles').select('reading_book').eq('id', user.id).maybeSingle();
-    const snap = (rbData as { reading_book?: ReadingBook | null } | null)?.reading_book;
+    const snap = (rbData as unknown as { reading_book?: ReadingBook | null } | null)?.reading_book;
     // 새 스냅샷(jsonb) 우선 — 검색으로 지정한 임의의 책 포함
     if (snap?.title) return snap;
     // 구버전 호환: reading_book_id만 있는 유저는 books에서 스냅샷을 만든다
@@ -199,7 +199,7 @@ export default function VirtualSpacePage() {
               .select('user_id, profile:profiles(nickname, pixel_avatar, reading_book)')
               .eq('community_id', communityId)
               .eq('is_banned', false);
-            membersRef.current = ((mem ?? []) as Array<{ user_id: string; profile: { nickname?: string; pixel_avatar?: unknown; reading_book?: ReadingBook | null } | null }>).map((r) => ({
+            membersRef.current = ((mem ?? []) as unknown as Array<{ user_id: string; profile: { nickname?: string; pixel_avatar?: unknown; reading_book?: ReadingBook | null } | null }>).map((r) => ({
               userId: r.user_id,
               nickname: r.profile?.nickname ?? '멤버',
               avatar: normalizeAvatar(r.profile?.pixel_avatar),

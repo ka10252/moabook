@@ -150,8 +150,6 @@ export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => 
                 {user && (
                   <CoverUploader
                     coverUrl={formData.coverUrl}
-                    title={formData.title}
-                    author={formData.author}
                     userId={user.id}
                     onCoverChange={(url) => setFormData(prev => ({ ...prev, coverUrl: url }))}
                     disabled={saving}

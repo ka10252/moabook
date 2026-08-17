@@ -117,7 +117,9 @@ export const AdminUserDetailModal = ({ userId, onClose, onRefresh }: AdminUserDe
         supabase.from('profiles').select('id').eq('id', userId).single(), // placeholder, ban status via RPC
       ]);
 
-      setUser(profile);
+      // PostgREST가 관계 임베드를 못 추론하는 응답이라 형태를 우리가 안다고 알려준다
+      const prof = profile as unknown as UserDetail;
+      setUser(prof);
       setBooks(userBooks || []);
       setCurrentRole(roleData?.role ?? 'user');
 
@@ -128,10 +130,10 @@ export const AdminUserDetailModal = ({ userId, onClose, onRefresh }: AdminUserDe
         created_at: t.created_at,
         book_title: t.book?.title || '삭제된 도서',
         counterparty_nickname:
-          t.owner?.nickname === profile?.nickname
+          t.owner?.nickname === prof?.nickname
             ? t.borrower?.nickname
             : t.owner?.nickname,
-        is_owner: t.owner?.nickname === profile?.nickname,
+        is_owner: t.owner?.nickname === prof?.nickname,
       }));
       setTransactions(formattedTransactions);
 

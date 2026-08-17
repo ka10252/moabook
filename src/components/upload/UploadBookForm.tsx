@@ -197,7 +197,12 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
         description: '',
         coverUrl: '',
         condition: 'A',
-        mode: 'rent',
+        // 초기 상태와 같은 모양으로 되돌린다. 예전엔 여기만 mode: 'rent'로 남아 있어서
+        // 책을 등록하고 나면 allowRent/Sell/Give가 undefined가 되고 거래 방식이 아무것도
+        // 선택되지 않은 채로 보였다.
+        allowRent: true,
+        allowSell: false,
+        allowGive: false,
         price: '',
         isPublic: true,
         communityId: null,

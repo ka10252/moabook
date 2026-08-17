@@ -380,12 +380,23 @@ Custom SMTP + Rate Limit 상향으로 해결됨. **모니터링만.**
 
 ## 🔧 부채 (기능은 아니지만 계속 비용을 만드는 것)
 
-### D1 · supabase 생성 타입이 마이그레이션보다 낡음
-`npm run typecheck` 에러 **42개가 거의 전부 이것**이다(`list_banned_members`,
-`profiles.mrt_station`, `favorite_stations`, `feedback` 테이블 등이 타입에 없다).
-- 지금은 "개수가 늘었는지"로 새 오류를 판별하는데, 42개에 묻혀 진짜 오류를 놓칠 수 있다.
-- 해결: 타입 재생성(`supabase gen types`). 그 뒤 곳곳의 `as never` · `as unknown as` 캐스트를 정리.
+### D1 · supabase 생성 타입 ✅ 해결 (2026-08-19)
+`npm run typecheck` **42개 → 0개.**
+- 재생성: `supabase gen types typescript --project-id venrajnufandslcbehkz > src/integrations/supabase/types.ts`
+- ⚠️ **마이그레이션을 추가하면 타입도 같이 재생성한다.** 안 하면 에러가 다시 쌓이고,
+  그 더미에 묻혀 진짜 오류를 놓친다.
+- 새 타입이 잡아낸 **실제 버그 2건**:
+  - `AddWishlistForm`: 없는 `setDesiredMode()` 호출 → **위시 추가가 성공한 직후 화면이 죽었다.**
+    대여/구입 선택을 없앨 때 남은 잔여 참조다(`setRegion`과 같은 유형).
+  - `UploadBookForm`: 등록 후 초기화가 `mode: 'rent'`로 남아 있어 `allowRent/Sell/Give`가
+    undefined가 되고 거래 방식이 아무것도 선택되지 않은 채로 보였다.
+- 겸사 정리: Leaflet 1.9에서 제거된 `tap` 옵션, `CoverUploader`가 받지 않는 props.
 
-### D2 · 배지 조건이 두 곳에 적혀 있음
-판정은 `award_badges()` SQL, 화면 문구는 `BADGE_META`. **한쪽만 고치면 어긋난다.**
-한 곳으로 모으는 것 검토.
+### D2 · 배지 조건 이중 관리 ✅ 해결 (2026-08-19)
+임계값의 단일 출처를 `BADGE_META`(src/components/BadgeStamp.tsx)로 옮겼다.
+- `BADGE_META`가 숫자(`tiers`)·단위·설명문(`how`)·SQL 변수명을 다 갖는다.
+  목록에 쓰는 조건 문구는 `badgeCond()`가 숫자에서 만든다(따로 적지 않는다).
+- **`npm run badges:sql`** — `award_badges()`의 WHERE 절을 BADGE_META에서 생성한다.
+  **`npm run badges:sql -- --check`** — 최신 마이그레이션과 어긋나면 exit 1.
+  서식·주석이 달라도 뜻이 같으면 통과한다(절 단위로 비교).
+- 기준을 바꿀 땐 `tiers`만 고치고 생성된 블록을 새 마이그레이션에 붙인다.

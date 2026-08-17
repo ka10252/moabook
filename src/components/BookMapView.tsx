@@ -170,9 +170,8 @@ export function BookMapView({ books, onSelectBook, myStationId }: Props) {
       touchZoom: true,
       scrollWheelZoom: true,
       doubleClickZoom: true,
-      // 한 손가락 스크롤은 페이지를 넘기게 둔다. 지도가 세로 스크롤을 먹으면
-      // 서가에서 아래로 못 내려가 갇힌다.
-      tap: true,
+      // (Leaflet 1.9에서 tap 핸들러가 제거됐다 — 예전에 넣어둔 tap: true는 아무 일도
+      //  하지 않아 지웠다. 한 손가락 세로 스크롤은 기본 동작으로 페이지에 넘어간다.)
     });
     tileRef.current = L.tileLayer(TILES.light, { attribution: TILE_ATTR, maxZoom: 19 }).addTo(map);
     L.control.zoom({ position: 'bottomright' }).addTo(map);

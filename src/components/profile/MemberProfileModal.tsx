@@ -106,10 +106,10 @@ export const MemberProfileModal = ({
         .single();
 
       if (profileError) throw profileError;
-      setProfile(profileData as Profile);
+      setProfile(profileData as unknown as Profile);
 
       // 배지 공개한 유저만 배지 조회(실패해도 프로필은 떠야 함)
-      if ((profileData as Profile).badges_public !== false) {
+      if ((profileData as unknown as Profile).badges_public !== false) {
         fetchUserBadges(userId).then(setMemberBadges).catch(() => {});
       }
 

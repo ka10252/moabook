@@ -1,6 +1,6 @@
-import { X, Star } from 'lucide-react';
+import { X, Star, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { BadgeStamp, BADGES, BADGE_META, type BadgeId } from '@/components/BadgeStamp';
+import { BadgeStamp, BADGES, metaOf, type BadgeId } from '@/components/BadgeStamp';
 import { useBackClose } from '@/hooks/useBackClose';
 
 interface Props {
@@ -13,16 +13,13 @@ interface Props {
   isFeatured?: boolean;
 }
 
-const condOf = (id: BadgeId) => BADGE_META.find((m) => m.id === id)?.cond ?? '';
-
 export function BadgeDetailSheet({ id, tier, onClose, onSetFeatured, isFeatured }: Props) {
   useBackClose(true, onClose);
 
   const badge = BADGES[id];
+  const meta = metaOf(id);
   const earned = tier != null;
-  const tiered = badge.tier;
-  // 단계 배지는 조건이 "등록 3 / 10 / 30권" 꼴이라 슬래시로 갈라 단계별로 보여준다
-  const steps = tiered ? condOf(id).split('/').map((s) => s.trim()) : [];
+  const tiered = badge.tier && meta.tiers.length > 1;
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center">
@@ -36,29 +33,47 @@ export function BadgeDetailSheet({ id, tier, onClose, onSetFeatured, isFeatured 
           <BadgeStamp id={id} tier={(tier || undefined) as 1 | 2 | 3 | undefined} size={72} muted={!earned} />
           <p className="mt-3 text-[17px] font-bold">{badge.name}</p>
           {tiered && earned && (
-            <p className="text-[12px] text-muted-foreground mt-0.5">{tier}단계</p>
+            <p className="text-[12px] text-muted-foreground mt-0.5">{tier}단계 / {meta.tiers.length}단계</p>
           )}
         </div>
 
-        <div className="mt-4 rounded-2xl bg-muted/60 px-3.5 py-3">
-          {tiered ? (
-            <ul className="space-y-1.5">
-              {steps.map((s, i) => (
-                <li key={s} className="flex items-center justify-between gap-3">
-                  <span className={`text-[13px] ${earned && tier! > i ? 'text-foreground' : 'text-muted-foreground'}`}>
-                    {i + 1}단계 · {s}
-                  </span>
-                  {earned && tier! > i && <span className="text-[12px] text-primary shrink-0">달성</span>}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="flex items-center justify-between gap-3">
-              <span className={`text-[13px] ${earned ? 'text-foreground' : 'text-muted-foreground'}`}>{condOf(id)}</span>
-              {earned && <span className="text-[12px] text-primary shrink-0">달성</span>}
-            </div>
-          )}
-        </div>
+        {/* 어떻게 하면 받는지 — 조건 숫자만 보여주면 '무엇이 세어지는지'를 알 수 없다 */}
+        <p className="mt-4 text-[13.5px] text-foreground leading-relaxed text-center">{meta.how}</p>
+
+        {id !== 'elder' && (
+          <div className="mt-4 rounded-2xl bg-muted/60 px-3.5 py-3">
+            {tiered ? (
+              <ul className="space-y-2">
+                {meta.tiers.map((n, i) => {
+                  const done = earned && tier! > i;
+                  return (
+                    <li key={n} className="flex items-center justify-between gap-3">
+                      <span className={`text-[13px] ${done ? 'text-foreground' : 'text-muted-foreground'}`}>
+                        {i + 1}단계 · {meta.counts} {n}{meta.unit}
+                      </span>
+                      {done ? (
+                        <Check className="w-4 h-4 text-primary shrink-0" />
+                      ) : (
+                        <span className="text-[12px] text-faint shrink-0">아직</span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <div className="flex items-center justify-between gap-3">
+                <span className={`text-[13px] ${earned ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  {meta.counts} {meta.tiers[0]}{meta.unit}
+                </span>
+                {earned ? (
+                  <Check className="w-4 h-4 text-primary shrink-0" />
+                ) : (
+                  <span className="text-[12px] text-faint shrink-0">아직</span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {onSetFeatured && earned && (
           <Button

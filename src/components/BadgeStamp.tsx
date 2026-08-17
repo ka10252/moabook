@@ -22,26 +22,65 @@ export const BADGES = {
 export type BadgeId = keyof typeof BADGES
 
 /**
- * 출시에 넣는 활성 배지 11종(순서 = 진열장 표시 순).
- * 11 책벌레 · 13 마당발 · 14 잡식가는 추적/장르 선행 필요라 첫 업데이트로 보류(여기 미포함).
- * 1 새내기(책 1권 등록)는 가입 직후 자동으로 붙어 성취가 아니라 폐지했다(마이그 20260818000004).
+ * 활성 배지 11종의 **단일 출처**(순서 = 진열장 표시 순).
  *
- * ⚠️ 여기 cond 문구와 실제 판정(award_badges SQL)이 두 곳에 나뉘어 있다.
- *    한쪽만 고치면 화면에 적힌 조건과 실제 발급 기준이 어긋난다. 항상 같이 고친다.
+ * 보류 3종(책벌레·마당발·잡식가)은 추적/장르 데이터가 필요해 여기 없다.
+ * 새내기(책 1권 등록)는 가입 직후 자동으로 붙어 성취가 아니라 폐지했다(마이그 20260818000004).
+ *
+ * ⚠️ 실제 발급 판정은 `award_badges()` SQL에 있다. 두 곳이 어긋나면 화면에 적힌 조건과
+ *    실제 기준이 달라진다. 그래서 임계값을 여기 숫자로 두고, SQL은 여기서 뽑아 쓴다:
+ *
+ *        npm run badges:sql     →  award_badges()의 WHERE 절을 출력한다
+ *
+ *    기준을 바꿀 땐 이 파일의 tiers만 고치고 위 명령으로 SQL을 다시 만든다.
  */
-export const BADGE_META: { id: BadgeId; cond: string }[] = [
-  { id: 'shelf',     cond: '등록 3 / 10 / 30권' },
-  { id: 'firstdeal', cond: '요청 → 수락 → 반납 1건 완주' },
-  { id: 'librarian', cond: '빌려준 횟수 5 / 15 / 30' },
-  { id: 'ontime',    cond: '빌린 책 5권 반납' },
-  { id: 'giver',     cond: '나눔으로 3권 전달' },
-  { id: 'resident',  cond: '커뮤니티 1곳 가입' },
-  { id: 'santa',     cond: '누군가 위시한 책을 등록' },
-  { id: 'salon',     cond: '게시판 글 10개' },
-  { id: 'streak',    cond: '4주 연속 주 1회 이상 방문' },
-  { id: 'host',      cond: '커뮤니티 직접 개설' },
-  { id: 'elder',     cond: '출시 후 2주 이내 가입' },
+export interface BadgeMeta {
+  id: BadgeId
+  /** 무엇을 세는가 — 진행 상황을 설명할 때 주어가 된다 */
+  counts: string
+  /** 단계별 임계값. 단계 없는 배지는 [n] 하나 */
+  tiers: number[]
+  /** 세는 단위 */
+  unit: string
+  /** 어떻게 하면 세어지는지 — 한 줄. 화면에 그대로 나간다 */
+  how: string
+  /** SQL에서 쓰는 카운트 변수(= award_badges의 v_*). 조건 생성에 쓴다 */
+  sqlVar: string
+}
+
+export const BADGE_META: BadgeMeta[] = [
+  { id: 'shelf',     counts: '등록한 책',       tiers: [3, 10, 30], unit: '권',
+    how: '내 책장에 책을 올리면 늘어나요.', sqlVar: 'v_books' },
+  { id: 'firstdeal', counts: '완료한 거래',     tiers: [1],         unit: '건',
+    how: '요청 → 수락 → 반납까지 한 번 끝내면 받아요. 빌려주든 빌리든 상관없어요.', sqlVar: 'v_completed' },
+  { id: 'librarian', counts: '빌려준 횟수',     tiers: [5, 15, 30], unit: '회',
+    how: '내 책을 빌려주고 반납까지 끝나면 1회로 세요.', sqlVar: 'v_lent' },
+  { id: 'ontime',    counts: '반납한 책',       tiers: [5],         unit: '권',
+    how: '빌린 책을 돌려주면 늘어나요.', sqlVar: 'v_borrowed_ret' },
+  { id: 'giver',     counts: '나눔한 책',       tiers: [3],         unit: '권',
+    how: '나눔으로 올린 책을 이웃에게 건네주면 늘어나요.', sqlVar: 'v_given' },
+  { id: 'resident',  counts: '가입한 커뮤니티', tiers: [1],         unit: '곳',
+    how: '커뮤니티에 참여하면 받아요.', sqlVar: 'v_joined' },
+  { id: 'santa',     counts: '들어준 위시',     tiers: [1],         unit: '권',
+    how: '누군가 위시리스트에 올려둔 책을 내 책장에 등록하면 받아요.', sqlVar: 'v_santa' },
+  { id: 'salon',     counts: '게시판 글',       tiers: [10],        unit: '개',
+    how: '커뮤니티 게시판에 글을 쓰면 늘어나요. 댓글은 세지 않아요.', sqlVar: 'v_posts' },
+  { id: 'streak',    counts: '연속 방문',       tiers: [4],         unit: '주',
+    how: '한 주에 한 번만 들어와도 이어져요. 한 주를 건너뛰면 다시 1주부터예요.', sqlVar: 'v_streak' },
+  { id: 'host',      counts: '만든 커뮤니티',   tiers: [1],         unit: '곳',
+    how: '커뮤니티를 직접 개설하면 받아요.', sqlVar: 'v_hosted' },
+  { id: 'elder',     counts: '',                tiers: [0],         unit: '',
+    how: '출시 후 2주 안에 가입한 분께 드려요. 지금은 더 받을 수 없어요.', sqlVar: '' },
 ]
+
+/** 목록에 한 줄로 적을 조건 문구 — 임계값에서 만들어 쓴다(따로 적지 않는다) */
+export const badgeCond = (m: BadgeMeta): string =>
+  m.id === 'elder'
+    ? '출시 후 2주 이내 가입'
+    : `${m.counts} ${m.tiers.join(' / ')}${m.unit}`
+
+export const metaOf = (id: BadgeId): BadgeMeta =>
+  BADGE_META.find((m) => m.id === id) ?? BADGE_META[0]
 
 const PATHS: Record<BadgeId, string> = {
   // 새내기 — potted-plant

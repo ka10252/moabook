@@ -32,7 +32,7 @@ export const ReadingBookPicker = ({ isOpen, onClose, onSaved }: Props) => {
     let cancelled = false;
     (async () => {
       const { data: prof } = await supabase.from('profiles').select('reading_book').eq('id', user.id).maybeSingle();
-      if (!cancelled) setCurrent((prof as { reading_book?: ReadingBook | null } | null)?.reading_book ?? null);
+      if (!cancelled) setCurrent((prof as unknown as { reading_book?: ReadingBook | null } | null)?.reading_book ?? null);
       const [owned, borrowed] = await Promise.all([
         supabase.from('books').select('id, title, author, cover_url').eq('owner_id', user.id),
         supabase.from('transactions').select('book:books(id, title, author, cover_url)').eq('borrower_id', user.id).eq('status', 'active'),
