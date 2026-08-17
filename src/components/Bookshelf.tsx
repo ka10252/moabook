@@ -998,7 +998,7 @@ export const Bookshelf = ({
                               )}
                             </span>
                             <span className="truncate text-xs">
-                              {station.name} <span className="text-muted-foreground">{station.nameKo}</span>
+                              {station.name}
                             </span>
                             <span className={`ml-auto text-[11px] shrink-0 ${count > 0 ? 'text-muted-foreground' : 'text-faint'}`}>
                               {count > 0 ? `${count}권` : '없음'}

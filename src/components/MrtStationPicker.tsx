@@ -38,6 +38,8 @@ export function MrtStationPicker({ value, onChange, placeholder = '역 이름으
     const hit = (s: MrtStation) =>
       !q ||
       s.name.toLowerCase().includes(q) ||
+      // 목록에는 한글 이름을 쓰지 않는다(영어만으로 충분하고, 두 줄이면 목록이 번잡해진다).
+      // 다만 '클레멘티'처럼 한글로 치는 사람이 있어서 검색에서는 계속 받아준다.
       s.nameKo.includes(query.trim()) ||
       s.district.toLowerCase().includes(q) ||
       s.lines.some((l) => l.toLowerCase() === q);
@@ -67,7 +69,7 @@ export function MrtStationPicker({ value, onChange, placeholder = '역 이름으
         >
           <MapPin className="w-4 h-4 text-primary shrink-0" />
           <span className="text-sm text-foreground truncate">
-            {selected.name} <span className="text-muted-foreground">{selected.nameKo}</span>
+            {selected.name}
           </span>
           <span className="ml-auto text-[11px] text-muted-foreground shrink-0">{selected.district}</span>
         </button>
@@ -118,7 +120,7 @@ export function MrtStationPicker({ value, onChange, placeholder = '역 이름으
                     }`}
                   >
                     <span className="text-sm text-foreground truncate">
-                      {s.name} <span className="text-muted-foreground">{s.nameKo}</span>
+                      {s.name}
                     </span>
                     <span className="ml-auto text-[11px] text-muted-foreground shrink-0">
                       {s.lines.join('·')}

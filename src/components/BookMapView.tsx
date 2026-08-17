@@ -86,7 +86,7 @@ function buildPopup(c: Cluster, onPick: (book: Book) => void): HTMLElement {
   const head = document.createElement('div');
   head.className = 'moa-pop-head';
   head.innerHTML =
-    `<b>${c.station.name}</b><span>${c.station.nameKo}</span>` +
+    `<b>${c.station.name}</b>` +
     `<em>${c.books.length}권</em>`;
   root.appendChild(head);
 

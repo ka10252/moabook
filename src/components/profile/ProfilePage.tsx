@@ -11,7 +11,6 @@ import {
   EyeOff,
   Lock,
   Shield,
-  Globe,
   AlertTriangle,
   Sun,
   Moon,
@@ -56,7 +55,6 @@ import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { usePushNotifications, pushResultMessage } from '@/hooks/usePushNotifications';
 import { toast } from 'sonner';
-import { CountrySelector } from '@/components/auth/CountrySelector';
 import { ALLOWED_COUNTRY } from '@/data/countries';
 import { MrtStationPicker } from '@/components/MrtStationPicker';
 import { getStation } from '@/data/mrtStations';
@@ -164,7 +162,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   const [showInstallGuide, setShowInstallGuide] = useState(false);
   const [showAvatarOptions, setShowAvatarOptions] = useState(false);
   const avatarFileRef = useRef<HTMLInputElement>(null);
-  const [country, setCountry] = useState('');
+  const [country, setCountry] = useState(ALLOWED_COUNTRY);
   const [district, setDistrict] = useState('');
   // 가까운 역. 지도뷰가 이걸로 책을 묶는다. district는 역에서 유도해 같이 저장한다.
   const [station, setStation] = useState('');
@@ -226,7 +224,8 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
         setGenderPublic(profileData.gender_public || false);
         setAgePublic(profileData.age_public || false);
         setAvatarUrl(profileData.avatar_url);
-        setCountry(profileData.country || '');
+        // 가입이 싱가포르만 받으므로 화면에 국가 선택이 없다. 값은 항상 SG로 둔다.
+        setCountry(ALLOWED_COUNTRY);
         setDistrict(profileData.district || '');
         setStation((profileData as { mrt_station?: string | null }).mrt_station || '');
         const schoolFromDb = (profileData as { school?: string | null }).school ?? null;
@@ -869,22 +868,10 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-[13px] font-bold tracking-wide text-muted-foreground flex items-center gap-1.5">
-                  <Globe className="w-3.5 h-3.5" />
-                  거주 국가
-                </Label>
-                <CountrySelector
-                  value={country}
-                  onChange={(val) => {
-                    setCountry(val);
-                    if (val !== 'SG') setDistrict('');
-                  }}
-                  className="bg-card border-border"
-                />
-              </div>
-
-              {country === 'SG' && (
+              {/* 거주 국가는 고를 게 없다 — 가입 자체가 싱가포르만 받는다(ALLOWED_COUNTRY).
+                  선택지가 하나인 선택 UI는 화면만 늘리고 "다른 것도 있나?"를 묻게 만든다.
+                  값은 계속 저장하되(다른 코드가 country === 'SG'를 본다) 화면에서는 뺀다. */}
+              {(
                 <div className="space-y-2">
                   <Label className="text-[13px] font-bold tracking-wide text-muted-foreground flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5" />
