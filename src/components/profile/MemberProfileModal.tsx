@@ -3,7 +3,6 @@ import { useBackClose } from '@/hooks/useBackClose';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, BookOpen, Loader2, User, Flag, Ban, ShieldOff, GraduationCap, Handshake } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -309,14 +308,15 @@ export const MemberProfileModal = ({
                       </span>
                     </div>
 
-                    <ScrollArea className="flex-1">
+                    {/* min-h-0 이 없으면 스크롤 영역이 팝업 높이를 넘어 자라서 스크롤이 안 생긴다 */}
+                    <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
                       {books.length === 0 ? (
                         <div className="text-center py-12 text-muted-foreground">
                           <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-30" />
                           <p className="text-sm">아직 등록한 책이 없습니다</p>
                         </div>
                       ) : (
-                        <div className="p-4 grid grid-cols-2 gap-4">
+                        <div className="p-4 grid grid-cols-3 gap-3">
                           {books.map((book) => (
                             <BookCover
                               key={book.id}
@@ -329,7 +329,7 @@ export const MemberProfileModal = ({
                           ))}
                         </div>
                       )}
-                    </ScrollArea>
+                    </div>
                   </div>
                 </>
               ) : (

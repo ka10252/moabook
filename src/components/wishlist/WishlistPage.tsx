@@ -139,7 +139,9 @@ export const WishlistPage = () => {
     );
   }
 
-  const showMineSection = filter === 'all' || filter === 'mine';
+  // '모든 위시리스트'는 남의 요청만 보여준다. 내 요청은 '내 위시리스트'에 따로 있어서
+  // 양쪽에 다 띄우면 같은 카드가 두 번 보이고, 내가 도와줄 수 있는 요청이 밀린다.
+  const showMineSection = filter === 'mine';
   const showOthersSection = filter === 'all';
 
   // 실제 요청이 적을 때만 예시로 채운다. 요청이 쌓이면 사라진다.
@@ -184,9 +186,11 @@ export const WishlistPage = () => {
             <button
               key={key}
               onClick={() => setFilter(key)}
+              // 활성색을 코랄로 두면 바로 위 '책 추가'와 똑같아서 어느 쪽이
+              // 실행 버튼인지 헷갈린다. 탭은 선택 상태만 보이면 되므로 무채색으로 낮춘다.
               className={`flex-1 text-[13px] font-bold py-2 rounded-[9px] transition-colors ${
                 filter === key
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-foreground text-background'
                   : 'bg-muted text-muted-foreground'
               }`}
             >
