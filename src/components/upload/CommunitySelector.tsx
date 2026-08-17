@@ -1,6 +1,7 @@
-import { Globe, Users, Loader2 } from 'lucide-react';
+import { Loader2, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { OptionButton } from './OptionButton';
 import { Community, useCommunities } from '@/hooks/useCommunities';
 import {
   Select,
@@ -36,36 +37,11 @@ export const CommunitySelector = ({
     <div className="space-y-2">
       <p className="text-[13px] font-bold tracking-wide text-muted-foreground">공개 범위</p>
       
-      <div className="relative flex p-1 bg-muted rounded-xl">
-        <motion.div
-          className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-card rounded-lg shadow-sm"
-          animate={{ left: isPublic ? '4px' : 'calc(50% + 2px)' }}
-          transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
-        />
-        
-        <button
-          type="button"
-          onClick={() => handlePublicToggle(true)}
-          className={cn(
-            "relative flex-1 py-2.5 flex items-center justify-center gap-1.5 text-[13px] font-bold rounded-lg transition-colors z-10",
-            isPublic ? "text-foreground" : "text-muted-foreground"
-          )}
-        >
-          <Globe className="w-3.5 h-3.5" />
-          전체 공개
-        </button>
-        
-        <button
-          type="button"
-          onClick={() => handlePublicToggle(false)}
-          className={cn(
-            "relative flex-1 py-2.5 flex items-center justify-center gap-1.5 text-[13px] font-bold rounded-lg transition-colors z-10",
-            !isPublic ? "text-foreground" : "text-muted-foreground"
-          )}
-        >
-          <Users className="w-3.5 h-3.5" />
-          커뮤니티
-        </button>
+      {/* 거래 방식·상태와 같은 버튼(OptionButton)을 쓴다.
+          예전엔 회색 트랙 위를 미끄러지는 세그먼트라 혼자 다른 물건처럼 보였다. */}
+      <div className="grid grid-cols-2 gap-2">
+        <OptionButton label="전체 공개" active={isPublic} onClick={() => handlePublicToggle(true)} />
+        <OptionButton label="커뮤니티" active={!isPublic} onClick={() => handlePublicToggle(false)} />
       </div>
 
       {!isPublic && (

@@ -1,7 +1,7 @@
-import { conditionLabel, type BookCondition } from '@/lib/bookCondition';
+import type { BookCondition } from '@/lib/bookCondition';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, Loader2, ChevronDown } from 'lucide-react';
+import { Upload, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -47,7 +47,6 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
   // 판매인데 사진이 없으면 제출을 시도한 뒤에야 붉게 알린다 (입력 전부터 빨갛게 하지 않는다)
   const [coverMissing, setCoverMissing] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
   // 제목 검색으로 채우기 전엔 저자·설명을 잠가, 사람들이 저자를 손으로 먼저 입력하지 않도록 유도.
   // 검색에 없는 책은 '직접 입력'으로 잠금 해제.
   const [manualEntry, setManualEntry] = useState(false);
@@ -239,9 +238,6 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
 
   const isSell = formData.allowSell;
 
-  // 접힌 줄에 보여줄 현재 값. 커뮤니티 전용이면 어느 커뮤니티인지까지는 굳이 안 쓴다 —
-  // 이름이 길면 줄이 넘치고, 펼치면 바로 보인다.
-  const detailSummary = `${conditionLabel(formData.condition)} · ${formData.isPublic ? '전체 공개' : '커뮤니티'}`;
 
   /**
    * 책을 고르기 전에는 제목 검색창 하나만 보여준다.
@@ -327,7 +323,7 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
         })()}
       </div>
 
-      {/* 책을 고른 뒤에 나타나는 부분 — 사진·거래 방식·(접힌) 상태·공개 범위 */}
+      {/* 책을 고른 뒤에 나타나는 부분 — 사진 · 거래 방식 · 상태 · 공개 범위 */}
       <AnimatePresence initial={false}>
         {bookChosen && (
           <motion.div
@@ -391,50 +387,17 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
             )}
           </AnimatePresence>
 
-          {/* 상태·공개 범위는 기본값이 이미 정해져 있다(양호 · 전체 공개) — 손대지 않아도 등록된다.
-              첫 화면에 6개 섹션이 같은 목소리로 말을 걸던 것을 4개로 줄인다(Cowan: 4±1).
-              ⚠️ 접힌 줄에 **현재 값을 같이 적는다.** 이게 없으면 접기는 정보를 숨기는 것이 되고,
-                 있으면 확인은 되면서 손댈 필요만 없어진다. */}
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setShowDetails((v) => !v)}
-              aria-expanded={showDetails}
-              className="w-full min-h-11 px-3.5 py-3 flex items-center gap-2 text-left"
-            >
-              <span className="text-[13px] font-bold tracking-wide text-muted-foreground">상태 · 공개 범위</span>
-              {!showDetails && (
-                <span className="text-[13px] text-faint truncate">{detailSummary}</span>
-              )}
-              <ChevronDown
-                className={`w-4 h-4 text-muted-foreground shrink-0 ml-auto transition-transform ${showDetails ? 'rotate-180' : ''}`}
-              />
-            </button>
+          <ConditionSelector
+            value={formData.condition}
+            onChange={(condition) => setFormData((prev) => ({ ...prev, condition }))}
+          />
 
-            <AnimatePresence initial={false}>
-              {showDetails && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className="px-3.5 pb-3.5 pt-1 space-y-4 border-t border-border">
-                    <ConditionSelector
-                      value={formData.condition}
-                      onChange={(condition) => setFormData((prev) => ({ ...prev, condition }))}
-                    />
-                    <CommunitySelector
-                      isPublic={formData.isPublic}
-                      selectedCommunityId={formData.communityId}
-                      onPublicChange={(isPublic) => setFormData((prev) => ({ ...prev, isPublic }))}
-                      onCommunityChange={(communityId) => setFormData((prev) => ({ ...prev, communityId }))}
-                    />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          <CommunitySelector
+            isPublic={formData.isPublic}
+            selectedCommunityId={formData.communityId}
+            onPublicChange={(isPublic) => setFormData((prev) => ({ ...prev, isPublic }))}
+            onCommunityChange={(communityId) => setFormData((prev) => ({ ...prev, communityId }))}
+          />
           </motion.div>
         )}
       </AnimatePresence>

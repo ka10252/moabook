@@ -1,6 +1,5 @@
-import { cn } from '@/lib/utils';
-import { Check } from 'lucide-react';
 import { BookMode, MODE_LABEL } from '@/lib/bookMode';
+import { OptionButton } from './OptionButton';
 
 interface ModeToggleProps {
   allowRent: boolean;
@@ -21,34 +20,20 @@ export const ModeToggle = ({ allowRent, allowSell, allowGive, onToggle }: ModeTo
   const on: Record<BookMode, boolean> = { rent: allowRent, sell: allowSell, give: allowGive };
   return (
     <div className="space-y-2">
-      <p className="text-[13px] font-bold tracking-wide text-muted-foreground">거래 방식 <span className="text-faint font-medium">(여러 개 선택 가능)</span></p>
+      <p className="text-[13px] font-bold tracking-wide text-muted-foreground">
+        거래 방식 <span className="text-faint font-medium">(여러 개 선택 가능)</span>
+      </p>
       <div className="grid grid-cols-3 gap-2">
-        {MODES.map((mode) => {
-          const isActive = on[mode.value];
-          return (
-            <button
-              key={mode.value}
-              type="button"
-              onClick={() => onToggle(mode.value)}
-              className={cn(
-                'relative py-2.5 rounded-[11px] border transition-colors text-center',
-                isActive ? 'border-primary bg-primary/10' : 'border-border bg-muted/40'
-              )}
-            >
-              {isActive && (
-                <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
-                  <Check className="w-2.5 h-2.5 text-primary-foreground" />
-                </span>
-              )}
-              <span className={cn('block text-xs', isActive ? 'text-primary font-bold' : 'text-muted-foreground font-semibold')}>
-                {MODE_LABEL[mode.value]}
-              </span>
-              <span className={cn('block text-[11px] mt-0.5', isActive ? 'text-primary/80' : 'text-faint')}>
-                {mode.hint}
-              </span>
-            </button>
-          );
-        })}
+        {MODES.map((mode) => (
+          <OptionButton
+            key={mode.value}
+            label={MODE_LABEL[mode.value]}
+            hint={mode.hint}
+            active={on[mode.value]}
+            onClick={() => onToggle(mode.value)}
+            multi
+          />
+        ))}
       </div>
     </div>
   );
