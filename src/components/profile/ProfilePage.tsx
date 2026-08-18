@@ -110,6 +110,19 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   } = usePushNotifications();
 
   const [view, setView] = useState<View>('overview');
+
+  /**
+   * 화면을 바꾸면 **맨 위에서 시작한다.**
+   *
+   * 이 페이지는 자체 스크롤 컨테이너(h-full overflow-y-auto)를 쓴다. 메뉴는 목록 아래쪽에
+   * 있어서, 거기까지 내려간 스크롤 위치가 그대로 유지된 채 서브뷰가 열렸다.
+   * 그러면 '프로필 편집' 같은 제목과 뒤로가기가 화면 위로 밀려 앱 헤더 뒤에 숨는다 —
+   * 유저는 어디로 왔는지도, 어떻게 돌아가는지도 알 수 없다.
+   */
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [view]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showSignOutDialog, setShowSignOutDialog] = useState(false);
@@ -523,7 +536,7 @@ export const ProfilePage = ({ onSignOut }: ProfilePageProps) => {
   }
 
   return (
-    <div className="h-full overflow-y-auto px-5 pt-5 pb-8">
+    <div ref={scrollRef} className="h-full overflow-y-auto px-5 pt-5 pb-8">
       <AnimatePresence mode="wait">
         {view === 'overview' && (
           <motion.div

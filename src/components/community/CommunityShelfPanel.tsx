@@ -59,7 +59,7 @@ export const CommunityShelfPanel = ({ communityId, communityName, onBack, onBook
 
       const cols = `
         id, title, author, cover_url, condition, mode, price, description,
-        is_public, community_id, owner_id, status, created_at, updated_at,
+        is_public, community_id, owner_id, status, created_at, updated_at, hidden_at,
         profile:profiles!books_owner_id_fkey(nickname, avatar_url), community:communities(name)
       `;
 
@@ -72,8 +72,11 @@ export const CommunityShelfPanel = ({ communityId, communityName, onBack, onBook
 
       if (!alive) return;
 
+      // 관리자가 숨긴 책은 서비스 화면에서 제외한다(useBooks 와 같은 규칙).
+      // RLS는 관리자에게 숨긴 책도 내주므로, 안 거르면 관리자만 다르게 보인다.
       const byId = new Map<string, Book>();
       for (const row of [...(assigned.data ?? []), ...(memberPublic.data ?? [])]) {
+        if ((row as { hidden_at?: string | null }).hidden_at) continue;
         const book = transformDbBook(row as never);
         byId.set(book.id, book);
       }

@@ -52,7 +52,22 @@ export const useBooks = (options: UseBooksOptions = {}) => {
 
       if (fetchError) throw fetchError;
 
-      const transformedBooks = (data || []).map(transformDbBook);
+      /**
+       * 관리자가 숨긴 책은 **서비스 화면에서 보이지 않는다.**
+       *
+       * ⚠️ RLS(`20260817000002`)는 관리자에게 숨긴 책까지 내준다 — 관리자 포털이
+       *    그걸로 목록을 만들기 때문이다. 그래서 그대로 두면 **관리자만 메인 책장에서
+       *    숨긴 책이 보이는** 상태가 된다. 관리는 포털에서만 하고, 서비스 화면은
+       *    다른 유저와 똑같이 보여야 한다.
+       *
+       * 주인 본인에게는 계속 보인다 — 자기 책이 왜 안 보이는지 알 길이 없으면
+       * 사라진 것으로 오해한다.
+       */
+      const visible = (data || []).filter((row) => {
+        const r = row as { hidden_at?: string | null; owner_id?: string };
+        return !r.hidden_at || r.owner_id === user?.id;
+      });
+      const transformedBooks = visible.map(transformDbBook);
       setBooks(transformedBooks);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load books');
