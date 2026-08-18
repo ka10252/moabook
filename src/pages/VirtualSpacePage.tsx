@@ -294,18 +294,18 @@ export default function VirtualSpacePage() {
 
       <button
         onClick={() => navigate(-1)}
-        className="absolute top-4 left-4 z-10 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 shadow-md text-sm font-medium text-gray-800 hover:bg-white"
+        className="inset-top-safe absolute left-4 z-10 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 shadow-md text-sm font-medium text-gray-800 hover:bg-white"
       >
         <ArrowLeft className="w-4 h-4" /> 나가기
       </button>
 
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 px-3 py-1.5 rounded-full bg-white/85 shadow-sm text-sm font-semibold text-gray-800 max-w-[45vw] truncate">
+      <div className="inset-top-safe absolute left-1/2 -translate-x-1/2 z-10 px-3 py-1.5 rounded-full bg-white/85 shadow-sm text-sm font-semibold text-gray-800 max-w-[45vw] truncate">
         {title}
       </div>
 
       {/* 캐릭터는 상단 오른쪽, 읽는 책은 그 아래로 — 룸 이름(가운데)과 겹치지 않게 세로 배치.
           두 버튼 폭을 min-w로 맞춰 나란히 정렬되게 한다. */}
-      <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-2">
+      <div className="inset-top-safe absolute right-4 z-10 flex flex-col items-end gap-2">
         <button
           onClick={() => setEditorOpen(true)}
           className="flex items-center justify-center gap-1.5 min-w-[104px] px-3 py-2 rounded-xl bg-white/90 shadow-md text-sm font-medium text-gray-800 hover:bg-white"
@@ -361,7 +361,7 @@ export default function VirtualSpacePage() {
       {user && !loading && chatLog.length > 0 && (
         <div
           ref={chatLogRef}
-          className="moa-thin-scroll absolute bottom-[88px] left-1/2 -translate-x-1/2 z-10 w-[calc(100%-3.5rem)] max-h-[84px] overflow-y-auto pr-1"
+          className="moa-thin-scroll absolute bottom-[calc(88px+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-10 w-[calc(100%-3.5rem)] max-h-[84px] overflow-y-auto pr-1"
         >
           {chatLog.map((m) => (
             <p
@@ -378,7 +378,7 @@ export default function VirtualSpacePage() {
 
       {/* 하단 채팅/이모트 바 (근접 대화·이모트 → 머리 위 말풍선) */}
       {user && !loading && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 w-[calc(100%-2rem)] max-w-[460px]">
+        <div className="inset-bottom-safe absolute left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 w-[calc(100%-2rem)] max-w-[460px]">
           {showEmotes && (
             <div className="absolute bottom-14 left-0 flex gap-1 bg-white/95 rounded-2xl shadow-lg p-2">
               {EMOTES.map((e) => (

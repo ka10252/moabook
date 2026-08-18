@@ -455,3 +455,16 @@ AI 티 검출(ai-tells.md) Must Pass 4항목 **전부 통과**.
 - 프레임은 로딩 중 렌더되지 않는다 → 첫 측정에서 ref가 null이면 조용히 빠진다.
   `requestAnimationFrame` 한 번 더 + `ResizeObserver` + `loading` 의존성을 같이 둔다.
 - 확인: 6개 폰 크기에서 `scrollHeight − innerHeight ≤ 1` 과 `요소 bottom ≤ 탭바 top`.
+
+### A.11 `fixed inset-0` 전체화면에는 안전영역이 따로 필요하다
+가상공간(`/space`)의 「나가기」 버튼이 **아이폰 시계에 가려 눌리지 않았다.**
+
+- 원인: 화면 루트가 `fixed inset-0` 이라 노치 아래까지 그린다. 그런데 위에 얹은 버튼은
+  `top-4`(16px) 고정값이라 상태바(약 59pt) 안으로 들어간다.
+- ⚠️ **`Index`에만 `safe-top`을 넣어서 놓쳤다.** 전체화면 페이지는 앱 헤더·탭바를 안 쓰므로
+  그 규칙이 적용되지 않는다. `fixed inset-0` 을 새로 쓸 때마다 따로 챙긴다.
+- 유틸: `.inset-top-safe` / `.inset-bottom-safe` (index.css)
+  = `calc(1rem + env(safe-area-inset-*, 0px))`. 웹에서는 env()가 0이라 그대로다.
+- 적용: 나가기·방 이름·우상단 버튼 묶음(상단 3개), 채팅 입력줄·말풍선 목록(하단 2개).
+- 확인: 스크린샷에서 버튼 상단 y좌표가 상태바 높이(59pt × 배율)보다 아래인지 잰다.
+  iPhone 17 실측 — 상태바 경계 177px, 버튼 상단 238px (여유 61px).
