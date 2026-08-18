@@ -18,6 +18,16 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
   },
 
+  /**
+   * 'debug' = Debug 빌드에서만 로그를 남긴다(Capacitor 기본값). 스토어 배포본에는 안 나간다.
+   *
+   * ⚠️ 이걸 켜도 **웹뷰의 console.log가 `--console-pty`에 보이지는 않았다(확인함).**
+   *    Capacitor 자체 로그(`⚡️ To Native ->`)만 보인다. 그래서 딥링크처럼
+   *    실기에서만 도는 흐름은 **Safari 웹 인스펙터**로 봐야 한다:
+   *      Safari → 개발자용 → Simulator → localhost
+   */
+  loggingBehavior: 'debug',
+
   plugins: {
     SplashScreen: {
       // 스플래시를 코드에서 직접 내린다. 자동으로 내리면 React가 첫 화면을 그리기 전에

@@ -127,3 +127,41 @@ npm run native:ios       # Xcode 열림 → 서명 팀 지정 후 Run
 `cap add`를 다시 하면 그게 전부 날아간다. 그래서 폴더는 커밋하고,
 **빌드 산물과 웹 자산 복사본만** `.gitignore`에 넣었다(`android/app/src/main/assets/public/`,
 `ios/App/App/public/` 등 — 이건 `cap sync`가 매번 다시 만든다).
+
+---
+
+## 5. 검증 현황 (2026-08-19)
+
+### 확인됨 ✅
+- **iOS 빌드 성공** — `xcodebuild -scheme App -destination 'generic/platform=iOS Simulator'`
+  → `** BUILD SUCCEEDED **`. CocoaPods 없이 SPM으로 해결됨.
+- **앱 실행** — iPhone 17 시뮬레이터에 설치·실행. 서가 화면이 정상 렌더된다.
+- **네이티브 초기화 배선** — 콘솔 로그로 확인:
+  `KeyboardPlugin: no resize` · `StatusBar setStyle` · `SplashScreen hide` ·
+  `App getLaunchUrl` · `App addListener`
+- **안전영역** — 스크린샷 색 분석. 상태바 영역 `#F4F1EA`(크림), 홈 인디케이터 영역
+  `#FAF8F3`(탭바 색). 잘리거나 흰 띠 없음.
+- **URL 스킴 등록** — 빌드된 `App.app/Info.plist`에서 `moabook` 확인(`plutil`).
+- **OS가 앱으로 URL을 전달함** — 미등록 스킴은 `LSApplicationWorkspaceErrorDomain 115`
+  에러, `moabook://`는 성공.
+- **Capacitor 네이티브 배선** — `SceneDelegate.openURLContexts` → `SceneDelegateProxy`
+  → `.capacitorOpenURL` 알림. 콜드 스타트도 `capacitorViewDidAppear`에서 재전달한다.
+- **파서** — `npm run test:deeplink` 10/10.
+
+### 확인 못 함 ❌ — 딥링크가 실제로 화면을 바꾸는지
+JS 핸들러(`appUrlOpen` → `navigate`)가 도는지 **확인하지 못했다.**
+
+시도한 방법과 왜 실패했는지:
+- **스크린샷 비교** — 앱이 20% 어둡게(`#F4F1EA × 0.8`) 찍히는 상태가 있어
+  "화면이 안 바뀐 것"과 "스크린샷이 오염된 것"을 구분할 수 없었다.
+- **`simctl launch --console-pty`** — Capacitor 자체 로그(`⚡️ To Native ->`)만 보이고
+  **웹뷰의 `console.log`는 안 나온다.** `loggingBehavior: 'debug'`를 켜도 같았다.
+- **`simctl spawn log stream`** — Capacitor 로그는 stdout이라 통합 로그에 안 잡힌다.
+
+**확실한 확인 방법 두 가지:**
+1. **Safari 웹 인스펙터** — Safari → 설정 → 고급 → '개발자용 메뉴 표시' 켠 뒤
+   `개발자용 → Simulator → localhost`. 콘솔을 열어둔 채
+   `xcrun simctl openurl booted "moabook://space"` 를 쏘면 `[deeplink] 받음/이동` 이 보인다.
+2. **진짜 흐름으로** — 앱에서 가입 → 메일의 인증 링크 탭.
+
+⚠️ **이게 확인되기 전에는 앱 출시가 불가능하다.** 인증을 못 끝내면 가입 자체가 막힌다.

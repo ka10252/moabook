@@ -50,7 +50,11 @@ export async function initDeepLinks(navigate: Navigate): Promise<() => void> {
   const { App } = await import('@capacitor/app');
 
   const handle = async (url: string) => {
+    // 딥링크는 실기에서만 도는 흐름이라, 들어온 주소와 결정된 경로를 남긴다.
+    // capacitor.config의 loggingBehavior: 'debug' 덕에 네이티브 로그로 보인다.
+    console.log('[deeplink] 받음:', url);
     const path = await consumeAuthLink(url);
+    console.log('[deeplink] 이동:', path ?? '(없음)');
     if (path) navigate(path);
   };
 
