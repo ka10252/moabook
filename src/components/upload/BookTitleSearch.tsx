@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Loader2, Book } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { BookSearchResult, useBookSearch } from '@/hooks/useBookSearch';
+import { warmBookSearch } from '@/hooks/useBookSearch';
 import { cn } from '@/lib/utils';
 
 interface BookTitleSearchProps {
@@ -38,6 +39,9 @@ export const BookTitleSearch = ({
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   // 방금 결과를 골랐으면, 그 선택이 채운 제목으로 곧바로 재검색하지 않는다.
   const justSelectedRef = useRef(false);
+
+  // 검색창이 뜨자마자 알라딘 함수를 깨워둔다. 제목을 치는 동안 콜드 스타트가 끝난다.
+  useEffect(() => { warmBookSearch(); }, []);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);

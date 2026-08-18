@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { X, Search, Loader2, BookOpen, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useBookSearch } from '@/hooks/useBookSearch';
+import { useBookSearch, warmBookSearch } from '@/hooks/useBookSearch';
 import { toast } from 'sonner';
 import type { ReadingBook } from '@/components/virtual/LibraryScene';
 
@@ -27,6 +27,9 @@ export const ReadingBookPicker = ({ isOpen, onClose, onSaved }: Props) => {
   const [current, setCurrent] = useState<ReadingBook | null>(null);
 
   // 기본 옵션: 내가 소유한 책 + 대여 중인 책 (검색 전에 바로 고를 수 있게) + 현재 선택 표시
+  // 검색창이 뜨자마자 알라딘 함수를 깨워둔다. 제목을 치는 동안 콜드 스타트가 끝난다.
+  useEffect(() => { warmBookSearch(); }, []);
+
   useEffect(() => {
     if (!isOpen || !user) return;
     let cancelled = false;

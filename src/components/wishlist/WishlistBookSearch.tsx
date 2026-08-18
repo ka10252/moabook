@@ -4,6 +4,7 @@ import { Search, Loader2, Book, X, PenLine } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { BookSearchResult, useBookSearch } from '@/hooks/useBookSearch';
+import { warmBookSearch } from '@/hooks/useBookSearch';
 import { cn } from '@/lib/utils';
 
 interface WishlistBookSearchProps {
@@ -17,6 +18,9 @@ export const WishlistBookSearch = ({ onBookSelect, onManualEntry }: WishlistBook
   const { results, isSearching, searchBooks, clearResults } = useBookSearch();
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
+
+  // 검색창이 뜨자마자 알라딘 함수를 깨워둔다. 제목을 치는 동안 콜드 스타트가 끝난다.
+  useEffect(() => { warmBookSearch(); }, []);
 
   useEffect(() => {
     if (debounceRef.current) {

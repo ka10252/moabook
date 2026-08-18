@@ -3,6 +3,7 @@ import { ChevronDown, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Community, useCommunities } from '@/hooks/useCommunities';
 import { OptionButton } from './OptionButton';
+import { CommunityMultiSelect } from './CommunityMultiSelect';
 
 interface CommunitySelectorProps {
   isPublic: boolean;
@@ -25,13 +26,6 @@ export const CommunitySelector = ({
   // 전체공개일 때 '숨기기'는 **접어 둔다.** 대부분은 손댈 일이 없고,
   // 펼쳐 두면 등록 화면에 결정거리가 하나 더 생긴다.
   const [showHide, setShowHide] = useState(false);
-
-  const toggle = (id: string) =>
-    onCommunityIdsChange(
-      selectedCommunityIds.includes(id)
-        ? selectedCommunityIds.filter((x) => x !== id)
-        : [...selectedCommunityIds, id],
-    );
 
   const setPublic = (next: boolean) => {
     onPublicChange(next);
@@ -93,17 +87,12 @@ export const CommunitySelector = ({
                   <p className="text-[11px] text-faint leading-relaxed">
                     고른 커뮤니티의 책장에는 이 책이 올라가지 않아요. 그 밖에는 그대로 보여요.
                   </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {myCommunities.map((c: Community) => (
-                      <OptionButton
-                        key={c.id}
-                        label={c.name}
-                        active={selectedCommunityIds.includes(c.id)}
-                        onClick={() => toggle(c.id)}
-                        multi
-                      />
-                    ))}
-                  </div>
+                  <CommunityMultiSelect
+                    communities={myCommunities}
+                    selectedIds={selectedCommunityIds}
+                    onChange={onCommunityIdsChange}
+                    placeholder="숨길 커뮤니티 선택"
+                  />
                 </div>
               </motion.div>
             )}
@@ -112,17 +101,12 @@ export const CommunitySelector = ({
       ) : (
         /* 커뮤니티 전용 — 올릴 곳을 고른다. 여러 곳 가능 */
         <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-2">
-            {myCommunities.map((c: Community) => (
-              <OptionButton
-                key={c.id}
-                label={c.name}
-                active={selectedCommunityIds.includes(c.id)}
-                onClick={() => toggle(c.id)}
-                multi
-              />
-            ))}
-          </div>
+          <CommunityMultiSelect
+            communities={myCommunities}
+            selectedIds={selectedCommunityIds}
+            onChange={onCommunityIdsChange}
+            placeholder="올릴 커뮤니티 선택"
+          />
           {selectedCommunityIds.length === 0 && (
             <p className="text-[11px] text-faint">올릴 커뮤니티를 하나 이상 골라주세요.</p>
           )}

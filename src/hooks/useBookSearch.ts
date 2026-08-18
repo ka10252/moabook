@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { decodeEntities } from '@/lib/decodeEntities';
 
 export interface BookSearchResult {
   key: string;
@@ -18,6 +19,33 @@ interface OpenLibraryDoc {
   cover_i?: number;
   first_publish_year?: number;
   isbn?: string[];
+}
+
+/**
+ * 어느 소스에서 왔든 화면·DB에 들어가기 전에 한 번 거친다.
+ * 소스마다 이스케이프 습관이 달라서(알라딘=제목까지, 구글=소개 위주) 개별로 대응하면 또 샌다.
+ */
+const sanitize = (r: BookSearchResult): BookSearchResult => ({
+  ...r,
+  title: decodeEntities(r.title ?? ''),
+  author: decodeEntities(r.author ?? ''),
+  description: r.description ? decodeEntities(r.description) : null,
+});
+
+/**
+ * 알라딘 Edge Function 예열.
+ *
+ * Supabase Edge Function은 한동안 안 부르면 잠든다. 그러면 **그 세션의 첫 검색만**
+ * 콜드 스타트를 그대로 뒤집어써서 유독 느리다 — "갑자기 느려졌다"의 정체다.
+ * 검색창이 화면에 뜨는 순간(=글자를 치기 전) 빈 질의를 한 번 보내 깨워두면,
+ * 그 대기 시간이 사용자가 제목을 입력하는 시간과 겹쳐 사라진다.
+ * 질의가 2글자 미만이면 함수는 알라딘을 부르지 않고 즉시 빈 배열을 준다 — 한도를 쓰지 않는다.
+ */
+let warmed = false;
+export function warmBookSearch() {
+  if (warmed) return;
+  warmed = true;
+  void supabase.functions.invoke('aladin-search', { body: { query: '' } }).catch(() => {});
 }
 
 export const useBookSearch = () => {
@@ -43,8 +71,8 @@ export const useBookSearch = () => {
     
     return data.docs.map((doc: OpenLibraryDoc) => ({
       key: doc.key,
-      title: doc.title,
-      author: doc.author_name?.[0] || 'Unknown Author',
+      title: decodeEntities(doc.title),
+      author: decodeEntities(doc.author_name?.[0] || '') || 'Unknown Author',
       cover: doc.cover_i 
         ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`
         : null,
@@ -62,7 +90,7 @@ export const useBookSearch = () => {
     });
     if (error) throw error;
     // Edge Function은 항상 { results: [...] } 를 준다 (실패해도 빈 배열).
-    return (data?.results ?? []) as BookSearchResult[];
+    return ((data?.results ?? []) as BookSearchResult[]).map(sanitize);
   };
 
   // Search using Google Books API (has Korean book support)
@@ -87,10 +115,10 @@ export const useBookSearch = () => {
         : null;
       return ({
       key: item.id,
-      title: item.volumeInfo.title,
-      author: item.volumeInfo.authors?.[0] || 'Unknown Author',
+      title: decodeEntities(item.volumeInfo.title),
+      author: decodeEntities(item.volumeInfo.authors?.[0] || '') || 'Unknown Author',
       cover,
-      description: item.volumeInfo.description || null,
+      description: item.volumeInfo.description ? decodeEntities(item.volumeInfo.description) : null,
       firstPublishYear: item.volumeInfo.publishedDate ? parseInt(item.volumeInfo.publishedDate.split('-')[0]) : undefined,
       isbn: item.volumeInfo.industryIdentifiers?.find((id: { type: string }) => id.type === 'ISBN_13')?.identifier,
     });
@@ -164,7 +192,8 @@ export const useBookSearch = () => {
         const response = await fetch(`https://www.googleapis.com/books/v1/volumes/${key}${keyParam}`);
         if (!response.ok) return null;
         const data = await response.json();
-        return data.volumeInfo?.description || null;
+        const desc = data.volumeInfo?.description;
+        return desc ? decodeEntities(desc) : null;
       } catch {
         return null;
       }
@@ -178,9 +207,9 @@ export const useBookSearch = () => {
       const data = await response.json();
       
       if (typeof data.description === 'string') {
-        return data.description;
+        return decodeEntities(data.description);
       } else if (data.description?.value) {
-        return data.description.value;
+        return decodeEntities(data.description.value);
       }
       
       return null;
