@@ -380,8 +380,8 @@ const Index = () => {
       <main
         className="flex-1"
         style={{
-          paddingTop: 'calc(3.5rem + env(safe-area-inset-top, 0px))',
-          paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))',
+          paddingTop: 'calc(3.5rem + var(--safe-top))',
+          paddingBottom: 'calc(5rem + var(--safe-bottom))',
         }}
       >
         <AnimatePresence mode="wait">

@@ -108,7 +108,7 @@ const PrivacyPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="header-safe sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-3 px-4 h-14 max-w-2xl mx-auto">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ChevronLeft className="w-5 h-5" />

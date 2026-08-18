@@ -211,7 +211,7 @@ export const WishlistPage = () => {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <header className="px-5 pt-5 pb-3 bg-background/85 backdrop-blur-md sticky top-0 z-30 space-y-3.5">
+      <header className="px-5 pt-5 pb-3 bg-background/85 backdrop-blur-md sticky sticky-under-header z-30 space-y-3.5">
         <div className="flex items-end justify-between gap-2">
           <div className="shrink-0">
             <p className="eyebrow">WISHLIST</p>

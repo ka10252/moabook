@@ -167,7 +167,7 @@ export const AcceptRentalModal = ({
               </div>
 
               {/* Footer */}
-              <div className="p-4 border-t border-border pb-[calc(1rem+env(safe-area-inset-bottom))]">
+              <div className="p-4 border-t border-border pb-[calc(1rem+var(--safe-bottom))]">
                 <Button
                   onClick={() => setShowConfirm(true)}
                   className="w-full h-12 rounded-xl font-semibold"

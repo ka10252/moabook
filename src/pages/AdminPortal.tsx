@@ -42,7 +42,7 @@ const AdminPortal = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-card border-b border-border sticky top-0 z-40">
+      <header className="bg-card border-b border-border header-safe sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Shield className="w-6 h-6 text-primary" />

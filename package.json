@@ -21,7 +21,8 @@
     "native:sync": "vite build && cap sync",
     "native:ios": "vite build && cap sync ios && cap open ios",
     "native:android": "vite build && cap sync android && cap open android",
-    "test:deeplink": "node scripts/deeplink.test.mjs"
+    "test:deeplink": "node scripts/deeplink.test.mjs",
+    "audit:safearea": "node scripts/audit-safearea.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",

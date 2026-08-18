@@ -619,8 +619,7 @@ export const Bookshelf = ({
     <div className="flex flex-col min-h-full relative">
       {/* Header — 페이지 스크롤 시 상단(앱 헤더 아래)에 고정 */}
       <header
-        className="flex flex-col gap-1 px-5 pt-4 pb-3 bg-background/85 backdrop-blur-md sticky z-30 border-b border-border/40"
-        style={{ top: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}
+        className="flex flex-col gap-1 px-5 pt-4 pb-3 bg-background/85 backdrop-blur-md sticky sticky-under-header z-30 border-b border-border/40"
       >
         {/* Title block — 제목 자체가 '책장 범위' 선택기다.
             예전엔 제목과 드롭다운이 같은 값을 두 번 보여줬다(중복). 제목을 컨트롤로 만들면
