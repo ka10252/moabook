@@ -20,7 +20,8 @@
     "badges:sql": "node scripts/badges-sql.mjs",
     "native:sync": "vite build && cap sync",
     "native:ios": "vite build && cap sync ios && cap open ios",
-    "native:android": "vite build && cap sync android && cap open android"
+    "native:android": "vite build && cap sync android && cap open android",
+    "test:deeplink": "node scripts/deeplink.test.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",

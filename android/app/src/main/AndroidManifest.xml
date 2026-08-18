@@ -22,6 +22,32 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- 커스텀 스킴 moabook:// — 도메인 검증 없이 바로 동작한다.
+                 App Links(아래)가 준비되기 전까지의 확실한 경로이고,
+                 준비된 뒤에도 남겨둔다(메일 클라이언트가 https를 가로채는 경우가 있다). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="moabook" />
+            </intent-filter>
+
+            <!-- App Links — 메일의 https 링크를 브라우저 대신 앱이 받는다.
+                 아직 켜지 않았다. 켜려면 두 가지가 먼저 필요하다:
+                   1) 실제 도메인 확정 (예: moabook.app)
+                   2) 그 도메인에 /.well-known/assetlinks.json 올리기
+                      (앱 서명 인증서 SHA-256 지문이 들어간다 → 서명 키가 있어야 만든다)
+                 준비되면 아래 주석을 풀고 android:host를 실제 도메인으로 바꾼다.
+                 그때까지는 위의 moabook:// 스킴으로 동작한다.
+
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="moabook.app" android:pathPrefix="/auth" />
+            </intent-filter>
+            -->
+
         </activity>
 
         <provider

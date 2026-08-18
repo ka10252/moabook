@@ -1,8 +1,8 @@
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { AuthProvider } from "@/hooks/useAuth";
 import { GuestGateProvider } from "@/hooks/useGuestGate";
@@ -10,6 +10,7 @@ import { ThemeProvider } from "@/hooks/useTheme";
 import { AuthPromptModal } from "@/components/auth/AuthPromptModal";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { lazyRetry } from "@/lib/lazyRetry";
+import { initDeepLinks } from "@/lib/deepLink";
 import { AuthPage } from "@/pages/AuthPage";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -36,6 +37,18 @@ const RouteFallback = () => (
 // 라우트가 바뀌면 에러바운더리를 리셋(뒤로가기로 에러 화면에서 빠져나올 수 있게)
 const AppRoutes = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // 앱이 인증 링크로 열렸을 때 세션을 만들고 그 화면으로 보낸다(네이티브 전용).
+  // 웹에서는 브라우저가 알아서 하므로 아무 일도 하지 않는다.
+  useEffect(() => {
+    let cleanup: (() => void) | undefined;
+    void initDeepLinks((path) => navigate(path, { replace: true })).then((fn) => {
+      cleanup = fn;
+    });
+    return () => cleanup?.();
+  }, [navigate]);
+
   return (
     <RouteErrorBoundary resetKey={location.pathname}>
       <Suspense fallback={<RouteFallback />}>

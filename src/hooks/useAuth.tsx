@@ -1,4 +1,5 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { authRedirectTo } from '@/lib/authRedirect';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -76,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth`,
+        emailRedirectTo: authRedirectTo('/auth'),
         // 국가는 가입 직후 profiles를 UPDATE 하는 방식으로는 저장할 수 없다.
         // 이메일 인증이 켜져 있으면 이 시점엔 세션이 없어서 auth.uid()가 null이고,
         // RLS가 그 UPDATE를 조용히 거부한다 → 지역 제한을 걸어두고 국가는 하나도 안 남는다.
@@ -107,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    */
   const requestPasswordReset = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/auth/reset`,
+      redirectTo: authRedirectTo('/auth/reset'),
     });
     return { error: error as Error | null };
   };
@@ -123,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email,
-      options: { emailRedirectTo: `${window.location.origin}/auth` },
+      options: { emailRedirectTo: authRedirectTo('/auth') },
     });
     return { error: error as Error | null };
   };

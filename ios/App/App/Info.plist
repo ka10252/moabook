@@ -64,6 +64,21 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- 커스텀 스킴 moabook:// — 도메인 검증 없이 바로 동작한다.
+	     Universal Links(https)는 Apple Team ID와 도메인의
+	     /.well-known/apple-app-site-association 파일이 있어야 켤 수 있다.
+	     docs/NATIVE_APP.md 참고. 그때까지 인증 링크 복귀는 이 스킴이 담당한다. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>app.moabook</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>moabook</string>
+			</array>
+		</dict>
+	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 </dict>
