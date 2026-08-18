@@ -127,16 +127,16 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
         <>
           <p className="eyebrow">보는 방식</p>
           <h2 className="font-display text-[22px] leading-tight text-foreground">
-            세 가지로 볼 수 있어요
+            편한 뷰로 책을 탐색해요
           </h2>
 
-          <ViewModesDemo />
-
-          <ul className="w-full space-y-2 text-left">
-            <ViewRow Icon={Library} name="책등" desc="서가에 꽂힌 그대로 — 한눈에 많이" />
-            <ViewRow Icon={LayoutGrid} name="책표지" desc="표지를 크게 보고 고를 때" />
-            <ViewRow Icon={MapIcon} name="지도" desc="가까운 역에 어떤 책이 있는지" />
-          </ul>
+          {/* 이름 → 그 뷰의 실제 화면 순서로 번갈아 놓는다.
+              설명 문장은 없다 — 사진이 곧 설명이라, 글로 또 적으면 읽을 게 두 배가 된다. */}
+          <div className="w-full space-y-3">
+            <ViewShot Icon={Library} name="책등" src="/onboarding/view-spine.webp" alt="서가에 꽂힌 책등 한 줄" />
+            <ViewShot Icon={LayoutGrid} name="책표지" src="/onboarding/view-cover.webp" alt="책 표지 세 권이 한 줄로" />
+            <ViewShot Icon={MapIcon} name="지도" src="/onboarding/view-map.webp" alt="역마다 책이 몇 권 있는지 표시된 지도" />
+          </div>
         </>
       ),
     },
@@ -151,16 +151,17 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
             <span className="w-9 h-9 rounded-full bg-primary/12 flex items-center justify-center shrink-0">
               <SlidersHorizontal className="w-[18px] h-[18px] text-primary" />
             </span>
-            <h2 className="font-display text-[22px] leading-tight text-foreground">
-              멀거나 관심 없는 책은 걸러요
+            {/* 한 줄에 들어가야 한다 — 두 줄로 넘어가면 아래 그림이 밀려 카드가 길어진다 */}
+            <h2 className="font-display text-[20px] leading-tight text-foreground whitespace-nowrap">
+              원하는 책을 빠르게 찾아보세요
             </h2>
           </div>
 
           <FilterDemo />
 
           <ul className="w-full space-y-2 text-left">
-            <ViewRow Icon={MapPin} name="지역·역" desc="집이나 학교에서 가까운 책만" />
-            <ViewRow Icon={Tag} name="장르" desc="소설·에세이·경제경영… 옆에 권수까지" />
+            <ViewRow Icon={Tag} name="장르" desc="소설, 에세이, 경제경영 등 원하는 장르만 보기" />
+            <ViewRow Icon={MapPin} name="지역, 역" desc="집에서 가까운 책만 보기" />
           </ul>
         </>
       ),
@@ -332,7 +333,11 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.2 }}
-            className={`${anchored ? 'absolute' : 'relative pointer-events-auto'} w-[min(340px,calc(100vw-32px))] max-h-[calc(100vh-24px)] overflow-y-auto ${coralCard ? 'bg-primary' : 'bg-card'} rounded-2xl shadow-hip-lg p-5`}
+            /* 카드 전체가 아니라 **내용만** 스크롤한다.
+               예전엔 카드에 overflow-y-auto 를 걸어, 내용이 긴 단계(실제 화면 사진 3장이 들어간
+               '보는 방식')에서는 작은 화면(iPhone SE 667px)에서 '다음' 버튼까지 아래로 밀려
+               스크롤해야 찾을 수 있었다. 진행 버튼은 언제나 보여야 한다. */
+            className={`${anchored ? 'absolute' : 'relative pointer-events-auto'} w-[min(340px,calc(100vw-32px))] max-h-[calc(100vh-24px)] flex flex-col ${coralCard ? 'bg-primary' : 'bg-card'} rounded-2xl shadow-hip-lg p-5`}
             style={
               anchored && rect
                 ? {
@@ -347,13 +352,13 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
             }
           >
             <div
-              className={`flex flex-col gap-3 ${anchored ? 'items-start text-left' : 'items-center text-center'}`}
+              className={`flex-1 min-h-0 overflow-y-auto overscroll-contain flex flex-col gap-3 ${anchored ? 'items-start text-left' : 'items-center text-center'}`}
             >
               {current.render()}
             </div>
 
-            {/* 진행 표시 + 액션 */}
-            <div className="flex items-center justify-between gap-3 mt-5">
+            {/* 진행 표시 + 액션 — 항상 보인다(shrink-0) */}
+            <div className="shrink-0 flex items-center justify-between gap-3 mt-5">
               <div className="flex gap-1.5">
                 {steps.map((_, i) => (
                   <div
@@ -738,63 +743,47 @@ const DemoSpine = ({
   );
 };
 
-/** 아이콘 + 이름 + 한 줄 설명. 뷰·필터 설명에서 쓴다. */
+/**
+ * 아이콘 + 이름 + 설명 한 줄.
+ *
+ * 이름과 설명을 `이름 · 설명` 으로 한 줄에 이어 붙였더니 설명이 길어져 줄이 넘어가고
+ * 마지막 낱말 하나만 다음 줄에 떨어졌다. 이름을 위, 설명을 아래로 나눠 어떤 길이든 버티게 한다.
+ */
 const ViewRow = ({ Icon, name, desc }: { Icon: typeof Library; name: string; desc: string }) => (
-  <li className="flex items-center gap-2.5">
-    <span className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
+  <li className="flex items-start gap-2.5">
+    <span className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0 mt-px">
       <Icon className="w-[15px] h-[15px] text-foreground/70" />
     </span>
     <span className="min-w-0">
-      <span className="text-[15px] font-bold text-foreground">{name}</span>
-      <span className="text-[13px] text-muted-foreground"> · {desc}</span>
+      <span className="block text-[15px] font-bold text-foreground leading-tight">{name}</span>
+      <span className="block text-[13px] text-muted-foreground leading-snug mt-0.5">{desc}</span>
     </span>
   </li>
 );
 
 /**
- * 세 뷰가 각각 어떻게 보이는지 나란히 — 아이콘 세 개만으로는 상상이 안 된다.
- * 실제 화면을 축소한 게 아니라 **형태만 흉내낸 그림**이다(진짜 데이터를 끌어오면 온보딩이 느려진다).
+ * 뷰 이름 + 그 뷰의 실제 화면 한 조각.
+ *
+ * 도형으로 흉내낸 그림을 먼저 만들어봤는데, 표지 뷰와 지도 뷰가 실제로 어떻게 보이는지
+ * 전혀 전달되지 않았다. 그래서 **실제 화면을 찍어 넣는다** (public/onboarding/*.webp).
+ * 가로로 길게 잘라 서가 한 줄·표지 세 권·역별 권수가 한눈에 들어오게 했다.
+ *
+ * 사진을 다시 뽑을 일이 생기면(디자인이 바뀌면) 그때도 실제 화면에서 잘라 넣는다 —
+ * 그림으로 대신하면 앱과 어긋난 채로 남는다.
  */
-const ViewModesDemo = () => (
-  <div className="w-full grid grid-cols-3 gap-2">
-    {/* 책등 */}
-    <MiniFrame active>
-      <div className="flex items-end gap-[2px] h-full px-1 pb-[3px]">
-        {[70, 92, 80, 100, 66].map((h, i) => (
-          <span key={i} className={`flex-1 rounded-t-[1px] ${['bg-book-1','bg-book-4','bg-book-2','bg-book-6','bg-book-3'][i]}`} style={{ height: `${h}%` }} />
-        ))}
-      </div>
-    </MiniFrame>
-    {/* 책표지 */}
-    <MiniFrame>
-      <div className="grid grid-cols-3 gap-[3px] h-full p-1.5">
-        {['bg-book-2','bg-book-5','bg-book-1','bg-book-6','bg-book-3','bg-book-4'].map((c, i) => (
-          <span key={i} className={`rounded-[1px] ${c}`} />
-        ))}
-      </div>
-    </MiniFrame>
-    {/* 지도 */}
-    <MiniFrame>
-      <div className="relative h-full">
-        <span className="absolute left-[18%] top-[30%] w-1.5 h-1.5 rounded-full bg-primary" />
-        <span className="absolute left-[55%] top-[22%] w-1 h-1 rounded-full bg-primary/60" />
-        <span className="absolute left-[38%] top-[62%] w-2 h-2 rounded-full bg-primary" />
-        <span className="absolute left-[72%] top-[58%] w-1 h-1 rounded-full bg-primary/60" />
-        <span className="absolute left-[20%] top-[33%] h-px w-[22%] bg-foreground/20 origin-left rotate-[8deg]" />
-        <span className="absolute left-[42%] top-[36%] h-px w-[26%] bg-foreground/20 origin-left rotate-[32deg]" />
-      </div>
-    </MiniFrame>
-  </div>
-);
-
-/** 뷰 미리보기 한 칸 — 지금 보고 있는 뷰(책등)만 테두리를 강조한다 */
-const MiniFrame = ({ children, active }: { children: ReactNode; active?: boolean }) => (
-  <div
-    className={`h-[62px] rounded-lg overflow-hidden border ${
-      active ? 'border-primary bg-[#F6EEDE] dark:bg-[#332a1b]' : 'border-border bg-muted/40'
-    }`}
-  >
-    {children}
+const ViewShot = ({ Icon, name, src, alt }: { Icon: typeof Library; name: string; src: string; alt: string }) => (
+  <div className="w-full">
+    <div className="flex items-center gap-1.5 mb-1">
+      <Icon className="w-[15px] h-[15px] text-foreground/70 shrink-0" />
+      <span className="text-[15px] font-bold text-foreground">{name}</span>
+    </div>
+    <img
+      src={src}
+      alt={alt}
+      loading="eager"
+      className="w-full rounded-lg border border-border block"
+      style={{ aspectRatio: '640 / 324', objectFit: 'cover' }}
+    />
   </div>
 );
 
