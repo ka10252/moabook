@@ -89,6 +89,18 @@ async function run() {
   await go('약관', '/terms', 1400);
   await go('개인정보', '/privacy', 1400);
 
+  // ⚠️ 화면 '진입'만 도는 감사는 오버레이를 못 본다. 실제로 X·저장 버튼이 가려진 곳은
+  //    가상공간 안의 캐릭터 에디터였다 — 눌러 들어가야 나온다. 열어서 확인한다.
+  const openAndCheck = async (name, opener, wait = 2500) => {
+    const el = page.locator(opener).first();
+    if ((await el.count()) === 0) { console.log(`  · 건너뜀 — ${name} (진입점 없음)`); return; }
+    await el.click({ force: true }).catch(() => {});
+    await page.waitForTimeout(wait);
+    await check(name);
+    await page.keyboard.press('Escape').catch(() => {});
+    await page.waitForTimeout(600);
+  };
+
   if (EMAIL && PW) {
     await page.goto(BASE + '/auth', { waitUntil: 'networkidle' });
     await page.locator('input[type="email"]').first().fill(EMAIL);
@@ -98,6 +110,15 @@ async function run() {
     await go('서가(로그인)', '/?tab=shelf');
     await go('채팅', '/?chat=1', 3000);
     await go('프로필(로그인)', '/?tab=profile');
+
+    // 가상공간 + 그 안의 캐릭터 에디터 (X · 저장 버튼)
+    await go('가상공간', '/space', 6000);
+    await openAndCheck('캐릭터 에디터', 'button:has-text("캐릭터"), [aria-label*="캐릭터"]', 3000);
+
+    // 커뮤니티 게시판 (뒤로가기 버튼)
+    await go('커뮤니티(로그인)', '/?tab=community', 2500);
+    await openAndCheck('커뮤니티 상세', 'text=/^멤버 \\d+명$/', 2500);
+    await openAndCheck('게시판', 'button:has-text("게시판")', 3000);
   } else {
     console.log('\nℹ️  MOA_EMAIL / MOA_PW 가 없어 비로그인 화면만 확인했다.');
   }

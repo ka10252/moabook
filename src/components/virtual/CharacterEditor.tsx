@@ -223,7 +223,7 @@ export function CharacterEditor({ isOpen, onClose, onSaved }: CharacterEditorPro
   return (
     <div className="fixed inset-0 z-[70] bg-black/40 flex justify-center" onClick={onClose}>
       <div className="w-full max-w-[520px] h-full bg-background flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <header className="flex items-center justify-between px-4 h-14 border-b border-border shrink-0">
+        <header className="header-safe flex items-center justify-between px-4 h-14 box-content border-b border-border shrink-0">
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-muted transition-colors"><X className="w-5 h-5 text-muted-foreground" /></button>
           <h2 className="font-bold text-foreground">내 캐릭터</h2>
           <button onClick={save} disabled={saving} className="px-4 py-1.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50 min-w-[52px] flex justify-center">

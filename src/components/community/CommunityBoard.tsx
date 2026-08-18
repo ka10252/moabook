@@ -455,7 +455,7 @@ export const CommunityBoard = ({ isOpen, onClose, communityId, communityName }: 
   if (isMember === false) {
     return (
       <div className="h-full flex flex-col">
-        <header className="flex items-center gap-3 px-4 h-14 border-b border-border shrink-0 bg-background/80 backdrop-blur-md">
+        <header className="header-safe flex items-center gap-3 px-4 h-14 box-content border-b border-border shrink-0 bg-background/80 backdrop-blur-md">
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-muted transition-colors">
             <ArrowLeft className="w-5 h-5 text-muted-foreground" />
           </button>
@@ -474,7 +474,7 @@ export const CommunityBoard = ({ isOpen, onClose, communityId, communityName }: 
   return (
     <div className="h-full flex flex-col">
           {/* Header */}
-          <header className="flex items-center gap-3 px-4 h-14 border-b border-border shrink-0 bg-background/80 backdrop-blur-md">
+          <header className="header-safe flex items-center gap-3 px-4 h-14 box-content border-b border-border shrink-0 bg-background/80 backdrop-blur-md">
             <button onClick={onClose} className="p-2 rounded-xl hover:bg-muted transition-colors">
               <ArrowLeft className="w-5 h-5 text-muted-foreground" />
             </button>
