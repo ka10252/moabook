@@ -1,4 +1,5 @@
 import type { BookCondition } from '@/lib/bookCondition';
+import { saveBookCommunityVisibility } from '@/hooks/useBookCommunityVisibility';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, Loader2 } from 'lucide-react';
@@ -29,7 +30,8 @@ interface BookFormData {
   allowGive: boolean;
   price: string;
   isPublic: boolean;
-  communityId: string | null;
+  /** 전체공개면 **숨길** 커뮤니티, 커뮤니티 전용이면 **공개할** 커뮤니티 (마이그 20260820000001) */
+  communityIds: string[];
 }
 
 interface UploadBookFormProps {
@@ -62,7 +64,7 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
     allowGive: false,
     price: '',
     isPublic: true,
-    communityId: null,
+    communityIds: [],
   });
 
   // 대표 모드(호환용): 판매>대여>나눔 우선
@@ -149,7 +151,7 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
       return;
     }
 
-    if (!formData.isPublic && !formData.communityId) {
+    if (!formData.isPublic && formData.communityIds.length === 0) {
       toast.error('비공개 책은 커뮤니티를 선택해주세요');
       return;
     }
@@ -165,7 +167,7 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
           ? formData.coverUrl
           : matched?.cover ?? null;
 
-      const { error } = await supabase.from('books').insert({
+      const { data, error } = await supabase.from('books').insert({
         title: formData.title.trim(),
         author: formData.author.trim(),
         description: formData.description.trim() || null,
@@ -177,11 +179,24 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
         allow_give: formData.allowGive,
         price: formData.allowSell ? parseFloat(formData.price) : null,
         is_public: formData.isPublic,
-        community_id: formData.communityId,
+        // 대표 커뮤니티(책 카드의 이름 배지용). 실제 노출 판정은
+        // book_community_visibility 가 한다 — 여러 곳에 올릴 수 있어서다.
+        community_id: formData.isPublic ? null : (formData.communityIds[0] ?? null),
         owner_id: user.id,
-      } as never);
+      } as never).select('id').single();
 
       if (error) throw error;
+
+      // 어느 커뮤니티에 보일지 저장. 실패해도 책 등록 자체는 성공이므로 막지 않는다 —
+      // 다만 조용히 넘기면 "숨겼는데 보인다"가 되므로 알린다.
+      if (data?.id && formData.communityIds.length > 0) {
+        const { error: visError } = await saveBookCommunityVisibility(
+          (data as { id: string }).id,
+          formData.isPublic,
+          formData.communityIds,
+        );
+        if (visError) toast.error('공개 범위를 저장하지 못했어요. 책 정보에서 다시 설정해주세요.');
+      }
 
       // 퍼널 측정: '첫 책 등록' 단계. (타입엔 있었지만 실제 호출이 없어 미측정이던 이벤트)
       track('book_upload_completed', { mode: primaryMode(formData), has_photo: !!coverUrl });
@@ -205,7 +220,7 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
         allowGive: false,
         price: '',
         isPublic: true,
-        communityId: null,
+        communityIds: [],
       });
 
       // 첫 책 등록 + 아직 알림 미설정이면 → 알림 설정 유도 팝업(닫으면 서가로 이동).
@@ -394,9 +409,9 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
 
           <CommunitySelector
             isPublic={formData.isPublic}
-            selectedCommunityId={formData.communityId}
+            selectedCommunityIds={formData.communityIds}
             onPublicChange={(isPublic) => setFormData((prev) => ({ ...prev, isPublic }))}
-            onCommunityChange={(communityId) => setFormData((prev) => ({ ...prev, communityId }))}
+            onCommunityIdsChange={(communityIds) => setFormData((prev) => ({ ...prev, communityIds }))}
           />
           </motion.div>
         )}

@@ -3,6 +3,7 @@ import { track } from '@/lib/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EditorialShelf } from './EditorialShelf';
 import { useFavoriteAreas } from '@/hooks/useFavoriteAreas';
+import { useBookCommunityVisibility } from '@/hooks/useBookCommunityVisibility';
 import { CoverShelf } from './CoverShelf';
 import { BookSpine } from './BookSpine';
 import { BookDetailWithActions } from './BookDetailWithActions';
@@ -217,6 +218,11 @@ export const Bookshelf = ({
 
   const { myCommunities } = useCommunities();
   const { books: allBooks, loading, error: booksError, deleteBook, updateBook, refresh } = useBooks({});
+  // 커뮤니티 책장 판정에 쓴다. 커뮤니티를 보고 있을 때만 조회하면 되지만,
+  // 책 목록이 바뀔 때마다 다시 읽는 비용이 작아 그냥 전체를 들고 있는다.
+  const { isVisibleIn } = useBookCommunityVisibility(
+    activeFilter === 'everybody' || activeFilter === 'mine' ? [] : allBooks.map((b) => b.id),
+  );
 
   // 당겨서 새로고침은 이제 앱 전역(window 스크롤 기준) <PullToRefresh/>가 담당한다.
   // (예전의 컨테이너 scrollTop 기반 PtR은 문서 레벨 스크롤 구조에서 오작동했다.)
@@ -343,12 +349,18 @@ export const Bookshelf = ({
     if (activeFilter === 'mine') {
       books = books.filter(book => book.owner_id === user?.id);
     } else if (activeFilter !== 'everybody') {
-      // 커뮤니티 책장 = ① 그 커뮤니티에 지정된 책(커뮤니티 전용 포함) + ② 커뮤니티 멤버들의 공개책
-      //   커뮤니티 전용(공개범위 제한) 책은 그 커뮤니티에서만 보이고, 공개책은 멤버라면 자동 노출.
+      /**
+       * 커뮤니티 책장에 보이는 책 (마이그 `20260820000001`)
+       *   커뮤니티 전용 책 : `book_community_visibility` 에 이 커뮤니티가 **공개**로 들어 있을 때
+       *   전체공개 책      : 멤버의 책이면 기본 노출, 단 이 커뮤니티가 **숨김**으로 들어 있으면 제외
+       *
+       * 예전엔 `books.community_id` 하나만 봐서 (a) 여러 커뮤니티에 올릴 수 없고
+       * (b) 전체공개를 고르면 내가 속한 모든 커뮤니티에 강제로 올라갔다.
+       */
       books = books.filter(book => {
-        if (book.community_id === activeFilter) return true;
-        if (book.is_public && communityMemberIds.has(book.owner_id)) return true;
-        return false;
+        if (!book.is_public) return isVisibleIn(book.id, activeFilter, false);
+        if (!communityMemberIds.has(book.owner_id)) return false;
+        return isVisibleIn(book.id, activeFilter, true);
       });
     }
 
@@ -373,7 +385,7 @@ export const Bookshelf = ({
     }
 
     return sortShelfBooks(applyStatusFilter(books));
-  }, [allBooks, activeFilter, user?.id, communityMemberIds, selectedStations, selectedDistricts, searchQuery, sortShelfBooks, applyStatusFilter]);
+  }, [allBooks, activeFilter, user?.id, communityMemberIds, selectedStations, selectedDistricts, searchQuery, sortShelfBooks, applyStatusFilter, isVisibleIn]);
 
   // 검색 로그는 타이핑 중이 아니라 "멈춘 뒤"에 한 번만 남긴다.
   // 글자마다 찍으면 "책"을 치는 동안 ㅊ,채,책 3번이 남아 노이즈가 된다.

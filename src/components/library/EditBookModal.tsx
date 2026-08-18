@@ -1,4 +1,6 @@
 import type { BookCondition } from '@/lib/bookCondition';
+import { saveBookCommunityVisibility } from '@/hooks/useBookCommunityVisibility';
+import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, Save } from 'lucide-react';
@@ -22,6 +24,28 @@ interface EditBookModalProps {
 
 export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => {
   const { user } = useAuth();
+  // 저장돼 있는 커뮤니티 공개 설정을 불러온다.
+  // book.community_id 만 보면 여러 곳 설정이 한 곳으로 줄어든다.
+  useEffect(() => {
+    if (!book) return;
+    let alive = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from('book_community_visibility' as never)
+        .select('community_id, visible')
+        .eq('book_id', book.id);
+      if (!alive || error) return;
+      const rows = (data ?? []) as unknown as { community_id: string; visible: boolean }[];
+      // 전체공개면 '숨긴 곳'(visible=false), 커뮤니티 전용이면 '공개한 곳'(visible=true)
+      const want = book.is_public ? false : true;
+      setFormData((prev) => ({
+        ...prev,
+        communityIds: rows.filter((r) => r.visible === want).map((r) => r.community_id),
+      }));
+    })();
+    return () => { alive = false; };
+  }, [book?.id, book?.is_public]);
+
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -34,7 +58,7 @@ export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => 
     allowGive: false,
     price: '',
     isPublic: true,
-    communityId: null as string | null,
+    communityIds: [] as string[],
   });
 
   // 대표 모드(호환용): 판매 > 대여 > 나눔 우선순위
@@ -54,7 +78,9 @@ export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => 
         allowGive: book.allowGive,
         price: book.price?.toString() || '',
         isPublic: book.is_public,
-        communityId: book.community_id,
+        // 실제 값은 아래 effect 가 book_community_visibility 에서 읽어 채운다.
+        // community_id 는 대표 커뮤니티일 뿐이라 그대로 쓰면 여러 곳 설정을 잃는다.
+        communityIds: [],
       });
     }
   }, [book]);
@@ -78,7 +104,7 @@ export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => 
       return;
     }
 
-    if (!formData.isPublic && !formData.communityId) {
+    if (!formData.isPublic && formData.communityIds.length === 0) {
       toast.error('비공개 책은 커뮤니티를 선택해주세요');
       return;
     }
@@ -96,12 +122,21 @@ export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => 
       allowGive: formData.allowGive,
       price: formData.allowSell ? parseFloat(formData.price) : null,
       is_public: formData.isPublic,
-      community_id: formData.isPublic ? null : formData.communityId,
+      community_id: formData.isPublic ? null : (formData.communityIds[0] ?? null),
     });
+
+    // 어느 커뮤니티에 보일지도 함께 저장한다(마이그 20260820000001)
+    const { error: visError } = await saveBookCommunityVisibility(
+      book.id,
+      formData.isPublic,
+      formData.communityIds,
+    );
     setSaving(false);
 
     if (error) {
       toast.error('수정에 실패했어요', { description: error.message });
+    } else if (visError) {
+      toast.error('공개 범위를 저장하지 못했어요. 다시 시도해주세요.');
     } else {
       toast.success('책 정보를 수정했어요');
       onClose();
@@ -239,9 +274,9 @@ export const EditBookModal = ({ book, onClose, onSave }: EditBookModalProps) => 
                 {/* Visibility */}
                 <CommunitySelector
                   isPublic={formData.isPublic}
-                  selectedCommunityId={formData.communityId}
+                  selectedCommunityIds={formData.communityIds}
                   onPublicChange={(isPublic) => setFormData(prev => ({ ...prev, isPublic }))}
-                  onCommunityChange={(communityId) => setFormData(prev => ({ ...prev, communityId }))}
+                  onCommunityIdsChange={(communityIds) => setFormData(prev => ({ ...prev, communityIds }))}
                 />
               </div>
 

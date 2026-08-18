@@ -45,8 +45,8 @@ export const CommunityShelfPanel = ({ communityId, communityName, onBack, onBook
     (async () => {
       setLoading(true);
 
-      // 커뮤니티 책장 = ① 그 커뮤니티에 지정된 책(커뮤니티 전용)
-      //              + ② 커뮤니티 멤버들의 공개책
+      // 커뮤니티 책장 = ① 이 커뮤니티에 '공개'로 지정된 커뮤니티 전용 책
+      //              + ② 멤버들의 전체공개 책(이 커뮤니티에서 '숨김'이 아닌 것)
       // ②를 빠뜨리면 대부분의 커뮤니티가 빈 책장으로 보인다 — 사람들은 보통
       // 책을 '전체 공개'로 올리지 커뮤니티 전용으로 올리지 않기 때문이다.
       // 서가 탭의 커뮤니티 필터가 쓰는 규칙과 같아야 한다(Bookshelf의 filteredBooks).
@@ -63,8 +63,19 @@ export const CommunityShelfPanel = ({ communityId, communityName, onBack, onBook
         profile:profiles!books_owner_id_fkey(nickname, avatar_url), community:communities(name)
       `;
 
+      // 이 커뮤니티에 대한 공개/숨김 설정 (마이그 20260820000001)
+      const { data: visRows } = await supabase
+        .from('book_community_visibility' as never)
+        .select('book_id, visible')
+        .eq('community_id', communityId);
+      const vis = new Map<string, boolean>(
+        ((visRows ?? []) as unknown as { book_id: string; visible: boolean }[])
+          .map((r) => [r.book_id, r.visible]),
+      );
+
       const [assigned, memberPublic] = await Promise.all([
-        supabase.from('books').select(cols).eq('community_id', communityId),
+        // 커뮤니티 전용 책 — 이 커뮤니티가 '공개'로 지정된 것만
+        supabase.from('books').select(cols).eq('is_public', false),
         memberIds.length
           ? supabase.from('books').select(cols).eq('is_public', true).in('owner_id', memberIds)
           : Promise.resolve({ data: [], error: null }),
@@ -76,7 +87,13 @@ export const CommunityShelfPanel = ({ communityId, communityName, onBack, onBook
       // RLS는 관리자에게 숨긴 책도 내주므로, 안 거르면 관리자만 다르게 보인다.
       const byId = new Map<string, Book>();
       for (const row of [...(assigned.data ?? []), ...(memberPublic.data ?? [])]) {
-        if ((row as { hidden_at?: string | null }).hidden_at) continue;
+        const r = row as { hidden_at?: string | null; id: string; is_public: boolean };
+        // 관리자가 숨긴 책은 서비스 화면에서 제외한다(useBooks 와 같은 규칙)
+        if (r.hidden_at) continue;
+        // 커뮤니티 전용 = 이 커뮤니티가 '공개'로 들어 있을 때만
+        // 전체공개    = 기본 노출, 단 '숨김'으로 들어 있으면 제외
+        const flag = vis.get(r.id);
+        if (r.is_public ? flag === false : flag !== true) continue;
         const book = transformDbBook(row as never);
         byId.set(book.id, book);
       }
