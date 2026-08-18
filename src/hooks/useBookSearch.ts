@@ -10,6 +10,8 @@ export interface BookSearchResult {
   description: string | null;
   firstPublishYear?: number;
   isbn?: string;
+  /** 알라딘 분류 경로 — 장르를 정하는 근거. 다른 소스에는 없다. */
+  categoryName?: string;
 }
 
 interface OpenLibraryDoc {

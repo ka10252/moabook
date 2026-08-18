@@ -5,6 +5,7 @@ import { EditorialShelf } from './EditorialShelf';
 import { useFavoriteAreas } from '@/hooks/useFavoriteAreas';
 import { useBookCommunityVisibility } from '@/hooks/useBookCommunityVisibility';
 import { CoverShelf } from './CoverShelf';
+import { GENRES, UNKNOWN_GENRE, isGenre, type Genre } from '@/lib/genre';
 import { BookSpine } from './BookSpine';
 import { BookDetailWithActions } from './BookDetailWithActions';
 import { EditBookModal } from './library/EditBookModal';
@@ -145,6 +146,7 @@ export const Bookshelf = ({
   useBackClose(showTransactionDashboard, () => setShowTransactionDashboard(false));
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'title' | 'author'>('newest');
+  const [selectedGenres, setSelectedGenres] = useState<Genre[]>([]);
 
   // Dynamic booksPerShelf based on container width
   const bookcaseRef = useRef<HTMLDivElement>(null);
@@ -343,7 +345,11 @@ export const Bookshelf = ({
     });
   }, [sortBy]);
 
-  const filteredBooks = useMemo(() => {
+  /**
+   * 장르를 **뺀** 나머지 필터까지만 적용한 목록.
+   * 장르 칩 옆의 권수를 여기서 센다 — 이유는 genreCounts 주석 참고.
+   */
+  const booksBeforeGenre = useMemo(() => {
     let books = allBooks;
 
     if (activeFilter === 'mine') {
@@ -384,8 +390,33 @@ export const Bookshelf = ({
       books = books.filter(b => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q));
     }
 
-    return sortShelfBooks(applyStatusFilter(books));
-  }, [allBooks, activeFilter, user?.id, communityMemberIds, selectedStations, selectedDistricts, searchQuery, sortShelfBooks, applyStatusFilter, isVisibleIn]);
+    return applyStatusFilter(books);
+  }, [allBooks, activeFilter, user?.id, communityMemberIds, selectedStations, selectedDistricts, searchQuery, applyStatusFilter, isVisibleIn]);
+
+  const filteredBooks = useMemo(() => {
+    if (selectedGenres.length === 0) return sortShelfBooks(booksBeforeGenre);
+    // genre가 비었거나 우리가 모르는 값이면 '기타'로 본다 — 옛 책도 어딘가엔 속해야
+    // 필터를 켰을 때 조용히 사라지지 않는다.
+    return sortShelfBooks(
+      booksBeforeGenre.filter(b => selectedGenres.includes(isGenre(b.genre) ? b.genre : UNKNOWN_GENRE)),
+    );
+  }, [booksBeforeGenre, selectedGenres, sortShelfBooks]);
+
+  /**
+   * 장르별 권수.
+   *
+   * 세는 대상은 **장르만 빼고 나머지 필터를 다 적용한 목록**이다.
+   * 전체 서가를 세면 "소설 12"를 눌렀는데 3권만 나오고, 지금 보이는 목록만 세면
+   * 이미 고른 장르 말고는 전부 0이 되어 다른 장르로 옮겨갈 수가 없다.
+   */
+  const genreCounts = useMemo(() => {
+    const counts = new Map<Genre, number>();
+    for (const b of booksBeforeGenre) {
+      const g = isGenre(b.genre) ? b.genre : UNKNOWN_GENRE;
+      counts.set(g, (counts.get(g) ?? 0) + 1);
+    }
+    return counts;
+  }, [booksBeforeGenre]);
 
   // 검색 로그는 타이핑 중이 아니라 "멈춘 뒤"에 한 번만 남긴다.
   // 글자마다 찍으면 "책"을 치는 동안 ㅊ,채,책 3번이 남아 노이즈가 된다.
@@ -432,14 +463,18 @@ export const Bookshelf = ({
     const books = filteredBooks.filter(
       b => !allOwnedIds.has(b.id) && !rentedInfo.has(b.id)
     ) as ShelfBook[];
-    // 대여중은 항상 맨 뒤 → 그 다음 좋아요한 책이 앞으로 → 나머지는 기존 정렬(최신순) 유지
+    // 대여중은 항상 맨 뒤. 좋아요한 책 끌어올리기는 **기본 정렬일 때만** 한다.
+    // 제목순·저자순을 고른 사람에게까지 좋아요를 앞세우면 가나다 순서가 깨져서
+    // "정렬을 눌러도 안 바뀐다"로 보인다 — 고른 정렬이 사용자의 의도다.
+    const likedFirst = sortBy === 'newest';
     return [...books].sort((a, b) => {
       const aOut = a.status === 'rented' ? 1 : 0;
       const bOut = b.status === 'rented' ? 1 : 0;
       if (aOut !== bOut) return aOut - bOut;
+      if (!likedFirst) return 0; // sort는 안정적이라 filteredBooks의 정렬이 그대로 남는다
       return (isLiked(a.id) ? 0 : 1) - (isLiked(b.id) ? 0 : 1);
     });
-  }, [filteredBooks, allBooks, getRentedBooksInfo, user?.id, activeFilter, isLiked]);
+  }, [filteredBooks, allBooks, getRentedBooksInfo, user?.id, activeFilter, isLiked, sortBy]);
 
   // Deduplicate community books by title+author — keep only the first occurrence per pair
   const { dedupedCommunityBooks, communityDuplicateCounts } = useMemo(() => {
@@ -625,7 +660,8 @@ export const Bookshelf = ({
   const activeFilterCount =
     (sortBy !== 'newest' ? 1 : 0) +
     (selectedDistricts.length > 0 ? 1 : 0) +
-    (selectedStations.length > 0 ? 1 : 0);
+    (selectedStations.length > 0 ? 1 : 0) +
+    (selectedGenres.length > 0 ? 1 : 0);
 
   return (
     <div className="flex flex-col min-h-full relative">
@@ -959,9 +995,9 @@ export const Bookshelf = ({
                           ? <>‘{searchQuery.trim()}’ 검색 결과가 없어요. 다른 검색어나 필터를 바꿔보세요.</>
                           : '필터를 바꾸거나 초기화해보세요.'}
                       </p>
-                      {(statusFilter !== 'all' || selectedDistricts.length > 0 || selectedStations.length > 0) && (
+                      {(statusFilter !== 'all' || selectedDistricts.length > 0 || selectedStations.length > 0 || selectedGenres.length > 0) && (
                         <button
-                          onClick={() => { setStatusFilter('all'); setSelectedDistricts([]); }}
+                          onClick={() => { setStatusFilter('all'); setSelectedDistricts([]); setSelectedStations([]); setSelectedGenres([]); }}
                           className="mt-3 text-xs font-semibold text-primary underline underline-offset-2"
                         >
                           필터 초기화
@@ -1012,6 +1048,41 @@ export const Bookshelf = ({
                 ))}
               </div>
             </div>
+
+            {/* 장르 — 책이 한 권이라도 있는 장르만 띄운다.
+                빈 칸까지 늘어놓으면 고를 게 없는 버튼이 화면을 먹는다. */}
+            {GENRES.some(g => (genreCounts.get(g) ?? 0) > 0) && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">장르</p>
+                  {selectedGenres.length > 0 && (
+                    <button
+                      onClick={() => setSelectedGenres([])}
+                      className="text-xs text-muted-foreground underline underline-offset-2"
+                    >
+                      전체
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {GENRES.filter(g => (genreCounts.get(g) ?? 0) > 0).map(g => {
+                    const on = selectedGenres.includes(g);
+                    return (
+                      <button
+                        key={g}
+                        onClick={() => setSelectedGenres(prev => on ? prev.filter(x => x !== g) : [...prev, g])}
+                        className={`pill ${on ? 'pill-active' : ''} flex items-center gap-1.5`}
+                      >
+                        {g}
+                        <span className={`text-[11px] tabular-nums ${on ? 'opacity-70' : 'text-muted-foreground'}`}>
+                          {genreCounts.get(g)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* 책 상태는 헤더 칩으로 상시 노출한다 — 시트에 두면 같은 필터가 두 곳에 생긴다 */}
 
@@ -1237,7 +1308,7 @@ export const Bookshelf = ({
             {/* Reset */}
             {activeFilterCount > 0 && (
               <button
-                onClick={() => { setStatusFilter('all'); setSortBy('newest'); setSelectedDistricts([]); setSelectedStations([]); }}
+                onClick={() => { setStatusFilter('all'); setSortBy('newest'); setSelectedDistricts([]); setSelectedStations([]); setSelectedGenres([]); }}
                 className="text-xs text-muted-foreground underline underline-offset-2"
               >
                 필터 초기화

@@ -23,6 +23,8 @@ interface AladinItem {
   description: string;
   isbn13: string;
   pubDate: string;
+  /** `국내도서>소설/시/희곡>세계의 소설` 형태의 분류 경로. 앱이 장르로 접어 쓴다. */
+  categoryName?: string;
 }
 
 serve(async (req) => {
@@ -92,6 +94,8 @@ serve(async (req) => {
       description: it.description || null,
       firstPublishYear: it.pubDate ? parseInt(it.pubDate.slice(0, 4)) : undefined,
       isbn: it.isbn13 || undefined,
+      // 장르 판단의 근거. 알라딘 분류가 가장 정확해서 제목 짐작보다 먼저 쓴다.
+      categoryName: it.categoryName || undefined,
     }));
 
     return json({ results });

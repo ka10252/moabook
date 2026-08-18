@@ -8,10 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { BookTitleSearch } from './BookTitleSearch';
 import { ConditionSelector } from './ConditionSelector';
+import { GenreSelector } from './GenreSelector';
 import { ModeToggle } from './ModeToggle';
 import { CommunitySelector } from './CommunitySelector';
 import { CoverUploader } from './CoverUploader';
 import { BookSearchResult, useBookSearch } from '@/hooks/useBookSearch';
+import { GENRES, UNKNOWN_GENRE, classifyGenre, type Genre } from '@/lib/genre';
 import { track } from '@/lib/analytics';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -32,6 +34,7 @@ interface BookFormData {
   isPublic: boolean;
   /** 전체공개면 **숨길** 커뮤니티, 커뮤니티 전용이면 **공개할** 커뮤니티 (마이그 20260820000001) */
   communityIds: string[];
+  genre: Genre;
 }
 
 interface UploadBookFormProps {
@@ -52,6 +55,8 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
   // 제목 검색으로 채우기 전엔 저자·설명을 잠가, 사람들이 저자를 손으로 먼저 입력하지 않도록 유도.
   // 검색에 없는 책은 '직접 입력'으로 잠금 해제.
   const [manualEntry, setManualEntry] = useState(false);
+  // 사람이 장르를 직접 골랐는지. 골랐으면 다른 책을 다시 검색해도 덮어쓰지 않는다.
+  const [genreTouched, setGenreTouched] = useState(false);
 
   const [formData, setFormData] = useState<BookFormData>({
     title: '',
@@ -65,6 +70,7 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
     price: '',
     isPublic: true,
     communityIds: [],
+    genre: UNKNOWN_GENRE,
   });
 
   // 대표 모드(호환용): 판매>대여>나눔 우선
@@ -107,6 +113,15 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
 
     setFormData((prev) => ({
       ...prev,
+      // 장르는 알라딘 분류로 자동으로 정한다. 사람이 매번 고르게 하면 거의 '기타'가 된다.
+      // 틀렸으면 아래 장르 칸에서 바꿀 수 있다.
+      genre: genreTouched
+        ? prev.genre
+        : classifyGenre({
+            categoryName: book.categoryName,
+            title: book.title,
+            description: book.description,
+          }),
       title: cleanBookTitle(book.title),
       author: book.author,
       description: description ? truncateDescription(description) : '',
@@ -178,6 +193,7 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
         allow_sell: formData.allowSell,
         allow_give: formData.allowGive,
         price: formData.allowSell ? parseFloat(formData.price) : null,
+        genre: formData.genre,
         is_public: formData.isPublic,
         // 대표 커뮤니티(책 카드의 이름 배지용). 실제 노출 판정은
         // book_community_visibility 가 한다 — 여러 곳에 올릴 수 있어서다.
@@ -221,7 +237,9 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
         price: '',
         isPublic: true,
         communityIds: [],
+        genre: UNKNOWN_GENRE,
       });
+      setGenreTouched(false);
 
       // 첫 책 등록 + 아직 알림 미설정이면 → 알림 설정 유도 팝업(닫으면 서가로 이동).
       // 아니면 바로 서가로.
@@ -405,6 +423,12 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
           <ConditionSelector
             value={formData.condition}
             onChange={(condition) => setFormData((prev) => ({ ...prev, condition }))}
+          />
+
+          <GenreSelector
+            value={formData.genre}
+            auto={!genreTouched}
+            onChange={(genre) => { setGenreTouched(true); setFormData((prev) => ({ ...prev, genre })); }}
           />
 
           <CommunitySelector
