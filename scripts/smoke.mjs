@@ -123,7 +123,21 @@ async function run() {
     // 화면을 '열기'만 하면 부족하다. 실제로 죽은 것들은 전부 한 번 더 눌러야
     // 드러났다(남의 프로필, 반납 카드 버튼). 눌러서 들어가는 데까지 간다.
     await go('홈(로그인)', '/');
-    await click('책 상세', 'text=/^(자유론|데미안|불안)$/', 2500);
+    // ⚠️ 책 제목을 고정으로 쓰지 않는다. 예전엔 '자유론|데미안|불안' 을 찾았는데,
+    //    그 책이 서가에서 사라지자 조용히 실패하면서 뒤따르는 '책 주인 프로필' 검사까지
+    //    무의미해졌다. 지금 화면에 실제로 있는 첫 책을 연다.
+    screen = '책 상세';
+    await page.locator('button[aria-label="표지로 보기"]').first().click().catch(() => {});
+    await page.waitForTimeout(1500);
+    const opened = await page.evaluate(() => {
+      const img = document.querySelector('main img[alt]');
+      const btn = img?.closest('button') || img?.parentElement;
+      if (!btn) return false;
+      btn.click();
+      return true;
+    });
+    if (!opened) note('책 상세', '요소 없음', '서가에 열 수 있는 책이 없다');
+    await page.waitForTimeout(2500);
 
     // 남의 프로필 — profiles_public 뷰에서 컬럼이 빠져 통째로 죽은 적이 있다.
     // 토스트가 아니라 화면 안 문구로 확인해야 한다. 에러는 콘솔로만 나가고

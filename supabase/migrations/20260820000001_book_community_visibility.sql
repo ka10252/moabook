@@ -35,6 +35,12 @@ CREATE INDEX IF NOT EXISTS bcv_community_idx ON public.book_community_visibility
 
 ALTER TABLE public.book_community_visibility ENABLE ROW LEVEL SECURITY;
 
+-- ⚠️ RLS 정책만으로는 부족하다. 테이블 GRANT가 따로 필요하다 —
+--    없으면 정책이 허용해도 42501(권한 없음)로 막힌다.
+--    (이걸 빠뜨려서 20260820000002 로 따로 넣었다)
+GRANT SELECT ON public.book_community_visibility TO anon, authenticated;
+GRANT INSERT, UPDATE, DELETE ON public.book_community_visibility TO authenticated;
+
 -- 읽기: 누구나. 이 표만으로는 아무 정보도 새지 않는다 —
 -- 책 자체의 접근 권한은 books 의 RLS가 이미 정한다.
 CREATE POLICY "book visibility readable"

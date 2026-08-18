@@ -269,3 +269,36 @@
 
 _최종 갱신: 2026-08-02. 정적 QA + 빌드 통과 기준. 기능 변경 시 이 문서의 해당 항목 불변식/작동상태를 함께 갱신할 것._
 _2026-08-02 세션 반영: 위 알려진 버그 대부분 해소(반납알림·pin_hash·member_count·uuid캐스트·프라이버시·약관). 관련: docs/DB_CHECKS.sql, docs/ACCESS_AUDIT.md, docs/FUNNEL_METRICS.md._
+
+# 새 표를 만들 때 — 두 가지를 반드시 같이 한다
+
+`book_community_visibility`(2026-08-20)를 만들면서 **둘 다 빠뜨려 화면이 죽었다.**
+
+## 1. RLS 정책만으로는 못 읽는다 — GRANT가 따로 필요하다
+Postgres에서 RLS는 "어느 **행**을 볼까"를 거르는 층이고, 그 앞에 "이 **표**에 접근할 수 있는가"라는
+권한 층이 따로 있다. 정책이 아무리 허용해도 GRANT가 없으면 `42501`로 막힌다.
+
+```sql
+GRANT SELECT ON public.<표> TO anon, authenticated;
+GRANT INSERT, UPDATE, DELETE ON public.<표> TO authenticated;
+```
+
+## 2. 두 표를 함께 참조하면 기존 임베드가 깨진다 (PostgREST 300)
+새 표가 `books` 와 `communities` 를 각각 참조하자, 그 둘 사이에 경로가 **둘**이 됐다.
+
+```
+books.community_id → communities
+books → book_community_visibility → communities
+```
+
+PostgREST 는 어느 쪽인지 못 정해 **HTTP 300 (Multiple Choices)** 를 낸다.
+증상이 고약하다 — **4xx가 아니라 콘솔 에러에도 안 걸리고**, 화면에는
+"책 목록을 불러오지 못했습니다"만 뜬다.
+
+해결: 임베드에 **FK 이름을 못박는다.**
+```ts
+community:communities!books_community_id_fkey(name)
+```
+
+⚠️ **연결 표(junction table)를 추가하면, 그 표가 잇는 두 표 사이의 기존 임베드를 전부 찾아
+FK를 명시한다.** 이번엔 6개 파일이었다.

@@ -85,7 +85,7 @@ export const AdminBookManagement = () => {
         .from('books')
         .select(`id, title, author, status, mode, is_public, created_at, hidden_at, hidden_reason,
           owner:profiles!books_owner_id_fkey(nickname),
-          community:communities(name)`)
+          community:communities!books_community_id_fkey(name)`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

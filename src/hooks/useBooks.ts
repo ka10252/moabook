@@ -25,10 +25,19 @@ export const useBooks = (options: UseBooksOptions = {}) => {
     try {
       let query = supabase
         .from('books')
+        /**
+         * ⚠️ `communities` 임베드는 **FK 이름을 못박아야 한다.**
+         * `book_community_visibility`(마이그 20260820000001)가 books·communities 를 각각
+         * 참조하면서 두 표 사이에 경로가 둘이 됐다:
+         *   books.community_id → communities
+         *   books → book_community_visibility → communities
+         * 그러면 PostgREST 가 어느 쪽인지 못 정해 **HTTP 300(Multiple Choices)** 을 낸다.
+         * 증상은 "책 목록을 불러오지 못했습니다" — 4xx가 아니라 콘솔에도 안 걸린다.
+         */
         .select(`
           *,
           profile:profiles!books_owner_id_fkey(nickname, avatar_url, district, mrt_station),
-          community:communities(name)
+          community:communities!books_community_id_fkey(name)
         `)
         .neq('status', 'sold') // Exclude sold books from bookshelf
         .order('created_at', { ascending: false });

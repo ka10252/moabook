@@ -127,7 +127,7 @@ export const MemberProfileModal = ({
         .select(`
           *,
           profile:profiles!books_owner_id_fkey(nickname),
-          community:communities(name)
+          community:communities!books_community_id_fkey(name)
         `)
         .eq('owner_id', userId)
         .eq('is_public', true)
