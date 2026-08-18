@@ -306,12 +306,14 @@
 
   /* ── Pill (filter chip / sort chip) ────────────────── */
   .pill {
+    /* 비선택은 **외곽선만**. 예전엔 아이보리로 채워서 선택된 것과 덩어리 차이가 작았고,
+       "어느 게 골라졌는지 모르겠다"는 말이 나왔다. 채움 여부로 갈리게 한다. */
     @apply inline-flex items-center gap-1 px-3.5 py-[11px] rounded-full text-xs font-semibold;
-    @apply bg-secondary text-foreground border border-border;
-    @apply transition-colors hover:bg-muted;
+    @apply bg-transparent text-muted-foreground border border-border;
+    @apply transition-colors hover:text-foreground hover:border-foreground/40;
   }
   .pill-active {
-    @apply bg-foreground text-background border-transparent;
+    @apply bg-foreground text-background border-foreground font-bold;
   }
   .dark .pill-active {
     @apply bg-primary text-primary-foreground;

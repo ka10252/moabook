@@ -24,6 +24,8 @@ export interface Conversation {
   other_user?: {
     id: string;
     nickname: string;
+    /** 대화 목록·헤더에 얼굴을 띄우려면 필요하다. 없으면 닉네임 첫 글자로 대체한다. */
+    avatar_url?: string | null;
   };
   book?: {
     id: string;
@@ -74,7 +76,7 @@ export const useChat = () => {
 
       // Query 2: batch fetch all other user profiles
       const [profilesResult, messagesResult, unreadResult] = await Promise.all([
-        supabase.from('profiles').select('id, nickname').in('id', otherUserIds),
+        supabase.from('profiles').select('id, nickname, avatar_url').in('id', otherUserIds),
         // Query 3: recent messages for last-message preview (desc order, pick first per conv client-side)
         supabase
           .from('messages')

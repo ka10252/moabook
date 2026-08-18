@@ -69,16 +69,17 @@ export const CommunitySelector = ({
               value={selectedCommunityId || ''}
               onValueChange={(value) => onCommunityChange(value || null)}
             >
-              <SelectTrigger className="h-12 bg-secondary border-border rounded-xl">
+              {/* min-w-0 + 안쪽 truncate: 이름이 길면 트리거가 밀려 글자가 잘려 보였다 */}
+              <SelectTrigger className="h-12 w-full min-w-0 bg-secondary border-border rounded-xl [&>span]:truncate [&>span]:min-w-0 [&>span]:text-left">
                 <SelectValue placeholder="커뮤니티 선택" />
               </SelectTrigger>
               <SelectContent>
                 {myCommunities.map((community: Community) => (
                   <SelectItem key={community.id} value={community.id}>
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-muted-foreground" />
-                      <span>{community.name}</span>
-                      <span className="text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Users className="w-4 h-4 text-muted-foreground shrink-0" />
+                      <span className="truncate">{community.name}</span>
+                      <span className="text-xs text-muted-foreground shrink-0">
                         ({community.memberCount}명)
                       </span>
                     </div>

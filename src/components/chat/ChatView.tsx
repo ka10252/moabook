@@ -13,6 +13,8 @@ import { AcceptRentalModal } from './AcceptRentalModal';
 import { ReturnConfirmModal } from './ReturnConfirmModal';
 import { ReturnReviewPrompt } from '@/components/review/ReturnReviewPrompt';
 import { MannerReviewModal } from '@/components/review/MannerReviewModal';
+import { MemberProfileModal } from '@/components/profile/MemberProfileModal';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useMannerReview } from '@/hooks/useMannerReview';
 import { BookDetailWithActions } from '@/components/BookDetailWithActions';
 import { transformDbBook, type Book } from '@/types/book';
@@ -91,6 +93,7 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     setDetailBook(transformDbBook(data as never));
   };
   const [showManner, setShowManner] = useState(false);
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
   // 채팅창 위에 덮어 띄우는 책 상세. bookInfoCache는 카드용 최소 필드만 갖고 있어서
   // 상세를 그리려면 책을 한 번 더 통째로 읽어야 한다.
   const [detailBook, setDetailBook] = useState<Book | null>(null);
@@ -479,25 +482,31 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
           <ArrowLeft className="w-5 h-5" />
         </Button>
 
-        {/* Book cover thumbnail */}
-        {conversationBook?.cover_url && (
-          <img
-            src={conversationBook.cover_url}
-            alt={conversationBook.title}
-            className="w-7 h-10 object-cover rounded shrink-0 shadow-sm"
-          />
-        )}
-
-        <div className="flex-1 min-w-0">
-          <h2 className="font-display text-[17px] font-medium tracking-tight text-foreground truncate leading-tight">
-            {conversation.other_user?.nickname}
-          </h2>
-          {conversationBook && (
-            <p className="text-xs text-muted-foreground truncate leading-tight mt-0.5">
-              {conversationBook.title}
-            </p>
-          )}
-        </div>
+        {/* 맨 앞은 **상대 얼굴**이다. 지금 누구와 이야기하는지가 이 화면의 기준이고,
+            책은 바로 아래 '거래 중' 배너에서 다시 확인할 수 있다.
+            눌러서 상대 프로필(매너 평가·책장)로 들어갈 수 있게 버튼으로 감쌌다. */}
+        <button
+          type="button"
+          onClick={() => conversation.other_user?.id && setProfileUserId(conversation.other_user.id)}
+          className="flex-1 min-w-0 flex items-center gap-2.5 text-left"
+        >
+          <Avatar className="w-9 h-9 shrink-0">
+            <AvatarImage src={conversation.other_user?.avatar_url || undefined} alt={conversation.other_user?.nickname || ''} />
+            <AvatarFallback className="bg-secondary text-foreground text-[13px] font-semibold">
+              {conversation.other_user?.nickname?.charAt(0) || '?'}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <h2 className="font-display text-[17px] font-medium tracking-tight text-foreground truncate leading-tight">
+              {conversation.other_user?.nickname}
+            </h2>
+            {conversationBook && (
+              <p className="text-[13px] text-muted-foreground truncate leading-tight mt-0.5">
+                {conversationBook.title}
+              </p>
+            )}
+          </div>
+        </button>
       </header>
 
       {/* Transaction Status Banner */}
@@ -1093,6 +1102,12 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
         currentUserId={user?.id}
         // 이미 이 사람과 대화 중이다. 여기서 또 채팅을 열면 같은 방이 겹쳐 쌓인다.
         onChat={() => setDetailBook(null)}
+      />
+
+      <MemberProfileModal
+        isOpen={!!profileUserId}
+        onClose={() => setProfileUserId(null)}
+        userId={profileUserId}
       />
 
       {showManner && otherUserId && (

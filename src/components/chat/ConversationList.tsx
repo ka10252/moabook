@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { MessageCircle, Loader2, BookOpen } from 'lucide-react';
+import { MessageCircle, Loader2, User } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Conversation } from '@/hooks/useChat';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -62,17 +63,26 @@ export const ConversationList = ({ conversations, loading, selectedId, onSelect 
           }`}
           whileTap={{ scale: 0.98 }}
         >
-          {/* Book cover thumbnail */}
+          {/* 상대 얼굴이 먼저다 — 이 목록에서 고르는 기준은 '누구와의 대화'이지 '어떤 책'이 아니다.
+              예전엔 책 표지를 크게 뒀는데, 책이 없는 대화는 빈 책 아이콘만 늘어서 구분이 안 됐다.
+              책은 아래 제목 줄에 그대로 남는다. */}
           <div className="relative shrink-0">
-            <div className="w-11 h-14 rounded-lg bg-muted overflow-hidden shadow-sm">
-              {conv.book?.cover_url ? (
-                <img src={conv.book.cover_url} alt={conv.book.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                  <BookOpen className="w-5 h-5 opacity-40" />
-                </div>
-              )}
-            </div>
+            <Avatar className="w-12 h-12">
+              <AvatarImage src={conv.other_user?.avatar_url || undefined} alt={conv.other_user?.nickname || ''} />
+              <AvatarFallback className="bg-secondary text-foreground text-[15px] font-semibold">
+                {conv.other_user?.nickname?.charAt(0) || <User className="w-5 h-5 text-muted-foreground" />}
+              </AvatarFallback>
+            </Avatar>
+            {/* 책 표지는 작은 배지로 겹쳐 둔다 — 어떤 책 이야기인지 한눈에 남는다 */}
+            {conv.book?.cover_url && (
+              <img
+                src={conv.book.cover_url}
+                alt={conv.book.title}
+                loading="lazy"
+                decoding="async"
+                className="absolute -bottom-1 -right-1 w-6 h-[30px] rounded-[3px] object-cover border-2 border-background shadow-sm"
+              />
+            )}
           </div>
 
           {/* Content */}
