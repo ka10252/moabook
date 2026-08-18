@@ -205,9 +205,16 @@ const Index = () => {
     window.addEventListener('moa:replay-onboarding', replay);
     return () => window.removeEventListener('moa:replay-onboarding', replay);
   }, [goToTab]);
+  // ⚠️ `window.location.search` 를 직접 읽지 않는다.
+  //    네이티브 앱에서는 링크가 새 페이지를 여는 게 아니라 **이미 떠 있는 화면 안에서**
+  //    경로만 바뀐다(딥링크 → navigate). window 를 읽고 deps 에 안 넣으면 그 효과가 다시 돌지 않아
+  //    링크를 눌러도 아무 일도 일어나지 않는다. 라우터가 주는 값을 쓰고 deps 에 넣는다.
+  const onboardingParam = searchParams.has('onboarding');
+  const inviteToken = searchParams.get('invite');
+
   useEffect(() => {
     // ?onboarding=1 → 로그인 여부와 무관하게 온보딩을 다시 볼 수 있다 (검수·디자인 확인용)
-    if (new URLSearchParams(window.location.search).has('onboarding')) {
+    if (onboardingParam) {
       setShowOnboarding(true);
       return;
     }
@@ -224,16 +231,19 @@ const Index = () => {
     // (완료 때만 표시하면 중간에 닫거나 재진입 시 24시간 내내 다시 떠서 매번 나오는 버그)
     if (isNewUser) setShowOnboarding(true);
     localStorage.setItem(key, '1');
-  }, [user?.id]);
+  }, [user?.id, onboardingParam]);
 
-  // Handle community invite link: ?invite=TOKEN
+  // 커뮤니티 초대 링크: ?invite=TOKEN
+  //
+  // ⚠️ 초대 링크는 **경로 없이 쿼리만** 있다(`https://…/?invite=TOK`). 웹에서는 링크를 누르면
+  //    페이지가 새로 뜨니 마운트 때 한 번 읽으면 됐지만, 앱에서는 이미 떠 있는 화면에
+  //    쿼리만 갈아끼운다 — 그래서 `inviteToken` 을 deps 에 넣어야 링크가 먹는다.
   useEffect(() => {
-    if (!user) return;
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('invite');
-    if (!token) return;
-    // Remove the query param immediately so reload won't re-trigger
-    window.history.replaceState({}, '', window.location.pathname);
+    if (!user || !inviteToken) return;
+    const token = inviteToken;
+    // 파라미터를 먼저 지운다 — 새로고침이나 재실행에서 또 부르지 않게.
+    // history 를 직접 건드리면 라우터가 모르는 상태가 되므로 라우터로 지운다.
+    patchParams({ invite: null }, { replace: true });
     (async () => {
       const { data, error } = await supabase.rpc('join_via_invite' as any, { p_token: token });
       if (error || !data) { toast.error('초대 링크가 유효하지 않습니다'); return; }
@@ -250,7 +260,7 @@ const Index = () => {
       }
       goToTab('community');
     })();
-  }, [user?.id]);
+  }, [user?.id, inviteToken, patchParams, goToTab]);
 
   const { unreadCount } = useNotifications();
   const { totalUnreadCount: unreadMessageCount } = useChat();
