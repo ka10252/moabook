@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Bell, Trash2, Loader2, Plus, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNotifications, Notification } from '@/hooks/useNotifications';
 import { usePushNotifications, pushResultMessage } from '@/hooks/usePushNotifications';
 import { supabase } from '@/integrations/supabase/client';
@@ -233,10 +232,16 @@ export const NotificationPopup = ({
               </header>
 
               {/* 알림 설정 유도 카드 (아직 푸시·텔레그램 안 켠 유저에게, 닫으면 영구 숨김) */}
-              <NotifSetupCard />
+              <div className="shrink-0">
+                <NotifSetupCard />
+              </div>
 
-              {/* Content */}
-              <ScrollArea className="flex-1 min-h-0">
+              {/* 목록 — 그냥 overflow-y-auto 를 쓴다.
+                  Radix ScrollArea 로 감쌌더니 **스크롤이 아예 안 됐다.** 겉 상자는 634px 로
+                  잘 잡히는데 안쪽 viewport 가 h-full 을 못 물고 내용 높이(1447px)로 자라서,
+                  넘치는 부분이 overflow-hidden 에 잘려 나갔을 뿐 스크롤 대상이 없었다.
+                  채팅 목록도 같은 이유로 평범한 div 를 쓴다. */}
+              <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
                 {loading ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -300,7 +305,7 @@ export const NotificationPopup = ({
                     ))}
                   </div>
                 )}
-              </ScrollArea>
+              </div>
             </div>
           </motion.div>
         </motion.div>

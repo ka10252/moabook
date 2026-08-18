@@ -22,7 +22,7 @@ import { useBackClose } from '@/hooks/useBackClose';
 import { supabase } from '@/integrations/supabase/client';
 // ⚠️ lucide의 Map은 반드시 별칭으로 가져온다. 그냥 `Map`으로 import 하면
 //    이 모듈 안에서 전역 Map 생성자를 가려 `new Map<...>()`이 "Map is not a constructor"로 터진다.
-import { ChevronDown, Loader2, BookOpen, Heart, History, Search, X, MapPin, SlidersHorizontal, LayoutGrid, Library, Map as MapIcon, ArrowLeft, Star } from 'lucide-react';
+import { ChevronDown, Loader2, BookOpen, Heart, History, Search, X, MapPin, SlidersHorizontal, LayoutGrid, Library, Map as MapIcon, ArrowLeft, Star, Tag } from 'lucide-react';
 import { BookMapView } from '@/components/BookMapView';
 import { STATION_DISTRICTS, MRT_STATIONS, getStation } from '@/data/mrtStations';
 import { BookCover } from './BookCover';
@@ -63,16 +63,24 @@ const DUMMY_BOOKS: ShelfBook[] = [
 const DUMMY_THRESHOLD = 6;
 type StatusFilter = 'all' | 'available' | 'giving' | 'selling' | 'rented';
 
-/** 예시 책은 아무 조건도 안 건 기본 화면(모두의 책장 · 전체 · 검색어 없음)에서만 채운다 */
+/**
+ * 예시 책은 아무 조건도 안 건 기본 화면(모두의 책장 · 전체 · 검색어 없음)에서만 채운다.
+ *
+ * ⚠️ 필터를 새로 만들면 **여기에도 추가해야 한다.** 안 그러면 필터를 걸어 결과가 줄었을 때
+ *    빈자리를 예시 책이 메워, 조건에 맞지도 않는 책이 섞여 나온다.
+ *    (장르 필터를 넣었을 때 실제로 '채식주의자'가 경제·경영 결과에 끼어들었다)
+ */
 const canShowDummy = (
   activeFilter: string,
   statusFilter: StatusFilter,
   searchQuery: string,
+  extraFilterOn: boolean,
   realCount: number
 ) =>
   activeFilter === 'everybody' &&
   statusFilter === 'all' &&
   !searchQuery.trim() &&
+  !extraFilterOn &&
   realCount < DUMMY_THRESHOLD;
 
 interface BookshelfProps {
@@ -128,6 +136,7 @@ export const Bookshelf = ({
   // 역 단위 필터. 지역(planning area)은 몇 km라 "이 역 근처"를 못 고른다.
   const [selectedStations, setSelectedStations] = useState<string[]>([]);
   const [stationDropdownOpen, setStationDropdownOpen] = useState(false);
+  const [genreDropdownOpen, setGenreDropdownOpen] = useState(false);
   const { favStations, favDistricts, toggleStation: toggleFavStation, toggleDistrict: toggleFavDistrict } = useFavoriteAreas();
   // 즐겨찾기는 '한 번에 적용'이 아니라 목록 순서만 바꾼다 — 별을 누른 역·지역이
   // 목록 맨 위로 올라와 바로 고를 수 있다. 지역 선택은 이 필터 시트 안에서만 한다.
@@ -346,6 +355,38 @@ export const Bookshelf = ({
   }, [sortBy]);
 
   /**
+   * 역·지역·검색 — 어느 서가에 놓일 책이든 똑같이 통과해야 하는 조건.
+   *
+   * 함수로 뽑아둔 이유: 예전엔 '모두의 책장' 목록에만 필터를 걸고
+   * '내 서가' 목록은 따로 만들어서, **내 책에는 장르 필터가 아예 안 걸렸다.**
+   * 목록마다 조건을 다시 쓰면 또 어긋난다.
+   */
+  const passesFilters = useCallback((book: Book) => {
+    // 역과 지역은 OR가 아니라 AND로 좁힌다 — 둘 다 고르면 "그 지역의 그 역"이 된다.
+    if (selectedStations.length > 0) {
+      const st = book.owner?.mrtStation;
+      if (!st || !selectedStations.includes(st)) return false;
+    }
+    if (selectedDistricts.length > 0) {
+      const d = book.owner?.district;
+      if (!d || !selectedDistricts.includes(d)) return false;
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      if (!book.title.toLowerCase().includes(q) && !book.author.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  }, [selectedStations, selectedDistricts, searchQuery]);
+
+  /** 장르는 따로 — 칩 옆의 권수를 '장르만 빼고 나머지를 적용한' 목록에서 세야 한다 */
+  const passesGenre = useCallback((book: Book) => {
+    if (selectedGenres.length === 0) return true;
+    // genre가 비었거나 우리가 모르는 값이면 '기타'로 본다 — 옛 책도 어딘가엔 속해야
+    // 필터를 켰을 때 조용히 사라지지 않는다.
+    return selectedGenres.includes(isGenre(book.genre) ? book.genre : UNKNOWN_GENRE);
+  }, [selectedGenres]);
+
+  /**
    * 장르를 **뺀** 나머지 필터까지만 적용한 목록.
    * 장르 칩 옆의 권수를 여기서 센다 — 이유는 genreCounts 주석 참고.
    */
@@ -370,37 +411,13 @@ export const Bookshelf = ({
       });
     }
 
-    // 역과 지역은 OR가 아니라 AND로 좁힌다 — 둘 다 고르면 "그 지역의 그 역"이 된다.
-    if (selectedStations.length > 0) {
-      books = books.filter(book => {
-        const s = book.owner?.mrtStation;
-        return !!s && selectedStations.includes(s);
-      });
-    }
+    return applyStatusFilter(books.filter(passesFilters));
+  }, [allBooks, activeFilter, user?.id, communityMemberIds, passesFilters, applyStatusFilter, isVisibleIn]);
 
-    if (selectedDistricts.length > 0) {
-      books = books.filter(book => {
-        const d = book.owner?.district;
-        return !!d && selectedDistricts.includes(d);
-      });
-    }
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase();
-      books = books.filter(b => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q));
-    }
-
-    return applyStatusFilter(books);
-  }, [allBooks, activeFilter, user?.id, communityMemberIds, selectedStations, selectedDistricts, searchQuery, applyStatusFilter, isVisibleIn]);
-
-  const filteredBooks = useMemo(() => {
-    if (selectedGenres.length === 0) return sortShelfBooks(booksBeforeGenre);
-    // genre가 비었거나 우리가 모르는 값이면 '기타'로 본다 — 옛 책도 어딘가엔 속해야
-    // 필터를 켰을 때 조용히 사라지지 않는다.
-    return sortShelfBooks(
-      booksBeforeGenre.filter(b => selectedGenres.includes(isGenre(b.genre) ? b.genre : UNKNOWN_GENRE)),
-    );
-  }, [booksBeforeGenre, selectedGenres, sortShelfBooks]);
+  const filteredBooks = useMemo(
+    () => sortShelfBooks(booksBeforeGenre.filter(passesGenre)),
+    [booksBeforeGenre, passesGenre, sortShelfBooks],
+  );
 
   /**
    * 장르별 권수.
@@ -432,55 +449,70 @@ export const Bookshelf = ({
     return () => clearTimeout(timer);
   }, [searchQuery, filteredBooks]);
 
-  const myBooksSection = useMemo((): ShelfBook[] => {
+  /**
+   * 내가 빌린 남의 책. `allBooks` 에 있지만 '내 서가' 탭은 주인으로 걸러내므로
+   * 여기서 따로 챙긴다. 필터는 다른 책과 똑같이 통과시킨다.
+   */
+  const myBorrowedBooks = useMemo((): ShelfBook[] => {
     if (!user) return [];
-    const owned: ShelfBook[] = allBooks.filter(b => b.owner_id === user.id);
-    const ownedIds = new Set(owned.map(b => b.id));
-    // Use getRentedBooksInfo (from useTransactions) so borrowed books are
-    // determined from the same single fetch as everything else — no race condition
     const rentedInfo = getRentedBooksInfo();
-    const borrowed: ShelfBook[] = allBooks
-      .filter(b => rentedInfo.has(b.id) && !ownedIds.has(b.id))
-      .map(b => ({ ...b, _isBorrowed: true } as ShelfBook));
-    return applyStatusFilter([...owned, ...borrowed]);
-  }, [allBooks, getRentedBooksInfo, user?.id, applyStatusFilter]);
+    return applyStatusFilter(
+      allBooks.filter(b => rentedInfo.has(b.id) && b.owner_id !== user.id && passesFilters(b) && passesGenre(b)),
+    ).map(b => ({ ...b, _isBorrowed: true } as ShelfBook));
+  }, [allBooks, getRentedBooksInfo, user?.id, passesFilters, passesGenre, applyStatusFilter]);
 
-  const filteredMySection = useMemo((): ShelfBook[] => {
-    let books = myBooksSection;
-    if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase();
-      books = books.filter(b => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q));
+  /**
+   * 서가에 그릴 책 전체.
+   *
+   * 예전엔 '내 서가'(내가 올린 책 전부)를 맨 앞 칸에 통째로 박아뒀다. 그런데
+   * 내가 올린 책은 내가 이미 아는 책이라, 첫 줄을 그것으로 채우면 **남의 책을
+   * 둘러보는 데 방해만 됐다.** 지금은 거래 중인 책(빌려준·빌린)만 위로 올리고
+   * 나머지는 내 책·남의 책 구분 없이 섞는다. 내가 올린 책은 '내 서가' 탭에서 본다.
+   */
+  const shelfSource = useMemo((): ShelfBook[] => {
+    // '내 서가' 탭에서는 내가 빌린 책도 함께 보여준다 (그 탭의 목적이 "내 손에 있는 책")
+    if (activeFilter === 'mine') {
+      return sortShelfBooks([...(filteredBooks as ShelfBook[]), ...myBorrowedBooks]);
     }
-    return sortShelfBooks(books);
-  }, [myBooksSection, searchQuery, sortShelfBooks]);
+    return filteredBooks as ShelfBook[];
+  }, [filteredBooks, myBorrowedBooks, activeFilter, sortShelfBooks]);
 
-  const communityBooks = useMemo((): ShelfBook[] => {
-    if (activeFilter === 'mine') return [];
-    // Exclude ALL user's books regardless of status filter — prevents books
-    // from leaking into community section when statusFilter hides some owned books
-    const allOwnedIds = new Set(allBooks.filter(b => b.owner_id === user?.id).map(b => b.id));
+  /** 거래 중인 책 = 위로 올라가는 것들. 나머지는 아래에 섞인다. */
+  const { dealBooks, mixedBooks } = useMemo(() => {
     const rentedInfo = getRentedBooksInfo();
-    const books = filteredBooks.filter(
-      b => !allOwnedIds.has(b.id) && !rentedInfo.has(b.id)
-    ) as ShelfBook[];
-    // 대여중은 항상 맨 뒤. 좋아요한 책 끌어올리기는 **기본 정렬일 때만** 한다.
-    // 제목순·저자순을 고른 사람에게까지 좋아요를 앞세우면 가나다 순서가 깨져서
-    // "정렬을 눌러도 안 바뀐다"로 보인다 — 고른 정렬이 사용자의 의도다.
-    const likedFirst = sortBy === 'newest';
-    return [...books].sort((a, b) => {
-      const aOut = a.status === 'rented' ? 1 : 0;
-      const bOut = b.status === 'rented' ? 1 : 0;
-      if (aOut !== bOut) return aOut - bOut;
-      if (!likedFirst) return 0; // sort는 안정적이라 filteredBooks의 정렬이 그대로 남는다
-      return (isLiked(a.id) ? 0 : 1) - (isLiked(b.id) ? 0 : 1);
-    });
-  }, [filteredBooks, allBooks, getRentedBooksInfo, user?.id, activeFilter, isLiked, sortBy]);
+    const lent: ShelfBook[] = [];
+    const borrowed: ShelfBook[] = [];
+    const rest: ShelfBook[] = [];
 
-  // Deduplicate community books by title+author — keep only the first occurrence per pair
-  const { dedupedCommunityBooks, communityDuplicateCounts } = useMemo(() => {
+    for (const b of shelfSource) {
+      if (b.owner_id === user?.id && lentBookIds.has(b.id)) lent.push(b);
+      else if (b.owner_id !== user?.id && rentedInfo.has(b.id)) borrowed.push({ ...b, _isBorrowed: true });
+      else rest.push(b);
+    }
+
+    // 종류가 바뀌는 지점에만 칸막이를 세운다. 각각 별도 섹션으로 만들면
+    // 한 권 때문에 서가 한 칸이 통째로 생겨 휑해 보인다.
+    const deal: ShelfBook[] = [];
+    const append = (arr: ShelfBook[], name: string) =>
+      arr.forEach((b, i) => deal.push(i === 0 && deal.length > 0 ? { ...b, _divider: name } : b));
+    append(lent, '빌려준 책');
+    append(borrowed, '빌린 책');
+
+    return { dealBooks: deal, mixedBooks: rest, firstDealLabel: lent.length ? '빌려준 책' : '빌린 책' };
+  }, [shelfSource, lentBookIds, getRentedBooksInfo, user?.id]);
+
+  const firstDealLabel = dealBooks.length
+    ? (dealBooks[0].owner_id === user?.id ? '빌려준 책' : '빌린 책')
+    : undefined;
+
+  /**
+   * 같은 책(제목+저자)이 여러 권 올라와 있으면 하나만 보여주고 권수를 배지로 알린다.
+   * 표지가 똑같은 칸이 나란히 서면 "책이 많다"가 아니라 "화면이 고장났다"로 읽힌다.
+   */
+  const { dedupedMixedBooks, mixedDuplicateCounts } = useMemo(() => {
     const seenKey = new Map<string, ShelfBook>();
     const counts = new Map<string, number>();
-    for (const book of communityBooks) {
+    for (const book of mixedBooks) {
       const key = `${book.title.toLowerCase().trim()}|||${book.author.toLowerCase().trim()}`;
       if (!seenKey.has(key)) {
         seenKey.set(key, book);
@@ -490,8 +522,12 @@ export const Bookshelf = ({
         counts.set(rep.id, (counts.get(rep.id) ?? 1) + 1);
       }
     }
-    return { dedupedCommunityBooks: [...seenKey.values()], communityDuplicateCounts: counts };
-  }, [communityBooks]);
+    return { dedupedMixedBooks: [...seenKey.values()], mixedDuplicateCounts: counts };
+  }, [mixedBooks]);
+
+  /** 결과를 좁히는 필터가 하나라도 켜져 있나 (예시 책을 끼워 넣으면 안 되는 상태) */
+  const narrowingFilterOn =
+    selectedGenres.length > 0 || selectedStations.length > 0 || selectedDistricts.length > 0;
 
   // Dynamic shelf groups — books fill shelves continuously within each section
   const shelfGroups = useMemo((): ShelfGroup[] => {
@@ -506,52 +542,27 @@ export const Bookshelf = ({
       });
     };
 
-    const hasPersonal = user && filteredMySection.length > 0;
-    const hasCommunity = activeFilter !== 'mine' && dedupedCommunityBooks.length > 0;
-
-    if (hasPersonal) {
-      // 내 서가를 방향(내 책 / 빌려준 책 / 빌린 책)으로 칸막이 구분한다.
-      //  - 빌린 책: 남의 책을 내가 빌림(_isBorrowed)
-      //  - 빌려준 책: 내 책이 지금 나가 있음(lentBookIds)
-      //  - 내 책: 그 외 내가 가진 책
-      const own      = filteredMySection.filter(b => !b._isBorrowed && !lentBookIds.has(b.id));
-      const lent     = filteredMySection.filter(b => !b._isBorrowed &&  lentBookIds.has(b.id));
-      const borrowed = filteredMySection.filter(b =>  b._isBorrowed);
-
-      // 예전엔 세 종류를 각각 별도 섹션으로 넣었다. 그러면 빌린 책 한 권 때문에
-      // 서가 한 칸이 통째로 새로 생겨 휑해 보였다. 이제는 한 줄기로 잇고
-      // 종류가 바뀌는 지점에만 칸막이를 세운다.
-      const nonEmpty = [own, lent, borrowed].filter(a => a.length > 0).length;
-      const labelize = nonEmpty > 1 || hasCommunity;
-
-      const personal: ShelfBook[] = [...own];
-      const appendWithDivider = (arr: ShelfBook[], name: string) => {
-        arr.forEach((b, i) => {
-          personal.push(i === 0 && personal.length > 0 ? { ...b, _divider: name } : b);
-        });
-      };
-      appendWithDivider(lent, '빌려준 책');
-      appendWithDivider(borrowed, '빌린 책');
-
-      if (personal.length) addSection(personal, labelize ? '내 서가' : undefined);
+    // 거래 중인 책이 맨 위. 그 아래로는 내 책·남의 책 섞어서 채운다.
+    if (dealBooks.length) addSection(dealBooks, firstDealLabel);
+    if (dedupedMixedBooks.length) {
+      addSection(dedupedMixedBooks, dealBooks.length ? getFilterLabel() : undefined);
     }
-    if (hasCommunity) addSection(dedupedCommunityBooks, hasPersonal ? getFilterLabel() : undefined);
 
     // 예시 책은 "아직 책이 없는 새 책장"을 덜 휑하게 보이려고 두는 것이다.
     // 필터·검색으로 결과가 줄어든 건 빈 책장이 아니라 "조건에 맞는 책이 그것뿐"인 상태다.
     // 거기에 예시 책을 채우면 필터가 고장난 것처럼 보인다 — 그래서 기본 화면에서만 채운다.
-    const totalRealBooks = filteredMySection.length + dedupedCommunityBooks.length;
-    if (canShowDummy(activeFilter, statusFilter, searchQuery, totalRealBooks)) {
+    const totalRealBooks = dealBooks.length + dedupedMixedBooks.length;
+    if (canShowDummy(activeFilter, statusFilter, searchQuery, narrowingFilterOn, totalRealBooks)) {
       addSection(DUMMY_BOOKS.slice(0, DUMMY_THRESHOLD - totalRealBooks));
     }
 
     return groups;
-  }, [filteredMySection, dedupedCommunityBooks, activeFilter, statusFilter, user, booksPerShelf, getFilterLabel, searchQuery, lentBookIds]);
+  }, [dealBooks, firstDealLabel, dedupedMixedBooks, activeFilter, statusFilter, booksPerShelf, getFilterLabel, searchQuery, narrowingFilterOn]);
 
-  const totalRealBooks = filteredMySection.length + dedupedCommunityBooks.length;
+  const totalRealBooks = dealBooks.length + dedupedMixedBooks.length;
   // 배너 자체는 없앴지만(설명문이 첫 화면에 먼저 보이는 게 거슬렸다) 이 조건은
   // '결과 없음' 판정에 그대로 쓴다 — 예시 책이 깔린 화면은 빈 화면이 아니다.
-  const showDummyBanner = canShowDummy(activeFilter, statusFilter, searchQuery, totalRealBooks);
+  const showDummyBanner = canShowDummy(activeFilter, statusFilter, searchQuery, narrowingFilterOn, totalRealBooks);
 
   // 필터·검색을 걸었는데 0건이면 빈 서가만 보여선 안 된다 — 왜 비었는지 알려준다.
   const hasActiveQuery =
@@ -940,7 +951,7 @@ export const Bookshelf = ({
                             borrowerNickname={lentBooksInfo.get(book.id)}
                             lenderNickname={borrowedBooksInfo.get(book.id)}
                             returnDate={retDate}
-                            duplicateCount={communityDuplicateCounts.get(book.id)}
+                            duplicateCount={mixedDuplicateCounts.get(book.id)}
                           />
                         );
                         // 종류가 바뀌는 자리에만 칸막이. 같은 칸 안에서 경계를 알린다.
@@ -1030,7 +1041,7 @@ export const Bookshelf = ({
       </motion.button>
 
       {/* Filter Dialog */}
-      <Dialog open={showFilterSheet} onOpenChange={v => { setShowFilterSheet(v); if (!v) { setDistrictDropdownOpen(false); setStationDropdownOpen(false); setStationQuery(""); setDistrictQuery(""); } }}>
+      <Dialog open={showFilterSheet} onOpenChange={v => { setShowFilterSheet(v); if (!v) { setDistrictDropdownOpen(false); setStationDropdownOpen(false); setGenreDropdownOpen(false); setStationQuery(""); setDistrictQuery(""); } }}>
         <DialogContent className="w-[calc(100%-2rem)] max-w-sm rounded-2xl mb-[4vh] overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="text-left text-base">필터 / 정렬</DialogTitle>
@@ -1049,38 +1060,72 @@ export const Bookshelf = ({
               </div>
             </div>
 
-            {/* 장르 — 책이 한 권이라도 있는 장르만 띄운다.
-                빈 칸까지 늘어놓으면 고를 게 없는 버튼이 화면을 먹는다. */}
+            {/* 장르 — 역·지역과 같은 드롭다운. 앱 안에서 '여러 개 고르기'는 한 가지 모양이어야 한다.
+                목록에는 책이 한 권이라도 있는 장르만 띄운다. */}
             {GENRES.some(g => (genreCounts.get(g) ?? 0) > 0) && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">장르</p>
                   {selectedGenres.length > 0 && (
                     <button
+                      type="button"
                       onClick={() => setSelectedGenres([])}
-                      className="text-xs text-muted-foreground underline underline-offset-2"
+                      className="text-[13px] text-muted-foreground underline underline-offset-2"
                     >
-                      전체
+                      선택 해제 ({selectedGenres.length})
                     </button>
                   )}
                 </div>
-                <div className="flex gap-2 flex-wrap">
-                  {GENRES.filter(g => (genreCounts.get(g) ?? 0) > 0).map(g => {
-                    const on = selectedGenres.includes(g);
-                    return (
-                      <button
-                        key={g}
-                        onClick={() => setSelectedGenres(prev => on ? prev.filter(x => x !== g) : [...prev, g])}
-                        className={`pill ${on ? 'pill-active' : ''} flex items-center gap-1.5`}
-                      >
-                        {g}
-                        <span className={`text-[11px] tabular-nums ${on ? 'opacity-70' : 'text-muted-foreground'}`}>
-                          {genreCounts.get(g)}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setGenreDropdownOpen(v => !v)}
+                  className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-xl border border-border bg-background hover:bg-muted/50 transition-colors"
+                >
+                  <span className="flex items-center gap-1.5 text-left min-w-0">
+                    <Tag className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    {selectedGenres.length === 0
+                      ? <span className="text-muted-foreground">장르 선택 (복수 가능)</span>
+                      : <span className="text-foreground font-medium truncate">{selectedGenres.join(', ')}</span>
+                    }
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200 ${genreDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {genreDropdownOpen && (
+                  <div className="rounded-xl border border-border bg-muted/30 overflow-hidden">
+                    <div className="max-h-56 overflow-y-auto">
+                      {GENRES.filter(g => (genreCounts.get(g) ?? 0) > 0).map(g => {
+                        const checked = selectedGenres.includes(g);
+                        return (
+                          <button
+                            key={g}
+                            type="button"
+                            onClick={() => setSelectedGenres(prev =>
+                              checked ? prev.filter(x => x !== g) : [...prev, g]
+                            )}
+                            className={`w-full min-h-11 flex items-center gap-2 px-3 py-2.5 text-sm text-left transition-colors ${
+                              checked ? 'bg-primary/10 text-primary font-medium' : 'bg-background hover:bg-muted/60 text-foreground/80'
+                            }`}
+                          >
+                            <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                              checked ? 'bg-primary border-primary' : 'border-border'
+                            }`}>
+                              {checked && (
+                                <svg className="w-2 h-2 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </span>
+                            <span className="truncate">{g}</span>
+                            <span className="ml-auto text-[11px] text-muted-foreground tabular-nums shrink-0">
+                              {genreCounts.get(g)}권
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

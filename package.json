@@ -24,7 +24,10 @@
     "test:deeplink": "node scripts/deeplink.test.mjs",
     "audit:safearea": "node scripts/audit-safearea.mjs",
     "test:decode": "node scripts/decode.test.mjs",
-    "genre:backfill": "node scripts/backfill-genre.mjs"
+    "genre:backfill": "node scripts/backfill-genre.mjs",
+    "returndate:backfill": "node scripts/backfill-return-date.mjs",
+    "audit:spine": "node scripts/audit-spine.mjs",
+    "audit:scroll": "node scripts/audit-scroll.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",

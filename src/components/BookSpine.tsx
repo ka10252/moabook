@@ -94,35 +94,60 @@ const heightFromTitle = (title: string) => {
  *  · 가장 긴 책등(100%)으로도 넘치면 …로 자른다.
  * 상수는 책등 픽셀 높이(선반 h-184 - pt-6 = 약 160px 콘텐츠) 기준 근사치 — 필요 시 여기만 조정.
  */
-const SHELF_CONTENT_PX = 160;
-const PER_UNIT_PX = 14;   // 세로쓰기에서 '전각 1글자'의 세로 advance(≈ font-size)
-const USABLE_PX = SHELF_CONTENT_PX * 0.92;   // 위아래 여백 몫(각 4%)을 빼고 실제 글자 영역 — CSS maxHeight와 맞춤
-const CAP_AT_FULL = USABLE_PX / PER_UNIT_PX;   // 100% 책등이 담는 '전각 단위' 수
+/**
+ * ⚠️ 아래 숫자는 모두 **브라우저에서 실제로 잰 값**이다. 눈대중으로 바꾸면 제목이 다시 잘린다.
+ *    재는 방법: `npm run audit:spine` — 제목 span 의 clientHeight(보이는 영역)와
+ *    scrollHeight(실제 글자 길이)를 비교해 잘린 책을 찍어준다.
+ *
+ * 예전 계산이 틀렸던 두 가지:
+ *   1. 100% 책등의 글자 영역을 160×0.92=147 로 어림했다 → 실제는 **145px**
+ *   2. **공백을 반각(0.55칸)으로 셌다** → 세로쓰기에서 공백은 0.30칸밖에 안 된다.
+ *      그래서 "미국주식 처음공부"처럼 공백 있는 제목이 한두 글자만 애매하게 잘렸다.
+ *
+ * 14px 기준 실측 advance: 한글 14.28 · 공백 4.2 · 라틴 7.3~8 · 숫자 8.26 · 문장부호 4.47
+ */
+const SPAN_MAX_PX = 145;        // heightPct=100 일 때 글자가 들어가는 세로 길이 (측정값)
+const FONT_PX = 14;             // 책등 제목 글자 크기
+const SAFETY_PX = 3;            // 반올림으로 1~2px 모자라 잘리는 것 방지
+const USABLE_PX = SPAN_MAX_PX - SAFETY_PX;
 
-// 세로쓰기에서 라틴/숫자/공백/문장부호는 눕혀져 반각(약 0.55칸)만 차지한다.
-// 한글·한자 등은 전각(1칸). 이 가중치로 길이를 재야 "Zero to One"이 잘못 잘리지 않는다.
-const charUnit = (ch: string) => (ch.charCodeAt(0) < 256 ? 0.55 : 1);
-const visualUnits = (t: string) => [...t].reduce((s, ch) => s + charUnit(ch), 0);
+/**
+ * 글자 하나가 세로로 차지하는 길이(px).
+ * 세로쓰기에서 라틴·숫자·문장부호는 눕혀져 반각 남짓만 쓰고, 한글·한자는 전각을 쓴다.
+ * 라틴은 글자마다 폭이 달라(J·W 는 넓다) 실측 평균보다 조금 넉넉하게 잡았다.
+ */
+const advancePx = (ch: string) => {
+  if (ch === ' ') return FONT_PX * 0.30;
+  const code = ch.charCodeAt(0);
+  if (code >= 128) return FONT_PX * 1.02;            // 전각 = font-size + letter-spacing(0.02em)
+  if (ch >= '0' && ch <= '9') return FONT_PX * 0.59;
+  if (/[a-zA-Z]/.test(ch)) return FONT_PX * 0.56;
+  return FONT_PX * 0.32;                             // 문장부호
+};
 
-const truncateToUnits = (t: string, budget: number) => {
+const titlePx = (t: string) => [...t].reduce((sum, ch) => sum + advancePx(ch), 0);
+
+const truncateToPx = (t: string, budget: number) => {
   let acc = 0, out = '';
   for (const ch of t) {
-    const u = charUnit(ch);
-    if (acc + u > budget) break;
-    acc += u; out += ch;
+    const w = advancePx(ch);
+    if (acc + w > budget) break;
+    acc += w; out += ch;
   }
   return out.trimEnd() + '…';
 };
 
 const fitTitle = (title: string): { heightPct: number; shown: string } => {
   const t = title || '';
-  const units = visualUnits(t);
-  if (units <= CAP_AT_FULL) {
-    // 필요 높이(글자 영역) — 짧으면 해시 변주가, 길면 필요 높이가 이긴다.
-    const need = Math.ceil(((units * PER_UNIT_PX) / USABLE_PX) * 100);
+  const px = titlePx(t);
+  if (px <= USABLE_PX) {
+    // 필요 높이 — 짧으면 해시 변주가, 길면 필요 높이가 이긴다.
+    // +1 은 책등 높이(%)→픽셀 반올림에서 1px 모자라는 것을 막는 여유.
+    const need = Math.ceil((px / USABLE_PX) * 100) + 1;
     return { heightPct: Math.min(100, Math.max(heightFromTitle(t), need)), shown: t };
   }
-  return { heightPct: 100, shown: truncateToUnits(t, CAP_AT_FULL - 1) };
+  // 가장 긴 책등으로도 안 담기는 제목 — '…' 자리를 남기고 자른다.
+  return { heightPct: 100, shown: truncateToPx(t, USABLE_PX - FONT_PX) };
 };
 
 export const BookSpine = ({
@@ -190,10 +215,12 @@ export const BookSpine = ({
           전체 제목은 탭하면 상세에서 보인다(title 속성/tooltip 유지). */}
       <span
         title={book.title}
-        className="relative z-[3] text-[15px] overflow-hidden text-spine-text"
+        className="relative z-[3] overflow-hidden text-spine-text"
         style={{
           fontFamily: "'Noto Sans KR', sans-serif",
-          fontWeight: 500,
+          // 크기·굵기는 fitTitle 의 계산 전제다. 바꾸면 위 상수도 다시 재야 한다.
+          fontSize: `${FONT_PX}px`,
+          fontWeight: 400,
           writingMode: 'vertical-lr',
           whiteSpace: 'nowrap',   // 한 열 고정(2열로 흐르지 않게)
           maxHeight: '92%',
