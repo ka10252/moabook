@@ -1,7 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef, ReactNode } from 'react';
 import { track } from '@/lib/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ArrowLeft, Bell, Upload, Plus, Check, Sparkles, ChevronRight, BookOpen, Clock, MessageCircle, Send, Smartphone } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Bell, Upload, Plus, Check, Sparkles, ChevronRight, BookOpen, Clock, MessageCircle, Send, Smartphone, Library, LayoutGrid, Map as MapIcon, SlidersHorizontal, MapPin, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePushNotifications, pushResultMessage } from '@/hooks/usePushNotifications';
 import { needsHomeScreenInstall } from '@/lib/platform';
@@ -119,7 +119,54 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
       ),
     },
 
-    // ③ 올리는 법 — 하단 '등록' 탭을 직접 가리킨다
+    // ③ 세 가지 뷰 — 실제 토글을 조준한다. 아이콘만 보고는 무엇이 바뀌는지 알기 어렵다.
+    {
+      key: 'views',
+      target: '[data-onboarding="view-toggle"]',
+      render: () => (
+        <>
+          <p className="eyebrow">보는 방식</p>
+          <h2 className="font-display text-[22px] leading-tight text-foreground">
+            세 가지로 볼 수 있어요
+          </h2>
+
+          <ViewModesDemo />
+
+          <ul className="w-full space-y-2 text-left">
+            <ViewRow Icon={Library} name="책등" desc="서가에 꽂힌 그대로 — 한눈에 많이" />
+            <ViewRow Icon={LayoutGrid} name="책표지" desc="표지를 크게 보고 고를 때" />
+            <ViewRow Icon={MapIcon} name="지도" desc="가까운 역에 어떤 책이 있는지" />
+          </ul>
+        </>
+      ),
+    },
+
+    // ④ 필터 — 책이 늘면 반드시 필요해지는데, 아이콘 하나라 그냥 지나치기 쉽다.
+    {
+      key: 'filter',
+      target: '[data-onboarding="filter"]',
+      render: () => (
+        <>
+          <div className="flex items-center gap-2">
+            <span className="w-9 h-9 rounded-full bg-primary/12 flex items-center justify-center shrink-0">
+              <SlidersHorizontal className="w-[18px] h-[18px] text-primary" />
+            </span>
+            <h2 className="font-display text-[22px] leading-tight text-foreground">
+              멀거나 관심 없는 책은 걸러요
+            </h2>
+          </div>
+
+          <FilterDemo />
+
+          <ul className="w-full space-y-2 text-left">
+            <ViewRow Icon={MapPin} name="지역·역" desc="집이나 학교에서 가까운 책만" />
+            <ViewRow Icon={Tag} name="장르" desc="소설·에세이·경제경영… 옆에 권수까지" />
+          </ul>
+        </>
+      ),
+    },
+
+    // ⑤ 올리는 법 — 하단 '등록' 탭을 직접 가리킨다
     {
       key: 'upload',
       target: '[data-onboarding="nav-upload"]',
@@ -140,7 +187,7 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
       ),
     },
 
-    // ④ 커뮤니티 — 하단 '커뮤니티' 탭을 가리킨다.
+    // ⑥ 커뮤니티 — 하단 '커뮤니티' 탭을 가리킨다.
     {
       key: 'community',
       target: '[data-onboarding="nav-community"]',
@@ -169,7 +216,7 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
       ),
     },
 
-    // ⑥ 마무리 — 등록을 강요하지 않는다. 처음 온 사람에게 필요한 건 숙제가 아니라 구경거리다.
+    // ⑦ 마무리 — 등록을 강요하지 않는다. 처음 온 사람에게 필요한 건 숙제가 아니라 구경거리다.
     {
       key: 'done',
       render: () => (
@@ -690,6 +737,89 @@ const DemoSpine = ({
     </div>
   );
 };
+
+/** 아이콘 + 이름 + 한 줄 설명. 뷰·필터 설명에서 쓴다. */
+const ViewRow = ({ Icon, name, desc }: { Icon: typeof Library; name: string; desc: string }) => (
+  <li className="flex items-center gap-2.5">
+    <span className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
+      <Icon className="w-[15px] h-[15px] text-foreground/70" />
+    </span>
+    <span className="min-w-0">
+      <span className="text-[15px] font-bold text-foreground">{name}</span>
+      <span className="text-[13px] text-muted-foreground"> · {desc}</span>
+    </span>
+  </li>
+);
+
+/**
+ * 세 뷰가 각각 어떻게 보이는지 나란히 — 아이콘 세 개만으로는 상상이 안 된다.
+ * 실제 화면을 축소한 게 아니라 **형태만 흉내낸 그림**이다(진짜 데이터를 끌어오면 온보딩이 느려진다).
+ */
+const ViewModesDemo = () => (
+  <div className="w-full grid grid-cols-3 gap-2">
+    {/* 책등 */}
+    <MiniFrame active>
+      <div className="flex items-end gap-[2px] h-full px-1 pb-[3px]">
+        {[70, 92, 80, 100, 66].map((h, i) => (
+          <span key={i} className={`flex-1 rounded-t-[1px] ${['bg-book-1','bg-book-4','bg-book-2','bg-book-6','bg-book-3'][i]}`} style={{ height: `${h}%` }} />
+        ))}
+      </div>
+    </MiniFrame>
+    {/* 책표지 */}
+    <MiniFrame>
+      <div className="grid grid-cols-3 gap-[3px] h-full p-1.5">
+        {['bg-book-2','bg-book-5','bg-book-1','bg-book-6','bg-book-3','bg-book-4'].map((c, i) => (
+          <span key={i} className={`rounded-[1px] ${c}`} />
+        ))}
+      </div>
+    </MiniFrame>
+    {/* 지도 */}
+    <MiniFrame>
+      <div className="relative h-full">
+        <span className="absolute left-[18%] top-[30%] w-1.5 h-1.5 rounded-full bg-primary" />
+        <span className="absolute left-[55%] top-[22%] w-1 h-1 rounded-full bg-primary/60" />
+        <span className="absolute left-[38%] top-[62%] w-2 h-2 rounded-full bg-primary" />
+        <span className="absolute left-[72%] top-[58%] w-1 h-1 rounded-full bg-primary/60" />
+        <span className="absolute left-[20%] top-[33%] h-px w-[22%] bg-foreground/20 origin-left rotate-[8deg]" />
+        <span className="absolute left-[42%] top-[36%] h-px w-[26%] bg-foreground/20 origin-left rotate-[32deg]" />
+      </div>
+    </MiniFrame>
+  </div>
+);
+
+/** 뷰 미리보기 한 칸 — 지금 보고 있는 뷰(책등)만 테두리를 강조한다 */
+const MiniFrame = ({ children, active }: { children: ReactNode; active?: boolean }) => (
+  <div
+    className={`h-[62px] rounded-lg overflow-hidden border ${
+      active ? 'border-primary bg-[#F6EEDE] dark:bg-[#332a1b]' : 'border-border bg-muted/40'
+    }`}
+  >
+    {children}
+  </div>
+);
+
+/** 필터 칩이 어떻게 생겼는지 — 장르 옆의 권수까지 보여준다(그게 이 필터의 쓸모다) */
+const FilterDemo = () => (
+  <div className="w-full rounded-xl border border-border bg-muted/30 p-2.5 space-y-2">
+    <div className="flex items-center gap-1.5 flex-wrap">
+      {[['소설·시', 7], ['에세이', 1], ['경제·경영', 5]].map(([g, n], i) => (
+        <span
+          key={g as string}
+          className={`text-[11px] px-2 py-1 rounded-full border flex items-center gap-1 ${
+            i === 0 ? 'border-primary text-primary bg-primary/10 font-bold' : 'border-border text-muted-foreground'
+          }`}
+        >
+          {g}
+          <span className="tabular-nums opacity-70">{n}</span>
+        </span>
+      ))}
+    </div>
+    <div className="flex items-center gap-1.5">
+      <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
+      <span className="text-[11px] text-muted-foreground">Clementi · Buona Vista</span>
+    </div>
+  </div>
+);
 
 /** 온보딩 첫 화면의 미니 서가 — 가변 높이 + 크림 선반, 실제 서가와 같은 조형 */
 const ShelfArt = () => (

@@ -490,20 +490,17 @@ export const Bookshelf = ({
       else rest.push(b);
     }
 
-    // 종류가 바뀌는 지점에만 칸막이를 세운다. 각각 별도 섹션으로 만들면
-    // 한 권 때문에 서가 한 칸이 통째로 생겨 휑해 보인다.
+    // '빌려준 책'·'빌린 책'은 **책갈피(구분선)**로만 알린다.
+    // 예전엔 첫 묶음을 서가 제목으로 올렸는데, 그러면 '모두의 책장' 제목과 똑같은 모양이라
+    // 같은 층위처럼 보였다. 이건 서가를 나누는 게 아니라 책 사이에 끼우는 표시다.
     const deal: ShelfBook[] = [];
     const append = (arr: ShelfBook[], name: string) =>
-      arr.forEach((b, i) => deal.push(i === 0 && deal.length > 0 ? { ...b, _divider: name } : b));
+      arr.forEach((b, i) => deal.push(i === 0 ? { ...b, _divider: name } : b));
     append(lent, '빌려준 책');
     append(borrowed, '빌린 책');
 
-    return { dealBooks: deal, mixedBooks: rest, firstDealLabel: lent.length ? '빌려준 책' : '빌린 책' };
+    return { dealBooks: deal, mixedBooks: rest };
   }, [shelfSource, lentBookIds, getRentedBooksInfo, user?.id]);
-
-  const firstDealLabel = dealBooks.length
-    ? (dealBooks[0].owner_id === user?.id ? '빌려준 책' : '빌린 책')
-    : undefined;
 
   /**
    * 같은 책(제목+저자)이 여러 권 올라와 있으면 하나만 보여주고 권수를 배지로 알린다.
@@ -543,10 +540,12 @@ export const Bookshelf = ({
     };
 
     // 거래 중인 책이 맨 위. 그 아래로는 내 책·남의 책 섞어서 채운다.
-    if (dealBooks.length) addSection(dealBooks, firstDealLabel);
-    if (dedupedMixedBooks.length) {
-      addSection(dedupedMixedBooks, dealBooks.length ? getFilterLabel() : undefined);
-    }
+    //
+    // 서가 칸에 제목을 달지 않는다. '내 서가 / 모두의 책장'으로 나눠 놓던 시절엔
+    // 어디까지가 누구 책인지 알려줄 필요가 있었지만, 지금은 섞여 있으니 알려줄 게 없다.
+    // 거래 중인 책만 책갈피(_divider)로 표시된다.
+    if (dealBooks.length) addSection(dealBooks);
+    if (dedupedMixedBooks.length) addSection(dedupedMixedBooks);
 
     // 예시 책은 "아직 책이 없는 새 책장"을 덜 휑하게 보이려고 두는 것이다.
     // 필터·검색으로 결과가 줄어든 건 빈 책장이 아니라 "조건에 맞는 책이 그것뿐"인 상태다.
@@ -557,7 +556,7 @@ export const Bookshelf = ({
     }
 
     return groups;
-  }, [dealBooks, firstDealLabel, dedupedMixedBooks, activeFilter, statusFilter, booksPerShelf, getFilterLabel, searchQuery, narrowingFilterOn]);
+  }, [dealBooks, dedupedMixedBooks, activeFilter, statusFilter, booksPerShelf, searchQuery, narrowingFilterOn]);
 
   const totalRealBooks = dealBooks.length + dedupedMixedBooks.length;
   // 배너 자체는 없앴지만(설명문이 첫 화면에 먼저 보이는 게 거슬렸다) 이 조건은
@@ -788,6 +787,7 @@ export const Bookshelf = ({
           <div
             role="group"
             aria-label="보기 방식"
+            data-onboarding="view-toggle"
             className="flex items-center shrink-0 rounded-full border border-border p-0.5"
           >
             {([
@@ -813,6 +813,7 @@ export const Bookshelf = ({
           {/* 정밀 필터 (지역·정렬) */}
           <button
             onClick={() => setShowFilterSheet(true)}
+            data-onboarding="filter"
             className={`tap-44 relative w-9 h-9 shrink-0 rounded-full border flex items-center justify-center transition-colors ${
               activeFilterCount > 0
                 ? 'border-primary text-primary bg-primary/10'

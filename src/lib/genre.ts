@@ -13,6 +13,7 @@ export const GENRES = [
   '소설·시',
   '에세이',
   '인문·역사',
+  '신앙·종교',
   '사회·정치',
   '경제·경영',
   '자기계발',
@@ -34,6 +35,20 @@ export const UNKNOWN_GENRE: Genre = '기타';
  * 위에서부터 훑어 **처음 걸리는 규칙**을 쓰므로, 좁은 분류를 먼저 둔다
  * (예: '컴퓨터'가 '자기계발'보다 앞이어야 IT 실용서가 자기계발로 새지 않는다).
  */
+/**
+ * 다른 무엇보다 먼저 보는 규칙.
+ *
+ * 알라딘 분류를 그냥 믿으면 안 되는 경우가 있다. 『기독교와 AI』는 알라딘이
+ * `컴퓨터/모바일>인공지능` 으로 넣어놨는데, 서가에서 그 책을 찾는 사람은
+ * **신앙서적을 찾는 사람**이다. 출판 유통의 분류와 빌리는 사람의 관심이 어긋난 것이다.
+ * 그래서 제목·분류에 신앙을 가리키는 낱말이 뚜렷하게 있으면 그쪽을 먼저 택한다.
+ *
+ * ⚠️ 이 목록은 함부로 늘리지 않는다. 여기 넣은 낱말은 다른 모든 판단을 덮어쓴다.
+ */
+const OVERRIDE_RULES: [RegExp, Genre][] = [
+  [/기독교|개신교|천주교|가톨릭|성경|성서|신앙|신학|교회|목회|목사|설교|예배|간증|불교|명상록|이슬람|꾸란|Bible|Christian|Theolog/i, '신앙·종교'],
+];
+
 const CATEGORY_RULES: [RegExp, Genre][] = [
   // ── 순서가 규칙의 일부다. 넓은 낱말이 좁은 것을 잡아먹지 않게 좁은 것을 위에 둔다.
   //    실제로 겪은 사고: `과학` 이 **사회과학**에 걸려 『자유론』이 과학·IT가 됐다.
@@ -56,7 +71,7 @@ const CATEGORY_RULES: [RegExp, Genre][] = [
 
   [/소설|희곡|장르소설|Fiction|Poetry|Drama/i, '소설·시'],
   [/에세이|Essays?|Biography|Literary Collections/i, '에세이'],
-  [/인문학|역사|종교|철학|History|Philosophy|Religion/i, '인문·역사'],
+  [/인문학|역사|철학|History|Philosophy/i, '인문·역사'],
   [/예술|대중문화|만화|여행|요리|살림|건강|취미|레저|가정|육아|반려|Art|Travel|Cooking|Health|Sports|Crafts|Family|Comics/i, '취미·라이프'],
 ];
 
@@ -91,6 +106,11 @@ export function classifyGenre(input: {
   description?: string | null;
 }): Genre {
   const cat = input.categoryName ?? '';
+
+  // 제목 + 분류를 함께 본다 — 분류가 '인공지능'이어도 제목이 '기독교와…'면 신앙서적이다.
+  const strong = `${input.title ?? ''} ${cat}`;
+  for (const [re, genre] of OVERRIDE_RULES) if (re.test(strong)) return genre;
+
   if (cat) {
     for (const [re, genre] of CATEGORY_RULES) if (re.test(cat)) return genre;
   }

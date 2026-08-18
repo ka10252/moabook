@@ -13,7 +13,8 @@
  *   SUPABASE_SERVICE_ROLE_KEY=$(supabase projects api-keys --project-ref <ref> ...) \
  *     npm run genre:backfill
  *
- *   --dry   무엇으로 채울지만 보여주고 쓰지 않는다
+ *   --dry          무엇으로 채울지만 보여주고 쓰지 않는다
+ *   --reclassify   이미 장르가 있는 책까지 **다시** 매긴다 (분류 규칙을 고친 뒤에 쓴다)
  */
 import { build } from 'esbuild';
 import { readFileSync } from 'node:fs';
@@ -28,6 +29,7 @@ const KEY = env.VITE_SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY;
 const WRITE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || KEY;
 const GKEY = env.VITE_GOOGLE_BOOKS_API_KEY || '';
 const DRY = process.argv.includes('--dry');
+const ALL = process.argv.includes('--reclassify');
 if (!URL_ || !KEY) { console.error('.env 에 VITE_SUPABASE_URL / KEY 가 필요하다'); process.exit(1); }
 
 const out = await build({ entryPoints: ['src/lib/genre.ts'], bundle: true, format: 'esm', write: false });
@@ -36,11 +38,12 @@ const { classifyGenre } = await import('data:text/javascript,' + encodeURICompon
 const h = { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' };
 
 const books = await (await fetch(
-  `${URL_}/rest/v1/books?select=id,title,author,description&genre=is.null`, { headers: h },
+  `${URL_}/rest/v1/books?select=id,title,author,description,genre`
+  + (ALL ? '' : '&genre=is.null'), { headers: h },
 )).json();
 
 if (!Array.isArray(books)) { console.error('책을 못 읽었다:', books); process.exit(1); }
-console.log(`장르 없는 책 ${books.length}권\n`);
+console.log(ALL ? `전체 ${books.length}권 다시 분류\n` : `장르 없는 책 ${books.length}권\n`);
 
 let written = 0;
 for (const b of books) {
@@ -69,7 +72,11 @@ for (const b of books) {
 
   const genre = classifyGenre({ categoryName, title: b.title, description: b.description });
   const via = categoryName ? categoryName.split('>').slice(-2).join('>').trim() : '(제목 짐작)';
-  console.log(`  ${genre.padEnd(8)} ← ${b.title.slice(0, 30).padEnd(32)} ${via}`);
+  const changed = b.genre && b.genre !== genre;
+  console.log(`  ${changed ? '↻' : ' '} ${genre.padEnd(8)} ← ${b.title.slice(0, 30).padEnd(32)} ${via}`
+    + (changed ? `   (${b.genre} 였음)` : ''));
+
+  if (b.genre === genre) { written++; continue; }
 
   if (!DRY) {
     // ⚠️ return=minimal 로 두면 **RLS에 막혀 0행이 바뀌어도 204** 가 온다.
