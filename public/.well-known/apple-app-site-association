@@ -1,0 +1,13 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["REPLACE_WITH_TEAMID.app.moabook"],
+        "components": [
+          { "/": "/auth", "comment": "가입 확인 메일" },
+          { "/": "/auth/*", "comment": "비밀번호 재설정 등" }
+        ]
+      }
+    ]
+  }
+}

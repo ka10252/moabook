@@ -33,18 +33,20 @@
             </intent-filter>
 
             <!-- App Links — 메일의 https 링크를 브라우저 대신 앱이 받는다.
-                 아직 켜지 않았다. 켜려면 두 가지가 먼저 필요하다:
-                   1) 실제 도메인 확정 (예: moabook.app)
-                   2) 그 도메인에 /.well-known/assetlinks.json 올리기
-                      (앱 서명 인증서 SHA-256 지문이 들어간다 → 서명 키가 있어야 만든다)
-                 준비되면 아래 주석을 풀고 android:host를 실제 도메인으로 바꾼다.
+                 도메인은 확정됐다(moabook.vercel.app). 남은 건 하나:
+                   public/.well-known/assetlinks.json 올리기
+                   — 앱 서명 인증서의 SHA-256 지문이 들어간다. 서명 키를 만든 뒤에야 채울 수 있다.
+                 지문을 넣고 배포한 다음 아래 주석을 풀면 된다.
                  그때까지는 위의 moabook:// 스킴으로 동작한다.
+
+                 참고: vercel.app은 Public Suffix List에 있어 서브도메인이
+                 독립 사이트로 취급된다 — App Links/Universal Links 둘 다 쓸 수 있다.
 
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="moabook.app" android:pathPrefix="/auth" />
+                <data android:scheme="https" android:host="moabook.vercel.app" android:pathPrefix="/auth" />
             </intent-filter>
             -->
 
