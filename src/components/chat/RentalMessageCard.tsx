@@ -209,7 +209,7 @@ export const RentalMessageCard = ({
             반납은 책 주인이 확인하므로, 빌린 사람이 리뷰를 남길 자연스러운 지점이
             이 메시지밖에 없다. 팝업으로 띄우면 맥락 없이 튀어나와 그냥 닫힌다. */}
         {type === 'returned' && showReviewButton && onReviewClick && (
-          <div className="w-full flex flex-col items-center gap-1">
+          <div className="w-full">
             <Button
               size="sm"
               variant="outline"
@@ -219,18 +219,13 @@ export const RentalMessageCard = ({
               <Star className="w-3.5 h-3.5 mr-1.5" />
               {hasReviewed ? '내 리뷰 보기' : '리뷰 남기기'}
             </Button>
-            {!hasReviewed && (
-              <span className="text-[13px] text-muted-foreground">
-                이 책 어땠는지 한 줄 남겨주세요
-              </span>
-            )}
           </div>
         )}
 
         {/* 거래 상대 매너 평가 — 빌린 쪽·빌려준 쪽 모두에게 보인다.
             책 리뷰와 달리 양방향이다. 책을 험하게 보고 돌려주는 사람도 걸러져야 한다. */}
         {type === 'returned' && showMannerButton && onMannerClick && (
-          <div className="w-full flex flex-col items-center gap-1">
+          <div className="w-full">
             <Button
               size="sm"
               variant="outline"
@@ -240,11 +235,6 @@ export const RentalMessageCard = ({
               <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
               {hasMannerReviewed ? '내가 남긴 평가 수정' : '거래 상대 평가하기'}
             </Button>
-            {!hasMannerReviewed && (
-              <span className="text-[13px] text-muted-foreground">
-                익명이에요. 상대는 누가 남겼는지 몰라요
-              </span>
-            )}
           </div>
         )}
 

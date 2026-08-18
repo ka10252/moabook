@@ -65,10 +65,24 @@ export const TransactionDashboard = ({ isOpen, onClose, partnerId, initialTab }:
     return 'bg-secondary text-secondary-foreground';
   };
 
-  const formatReturnDate = (date: string | null) => {
+  const formatDate = (date: string | null | undefined) => {
     if (!date) return '미정';
     return format(new Date(date), 'yyyy.MM.dd', { locale: ko });
   };
+
+  /**
+   * 반납일 한 줄에 무엇을 쓸지.
+   *
+   * 두 날짜는 뜻이 다르다 — `return_date` 는 **약속한 예정일**, `returned_at` 은
+   * **실제로 돌려받은 날**이다. 그래서 하나로 합치지 않고 상황에 따라 고른다.
+   *  · 아직 대여 중  → 예정일을 보여줘야 "언제까지"가 보인다
+   *  · 반납이 끝났으면 → 실제 반납일이 사실이다. 예정일밖에 없으면 그걸 쓴다
+   *    (예정일도 없던 옛 거래는 마이그레이션이 채팅의 '반납 완료' 시각으로 채웠다)
+   */
+  const returnLine = (t: { status: string; return_date: string | null; returned_at?: string | null }) =>
+    t.status === 'completed'
+      ? { label: '반납일', value: formatDate(t.returned_at ?? t.return_date) }
+      : { label: '반납 예정', value: formatDate(t.return_date) };
 
   return (
     <AnimatePresence>
@@ -163,20 +177,31 @@ export const TransactionDashboard = ({ isOpen, onClose, partnerId, initialTab }:
 
                     {/* Transaction Details */}
                     <div className="flex items-center justify-between text-sm mb-3">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <User className="w-4 h-4" />
-                        <span>{transaction.counterparty?.nickname || '알 수 없음'}</span>
+                      {/* 상대가 이 거래에서 어느 쪽인지 이름 앞에 밝힌다.
+                          히스토리는 빌려준 기록과 빌린 기록이 한 줄로 섞여 있는데,
+                          배지는 전부 '대여·반납 완료'라 방향을 알 길이 없었다.
+                          isMine = 내가 책 주인 → 상대는 빌려간 '거래자'. 아니면 상대가 '책주인'. */}
+                      <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
+                        <User className="w-4 h-4 shrink-0" />
+                        <span className="text-xs px-1.5 py-0.5 rounded-md bg-background border border-border text-foreground/70 shrink-0">
+                          {transaction.isMine ? '거래자' : '책주인'}
+                        </span>
+                        <span className="truncate">{transaction.counterparty?.nickname || '알 수 없음'}</span>
                       </div>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(transaction)}`}>
                         {getStatusLabel(transaction)}
                       </span>
                     </div>
 
-                     {/* Date & Return Date */}
-                     <div className="flex items-center justify-between text-sm">
-                       <div className="flex items-center gap-2 text-muted-foreground">
-                         <Calendar className="w-4 h-4" />
-                         <span>반납일: {formatReturnDate(transaction.return_date)}</span>
+                     {/* 대여일 · 반납일 — 언제 빌려가서 언제 돌아왔는지가 기록의 핵심이다 */}
+                     <div className="flex items-center justify-between text-sm gap-2">
+                       <div className="flex items-center gap-2 text-muted-foreground min-w-0">
+                         <Calendar className="w-4 h-4 shrink-0" />
+                         <span className="truncate">
+                           대여일: {formatDate(transaction.start_date)}
+                           <span className="mx-1.5 text-muted-foreground/50">·</span>
+                           {returnLine(transaction).label}: {returnLine(transaction).value}
+                         </span>
                        </div>
                        {tab === 'active' && transaction.isMine && transaction.type === 'rent' && (
                          <Button

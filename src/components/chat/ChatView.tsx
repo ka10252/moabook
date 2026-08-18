@@ -464,6 +464,30 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     setSending(false);
   };
 
+  /**
+   * 책마다 **가장 마지막 거래 카드**의 위치.
+   *
+   * 왜 필요한가: 대여 → 반납이 끝나면 거래가 completed가 되고 책도 available로 돌아온다.
+   * 그러면 `activeTransaction`이 다시 null이 되어 **옛 '대여 요청' 카드의 [대여 수락]
+   * 버튼이 되살아난다.** 끝난 거래인데 진행 중인 것처럼 보이고, 누르면 중복 거래가 생긴다.
+   *
+   * 거래 카드는 시간 순으로 쌓이므로, **같은 책의 더 뒤 카드가 있으면 앞 카드는 지난 기록이다.**
+   * 다시 빌릴 때는 새 요청 카드가 생겨 그게 마지막이 되므로 이 규칙으로 함께 풀린다.
+   *
+   * ⚠️ 리뷰·매너 평가 버튼에는 적용하지 않는다. 그건 거래를 바꾸는 실행이 아니라
+   *    끝난 거래에 대한 기록이라, 나중에 다시 빌리더라도 계속 열려 있어야 한다.
+   */
+  const lastDealCardIndex = useMemo(() => {
+    const map = new Map<string, number>();
+    messages.forEach((m, i) => {
+      const p = parseMessage(m.content);
+      if (p.bookId && ['request', 'accepted', 'returned', 'return_request'].includes(p.category)) {
+        map.set(p.bookId, i);
+      }
+    });
+    return map;
+  }, [messages]);
+
   // Find active transaction for a specific book
   const findActiveTransaction = (bookId: string) => {
     return transactions.find(t => t.book_id === bookId && t.status === 'active');
@@ -611,17 +635,23 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
             // 판매·나눔은 거래가 'completed'로 생성돼 activeTransaction으로는 안 잡힌다.
             // 책이 이미 팔림/대여중이면(수락 완료) 재수락 불가 → 중복 거래 방지.
             const bookTaken = bookInfo?.status === 'sold' || bookInfo?.status === 'rented';
-            const canAccept = parsed.category === 'request' && isBookOwner && !activeTransaction && !bookTaken;
+            // 이 책의 마지막 거래 카드인가. 아니면 지난 기록이므로 실행 버튼을 달지 않는다.
+            const isLatestDealCard = !parsed.bookId || lastDealCardIndex.get(parsed.bookId) === index;
+
+            const canAccept = parsed.category === 'request' && isBookOwner && !activeTransaction && !bookTaken
+              && isLatestDealCard;
             
             // For accepted: owner can confirm return completion
-            const canShowReturnButton = parsed.category === 'accepted' &&
+            const canShowReturnButton = isLatestDealCard &&
+              parsed.category === 'accepted' &&
               parsed.transactionType === 'rent' &&
               activeTransaction &&
               activeTransaction.isMine &&
               isOwn;
 
             // For return_request: owner sees "반납 수락" button (borrower sent the message, so !isOwn for owner)
-            const canAcceptReturn = parsed.category === 'return_request' &&
+            const canAcceptReturn = isLatestDealCard &&
+              parsed.category === 'return_request' &&
               activeTransaction &&
               activeTransaction.isMine &&
               !isOwn;
