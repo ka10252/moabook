@@ -21,12 +21,27 @@ const config: CapacitorConfig = {
   /**
    * 'debug' = Debug 빌드에서만 로그를 남긴다(Capacitor 기본값). 스토어 배포본에는 안 나간다.
    *
-   * ⚠️ 이걸 켜도 **웹뷰의 console.log가 `--console-pty`에 보이지는 않았다(확인함).**
-   *    Capacitor 자체 로그(`⚡️ To Native ->`)만 보인다. 그래서 딥링크처럼
-   *    실기에서만 도는 흐름은 **Safari 웹 인스펙터**로 봐야 한다:
-   *      Safari → 개발자용 → Simulator → localhost
+   * 웹뷰의 console.log는 `xcrun simctl launch --console-pty` 에 `⚡️ [log] -` 로 나온다.
+   * (아래 ios.webContentsDebuggingEnabled 와 함께 켜야 보인다)
    */
   loggingBehavior: 'debug',
+
+  ios: {
+    /**
+     * Safari 웹 인스펙터로 웹뷰를 들여다볼 수 있게 한다.
+     *
+     * 왜 명시해야 하나: Capacitor는 Debug 빌드면 자동으로 켜는데, 그 판단이
+     * `#if DEBUG`다. **Capacitor 8은 SPM xcframework로 들어와서** 그 매크로가
+     * 우리 앱이 아니라 **프레임워크의 빌드 설정**을 본다 → 항상 거짓이 된다.
+     * (CAPInstanceDescriptor.swift 의 else 분기 주석에 그 사정이 적혀 있다)
+     * 그래서 Safari '개발자용' 메뉴에 기기가 아예 안 뜬다.
+     *
+     * ⚠️ **스토어 배포 전에 반드시 false로 되돌리거나 Debug 전용으로 바꾼다.**
+     *    켜둔 채로 내보내면 배포본의 웹뷰를 누구나 들여다볼 수 있다.
+     *    docs/STORE_RELEASE_CHECKLIST.md 에 항목으로 넣어뒀다.
+     */
+    webContentsDebuggingEnabled: true,
+  },
 
   plugins: {
     SplashScreen: {

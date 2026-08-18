@@ -1,4 +1,4 @@
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -41,13 +41,31 @@ const AppRoutes = () => {
 
   // 앱이 인증 링크로 열렸을 때 세션을 만들고 그 화면으로 보낸다(네이티브 전용).
   // 웹에서는 브라우저가 알아서 하므로 아무 일도 하지 않는다.
+  /**
+   * 딥링크 리스너는 **앱이 사는 동안 딱 한 번만** 등록한다.
+   *
+   * ⚠️ 예전엔 의존성이 `[navigate]`였다. `BrowserRouter`에서 `useNavigate()`는
+   *    이동할 때마다 새 함수를 준다 → 화면을 옮길 때마다 effect가 다시 돌고,
+   *    등록이 비동기라 정리 함수가 아직 없는 상태에서 정리가 먼저 실행됐다.
+   *    리스너가 떨어졌다 붙었다 하는 경합이 생긴다.
+   *    그래서 navigate는 ref에 담고 effect는 빈 의존성으로 둔다.
+   */
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
+
   useEffect(() => {
+    let disposed = false;
     let cleanup: (() => void) | undefined;
-    void initDeepLinks((path) => navigate(path, { replace: true })).then((fn) => {
-      cleanup = fn;
+    void initDeepLinks((path) => navigateRef.current(path, { replace: true })).then((fn) => {
+      // 등록이 끝나기 전에 언마운트됐으면 바로 정리한다(안 하면 리스너가 남는다)
+      if (disposed) fn();
+      else cleanup = fn;
     });
-    return () => cleanup?.();
-  }, [navigate]);
+    return () => {
+      disposed = true;
+      cleanup?.();
+    };
+  }, []);
 
   return (
     <RouteErrorBoundary resetKey={location.pathname}>

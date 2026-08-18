@@ -132,36 +132,48 @@ npm run native:ios       # Xcode 열림 → 서명 팀 지정 후 Run
 
 ## 5. 검증 현황 (2026-08-19)
 
-### 확인됨 ✅
-- **iOS 빌드 성공** — `xcodebuild -scheme App -destination 'generic/platform=iOS Simulator'`
-  → `** BUILD SUCCEEDED **`. CocoaPods 없이 SPM으로 해결됨.
-- **앱 실행** — iPhone 17 시뮬레이터에 설치·실행. 서가 화면이 정상 렌더된다.
-- **네이티브 초기화 배선** — 콘솔 로그로 확인:
-  `KeyboardPlugin: no resize` · `StatusBar setStyle` · `SplashScreen hide` ·
-  `App getLaunchUrl` · `App addListener`
-- **안전영역** — 스크린샷 색 분석. 상태바 영역 `#F4F1EA`(크림), 홈 인디케이터 영역
-  `#FAF8F3`(탭바 색). 잘리거나 흰 띠 없음.
-- **URL 스킴 등록** — 빌드된 `App.app/Info.plist`에서 `moabook` 확인(`plutil`).
-- **OS가 앱으로 URL을 전달함** — 미등록 스킴은 `LSApplicationWorkspaceErrorDomain 115`
-  에러, `moabook://`는 성공.
-- **Capacitor 네이티브 배선** — `SceneDelegate.openURLContexts` → `SceneDelegateProxy`
-  → `.capacitorOpenURL` 알림. 콜드 스타트도 `capacitorViewDidAppear`에서 재전달한다.
+### 딥링크 — 전 구간 동작 확인 ✅
+`xcrun simctl launch --console-pty` 로그에서 끝까지 확인했다:
+
+```
+⚡️  TO JS {"url":"moabook://space", ...}      Capacitor → JS
+⚡️  [log] - [deeplink] 받음: moabook://space   우리 핸들러 진입
+⚡️  [log] - [deeplink] 이동: /space            경로 결정
+⚡️  [log] - Phaser v4.2.1 (WebGL | Web Audio)  /space 가 실제로 로드됨
+```
+
+### ⚠️ 여기서 오래 헤맸다 — 헤드리스 시뮬레이터
+`xcrun simctl boot` 만으로는 **Simulator.app UI가 없는 헤드리스 상태**가 된다.
+그 상태에서는 iOS가 `scene(_:openURLContexts:)` 를 **호출하지 않는다.**
+`simctl openurl` 은 성공을 반환하는데 앱은 아무것도 못 받는다 — 조용히 실패한다.
+
+**딥링크를 시험할 땐 반드시 UI를 먼저 띄운다:**
+```bash
+open -a Simulator
+xcrun simctl boot <UDID>          # 이미 부팅됐으면 405 에러 — 무시해도 된다
+xcrun simctl launch --console-pty <UDID> app.moabook
+xcrun simctl openurl <UDID> "moabook://space"
+```
+
+같은 이유로 **Safari 웹 인스펙터에도 기기가 안 뜬다.** Safari는 살아있는 웹뷰가
+있을 때만 목록에 띄운다 — 시뮬레이터가 꺼져 있거나 앱이 안 돌면 아무것도 안 보인다.
+메뉴에서 찾을 이름은 `Simulator`가 아니라 **기기 이름**(예: `iPhone 17`)이다.
+
+### 웹뷰 로그 보기
+`ios.webContentsDebuggingEnabled: true` 를 켜면 `console.log` 가
+`⚡️ [log] -` 로 `--console-pty` 에 나온다.
+⚠️ Capacitor 8은 SPM xcframework라 `#if DEBUG` 자동 판단이 안 먹는다 — 명시해야 한다.
+**배포 전 되돌릴 것** → `docs/STORE_RELEASE_CHECKLIST.md`
+
+### 그 밖에 확인됨
+- **iOS 빌드** — `** BUILD SUCCEEDED **`. CocoaPods 불필요(SPM).
+- **네이티브 초기화** — `KeyboardPlugin: no resize` · `StatusBar setStyle` ·
+  `SplashScreen hide` · `App getLaunchUrl` · `App addListener`
+- **안전영역** — 상태바 영역 `#F4F1EA`, 홈 인디케이터 영역 `#FAF8F3`. 잘림 없음.
+- **URL 스킴** — 빌드본 `Info.plist`에 `moabook` 등록. 미등록 스킴은 OS가 거부.
 - **파서** — `npm run test:deeplink` 10/10.
 
-### 확인 못 함 ❌ — 딥링크가 실제로 화면을 바꾸는지
-JS 핸들러(`appUrlOpen` → `navigate`)가 도는지 **확인하지 못했다.**
-
-시도한 방법과 왜 실패했는지:
-- **스크린샷 비교** — 앱이 20% 어둡게(`#F4F1EA × 0.8`) 찍히는 상태가 있어
-  "화면이 안 바뀐 것"과 "스크린샷이 오염된 것"을 구분할 수 없었다.
-- **`simctl launch --console-pty`** — Capacitor 자체 로그(`⚡️ To Native ->`)만 보이고
-  **웹뷰의 `console.log`는 안 나온다.** `loggingBehavior: 'debug'`를 켜도 같았다.
-- **`simctl spawn log stream`** — Capacitor 로그는 stdout이라 통합 로그에 안 잡힌다.
-
-**확실한 확인 방법 두 가지:**
-1. **Safari 웹 인스펙터** — Safari → 설정 → 고급 → '개발자용 메뉴 표시' 켠 뒤
-   `개발자용 → Simulator → localhost`. 콘솔을 열어둔 채
-   `xcrun simctl openurl booted "moabook://space"` 를 쏘면 `[deeplink] 받음/이동` 이 보인다.
-2. **진짜 흐름으로** — 앱에서 가입 → 메일의 인증 링크 탭.
-
-⚠️ **이게 확인되기 전에는 앱 출시가 불가능하다.** 인증을 못 끝내면 가입 자체가 막힌다.
+### 아직 안 한 것
+- **실제 인증 메일 흐름** — 앱에서 가입 → 메일 링크 탭. 스킴 배선은 확인됐으니
+  Supabase Redirect URLs 등록(완료)과 함께 동작할 것으로 보이나, 실제로는 안 해봤다.
+- **Android** 동일 확인.

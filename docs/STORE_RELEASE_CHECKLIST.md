@@ -214,3 +214,25 @@ D-day 역산
 1. **Google Play 계정 생성 + 테스터 모집 시작** — 가장 오래 걸리는 항목
 2. **Apple Account 국가/지역 정리** (§5) — 등록이 막혀 있는 원인일 가능성이 높다
 3. **Capacitor 래핑 착수** — 계정 승인을 기다리는 동안 병렬로
+
+---
+
+## 🔴 배포 전 반드시 되돌릴 것 (개발용으로 켜둔 설정)
+
+| 파일 | 설정 | 지금 | 배포 시 |
+|---|---|---|---|
+| `capacitor.config.ts` | `ios.webContentsDebuggingEnabled` | `true` | **`false`** 또는 Debug 전용 |
+| `capacitor.config.ts` | `loggingBehavior` | `'debug'` | 그대로 둬도 된다(Debug 빌드에서만 로그) |
+
+### 왜 켜뒀나
+Capacitor 8은 **SPM xcframework**로 들어와서, 자동 판단에 쓰이는 `#if DEBUG`가
+우리 앱이 아니라 프레임워크의 빌드 설정을 본다 → 항상 거짓이 되어
+**Safari 개발자용 메뉴에 Simulator가 아예 안 뜬다.** 그래서 명시적으로 켰다.
+
+### 왜 위험한가
+켜둔 채로 스토어에 올리면 **배포본의 웹뷰를 누구나 Safari로 열어볼 수 있다.**
+로컬스토리지의 세션 토큰까지 보인다.
+
+### 더 나은 방법(시간 있을 때)
+`Info.plist`에 `CAPACITOR_DEBUG = $(CAPACITOR_DEBUG)` 를 넣고, Xcode 빌드 설정에서
+Debug=`true` / Release=`false` 로 두면 설정 파일을 손대지 않아도 자동으로 갈린다.
