@@ -25,11 +25,11 @@ export const handleReturnCompletion = async (params: {
   const { transactionId, book, conversationId, userId } = params;
 
   // 1. Update transaction status to 'completed'
-  //    returned_at = **실제로 돌려받은 시각**. `return_date`(반납 예정일)를 덮어쓰지 않는다 —
-  //    덮어쓰면 "언제까지 빌리기로 했는지"가 사라진다.
+  //    반납일은 **실제로 돌려받은 날**로 덮어쓴다. 예정일이 지나 돌려받는 일이 흔한데
+  //    기록에 예정일이 남아 있으면 "언제 돌려받았지"를 알 수 없다.
   const { error: txnError } = await supabase
     .from('transactions')
-    .update({ status: 'completed', returned_at: new Date().toISOString() })
+    .update({ status: 'completed', return_date: new Date().toISOString() })
     .eq('id', transactionId);
 
   if (txnError) throw txnError;

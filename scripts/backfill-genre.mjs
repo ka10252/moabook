@@ -7,6 +7,12 @@
  * 판단 순서는 앱과 **같은 함수**(src/lib/genre.ts)를 쓴다 — 규칙을 두 벌 두면
  * 나중에 한쪽만 고쳐져서 같은 책이 화면과 DB에서 다른 장르가 된다.
  *
+ * 책은 주인만 고칠 수 있으므로(RLS) 쓰려면 **service_role 키**가 필요하다.
+ * 키는 파일에 남기지 않는다 — 실행할 때만 넘긴다:
+ *
+ *   SUPABASE_SERVICE_ROLE_KEY=$(supabase projects api-keys --project-ref <ref> ...) \
+ *     npm run genre:backfill
+ *
  *   --dry   무엇으로 채울지만 보여주고 쓰지 않는다
  */
 import { build } from 'esbuild';
@@ -18,6 +24,9 @@ const env = Object.fromEntries(
 );
 const URL_ = env.VITE_SUPABASE_URL;
 const KEY = env.VITE_SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY;
+// 읽기는 anon 으로 되지만 쓰기는 RLS에 막힌다(남의 책이라서). 쓸 때만 service_role 을 쓴다.
+const WRITE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || KEY;
+const GKEY = env.VITE_GOOGLE_BOOKS_API_KEY || '';
 const DRY = process.argv.includes('--dry');
 if (!URL_ || !KEY) { console.error('.env 에 VITE_SUPABASE_URL / KEY 가 필요하다'); process.exit(1); }
 
@@ -43,19 +52,46 @@ for (const b of books) {
       method: 'POST', headers: h, body: JSON.stringify({ query: b.title }),
     })).json();
     categoryName = r?.results?.[0]?.categoryName ?? null;
-  } catch { /* 못 찾으면 제목·소개로 짐작한다 */ }
+  } catch { /* 아래에서 구글로 한 번 더 본다 */ }
+
+  // 알라딘은 국내도서만 본다. 영어책은 여기서 다 빈손이 되므로 구글 도서로 한 번 더 찾는다.
+  if (!categoryName) {
+    try {
+      // 키 없이 부르면 공용 한도에 걸려 429가 온다 (실제로 겪음). .env 의 키를 쓴다.
+      const g = await (await fetch(
+        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(b.title)}&maxResults=5` +
+        (GKEY ? `&key=${GKEY}` : ''),
+      )).json();
+      categoryName = g?.items?.find((i) => i.volumeInfo?.categories?.length)
+        ?.volumeInfo.categories.join(' > ') ?? null;
+    } catch { /* 그래도 없으면 제목·소개로 짐작한다 */ }
+  }
 
   const genre = classifyGenre({ categoryName, title: b.title, description: b.description });
-  const via = categoryName ? categoryName.split('>').slice(1, 3).join('>') : '(제목 짐작)';
+  const via = categoryName ? categoryName.split('>').slice(-2).join('>').trim() : '(제목 짐작)';
   console.log(`  ${genre.padEnd(8)} ← ${b.title.slice(0, 30).padEnd(32)} ${via}`);
 
   if (!DRY) {
+    // ⚠️ return=minimal 로 두면 **RLS에 막혀 0행이 바뀌어도 204** 가 온다.
+    //    실제로 "19/19 저장했다"고 찍고는 값이 하나도 안 들어간 적이 있다.
+    //    바뀐 행을 돌려받아 눈으로 센다.
     const res = await fetch(`${URL_}/rest/v1/books?id=eq.${b.id}`, {
-      method: 'PATCH', headers: { ...h, Prefer: 'return=minimal' }, body: JSON.stringify({ genre }),
+      method: 'PATCH',
+      headers: { apikey: WRITE_KEY, Authorization: `Bearer ${WRITE_KEY}`,
+                 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify({ genre }),
     });
-    if (res.ok) written++;
-    else console.log(`    ⚠️ 저장 실패 ${res.status} ${await res.text()}`);
+    const rows = res.ok ? await res.json() : null;
+    if (Array.isArray(rows) && rows.length === 1) written++;
+    else console.log(`    ⚠️ 저장 실패 ${res.status} ${JSON.stringify(rows) || await res.text()}`);
   }
 }
 
-console.log(DRY ? '\n--dry 라 쓰지 않았다.' : `\n${written}/${books.length}권 저장했다.`);
+if (DRY) console.log('\n--dry 라 쓰지 않았다.');
+else {
+  console.log(`\n${written}/${books.length}권 저장했다.`);
+  if (written < books.length) {
+    console.log('⚠️ 못 쓴 책이 있다. SUPABASE_SERVICE_ROLE_KEY 를 넘겼는지 확인할 것 (남의 책은 RLS가 막는다).');
+    process.exit(1);
+  }
+}

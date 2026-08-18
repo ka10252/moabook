@@ -144,6 +144,49 @@ export const MRT_STATIONS: MrtStation[] = [
   { id: 'mayflower', name: 'Mayflower', nameKo: '메이플라워', lat: 1.3722, lon: 103.8367, district: 'Ang Mo Kio', region: '북부', lines: ['TE'] },
   { id: 'bright-hill', name: 'Bright Hill', nameKo: '브라이트 힐', lat: 1.3618, lon: 103.8330, district: 'Bishan', region: '북부', lines: ['TE'] },
   { id: 'upper-thomson', name: 'Upper Thomson', nameKo: '어퍼 톰슨', lat: 1.3543, lon: 103.8330, district: 'Bishan', region: '북부', lines: ['TE'] },
+
+  // ── 2026 갱신분 ────────────────────────────────────────────────────────
+  // 처음 만들 때 주요 역만 넣어 109개였다. Hillview 가 없다는 제보로 전 노선을
+  // 다시 훑어 빠진 곳을 채웠다(NS·EW·NE·CC·DT·TE 전 역).
+  // ⚠️ LRT(Bukit Panjang·Sengkang·Punggol)는 넣지 않았다 — 정거장이 40곳 넘게 늘어
+  //    "가까운 역" 고르기가 오히려 어려워진다. 요청이 있으면 그때 넣는다.
+  { id: 'canberra', name: 'Canberra', nameKo: '캔버라', lat: 1.4432, lon: 103.8296, district: 'Sembawang', region: '북부', lines: ['NS'] },
+  { id: 'marina-south-pier', name: 'Marina South Pier', nameKo: '마리나 사우스 피어', lat: 1.2711, lon: 103.8635, district: 'Downtown Core', region: '중부', lines: ['NS'] },
+  { id: 'tanjong-pagar', name: 'Tanjong Pagar', nameKo: '탄종 파가', lat: 1.2765, lon: 103.8459, district: 'Downtown Core', region: '중부', lines: ['EW'] },
+  { id: 'gul-circle', name: 'Gul Circle', nameKo: '걸 서클', lat: 1.3196, lon: 103.6605, district: 'Tuas', region: '서부', lines: ['EW'] },
+  { id: 'tuas-crescent', name: 'Tuas Crescent', nameKo: '투아스 크레센트', lat: 1.3211, lon: 103.6491, district: 'Tuas', region: '서부', lines: ['EW'] },
+  { id: 'tuas-west-road', name: 'Tuas West Road', nameKo: '투아스 웨스트 로드', lat: 1.3300, lon: 103.6395, district: 'Tuas', region: '서부', lines: ['EW'] },
+  { id: 'tuas-link', name: 'Tuas Link', nameKo: '투아스 링크', lat: 1.3404, lon: 103.6367, district: 'Tuas', region: '서부', lines: ['EW'] },
+  { id: 'punggol-coast', name: 'Punggol Coast', nameKo: '풍골 코스트', lat: 1.4152, lon: 103.9074, district: 'Punggol', region: '북동부', lines: ['NE'] },
+  { id: 'bras-basah', name: 'Bras Basah', nameKo: '브라스 바사', lat: 1.2969, lon: 103.8506, district: 'Museum', region: '중부', lines: ['CC'] },
+  { id: 'esplanade', name: 'Esplanade', nameKo: '에스플러네이드', lat: 1.2933, lon: 103.8555, district: 'Downtown Core', region: '중부', lines: ['CC'] },
+  { id: 'promenade', name: 'Promenade', nameKo: '프로머나드', lat: 1.2931, lon: 103.8613, district: 'Downtown Core', region: '중부', lines: ['CC', 'DT'] },
+  { id: 'nicoll-highway', name: 'Nicoll Highway', nameKo: '니콜 하이웨이', lat: 1.2997, lon: 103.8637, district: 'Kallang', region: '중부', lines: ['CC'] },
+  { id: 'bartley', name: 'Bartley', nameKo: '바틀리', lat: 1.3428, lon: 103.8797, district: 'Toa Payoh', region: '중부', lines: ['CC'] },
+  { id: 'bayfront', name: 'Bayfront', nameKo: '베이프런트', lat: 1.2820, lon: 103.8592, district: 'Downtown Core', region: '중부', lines: ['CC', 'DT'] },
+  { id: 'cashew', name: 'Cashew', nameKo: '캐슈', lat: 1.3695, lon: 103.7644, district: 'Bukit Panjang', region: '서부', lines: ['DT'] },
+  { id: 'hillview', name: 'Hillview', nameKo: '힐뷰', lat: 1.3625, lon: 103.7675, district: 'Bukit Batok', region: '서부', lines: ['DT'] },
+  { id: 'fort-canning', name: 'Fort Canning', nameKo: '포트 캐닝', lat: 1.2921, lon: 103.8443, district: 'Museum', region: '중부', lines: ['DT'] },
+  { id: 'bencoolen', name: 'Bencoolen', nameKo: '벤쿨렌', lat: 1.2985, lon: 103.8503, district: 'Museum', region: '중부', lines: ['DT'] },
+  { id: 'jalan-besar', name: 'Jalan Besar', nameKo: '잘란 브사', lat: 1.3053, lon: 103.8553, district: 'Kallang', region: '중부', lines: ['DT'] },
+  { id: 'bendemeer', name: 'Bendemeer', nameKo: '벤디미어', lat: 1.3138, lon: 103.8617, district: 'Kallang', region: '중부', lines: ['DT'] },
+  { id: 'geylang-bahru', name: 'Geylang Bahru', nameKo: '게일랑 바루', lat: 1.3215, lon: 103.8714, district: 'Kallang', region: '중부', lines: ['DT'] },
+  { id: 'mattar', name: 'Mattar', nameKo: '마타', lat: 1.3267, lon: 103.8830, district: 'Geylang', region: '중부', lines: ['DT'] },
+  { id: 'kaki-bukit', name: 'Kaki Bukit', nameKo: '카키 부킷', lat: 1.3350, lon: 103.9089, district: 'Bedok', region: '동부', lines: ['DT'] },
+  { id: 'tampines-east', name: 'Tampines East', nameKo: '탬피니스 이스트', lat: 1.3563, lon: 103.9545, district: 'Tampines', region: '동부', lines: ['DT'] },
+  { id: 'upper-changi', name: 'Upper Changi', nameKo: '어퍼 창이', lat: 1.3416, lon: 103.9615, district: 'Tampines', region: '동부', lines: ['DT'] },
+  { id: 'xilin', name: 'Xilin', nameKo: '실린', lat: 1.3292, lon: 103.9622, district: 'Bedok', region: '동부', lines: ['DT'] },
+  { id: 'sungei-bedok', name: 'Sungei Bedok', nameKo: '숭에이 베독', lat: 1.3222, lon: 103.9540, district: 'Bedok', region: '동부', lines: ['DT', 'TE'] },
+  { id: 'woodlands-north', name: 'Woodlands North', nameKo: '우들랜즈 노스', lat: 1.4482, lon: 103.7859, district: 'Woodlands', region: '북부', lines: ['TE'] },
+  { id: 'woodlands-south', name: 'Woodlands South', nameKo: '우들랜즈 사우스', lat: 1.4270, lon: 103.7940, district: 'Woodlands', region: '북부', lines: ['TE'] },
+  { id: 'shenton-way', name: 'Shenton Way', nameKo: '셴턴 웨이', lat: 1.2779, lon: 103.8511, district: 'Downtown Core', region: '중부', lines: ['TE'] },
+  { id: 'marina-south', name: 'Marina South', nameKo: '마리나 사우스', lat: 1.2712, lon: 103.8637, district: 'Straits View', region: '중부', lines: ['TE'] },
+  { id: 'gardens-by-the-bay', name: 'Gardens by the Bay', nameKo: '가든스 바이 더 베이', lat: 1.2795, lon: 103.8676, district: 'Downtown Core', region: '중부', lines: ['TE'] },
+  { id: 'tanjong-rhu', name: 'Tanjong Rhu', nameKo: '탄종 루', lat: 1.2933, lon: 103.8734, district: 'Kallang', region: '중부', lines: ['TE'] },
+  { id: 'katong-park', name: 'Katong Park', nameKo: '카통 파크', lat: 1.2963, lon: 103.8853, district: 'Marine Parade', region: '동부', lines: ['TE'] },
+  { id: 'marine-terrace', name: 'Marine Terrace', nameKo: '마린 테라스', lat: 1.3065, lon: 103.9153, district: 'Marine Parade', region: '동부', lines: ['TE'] },
+  { id: 'bayshore', name: 'Bayshore', nameKo: '베이쇼어', lat: 1.3117, lon: 103.9430, district: 'Bedok', region: '동부', lines: ['TE'] },
+  { id: 'bedok-south', name: 'Bedok South', nameKo: '베독 사우스', lat: 1.3160, lon: 103.9491, district: 'Bedok', region: '동부', lines: ['TE'] },
 ];
 
 const BY_ID = new Map(MRT_STATIONS.map((s) => [s.id, s]));

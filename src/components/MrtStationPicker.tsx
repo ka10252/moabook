@@ -45,8 +45,15 @@ export function MrtStationPicker({ value, onChange, placeholder = '역 이름으
       s.lines.some((l) => l.toLowerCase() === q);
 
     const matched = MRT_STATIONS.filter(hit);
+    // 지역 안에서는 이름 가나다(ABC)순. 데이터는 노선 순서로 적혀 있는데,
+    // 역을 눈으로 찾는 사람에게 노선 순서는 아무 단서가 안 된다.
     return SG_REGION_ORDER
-      .map((region) => ({ region, stations: matched.filter((s) => s.region === region) }))
+      .map((region) => ({
+        region,
+        stations: matched
+          .filter((s) => s.region === region)
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      }))
       .filter((g) => g.stations.length > 0);
   }, [query]);
 

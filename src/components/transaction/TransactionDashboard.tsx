@@ -73,15 +73,14 @@ export const TransactionDashboard = ({ isOpen, onClose, partnerId, initialTab }:
   /**
    * 반납일 한 줄에 무엇을 쓸지.
    *
-   * 두 날짜는 뜻이 다르다 — `return_date` 는 **약속한 예정일**, `returned_at` 은
-   * **실제로 돌려받은 날**이다. 그래서 하나로 합치지 않고 상황에 따라 고른다.
-   *  · 아직 대여 중  → 예정일을 보여줘야 "언제까지"가 보인다
-   *  · 반납이 끝났으면 → 실제 반납일이 사실이다. 예정일밖에 없으면 그걸 쓴다
-   *    (예정일도 없던 옛 거래는 마이그레이션이 채팅의 '반납 완료' 시각으로 채웠다)
+   * 같은 `return_date` 지만 거래 상태에 따라 뜻이 다르다.
+   *  · 아직 대여 중  → '반납 예정'. 언제까지 빌리기로 했는지가 필요하다
+   *  · 반납이 끝났으면 → '반납일'. 같은 칸이지만 완료 시점에 실제 날짜로 덮어쓰므로
+   *    이름표만 바꿔 달면 된다 (마이그 20260821000001)
    */
-  const returnLine = (t: { status: string; return_date: string | null; returned_at?: string | null }) =>
+  const returnLine = (t: { status: string; return_date: string | null }) =>
     t.status === 'completed'
-      ? { label: '반납일', value: formatDate(t.returned_at ?? t.return_date) }
+      ? { label: '반납일', value: formatDate(t.return_date) }
       : { label: '반납 예정', value: formatDate(t.return_date) };
 
   return (

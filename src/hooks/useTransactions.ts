@@ -11,10 +11,8 @@ export interface Transaction {
   type: 'rent' | 'purchase';
   start_date: string | null;
   end_date: string | null;
-  /** 반납 예정일 — 대여를 수락할 때 약속한 날 */
+  /** 진행 중이면 반납 예정일, 완료되면 실제 반납일 */
   return_date: string | null;
-  /** 실제 반납 확인 시각 — 책 주인이 '반납 확인'을 누른 때 */
-  returned_at: string | null;
   created_at: string;
   book?: {
     id: string;
@@ -106,12 +104,11 @@ export const useTransactions = () => {
     status?: 'pending' | 'active' | 'completed' | 'cancelled';
     type?: 'rent' | 'purchase';
     return_date?: string | null;
-    returned_at?: string | null;
   }) => {
     // '완료'로 바꾸는 경로가 여기에도 있다(거래 현황 → 수정). 채팅의 반납 확인과 마찬가지로
     // 실제 반납 시각을 남겨야 히스토리에서 "반납일: 미정"으로 남지 않는다.
-    const patch = updates.status === 'completed' && updates.returned_at === undefined
-      ? { ...updates, returned_at: new Date().toISOString() }
+    const patch = updates.status === 'completed' && updates.return_date === undefined
+      ? { ...updates, return_date: new Date().toISOString() }
       : updates;
 
     const { error } = await supabase

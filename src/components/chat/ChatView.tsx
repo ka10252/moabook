@@ -409,6 +409,9 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     );
   }, [transactions, conversation.other_user?.id, user?.id]);
 
+  const lentCount = conversationTransactions.filter(t => t.isMine).length;
+  const borrowedCount = conversationTransactions.length - lentCount;
+
   const getTransactionStatusText = (t: typeof transactions[0]) => {
     if (t.type === 'purchase') return '판매 완료';
     const base = t.isMine ? '대여해줌' : '대여중';
@@ -561,29 +564,21 @@ export const ChatView = ({ conversation, onBack }: ChatViewProps) => {
               ))}
             </div>
 
-            {/* Info text */}
+            {/* 권수에 상관없이 같은 모양으로 쓴다.
+                예전엔 1권일 때만 책 제목을 크게 띄워, 헤더의 책 제목과 겹쳐 보이면서
+                '거래 상태'가 아니라 그냥 책 소개처럼 읽혔다. */}
             <div className="flex-1 min-w-0">
-              {conversationTransactions.length === 1 ? (
-                <>
-                  <p className="text-xs font-semibold text-foreground truncate">
-                    {conversationTransactions[0].book?.title || '책'}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {getTransactionStatusText(conversationTransactions[0])}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-xs font-semibold text-foreground">
-                    {conversationTransactions.length}권 거래 중
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {conversationTransactions.filter(t => t.isMine).length > 0 && `대여해줌 ${conversationTransactions.filter(t => t.isMine).length}권`}
-                    {conversationTransactions.filter(t => t.isMine).length > 0 && conversationTransactions.filter(t => !t.isMine).length > 0 && ' · '}
-                    {conversationTransactions.filter(t => !t.isMine).length > 0 && `대여중 ${conversationTransactions.filter(t => !t.isMine).length}권`}
-                  </p>
-                </>
-              )}
+              <p className="text-xs font-semibold text-foreground">
+                {conversationTransactions.length}권 거래 중
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {lentCount > 0 && `대여해줌 ${lentCount}권`}
+                {lentCount > 0 && borrowedCount > 0 && ' · '}
+                {borrowedCount > 0 && `대여중 ${borrowedCount}권`}
+                {conversationTransactions.length === 1 && (
+                  <> · {conversationTransactions[0].book?.title}</>
+                )}
+              </p>
             </div>
 
             {/* Direction badge + arrow */}

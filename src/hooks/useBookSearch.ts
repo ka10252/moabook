@@ -109,7 +109,7 @@ export const useBookSearch = () => {
     
     if (!data.items) return [];
 
-    return data.items.map((item: { id: string; volumeInfo: { title: string; authors?: string[]; imageLinks?: { thumbnail?: string; small?: string; medium?: string }; description?: string; publishedDate?: string; industryIdentifiers?: { type: string; identifier: string }[] } }) => {
+    return data.items.map((item: { id: string; volumeInfo: { title: string; authors?: string[]; imageLinks?: { thumbnail?: string; small?: string; medium?: string }; description?: string; publishedDate?: string; categories?: string[]; industryIdentifiers?: { type: string; identifier: string }[] } }) => {
       const imageLinks = item.volumeInfo.imageLinks;
       const rawCover = imageLinks?.medium || imageLinks?.small || imageLinks?.thumbnail || null;
       const cover = rawCover
@@ -123,6 +123,8 @@ export const useBookSearch = () => {
       description: item.volumeInfo.description ? decodeEntities(item.volumeInfo.description) : null,
       firstPublishYear: item.volumeInfo.publishedDate ? parseInt(item.volumeInfo.publishedDate.split('-')[0]) : undefined,
       isbn: item.volumeInfo.industryIdentifiers?.find((id: { type: string }) => id.type === 'ISBN_13')?.identifier,
+      // 영어권 책의 장르 근거. 알라딘 categoryName과 같은 자리에 넣어 한 규칙표로 처리한다.
+      categoryName: item.volumeInfo.categories?.join(' > '),
     });
   });
   };
