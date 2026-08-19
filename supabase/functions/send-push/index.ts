@@ -92,7 +92,16 @@ serve(async (req) => {
       console.error("APNs secrets missing — iOS 구독 %d건을 건너뜀", iosSubs.length);
     } else {
       const tokens = iosSubs.map((s) => s.endpoint);
-      const res = await sendApns(tokens, { title, body: body ?? "", url: url ?? "/" });
+      // 앱 아이콘 숫자는 '안 읽은 알림 수'다. 이 함수는 알림 행이 만들어진 뒤에 불리므로
+      // 방금 것까지 포함된 값이 나온다.
+      const { count: unread } = await supabase
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user_id)
+        .eq("is_read", false);
+      const res = await sendApns(tokens, {
+        title, body: body ?? "", url: url ?? "/", badge: unread ?? undefined,
+      });
       res.forEach((r) => {
         if (r.ok) sent++;
         else if (r.dead) dead.push(r.token);

@@ -79,14 +79,33 @@ export async function hasNativePush(userId: string | undefined): Promise<boolean
 }
 
 /**
- * 알림을 눌렀을 때 앱 안에서 그 화면으로 옮긴다.
- * 페이로드의 `url` 은 send-push 가 넣어준다.
+ * 알림 관련 이벤트 배선. 앱이 뜰 때 한 번 부른다.
+ *
+ * 두 가지를 다룬다:
+ *  1. **알림을 눌러 들어온 경우** → 그 화면으로 옮긴다 (페이로드의 url, send-push 가 넣는다)
+ *  2. **앱을 보고 있을 때 온 알림** → iOS 는 이걸 **아무것도 안 하고 삼킨다.**
+ *     배너를 띄우지 않는 게 iOS 기본 동작이라, 그냥 두면 채팅을 보고 있는 동안
+ *     다른 대화에 온 메시지를 전혀 모른다. 앱 안에서 직접 알려준다.
  */
-export async function initNativePushTaps(navigate: (path: string) => void): Promise<void> {
+export async function initNativePushTaps(
+  navigate: (path: string) => void,
+  onForeground?: (msg: { title: string; body: string; url: string }) => void,
+): Promise<void> {
   if (!canUseNativePush) return;
   const { PushNotifications } = await import('@capacitor/push-notifications');
+
   await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
     const url = (action.notification.data as { url?: string })?.url;
     if (url) navigate(url);
   });
+
+  if (onForeground) {
+    await PushNotifications.addListener('pushNotificationReceived', (n) => {
+      onForeground({
+        title: n.title ?? '',
+        body: n.body ?? '',
+        url: (n.data as { url?: string })?.url ?? '/',
+      });
+    });
+  }
 }

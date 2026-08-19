@@ -62,7 +62,7 @@ export interface ApnsResult {
 
 export async function sendApns(
   tokens: string[],
-  msg: { title: string; body: string; url: string },
+  msg: { title: string; body: string; url: string; badge?: number },
 ): Promise<ApnsResult[]> {
   if (!apnsConfigured()) {
     return tokens.map((t) => ({ token: t, ok: false, dead: false, reason: "apns_not_configured" }));
@@ -81,7 +81,15 @@ export async function sendApns(
           "apns-priority": "10",
         },
         body: JSON.stringify({
-          aps: { alert: { title: msg.title, body: msg.body }, sound: "default" },
+          aps: {
+            alert: { title: msg.title, body: msg.body },
+            sound: "default",
+            // 앱 아이콘의 빨간 숫자 = 안 읽은 알림 수.
+            // ⚠️ iOS 는 이 값을 **푸시로만** 바꿀 수 있다. 앱에서 알림을 읽어도 숫자는
+            //    그대로 남고, 다음 푸시가 올 때 갱신된다. 완전히 지우려면 배지 플러그인이
+            //    따로 필요하다 — 지금은 "대충 맞는 숫자"로 둔다.
+            badge: msg.badge,
+          },
           // 알림을 눌렀을 때 갈 곳. 앱이 이 값을 읽어 화면을 옮긴다.
           url: msg.url,
         }),

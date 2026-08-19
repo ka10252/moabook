@@ -12,6 +12,7 @@ import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { lazyRetry } from "@/lib/lazyRetry";
 import { initDeepLinks } from "@/lib/deepLink";
 import { initNativePushTaps } from "@/lib/nativePush";
+import { toast } from "sonner";
 import { AuthPage } from "@/pages/AuthPage";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -68,10 +69,18 @@ const AppRoutes = () => {
     };
   }, []);
 
-  // 알림을 눌러 들어온 경우 그 화면으로 옮긴다 (딥링크와 같은 navigate 를 쓴다).
-  // 페이로드의 url 은 send-push 가 넣는다.
+  // 알림 배선 — 눌러서 들어오면 그 화면으로, 앱을 보고 있을 때 오면 앱 안에서 알린다.
+  // (iOS 는 앱이 떠 있을 때 온 알림을 배너로 띄우지 않고 그냥 삼킨다)
   useEffect(() => {
-    void initNativePushTaps((path) => navigateRef.current(path, { replace: true }));
+    void initNativePushTaps(
+      (path) => navigateRef.current(path, { replace: true }),
+      ({ title, body, url }) => {
+        toast(title, {
+          description: body || undefined,
+          action: { label: '보기', onClick: () => navigateRef.current(url, { replace: true }) },
+        });
+      },
+    );
   }, []);
 
   return (
