@@ -782,7 +782,8 @@ const ViewShot = ({ Icon, name, src, alt }: { Icon: typeof Library; name: string
       alt={alt}
       loading="eager"
       className="w-full rounded-lg border border-border block"
-      style={{ aspectRatio: '640 / 324', objectFit: 'cover' }}
+      // 카드가 길어지지 않게 낮게 잡는다. 사진 3장이라 조금만 높아도 화면 밖으로 밀린다.
+      style={{ aspectRatio: '640 / 216', objectFit: 'cover' }}
     />
   </div>
 );

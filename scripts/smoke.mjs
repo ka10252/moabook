@@ -193,6 +193,22 @@ async function run() {
       if (!/달성|단계 ·|등록|가입|반납|나눔/.test(t)) note('배지 상세', '내용 없음', '조건 문구가 안 보인다');
       await page.keyboard.press('Escape').catch(() => {});
     }
+    // 입력칸 글자가 16px 미만이면 iOS 가 탭할 때마다 화면을 자동 확대한다.
+    // 확대는 스스로 안 풀려서 버튼 누를 때마다 손으로 비율을 되돌려야 한다 — 실제로 겪었다.
+    // 화면마다 다시 재야 해서(폼이 화면별로 다르다) 여기서 한 번에 훑는다.
+    for (const [name, url] of [['메인', '/'], ['등록', '/?tab=upload'], ['커뮤니티', '/?tab=community'], ['채팅', '/?chat=1']]) {
+      await go(`입력칸 ${name}`, url, 2200);
+      const small = await page.evaluate(() =>
+        [...document.querySelectorAll('input, textarea, select')]
+          .filter((e) => e.type !== 'hidden' && e.offsetParent)
+          .map((e) => ({ ph: (e.placeholder || e.name || e.type).slice(0, 24), fs: parseFloat(getComputedStyle(e).fontSize) }))
+          .filter((r) => r.fs < 16),
+      ).catch(() => []);
+      if (small.length) {
+        note(`입력칸 ${name}`, '글자 16px 미만', small.map((r) => `${r.ph}(${r.fs}px)`).join(', ') + ' — iOS 자동 확대');
+      }
+    }
+
     await go('프로필(로그인)', '/?tab=profile', 3000);
     await click('책 등록 폼', 'nav button:has-text("등록")', 2500);
   } else {

@@ -584,3 +584,25 @@
     0 0 3px hsl(var(--card)), 0 0 3px hsl(var(--card));
   pointer-events: none;
 }
+
+/**
+ * 입력칸 글자는 16px 아래로 내려가지 않는다.
+ *
+ * iOS(사파리·웹뷰)는 **글자가 16px 미만인 입력칸을 탭하면 화면을 자동으로 확대한다.**
+ * 확대된 상태는 스스로 안 풀려서, 무언가 누를 때마다 손으로 화면 비율을 되돌려야 한다.
+ *
+ * viewport 에 `maximum-scale=1` 을 박는 흔한 요령은 쓰지 않는다 —
+ * 손가락으로 확대하는 것 자체를 막아 눈이 불편한 사람이 화면을 키울 수 없게 되고,
+ * iOS 사파리는 그 값을 무시하므로 웹에서는 고쳐지지도 않는다. 원인인 글자 크기를 고친다.
+ *
+ * 두 가지를 일부러 이렇게 했다:
+ *  · `!important` — Tailwind 의 `text-sm` 같은 **클래스가 요소 선택자를 이긴다.**
+ *    이게 없으면 규칙을 써도 아무 일도 일어나지 않는다(실제로 한 번 헛돌았다).
+ *  · `@media (pointer: coarse)` 로 감싸지 않는다 — 데스크톱 브라우저는 그 조건에 안 맞아
+ *    **검사로 확인할 수가 없다.** 이 앱은 사실상 폰에서만 쓰이므로 조건 없이 건다.
+ */
+input:not([type='checkbox']):not([type='radio']):not([type='range']),
+textarea,
+select {
+  font-size: max(16px, 1em) !important;
+}
