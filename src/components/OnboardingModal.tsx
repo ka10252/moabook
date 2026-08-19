@@ -125,14 +125,15 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
       target: '[data-onboarding="view-toggle"]',
       render: () => (
         <>
-          <p className="eyebrow">보는 방식</p>
-          <h2 className="font-display text-[22px] leading-tight text-foreground">
+          {/* 작은 폰(375×667)에서도 스크롤 없이 들어가야 해서 여백을 바짝 조였다.
+              eyebrow('보는 방식')를 뺀 것도 그래서다 — 제목이 이미 같은 말을 한다. */}
+          <h2 className="font-display text-[20px] leading-tight text-foreground">
             편한 뷰로 책을 탐색해요
           </h2>
 
           {/* 이름 → 그 뷰의 실제 화면 순서로 번갈아 놓는다.
               설명 문장은 없다 — 사진이 곧 설명이라, 글로 또 적으면 읽을 게 두 배가 된다. */}
-          <div className="w-full space-y-3">
+          <div className="w-full space-y-2">
             <ViewShot Icon={Library} name="책등" src="/onboarding/view-spine.webp" alt="서가에 꽂힌 책등 한 줄" />
             <ViewShot Icon={LayoutGrid} name="책표지" src="/onboarding/view-cover.webp" alt="책 표지 세 권이 한 줄로" />
             <ViewShot Icon={MapIcon} name="지도" src="/onboarding/view-map.webp" alt="역마다 책이 몇 권 있는지 표시된 지도" />
@@ -147,15 +148,18 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
       target: '[data-onboarding="filter"]',
       render: () => (
         <>
-          {/* 아이콘을 제목 옆이 아니라 **위**에 둔다.
-              옆에 두면 아이콘·간격(약 44px)만큼 제목 자리가 줄어 한 줄에 못 들어간다.
-              `whitespace-nowrap` 으로 억지로 한 줄을 유지했더니 글자가 카드 밖으로 삐져나가
-              **좌우 스크롤**이 생겼다 — 넘치게 두느니 자리를 만들어 준다. */}
-          <div className="w-full">
-            <span className="w-9 h-9 rounded-full bg-primary/12 flex items-center justify-center mb-2">
-              <SlidersHorizontal className="w-[18px] h-[18px] text-primary" />
+          {/* 아이콘을 옆에 두면서 한 줄을 지킨다.
+              아이콘·간격이 제목 자리를 먹으므로 아이콘을 줄이고(28px) 간격을 좁히고
+              자간을 조였다. 그래도 화면이 아주 좁으면 모자라니 글자 크기를 화면 폭에 맞춰
+              줄인다(clamp) — 줄바꿈하거나 카드 밖으로 삐져나가는 것보다 낫다. */}
+          <div className="w-full flex items-center gap-1.5">
+            <span className="w-7 h-7 rounded-full bg-primary/12 flex items-center justify-center shrink-0">
+              <SlidersHorizontal className="w-[15px] h-[15px] text-primary" />
             </span>
-            <h2 className="font-display text-[19px] leading-tight text-foreground">
+            <h2
+              className="font-display leading-tight text-foreground whitespace-nowrap"
+              style={{ fontSize: 'clamp(14px, 4.4vw, 19px)', letterSpacing: '-0.02em' }}
+            >
               원하는 책을 빠르게 찾아보세요
             </h2>
           </div>
@@ -378,7 +382,7 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
             </div>
 
             {/* 진행 표시 + 액션 — 항상 보인다(shrink-0) */}
-            <div className="shrink-0 flex items-center justify-between gap-3 mt-5">
+            <div className="shrink-0 flex items-center justify-between gap-3 mt-3">
               <div className="flex gap-1.5">
                 {steps.map((_, i) => (
                   <div
@@ -793,17 +797,18 @@ const ViewRow = ({ Icon, name, desc }: { Icon: typeof Library; name: string; des
  */
 const ViewShot = ({ Icon, name, src, alt }: { Icon: typeof Library; name: string; src: string; alt: string }) => (
   <div className="w-full">
-    <div className="flex items-center gap-1.5 mb-1">
-      <Icon className="w-[15px] h-[15px] text-foreground/70 shrink-0" />
-      <span className="text-[15px] font-bold text-foreground">{name}</span>
+    <div className="flex items-center gap-1.5 mb-0.5">
+      <Icon className="w-[14px] h-[14px] text-foreground/70 shrink-0" />
+      <span className="text-[14px] font-bold text-foreground leading-none">{name}</span>
     </div>
     <img
       src={src}
       alt={alt}
       loading="eager"
       className="w-full rounded-lg border border-border block"
-      // 카드가 길어지지 않게 낮게 잡는다. 사진 3장이라 조금만 높아도 화면 밖으로 밀린다.
-      style={{ aspectRatio: '640 / 216', objectFit: 'cover' }}
+      /* 비율은 카드 길이와 직결된다. 3장을 세로로 쌓으면서도 작은 폰에서 스크롤이 안 생기는
+         한계선이 여기다 — 더 높이면 iPhone SE(375×667)에서 넘친다. */
+      style={{ aspectRatio: '640 / 118', objectFit: 'cover' }}
     />
   </div>
 );
