@@ -261,6 +261,8 @@ export const WishlistPage = () => {
             {showMineSection && mine.length > 0 && (
               <section className="space-y-2">
                 <p className="text-[13px] font-semibold text-muted-foreground px-0.5 pt-2">내 요청</p>
+                {/* 줄 사이를 띄우지 않고 한 상자로 잇는다 — 목록은 이어져 보여야 훑기 쉽다 */}
+                <div className="rounded-[14px] border border-border bg-card overflow-hidden">
                 {mine.map((item) => (
                   <WishlistCard
                     key={item.id}
@@ -281,6 +283,7 @@ export const WishlistPage = () => {
                     }}
                   />
                 ))}
+                </div>
               </section>
             )}
 
@@ -314,6 +317,7 @@ export const WishlistPage = () => {
                     ))}
                   </div>
                 </div>
+                <div className="rounded-[14px] border border-border bg-card overflow-hidden">
                 {others.map((item) => (
                   <WishlistCard
                     key={item.id}
@@ -335,6 +339,7 @@ export const WishlistPage = () => {
                     onMessage={() => { toast.info('예시 카드예요. 실제 이웃의 요청에서 답장할 수 있습니다.'); }}
                   />
                 ))}
+                </div>
               </section>
             )}
           </>
