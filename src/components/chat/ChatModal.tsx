@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useChat, Conversation } from '@/hooks/useChat';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { ConversationList } from './ConversationList';
 import { ChatView } from './ChatView';
 import { BookMode } from '@/lib/bookMode';
@@ -83,12 +84,18 @@ export const ChatModal = ({
         setShowBookCard(true);
         const { data: profile } = await supabase.from('profiles').select('nickname').eq('id', user.id).single();
         const requesterNickname = profile?.nickname || '사용자';
-        const { conversation } = await startConversationWithRequest(
+        const { conversation, skipped } = await startConversationWithRequest(
           initialUserId, initialBookId,
           initialBookMode,
           requesterNickname
         );
-        if (conversation) {
+        // 아무 일도 안 일어난 것처럼 보이지 않게 이유를 알린다
+        if (skipped === 'already_requested') {
+          toast.info('이미 보낸 요청이 있어요. 답장을 기다려주세요.');
+        } else if (skipped === 'send_failed') {
+          toast.error('요청을 보내지 못했어요. 다시 시도해주세요.');
+        }
+        if (conversation && !skipped) {
           // 거래 퍼널의 핵심 전환점 — book_viewed 대비 몇 %가 여기까지 오는지가 수요의 실체다
           track('request_sent', { book_id: initialBookId, mode: initialBookMode });
           await refresh();

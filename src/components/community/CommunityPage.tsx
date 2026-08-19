@@ -158,7 +158,6 @@ export const CommunityPage = ({ onNavigateToBookshelf, onOpenBoard, onOpenChatFo
             커뮤니티
           </h1>
           <p className="text-xs text-muted-foreground mt-1.5">
-            비공개 그룹에서 책을 나눠보세요
           </p>
         </motion.div>
       </div>

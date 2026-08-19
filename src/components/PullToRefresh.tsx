@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { isStandalone } from '@/lib/platform';
+import { isNative } from '@/lib/native';
 
 /**
  * 앱 전역 당겨서 새로고침 (window 스크롤 기준).
@@ -11,7 +13,22 @@ import { Loader2 } from 'lucide-react';
  *  · 최상단에서 더 당김: 임계값 넘으면 새로고침
  * data-ptr-ignore 안(채팅·상세 오버레이 등)에서 시작한 제스처는 무시한다.
  */
-const THRESHOLD = 72;
+/**
+ * 임계값. 손가락이 움직인 거리의 절반만 당겨지므로 실제로는 이 값의 두 배를 끌어야 한다.
+ * 72(=144px)는 너무 예민해서 살짝만 당겨도 새로고침됐다.
+ */
+const THRESHOLD = 110;
+
+/**
+ * 당겨서 새로고침은 **새로고침 버튼이 없는 환경에서만** 쓸모가 있다.
+ *
+ * 브라우저(사파리·크롬)에는 이미 새로고침 버튼이 있고, 게다가 사파리는 자기 몫의
+ * 당겨서 새로고침을 따로 갖고 있다. 우리 것까지 겹치면 원치 않는 새로고침이 잦아진다.
+ * 하단 주소창 때문에 화면이 짧아진 상태에서는 더 그렇다.
+ * → 홈 화면에 추가한 웹앱(standalone)과 네이티브 앱에서만 켠다.
+ * (사파리 자체의 당겨서 새로고침은 CSS `overscroll-behavior-y` 로 따로 막는다 — index.css)
+ */
+const shouldEnable = () => isNative || isStandalone();
 
 export const PullToRefresh = ({ enabled = true }: { enabled?: boolean }) => {
   const [dist, setDist] = useState(0);
@@ -22,7 +39,7 @@ export const PullToRefresh = ({ enabled = true }: { enabled?: boolean }) => {
   const active = useRef(false);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !shouldEnable()) return;
     const atTop = () => (window.scrollY || document.documentElement.scrollTop || 0) <= 0;
 
     const onStart = (e: TouchEvent) => {

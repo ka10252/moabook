@@ -336,9 +336,10 @@
   .header-safe {
     padding-top: var(--safe-top);
   }
-  /* 앱 헤더(3.5rem) 아래에 붙는 sticky 요소 */
+  /* 앱 헤더(3rem = h-12) 아래에 붙는 sticky 요소.
+     ⚠️ 헤더 높이를 바꾸면 여기도 같이 바꿔야 한다 — 안 맞으면 sticky 바가 헤더에 가리거나 뜬다. */
   .sticky-under-header {
-    top: calc(3.5rem + var(--safe-top));
+    top: calc(3rem + var(--safe-top));
   }
 
   /* ── 안전영역 ────────────────────────────────────────
@@ -605,4 +606,18 @@ input:not([type='checkbox']):not([type='radio']):not([type='range']),
 textarea,
 select {
   font-size: max(16px, 1em) !important;
+}
+
+/**
+ * 사파리 자체의 '당겨서 새로고침'을 막는다.
+ *
+ * 우리 PtR 은 홈 화면 웹앱·네이티브에서만 돈다(PullToRefresh.tsx). 그런데 브라우저로
+ * 열면 **사파리가 자기 몫의 당겨서 새로고침**을 한다 — 하단 주소창 때문에 화면이 짧아진
+ * 상태에서 조금만 당겨도 페이지가 새로 뜬다. 우리가 끄고 싶은 건 이쪽이다.
+ *
+ * `contain` 은 스크롤이 끝에 닿아도 그 동작이 브라우저로 넘어가지 않게 한다.
+ * `none` 이 아니라 `contain` 인 이유: none 은 바운스까지 없애 앱이 뻣뻣해 보인다.
+ */
+html, body {
+  overscroll-behavior-y: contain;
 }

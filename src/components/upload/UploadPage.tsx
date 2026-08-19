@@ -32,7 +32,6 @@ export const UploadPage = ({ onUploaded }: UploadPageProps) => {
           <h1 className="font-display text-[30px] font-medium leading-none tracking-tight text-foreground mt-1">
             책 등록하기
           </h1>
-          <p className="text-xs text-muted-foreground mt-1.5">제목만 넣어도 등록돼요</p>
         </motion.div>
 
         <motion.div

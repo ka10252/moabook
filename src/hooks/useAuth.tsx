@@ -22,6 +22,8 @@ interface AuthContextType {
   requestPasswordReset: (email: string) => Promise<{ error: Error | null }>;
   updatePassword: (password: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  /** 구글 로그인/가입 — 메일 인증 불필요 */
+  signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<{ error: Error | null; unavailable?: boolean }>;
 }
@@ -129,6 +131,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   };
 
+  /**
+   * 구글로 로그인/가입.
+   *
+   * 구글은 **이메일을 이미 확인해 준 상태**로 넘겨주므로 우리 쪽 메일 인증이 필요 없다.
+   * 가입과 로그인이 같은 함수다 — 처음이면 계정이 만들어지고, 아니면 그냥 들어온다.
+   *
+   * ⚠️ 프로필(닉네임 등)은 구글이 주지 않는다. 돌아온 뒤 닉네임이 비어 있으면
+   *    프로필 설정으로 보내야 한다 (AuthPage 의 복귀 처리 참고).
+   * ⚠️ 네이티브 앱에서는 `capacitor://` 로 돌아올 수 없어 **실제 웹 주소**로 보낸다.
+   *    거기서 딥링크로 앱에 다시 들어온다 (authRedirectTo 참고).
+   */
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: authRedirectTo('/auth'),
+        // 계정이 여러 개인 사람이 늘 같은 계정으로 자동 로그인되지 않게 고르는 화면을 띄운다
+        queryParams: { prompt: 'select_account' },
+      },
+    });
+    return { error: error as Error | null };
+  };
+
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -197,6 +222,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         requestPasswordReset,
         updatePassword,
         signIn,
+        signInWithGoogle,
         signOut,
         deleteAccount,
       }}

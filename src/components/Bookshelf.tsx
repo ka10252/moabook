@@ -136,7 +136,10 @@ export const Bookshelf = ({
   // 역 단위 필터. 지역(planning area)은 몇 km라 "이 역 근처"를 못 고른다.
   const [selectedStations, setSelectedStations] = useState<string[]>([]);
   const [stationDropdownOpen, setStationDropdownOpen] = useState(false);
-  const [genreDropdownOpen, setGenreDropdownOpen] = useState(false);
+  /** 헤더의 장르 드롭다운(필터 시트 안의 것과 별개) */
+  const [genreBarOpen, setGenreBarOpen] = useState(false);
+  /** 검색창은 평소 접어둔다 — 헤더 두께를 줄이려고 */
+  const [searchOpen, setSearchOpen] = useState(false);
   const { favStations, favDistricts, toggleStation: toggleFavStation, toggleDistrict: toggleFavDistrict } = useFavoriteAreas();
   // 즐겨찾기는 '한 번에 적용'이 아니라 목록 순서만 바꾼다 — 별을 누른 역·지역이
   // 목록 맨 위로 올라와 바로 고를 수 있다. 지역 선택은 이 필터 시트 안에서만 한다.
@@ -755,44 +758,97 @@ export const Bookshelf = ({
           )}
         </div>
 
-        {/* Search — 밑줄 스타일 (프로토타입 1a) */}
-        <div className="search-underline">
-          <Search className="w-[17px] h-[17px] text-foreground shrink-0" strokeWidth={1.75} />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder="제목 또는 저자 검색"
-            className="input-search"
-          />
-          {searchQuery && (
-            <button onClick={() => setSearchQuery('')} className="shrink-0" aria-label="검색어 지우기">
+        {/* 검색은 평소엔 돋보기 아이콘으로만 접어둔다 (아래 컨트롤 줄에 있다).
+            항상 펼쳐 두면 헤더가 한 줄 더 두꺼워지는데, 검색은 매번 쓰는 기능이 아니다. */}
+        {searchOpen && (
+          <div className="search-underline">
+            <Search className="w-[17px] h-[17px] text-foreground shrink-0" strokeWidth={1.75} />
+            <input
+              type="text"
+              autoFocus
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="제목 또는 저자 검색"
+              className="input-search"
+            />
+            <button
+              onClick={() => { setSearchQuery(''); setSearchOpen(false); }}
+              className="shrink-0" aria-label="검색 닫기"
+            >
               <X className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
             </button>
-          )}
-        </div>
-
-        {/* Controls row — 한 줄 유지.
-            자주 쓰는 상태 필터는 노출하고, 가끔 쓰는 정밀 필터(지역·정렬)와 뷰 전환은
-            아이콘으로 접어 오른쪽 끝에 고정한다. */}
-        <div className="flex items-center gap-2">
-          {/* 상태 칩 — 네 개를 한 줄에 균등 분배한다. 예전엔 가로 스크롤이라
-              '판매중'이 화면 밖에 있어 있는 줄도 몰랐다. */}
-          <div className="grid grid-cols-4 gap-1 flex-1 min-w-0">
-            {/* '대여중'은 칩에서 뺐다 — 대여중인 책은 어차피 서가 맨 뒤에 비활성으로 보인다 */}
-            {(['all', 'available', 'giving', 'selling'] as StatusFilter[]).map((key) => (
-              { key, label: statusFilterLabels[key] }
-            )).map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => setStatusFilter(key)}
-                className={`chip ${statusFilter === key ? 'chip-active' : ''}`}
-              >
-                {label}
-              </button>
-            ))}
-
           </div>
+        )}
+
+        {/* 컨트롤 한 줄 — 장르 · 검색 · 보기방식 · 정밀필터.
+            상태(전체·대여·나눔·판매)는 필터 시트 안으로 옮겼다. 네 칸이 늘 자리를 차지하는데
+            대부분 '전체'로 두고 쓰기 때문이다. 대신 자주 바뀌는 장르를 밖으로 꺼냈다. */}
+        <div className="flex items-center gap-2">
+          {/* 장르 — 밖으로 꺼낸 드롭다운. 책이 있는 장르만 나온다. */}
+          <div className="relative flex-1 min-w-0">
+            <button
+              type="button"
+              onClick={() => setGenreBarOpen(v => !v)}
+              aria-expanded={genreBarOpen}
+              className={`w-full min-h-9 flex items-center justify-between gap-1.5 px-3 py-1.5 text-[13px] rounded-full border transition-colors ${
+                selectedGenres.length > 0
+                  ? 'border-primary text-primary bg-primary/10 font-medium'
+                  : 'border-border text-muted-foreground hover:text-foreground bg-card'
+              }`}
+            >
+              <span className="flex items-center gap-1.5 min-w-0">
+                <Tag className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">
+                  {selectedGenres.length === 0 ? '장르' : selectedGenres.join(', ')}
+                </span>
+              </span>
+              <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${genreBarOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {genreBarOpen && (
+              <div className="absolute left-0 right-0 top-full mt-1 z-30 rounded-xl border border-border bg-card shadow-hip overflow-hidden">
+                <div className="max-h-64 overflow-y-auto">
+                  {GENRES.filter(g => (genreCounts.get(g) ?? 0) > 0).map(g => {
+                    const on = selectedGenres.includes(g);
+                    return (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => setSelectedGenres(prev => on ? prev.filter(x => x !== g) : [...prev, g])}
+                        className={`w-full min-h-11 flex items-center gap-2 px-3 py-2.5 text-[13px] text-left transition-colors ${
+                          on ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted/60 text-foreground/80'
+                        }`}
+                      >
+                        <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${on ? 'bg-primary border-primary' : 'border-border'}`}>
+                          {on && (
+                            <svg className="w-2 h-2 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </span>
+                        <span className="truncate">{g}</span>
+                        <span className="ml-auto text-[11px] text-muted-foreground tabular-nums shrink-0">{genreCounts.get(g)}권</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 검색 — 아이콘만. 누르면 위에 입력칸이 펼쳐진다 */}
+          <button
+            onClick={() => setSearchOpen(v => !v)}
+            aria-label="검색"
+            aria-expanded={searchOpen}
+            className={`tap-44 w-9 h-9 shrink-0 rounded-full border flex items-center justify-center transition-colors ${
+              searchOpen || searchQuery
+                ? 'border-primary text-primary bg-primary/10'
+                : 'border-border text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Search className="w-4 h-4" />
+          </button>
 
           {/* 책등 · 표지 · 지도 — 세 모드가 다 보이는 세그먼트 토글(현재 모드가 채워져 보임) */}
           <div
@@ -1053,7 +1109,7 @@ export const Bookshelf = ({
       </motion.button>
 
       {/* Filter Dialog */}
-      <Dialog open={showFilterSheet} onOpenChange={v => { setShowFilterSheet(v); if (!v) { setDistrictDropdownOpen(false); setStationDropdownOpen(false); setGenreDropdownOpen(false); setStationQuery(""); setDistrictQuery(""); } }}>
+      <Dialog open={showFilterSheet} onOpenChange={v => { setShowFilterSheet(v); if (!v) { setDistrictDropdownOpen(false); setStationDropdownOpen(false); setStationQuery(""); setDistrictQuery(""); } }}>
         <DialogContent className="w-[calc(100%-2rem)] max-w-sm rounded-2xl mb-[4vh] overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="text-left text-base">필터 / 정렬</DialogTitle>
@@ -1072,76 +1128,22 @@ export const Bookshelf = ({
               </div>
             </div>
 
-            {/* 장르 — 역·지역과 같은 드롭다운. 앱 안에서 '여러 개 고르기'는 한 가지 모양이어야 한다.
-                목록에는 책이 한 권이라도 있는 장르만 띄운다. */}
-            {GENRES.some(g => (genreCounts.get(g) ?? 0) > 0) && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">장르</p>
-                  {selectedGenres.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setSelectedGenres([])}
-                      className="text-[13px] text-muted-foreground underline underline-offset-2"
-                    >
-                      선택 해제 ({selectedGenres.length})
-                    </button>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setGenreDropdownOpen(v => !v)}
-                  className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-xl border border-border bg-background hover:bg-muted/50 transition-colors"
-                >
-                  <span className="flex items-center gap-1.5 text-left min-w-0">
-                    <Tag className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                    {selectedGenres.length === 0
-                      ? <span className="text-muted-foreground">장르 선택 (복수 가능)</span>
-                      : <span className="text-foreground font-medium truncate">{selectedGenres.join(', ')}</span>
-                    }
-                  </span>
-                  <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200 ${genreDropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {genreDropdownOpen && (
-                  <div className="rounded-xl border border-border bg-muted/30 overflow-hidden">
-                    <div className="max-h-56 overflow-y-auto">
-                      {GENRES.filter(g => (genreCounts.get(g) ?? 0) > 0).map(g => {
-                        const checked = selectedGenres.includes(g);
-                        return (
-                          <button
-                            key={g}
-                            type="button"
-                            onClick={() => setSelectedGenres(prev =>
-                              checked ? prev.filter(x => x !== g) : [...prev, g]
-                            )}
-                            className={`w-full min-h-11 flex items-center gap-2 px-3 py-2.5 text-sm text-left transition-colors ${
-                              checked ? 'bg-primary/10 text-primary font-medium' : 'bg-background hover:bg-muted/60 text-foreground/80'
-                            }`}
-                          >
-                            <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                              checked ? 'bg-primary border-primary' : 'border-border'
-                            }`}>
-                              {checked && (
-                                <svg className="w-2 h-2 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                              )}
-                            </span>
-                            <span className="truncate">{g}</span>
-                            <span className="ml-auto text-[11px] text-muted-foreground tabular-nums shrink-0">
-                              {genreCounts.get(g)}권
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+            {/* 책 상태 — 헤더에서 여기로 옮겼다.
+                네 칸이 늘 헤더 한 줄을 차지했는데 대부분 '전체'로 두고 쓴다. */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">거래 방식</p>
+              <div className="grid grid-cols-4 gap-2">
+                {(['all', 'available', 'giving', 'selling'] as StatusFilter[]).map((key) => (
+                  <button
+                    key={key}
+                    onClick={() => setStatusFilter(key)}
+                    className={`chip ${statusFilter === key ? 'chip-active' : ''}`}
+                  >
+                    {statusFilterLabels[key]}
+                  </button>
+                ))}
               </div>
-            )}
-
-            {/* 책 상태는 헤더 칩으로 상시 노출한다 — 시트에 두면 같은 필터가 두 곳에 생긴다 */}
+            </div>
 
             {/* 역으로 찾기 — 지역보다 좁게. 목록엔 실제로 책이 있는 역만 나온다. */}
             <div className="space-y-2">

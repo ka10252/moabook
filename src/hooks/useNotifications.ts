@@ -43,6 +43,10 @@ async function fetchNotifications() {
       .from('notifications')
       .select('*')
       .eq('user_id', storeUserId)
+      // 일반 채팅은 알림함에 쌓지 않는다 — 메시지는 채팅 탭에 이미 남고,
+      // 앱을 보고 있을 때는 토스트로 알린다. 알림함까지 채우면 정작 봐야 할
+      // 거래·반납 알림이 채팅에 밀려 아래로 내려간다.
+      .neq('type', 'new_message')
       .order('created_at', { ascending: false })
       .limit(50);
     if (error) throw error;
@@ -71,7 +75,9 @@ function setupFor(userId: string | null) {
       (payload) => {
         const n = payload.new as Notification;
         if (notifications.some((x) => x.id === n.id)) return;
-        setNotifications([n, ...notifications]);
+        // 일반 채팅은 알림함에 쌓지 않는다(위 쿼리와 같은 규칙). 다만 **토스트는 띄운다** —
+        // 다른 대화에 온 메시지를 보고 있는 화면에서 알려주는 건 필요하다.
+        if (n.type !== 'new_message') setNotifications([n, ...notifications]);
         if (document.hidden) {
           if ('Notification' in window && Notification.permission === 'granted') {
             new window.Notification(n.title, { body: n.body ?? undefined, icon: '/moa-logo.png' });

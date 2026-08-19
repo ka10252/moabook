@@ -219,21 +219,9 @@ export const WishlistPage = () => {
               위시리스트
             </h1>
             <p className="text-[13px] text-muted-foreground mt-1.5 leading-relaxed">
-              아직 책장에서 못 찾은, 읽고 싶은 책을 남기는 곳이에요.
             </p>
           </div>
         </div>
-
-        {/* 책 추가 — 검색창이 있던 자리.
-            검색창을 위에 두니 "책을 추가하려다 검색창을 먼저 누르는" 오인이 잦았다.
-            위시리스트에서 할 일은 '원하는 책 올리기' 하나라, 그 버튼이 이 자리를 갖는 게 맞다. */}
-        <button
-          onClick={handleAddClick}
-          className="w-full h-12 flex items-center justify-center gap-1.5 bg-primary text-primary-foreground text-[15px] font-bold rounded-xl active:scale-[0.99] transition-transform"
-        >
-          <Plus className="w-4 h-4" />
-          {showAddForm ? '닫기' : '책 추가'}
-        </button>
 
         {/* Filter chips — 한 줄, 활성은 코랄 */}
         <div className="flex gap-1.5">
@@ -422,6 +410,18 @@ export const WishlistPage = () => {
         initialUserId={chatUserId}
         onResetInitialValues={() => setChatUserId(null)}
       />
+
+      {/* 책 추가 — 서가의 관심도서 버튼과 같은 자리·같은 모양.
+          위에 가로로 길게 두니 목록보다 버튼이 먼저 눈에 들어왔다.
+          할 일은 하나뿐이라 화면 구석에 두고 목록에 자리를 내준다. */}
+      <motion.button
+        onClick={handleAddClick}
+        whileTap={{ scale: 0.94 }}
+        aria-label={showAddForm ? '닫기' : '책 추가'}
+        className="fixed bottom-24 right-4 z-40 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors"
+      >
+        <Plus className={`w-6 h-6 transition-transform duration-200 ${showAddForm ? 'rotate-45' : ''}`} />
+      </motion.button>
     </div>
   );
 };

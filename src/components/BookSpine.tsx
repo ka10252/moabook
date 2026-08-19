@@ -264,10 +264,9 @@ export const BookSpine = ({
           fontFamily: "'Noto Sans KR', sans-serif",
           // 크기·굵기는 fitTitle 의 계산 전제다. 바꾸면 위 상수도 다시 재야 한다.
           fontSize: `${font}px`,
-          // 얇은 획은 밝은 바탕에 먼저 먹힌다. 굵기와 옅은 그림자로 흰 글씨를 버티게 한다.
-          fontWeight: 600,
+          // 굵기는 배포본 그대로 400. 크기만 제목 길이에 따라 달라진다.
+          fontWeight: 400,
           color: color.fg,
-          textShadow: '0 1px 2px rgba(0,0,0,.18)',
           writingMode: 'vertical-lr',
           whiteSpace: 'nowrap',   // 한 열 고정(2열로 흐르지 않게)
           maxHeight: '92%',

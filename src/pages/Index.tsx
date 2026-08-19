@@ -58,7 +58,8 @@ const Header = ({
   onLogoClick: () => void;
 }) => (
   <header className="safe-top fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
-    <div className="flex items-center justify-between px-4 h-14 max-w-[520px] mx-auto w-full">
+    {/* 헤더는 로고와 아이콘 셋뿐이라 56px 은 과했다 → 48px */}
+    <div className="flex items-center justify-between px-4 h-12 max-w-[520px] mx-auto w-full">
       <img src="/moa-logo.png"      alt="MOA Book" className="h-8 block dark:hidden cursor-pointer" onClick={onLogoClick} />
       <img src="/moa-logo-dark.png" alt="MOA Book" className="h-8 hidden dark:block cursor-pointer" onClick={onLogoClick} />
       
@@ -233,6 +234,27 @@ const Index = () => {
     localStorage.setItem(key, '1');
   }, [user?.id, onboardingParam]);
 
+  /**
+   * 구글로 막 가입한 사람은 닉네임이 없다.
+   *
+   * 프로필 생성 트리거가 임시 닉네임(`User_abc12345`)을 넣어주는데, 그대로 두면
+   * 서가·채팅에 그 이름이 그대로 뜬다. 그 모양이면 한 번은 정하게 해야 한다.
+   * (이메일 가입은 폼에서 닉네임을 받으므로 여기 안 걸린다)
+   */
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.from('profiles').select('nickname').eq('id', user.id).single();
+      if (cancelled || !data) return;
+      if (/^User_[0-9a-f]{8}$/i.test(data.nickname ?? '')) {
+        goToTab('profile');
+        toast.info('닉네임을 정해주세요', { description: '이웃에게 이 이름으로 보여요.' });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id, goToTab]);
+
   // 커뮤니티 초대 링크: ?invite=TOKEN
   //
   // ⚠️ 초대 링크는 **경로 없이 쿼리만** 있다(`https://…/?invite=TOK`). 웹에서는 링크를 누르면
@@ -384,13 +406,13 @@ const Index = () => {
 
       <PullToRefresh enabled={!showChatModal} />
 
-      {/* 고정 헤더(3.5rem)와 탭바(5rem)만큼 비워둔다. 노치·홈 인디케이터가 있는 폰에서는
+      {/* 고정 헤더(3rem)와 탭바(5rem)만큼 비워둔다. 노치·홈 인디케이터가 있는 폰에서는
           둘 다 안전영역만큼 더 커지므로 env()를 같이 더한다 — 안 하면 아래쪽 내용이 탭바 뒤로 숨는다.
           웹에서는 env()가 0이라 예전과 같다. */}
       <main
         className="flex-1"
         style={{
-          paddingTop: 'calc(3.5rem + var(--safe-top))',
+          paddingTop: 'calc(3rem + var(--safe-top))',   // 헤더 h-12 와 맞춘다
           paddingBottom: 'calc(5rem + var(--safe-bottom))',
         }}
       >
@@ -425,7 +447,7 @@ const Index = () => {
 
       {/* Chat overlay — fixed so it's immune to main's pb-20 */}
       {showChatModal && (
-        <div data-ptr-ignore className="fixed inset-x-0 top-14 bottom-20 z-[45] bg-background overflow-hidden">
+        <div data-ptr-ignore className="fixed inset-x-0 top-12 bottom-20 z-[45] bg-background overflow-hidden">
           <div className="h-full max-w-[520px] mx-auto w-full">
             <Suspense fallback={<TabFallback />}>
               <ChatModal

@@ -239,13 +239,16 @@ export const useChat = () => {
   };
 
   // Start conversation with automatic request message including book info
+  /** 요청 카드를 못 보낸 이유. 부르는 쪽이 사용자에게 알려야 한다 */
+  type RequestSkip = 'already_requested' | 'send_failed';
+
   const startConversationWithRequest = async (
     otherUserId: string,
     bookId: string,
     /** 거래 기록상 나눔은 'purchase'지만, 유저에게는 "구매 요청"이 아니라 "나눔 요청"이어야 한다 */
     bookMode: BookMode,
     requesterNickname: string
-  ) => {
+  ): Promise<{ conversation?: unknown; error?: unknown; isNew?: boolean; skipped?: RequestSkip }> => {
     const result = await startConversation(otherUserId);
 
     if (result.conversation) {
@@ -261,7 +264,11 @@ export const useChat = () => {
       const hasOpenRequest = rows.some((m) => /^\[(대여|구매|나눔) 요청\]/.test(m.content));
       const hasResolution = rows.some((m) => /^\[(대여 수락|판매 완료|나눔 완료)\]/.test(m.content));
       if (hasOpenRequest && !hasResolution) {
-        return result; // 진행 중인 요청이 이미 있음 → 중복 카드 생성 안 함
+        // 진행 중인 요청이 이미 있으면 카드를 또 만들지 않는다.
+        // ⚠️ 예전엔 여기서 **조용히 돌아갔다.** 그래서 '대여 신청'을 눌러도 채팅에
+        //    아무 일이 없어 보였고, 안내도 없어서 고장으로 읽혔다.
+        //    부르는 쪽이 사용자에게 알릴 수 있게 이유를 돌려준다.
+        return { ...result, skipped: 'already_requested' as const };
       }
 
       // Send request message with embedded BOOK_ID for dynamic rendering
@@ -272,7 +279,9 @@ export const useChat = () => {
       };
       const label = REQUEST_LABEL[bookMode];
       const messageContent = `[${label} 요청] ${requesterNickname}님이 ${label}${objectParticle(label)} 요청합니다. [BOOK_ID:${bookId}]`;
-      await sendMessage(result.conversation.id, messageContent);
+      const { error } = await sendMessage(result.conversation.id, messageContent);
+      // 전송이 실패했는데 성공한 척하면 "요청했는데 상대가 못 봤다"가 된다.
+      if (error) return { ...result, skipped: 'send_failed' as const };
     }
 
     return result;

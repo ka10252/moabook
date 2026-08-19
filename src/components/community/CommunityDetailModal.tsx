@@ -468,18 +468,19 @@ export const CommunityDetailModal = ({
                       <span className="text-xs font-medium text-foreground">게시판</span>
                     </button>
                   )}
+                  {/* 가상 커뮤니티룸 진입 버튼은 뺐다 (2026-08).
+                      기능(/space/community/:id · Phaser)은 그대로 살아 있다 — 라우트로 직접 들어가면 열린다.
+                      다시 노출할 때 이 블록만 되살리면 된다.
                   {(isMember || isOwner) && (
                     <button
-                      onClick={() => {
-                        onClose();
-                        navigate(`/space/community/${community.id}`);
-                      }}
+                      onClick={() => { onClose(); navigate(`/space/community/${community.id}`); }}
                       className="flex-1 flex flex-col items-center gap-1.5 py-3.5 rounded-xl bg-muted/60 hover:bg-muted transition-colors"
                     >
                       <Home className="w-[22px] h-[22px] text-primary" />
                       <span className="text-xs font-medium text-foreground">커뮤니티룸</span>
                     </button>
                   )}
+                  */}
                 </div>
               </div>
 
