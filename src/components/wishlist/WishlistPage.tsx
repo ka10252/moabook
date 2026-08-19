@@ -261,8 +261,8 @@ export const WishlistPage = () => {
             {showMineSection && mine.length > 0 && (
               <section className="space-y-2">
                 <p className="text-[13px] font-semibold text-muted-foreground px-0.5 pt-2">내 요청</p>
-                {/* 줄 사이를 띄우지 않고 한 상자로 잇는다 — 목록은 이어져 보여야 훑기 쉽다 */}
-                <div className="rounded-[14px] border border-border bg-card overflow-hidden">
+                {/* 말풍선 자체가 테두리를 가지므로 바깥 상자는 두지 않는다 — 이중 액자가 되면 지저분하다 */}
+                <div>
                 {mine.map((item) => (
                   <WishlistCard
                     key={item.id}
@@ -317,7 +317,7 @@ export const WishlistPage = () => {
                     ))}
                   </div>
                 </div>
-                <div className="rounded-[14px] border border-border bg-card overflow-hidden">
+                <div>
                 {others.map((item) => (
                   <WishlistCard
                     key={item.id}
@@ -423,7 +423,7 @@ export const WishlistPage = () => {
         onClick={handleAddClick}
         whileTap={{ scale: 0.94 }}
         aria-label={showAddForm ? '닫기' : '책 추가'}
-        className="fixed bottom-24 right-4 z-40 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors"
+        className="fixed bottom-[4.5rem] right-4 z-40 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors"
       >
         <Plus className={`w-6 h-6 transition-transform duration-200 ${showAddForm ? 'rotate-45' : ''}`} />
       </motion.button>

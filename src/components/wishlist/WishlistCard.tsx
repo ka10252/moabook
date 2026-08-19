@@ -82,128 +82,138 @@ export const WishlistCard = ({
     finally { setMessaging(false); }
   };
 
-  /** 한마디를 곁들인 한 줄 — 이름 뒤에 따옴표로 붙인다 */
-  const noteInline = item.notes ? `${nickname} · "${item.notes}"` : nickname;
-
   return (
     <>
       {/**
-       * 한 줄 리스트.
+       * 요청 말풍선.
        *
-       * 예전엔 카드마다 '한마디' 박스가 따로 있어 **카드 하나가 화면의 1/4**을 먹었고,
-       * 한 화면에 세 권밖에 안 보였다. 한마디는 이름 뒤에 이어 붙여 한 줄에 담는다.
-       * 소유자가 고칠 때만 아래에 입력칸이 펼쳐진다.
+       * 위시리스트의 주인공은 책이 아니라 **“누가 찾고 있는가”** 다.
+       * 채팅처럼 생겨서 말 걸기가 자연스럽고, 누구에게 답하는지가 분명하다.
+       * (한 줄 리스트보다 한 화면에 적게 담기는 건 감수한다 — 훑기보다 말 걸기가 목적이다)
        */}
       <motion.div
         layout
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -6 }}
-        className={`px-3 py-2.5 border-b border-border last:border-b-0 ${isDemo ? 'opacity-70' : ''}`}
+        className={`flex items-start gap-2 px-0.5 py-2 ${isDemo ? 'opacity-70' : ''}`}
       >
-        <div className="flex items-center gap-2.5">
-          {/* 표지가 있으면 표지, 없으면 책등 색 블록 */}
-          {item.cover_url ? (
-            <img
-              src={item.cover_url}
-              alt={item.title}
-              loading="lazy"
-              className="w-[34px] h-[48px] rounded-[3px] shrink-0 object-cover bg-muted"
-              style={{ boxShadow: '0 4px 8px -4px rgba(0,0,0,.5)' }}
-            />
-          ) : (
-            <div
-              className={`w-[34px] h-[48px] rounded-[3px] shrink-0 ${spineClassFrom(item.title)}`}
-              style={{ boxShadow: '0 4px 8px -4px rgba(0,0,0,.5)' }}
-            />
+        {/* 프로필 자리 — 사진이 없으므로 닉네임 첫 글자 */}
+        <span className="w-7 h-7 rounded-full bg-[hsl(var(--primary-soft))] text-primary flex items-center justify-center text-[12px] font-bold shrink-0 mt-0.5">
+          {nickname.charAt(0)}
+        </span>
+
+        {/* 말풍선 — 왼쪽 위만 각지게 해서 아바타에서 뻗어 나온 것처럼 보이게 한다 */}
+        <div className="flex-1 min-w-0 bg-muted/50 border border-border rounded-[4px_14px_14px_14px] px-3 py-2.5">
+          <p className="text-[12px] text-muted-foreground mb-1.5">
+            <b className="text-foreground font-semibold">{nickname}</b>님이 찾아요
+            {isDemo && <span className="ml-1.5 text-[11px] font-bold text-faint bg-muted px-1.5 py-0.5 rounded-full">예시</span>}
+          </p>
+
+          <div className="flex items-center gap-2.5 min-w-0">
+            {item.cover_url ? (
+              <img
+                src={item.cover_url}
+                alt={item.title}
+                loading="lazy"
+                className="w-[30px] h-[42px] rounded-[3px] shrink-0 object-cover bg-muted"
+                style={{ boxShadow: '0 4px 8px -4px rgba(0,0,0,.5)' }}
+              />
+            ) : (
+              <div
+                className={`w-[30px] h-[42px] rounded-[3px] shrink-0 ${spineClassFrom(item.title)}`}
+                style={{ boxShadow: '0 4px 8px -4px rgba(0,0,0,.5)' }}
+              />
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <p className="text-[14px] font-bold leading-tight text-foreground truncate">{item.title}</p>
+                {/* 내 책장에 같은 제목이 있다 — 이 목록에서 유일하게 행동으로 이어지는 신호다 */}
+                {canOffer && !isDemo && (
+                  <span className="text-[11px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full shrink-0">있어요</span>
+                )}
+                {item.desired_mode === 'rent' && (
+                  <span className="shrink-0 text-[11px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">대여</span>
+                )}
+                {item.desired_mode === 'buy' && (
+                  <span className="shrink-0 text-[11px] font-semibold text-amber-700 bg-amber-500/15 px-1.5 py-0.5 rounded-full">구입</span>
+                )}
+              </div>
+              {item.author && <p className="text-[12px] text-muted-foreground truncate">{item.author}</p>}
+            </div>
+          </div>
+
+          {/* 한마디 — 말풍선 안의 말. 없으면 줄을 만들지 않는다. */}
+          {!editingNote && item.notes && (
+            <p className="text-[13px] text-muted-foreground mt-2 leading-snug whitespace-pre-wrap break-words">
+              “{item.notes}”
+            </p>
           )}
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <p className="text-[14px] font-bold leading-tight text-foreground truncate">{item.title}</p>
-              {isDemo && (
-                <span className="text-[11px] font-bold text-faint bg-muted px-1.5 py-0.5 rounded-full shrink-0">예시</span>
-              )}
-              {/* 내 책장에 같은 제목이 있다 — 이 목록에서 유일하게 행동으로 이어지는 신호다 */}
-              {canOffer && !isDemo && (
-                <span className="text-[11px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full shrink-0">있어요</span>
-              )}
-              {item.desired_mode === 'rent' && (
-                <span className="shrink-0 text-[11px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">대여</span>
-              )}
-              {item.desired_mode === 'buy' && (
-                <span className="shrink-0 text-[11px] font-semibold text-amber-700 bg-amber-500/15 px-1.5 py-0.5 rounded-full">구입</span>
-              )}
+          {editingNote && (
+            <div className="mt-2">
+              <textarea
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                rows={2}
+                maxLength={200}
+                autoFocus
+                placeholder="어떤 판본을 원하는지 등 한마디"
+                className="w-full text-[15px] bg-background border border-border rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-primary/40 resize-none"
+              />
+              <div className="flex justify-end gap-1.5 mt-1.5">
+                <button onClick={() => setEditingNote(false)} className="text-[13px] text-muted-foreground px-2 py-1">취소</button>
+                <button
+                  onClick={saveNote}
+                  disabled={savingNote}
+                  className="text-[13px] font-semibold text-primary-foreground bg-primary rounded-full px-3 py-1 flex items-center gap-1 disabled:opacity-70"
+                >
+                  {savingNote && <Loader2 className="w-3 h-3 animate-spin" />} 저장
+                </button>
+              </div>
             </div>
-            {item.author && <p className="text-[12px] text-muted-foreground truncate">{item.author}</p>}
-            <p className="text-[12px] text-faint truncate">{noteInline}</p>
-          </div>
-
-          <div className="flex items-center gap-0.5 shrink-0">
-            {!isOwner && onMessage && (
-              <button
-                onClick={handleMessageClick}
-                disabled={messaging}
-                className="tap-44 p-1.5 rounded-full text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
-                title="이 사람에게 메시지"
-              >
-                {messaging ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : <MessageCircle className="w-[18px] h-[18px]" />}
-              </button>
-            )}
-            {isOwner && onEditNotes && !isDemo && !editingNote && (
-              <button
-                onClick={() => { setDraft(item.notes ?? ''); setEditingNote(true); }}
-                className="tap-44 p-1.5 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                title={item.notes ? '한마디 수정' : '한마디 추가'}
-              >
-                <Pencil className="w-4 h-4" />
-              </button>
-            )}
-            {isOwner && onMarkFulfilled && (
-              <button
-                onClick={() => setShowFulfillConfirm(true)}
-                className="tap-44 p-1.5 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                title="찾았어요"
-              >
-                <Check className="w-[18px] h-[18px]" />
-              </button>
-            )}
-            {isOwner && onDelete && (
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="tap-44 p-1.5 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                title="삭제"
-              >
-                <Trash2 className="w-[18px] h-[18px]" />
-              </button>
-            )}
-          </div>
+          )}
         </div>
 
-        {/* 한마디 수정은 누를 때만 펼친다 — 평소엔 위 한 줄에 이미 보인다 */}
-        {editingNote && (
-          <div className="mt-2 pl-[44px]">
-            <textarea
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              rows={2}
-              maxLength={200}
-              autoFocus
-              placeholder="어떤 판본을 원하는지 등 한마디"
-              className="w-full text-[15px] bg-background border border-border rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-primary/40 resize-none"
-            />
-            <div className="flex justify-end gap-1.5 mt-1.5">
-              <button onClick={() => setEditingNote(false)} className="text-[13px] text-muted-foreground px-2 py-1">취소</button>
-              <button
-                onClick={saveNote}
-                disabled={savingNote}
-                className="text-[13px] font-semibold text-primary-foreground bg-primary rounded-full px-3 py-1 flex items-center gap-1 disabled:opacity-70"
-              >
-                {savingNote && <Loader2 className="w-3 h-3 animate-spin" />} 저장
-              </button>
-            </div>
-          </div>
-        )}
+        <div className="flex flex-col items-center gap-0.5 shrink-0">
+          {!isOwner && onMessage && (
+            <button
+              onClick={handleMessageClick}
+              disabled={messaging}
+              className="tap-44 p-1.5 rounded-full text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
+              title="이 사람에게 메시지"
+            >
+              {messaging ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : <MessageCircle className="w-[18px] h-[18px]" />}
+            </button>
+          )}
+          {isOwner && onEditNotes && !isDemo && !editingNote && (
+            <button
+              onClick={() => { setDraft(item.notes ?? ''); setEditingNote(true); }}
+              className="tap-44 p-1.5 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+              title={item.notes ? '한마디 수정' : '한마디 추가'}
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+          )}
+          {isOwner && onMarkFulfilled && (
+            <button
+              onClick={() => setShowFulfillConfirm(true)}
+              className="tap-44 p-1.5 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+              title="찾았어요"
+            >
+              <Check className="w-[18px] h-[18px]" />
+            </button>
+          )}
+          {isOwner && onDelete && (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="tap-44 p-1.5 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+              title="삭제"
+            >
+              <Trash2 className="w-[18px] h-[18px]" />
+            </button>
+          )}
+        </div>
       </motion.div>
 
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>

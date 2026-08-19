@@ -406,14 +406,14 @@ const Index = () => {
 
       <PullToRefresh enabled={!showChatModal} />
 
-      {/* 고정 헤더(3rem)와 탭바(5rem)만큼 비워둔다. 노치·홈 인디케이터가 있는 폰에서는
+      {/* 고정 헤더(3rem)와 탭바(3.5rem)만큼 비워둔다. 노치·홈 인디케이터가 있는 폰에서는
           둘 다 안전영역만큼 더 커지므로 env()를 같이 더한다 — 안 하면 아래쪽 내용이 탭바 뒤로 숨는다.
           웹에서는 env()가 0이라 예전과 같다. */}
       <main
         className="flex-1"
         style={{
           paddingTop: 'calc(3rem + var(--safe-top))',   // 헤더 h-12 와 맞춘다
-          paddingBottom: 'calc(5rem + var(--safe-bottom))',
+          paddingBottom: 'calc(3.5rem + var(--safe-bottom))',   // 탭바 min-h-14 와 맞춘다
         }}
       >
         <AnimatePresence mode="wait">
@@ -447,7 +447,7 @@ const Index = () => {
 
       {/* Chat overlay — fixed so it's immune to main's pb-20 */}
       {showChatModal && (
-        <div data-ptr-ignore className="fixed inset-x-0 top-12 bottom-20 z-[45] bg-background overflow-hidden">
+        <div data-ptr-ignore className="fixed inset-x-0 top-12 bottom-14 z-[45] bg-background overflow-hidden">
           <div className="h-full max-w-[520px] mx-auto w-full">
             <Suspense fallback={<TabFallback />}>
               <ChatModal

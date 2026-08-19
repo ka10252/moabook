@@ -807,6 +807,22 @@ export const Bookshelf = ({
 
             {genreBarOpen && (
               <div className="absolute left-0 right-0 top-full mt-1 z-30 rounded-xl border border-border bg-card shadow-hip overflow-hidden">
+                {/* 전체 선택/해제 — 장르가 늘수록 하나씩 끄는 게 번거롭다 */}
+                <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-muted/40">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-faint">장르</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const all = GENRES.filter(g => (genreCounts.get(g) ?? 0) > 0);
+                      // 이미 다 골랐으면 해제, 아니면 전부 선택 — 버튼 하나로 양쪽을 오간다
+                      setSelectedGenres(selectedGenres.length === all.length ? [] : all);
+                    }}
+                    className="text-[12px] font-semibold text-primary hover:underline"
+                  >
+                    {selectedGenres.length === GENRES.filter(g => (genreCounts.get(g) ?? 0) > 0).length
+                      ? '전체 해제' : '전체 선택'}
+                  </button>
+                </div>
                 <div className="max-h-64 overflow-y-auto">
                   {GENRES.filter(g => (genreCounts.get(g) ?? 0) > 0).map(g => {
                     const on = selectedGenres.includes(g);
@@ -1097,7 +1113,7 @@ export const Bookshelf = ({
       <motion.button
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="fixed bottom-24 right-4 z-40 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors"
+        className="fixed bottom-[4.5rem] right-4 z-40 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors"
         onClick={() => { if (requireAuth()) setShowLikedBooks(true); }}
       >
         <Heart className="w-6 h-6" />

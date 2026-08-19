@@ -207,7 +207,7 @@ export const CommunityPage = ({ onNavigateToBookshelf, onOpenBoard, onOpenChatFo
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="fixed bottom-24 right-4 z-10"
+                className="fixed bottom-[4.5rem] right-4 z-10"
               >
                 <Button
                   size="lg"

@@ -293,8 +293,11 @@
     box-shadow: 0 -4px 24px -4px hsl(var(--shelf-shadow) / 0.18);
   }
 
+  /* 아이콘+글자를 세로 가운데에 둔다.
+     예전엔 py-1.5 로 위에서부터 쌓여 탭바 아래쪽에 빈 띠가 남았다.
+     justify-center 로 남는 높이를 위아래로 나눠 갖는다. */
   .nav-item {
-    @apply flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl;
+    @apply flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-xl;
     @apply text-muted-foreground transition-all duration-200;
     @apply hover:text-foreground;
   }
