@@ -29,8 +29,8 @@ npm run native:ios      # 위 + Xcode 열기
 - [x] **실행·로그인 유지** — 앱을 다시 켜도 세션이 살아 있다
 - [x] **최신 웹 기능이 앱에 반영됨** — 서가에 칸 제목 없음, 책갈피 구분선,
       새 책등 글자(14px·볼드 해제)로 제목이 끝까지 보임
-- [x] **에셋 번들 포함** — `ios/App/App/public/onboarding/*.webp`,
-      `android/app/src/main/assets/public/onboarding/*.webp`
+- [x] **에셋 번들 포함** — `ios/App/App/public/onboarding/*.webp`
+- [x] **앱 아이콘·스플래시** — MOA 로고 (기본 Capacitor 로고였다). 홈 화면에서 확인
 - [x] **안전영역** — 상단 노치·하단 홈 인디케이터에 버튼이 안 걸림
 - [x] **딥링크** — `moabook://?onboarding=1` 로 온보딩이 뜬다
       (이 확인 과정에서 아래 2번 버그를 잡았다)
@@ -78,29 +78,30 @@ xcrun simctl openurl 2BA53F69-CBFB-4BAC-8B52-E6D784D31CC4 "moabook://?onboarding
 지금은 **Web Push(VAPID) + 서비스워커**다. 네이티브는 **APNs(iOS) / FCM(Android)** 로 채널이 다르다.
 지금 상태로 앱을 내면 **앱 사용자는 알림을 하나도 못 받는다.**
 
-- [ ] `push_subscriptions` 에 토큰 종류(`web` | `apns` | `fcm`) 칸 추가
+- [ ] `push_subscriptions` 에 채널(`web` | `ios`) 칸 추가
 - [ ] `send-push` 엣지 함수가 종류에 따라 갈라 보내게
 - [ ] `@capacitor/push-notifications` 붙이고 토큰 등록 흐름
-- [ ] Apple Developer 에서 APNs 인증키, Firebase 프로젝트 생성
+- [ ] Apple Developer 에서 APNs 인증키 (**Firebase 불필요** — Android 를 안 낸다. docs/PUSH_IOS.md)
 
 ⚠️ **웹 푸시를 깨뜨리지 않아야 한다.** 지금 실사용자는 전부 웹(PWA)에 있다.
 
-### 4.2 🔴 Apple 심사 4.2 (Minimum Functionality)
+### 4.2 ✅ Apple 심사 4.2 (Minimum Functionality) — 붙였다
 
-웹을 감싸기만 한 앱은 **반려된다.** 네이티브 기능이 최소 하나 필요하다.
+웹을 감싸기만 한 앱은 반려된다. 네이티브 기능 두 개를 붙였다.
 
-**권장: 카메라로 표지 촬영.** 책을 올릴 때 실물이 손에 있으니 가장 자연스럽고,
-백로그 F23(표지 사진으로 등록 시작)과 같은 기능이라 **두 문제가 한 번에 풀린다.**
-공유 시트를 곁들이면 더 안전하다.
+- [x] **카메라** (`@capacitor/camera`) — 등록 화면의 '내 책 사진'을 누르면
+      앱에서는 **사진 찍기 / 앨범에서 고르기**를 먼저 묻는다.
+      웹에서는 예전 그대로 파일 선택이다(`canUseNativeCamera` 로 갈린다).
+- [x] **공유 시트** (`@capacitor/share`) — 책 상세 우상단.
+      앱=iOS 공유 시트 / 웹=Web Share / 둘 다 없으면 링크 복사.
+      공유 링크는 `?book=<id>` 이고 이 파라미터는 이미 책 상세를 여는 데 쓰이고 있었다.
 
-- [ ] `@capacitor/camera` 로 등록 화면의 사진 올리기를 촬영으로
-- [ ] `@capacitor/share` 로 책 상세에 공유 버튼
+⚠️ **Info.plist 권한 문구가 없으면 카메라를 부르는 순간 앱이 그냥 죽는다**(경고도 없이).
+   `NSCameraUsageDescription` · `NSPhotoLibraryUsageDescription` 을 넣어뒀다.
 
-### 4.3 🟡 Android 확인
-
-- [ ] Android Studio 로 빌드 (아직 한 번도 안 돌렸다)
-- [ ] 하드웨어 뒤로가기 — 오버레이가 떠 있을 때 앱이 종료되지 않는지
-- [ ] 딥링크(App Links) — iOS 만 확인했다
+**아직 눌러보지 못한 것**: 시뮬레이터를 코드로 탭할 수 없어 카메라 시트와 공유 시트가
+실제로 뜨는지는 손으로 확인해야 한다. 시뮬레이터에는 카메라가 없어 '사진 찍기'는
+**실기기에서만** 확인된다(앨범은 시뮬레이터에서도 된다).
 
 ### 4.4 🟡 Phaser(가상공간) 웹뷰 성능
 

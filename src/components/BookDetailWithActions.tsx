@@ -1,7 +1,8 @@
 import { conditionMeta, CONDITION_LEVELS } from '@/lib/bookCondition';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MessageCircle, Heart, Edit2, Trash2, Loader2, Clock, Flag, BookOpen } from 'lucide-react';
+import { X, MessageCircle, Heart, Edit2, Trash2, Loader2, Clock, Flag, BookOpen, Share2 } from 'lucide-react';
+import { shareBook } from '@/lib/nativeShare';
 import { Book } from '@/types/book';
 import { BookReviewSection } from '@/components/review/BookReviewSection';
 import { BookMode, MODE_EYEBROW, MODE_CTA, availabilityLabel } from '@/lib/bookMode';
@@ -319,6 +320,20 @@ export const BookDetailWithActions = ({
                     </h2>
                     <p className="text-sm text-muted-foreground mt-1">{book.author}</p>
                   </div>
+
+                  {/* 공유 — 앱에서는 iOS 공유 시트, 웹에서는 Web Share 또는 링크 복사.
+                      "이 책 봐봐"를 카톡으로 보내는 게 이 앱에서 책이 도는 실제 경로다. */}
+                  <button
+                    onClick={async () => {
+                      const r = await shareBook(book);
+                      if (r === 'copied') toast.success('링크를 복사했어요');
+                      else if (r === 'failed') toast.error('공유하지 못했어요');
+                    }}
+                    className="self-start p-1.5 rounded-full text-muted-foreground hover:bg-muted transition-colors shrink-0"
+                    aria-label="공유하기"
+                  >
+                    <Share2 className="w-[18px] h-[18px]" />
+                  </button>
 
                   <button
                     onClick={onClose}

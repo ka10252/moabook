@@ -81,5 +81,12 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<!-- 카메라·앨범 권한 문구.
+	     ⚠️ 이 문구가 없으면 권한을 요청하는 순간 **앱이 그냥 죽는다**(경고도 없이).
+	     심사에서도 "왜 필요한지"가 구체적이지 않으면 반려된다. -->
+	<key>NSCameraUsageDescription</key>
+	<string>책 표지와 상태를 사진으로 남겨 다른 이웃이 책을 고를 수 있게 합니다.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>앨범에 있는 책 사진을 골라 등록할 수 있습니다.</string>
 </dict>
 </plist>
