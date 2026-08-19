@@ -11,6 +11,7 @@ import { AuthPromptModal } from "@/components/auth/AuthPromptModal";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { lazyRetry } from "@/lib/lazyRetry";
 import { initDeepLinks } from "@/lib/deepLink";
+import { initNativePushTaps } from "@/lib/nativePush";
 import { AuthPage } from "@/pages/AuthPage";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -65,6 +66,12 @@ const AppRoutes = () => {
       disposed = true;
       cleanup?.();
     };
+  }, []);
+
+  // 알림을 눌러 들어온 경우 그 화면으로 옮긴다 (딥링크와 같은 navigate 를 쓴다).
+  // 페이로드의 url 은 send-push 가 넣는다.
+  useEffect(() => {
+    void initNativePushTaps((path) => navigateRef.current(path, { replace: true }));
   }, []);
 
   return (

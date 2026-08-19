@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- 푸시 알림. 이게 없으면 registerForRemoteNotifications 가 토큰 대신 에러를 준다.
+	     development = Xcode 로 직접 설치한 빌드. 아카이브(TestFlight·스토어)로 내보내면
+	     Xcode 가 production 으로 바꿔 서명한다. -->
+	<key>aps-environment</key>
+	<string>development</string>
+</dict>
+</plist>

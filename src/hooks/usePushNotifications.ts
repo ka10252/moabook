@@ -3,6 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from './useAuth';
 import { canReceivePush, needsHomeScreenInstall } from '@/lib/platform';
+import {
+  canUseNativePush,
+  enableNativePush,
+  disableNativePush,
+  hasNativePush,
+} from '@/lib/nativePush';
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
 
@@ -10,7 +16,12 @@ const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undef
  * API 존재 여부만으로 판단하면 안 된다.
  * iOS는 홈 화면에 추가하지 않으면 구독 자체가 실패한다 — canReceivePush()가 그 조건까지 본다.
  */
-const isPushSupported = canReceivePush();
+/**
+ * ⚠️ 앱(WKWebView)에는 Push API 자체가 없다. 그래서 웹 기준으로만 판단하면
+ * 앱에서는 알림 켜기가 영영 'unsupported' 로 막힌다.
+ * 앱이면 네이티브(APNs) 길로 간다 — 아래 subscribe/unsubscribe 가 갈라진다.
+ */
+const isPushSupported = canReceivePush() || canUseNativePush;
 
 /**
  * 알림 켜기가 실패하는 이유는 여러 가지고, 유저가 할 수 있는 조치도 제각각이다.
@@ -57,6 +68,13 @@ export const usePushNotifications = () => {
   useEffect(() => {
     if (!isPushSupported || !user) return;
     let cancelled = false;
+
+    if (canUseNativePush) {
+      // 앱에는 서비스워커 구독이 없다. 이 기기 토큰이 서버에 있는지로 판단한다.
+      hasNativePush(user.id).then((on) => { if (!cancelled) setIsSubscribed(on); });
+      return () => { cancelled = true; };
+    }
+
     swReady().then(async (reg) => {
       if (cancelled || !reg) return;
       const sub = await reg.pushManager.getSubscription();
@@ -71,6 +89,19 @@ export const usePushNotifications = () => {
   const subscribe = useCallback(async (): Promise<PushResult> => {
     if (!isPushSupported) return 'unsupported';
     if (!user) return 'needs-login';
+
+    // 앱: APNs. 권한 요청까지 여기서 한 번에 한다(웹처럼 Notification API 가 없다).
+    if (canUseNativePush) {
+      setLoading(true);
+      try {
+        const r = await enableNativePush(user.id);
+        if (r === 'granted') { setIsSubscribed(true); setPermission('granted'); return 'granted'; }
+        if (r === 'denied') { setPermission('denied'); return 'denied'; }
+        if (r === 'needs-login') return 'needs-login';
+        return 'error';
+      } finally { setLoading(false); }
+    }
+
     // 키가 없으면 구독을 만들 수 없다. 성공한 척하지 않는다.
     if (!VAPID_PUBLIC_KEY) return 'not-configured';
 
@@ -89,6 +120,9 @@ export const usePushNotifications = () => {
           user_id: user.id,
           endpoint: subJSON.endpoint,
           subscription: subJSON as unknown as Json,
+          // 채널을 명시한다. 기본값이 'web' 이라 없어도 되지만, 앱(APNs)이 같은 표를
+          // 쓰기 시작한 이상 "이건 웹"이라고 코드에 남겨두는 편이 덜 헷갈린다.
+          channel: 'web',
         },
         { onConflict: 'user_id,endpoint' }
       );
@@ -106,6 +140,15 @@ export const usePushNotifications = () => {
   }, [user?.id]);
 
   const unsubscribe = useCallback(async () => {
+    if (canUseNativePush) {
+      setLoading(true);
+      try {
+        await disableNativePush(user?.id);
+        setIsSubscribed(false);
+      } finally { setLoading(false); }
+      return;
+    }
+
     if (!isPushSupported || !user) return;
     setLoading(true);
     try {
@@ -131,6 +174,8 @@ export const usePushNotifications = () => {
 
   const requestAndSubscribe = useCallback(async (): Promise<PushResult> => {
     if (!isPushSupported) return 'unsupported';
+    // 앱은 권한 요청이 subscribe 안에 들어 있다 (Notification API 가 없다)
+    if (canUseNativePush) return subscribe();
 
     // 브라우저 설정에서 이미 차단해 두면 requestPermission()은 창도 안 띄우고 즉시 denied다.
     // 이 경우 "거부하셨네요"가 아니라 "설정에서 풀어주세요"를 안내해야 한다.

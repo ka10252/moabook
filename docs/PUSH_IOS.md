@@ -55,3 +55,36 @@ Team ID 만 알려주면 된다 — 그건 비밀이 아니고 `apple-app-site-a
 
 - 권한 팝업·토큰 발급 흐름: 확인 가능
 - **실제 알림 수신: 안 된다.** 실기기 + 개발자 계정 서명이 필요하다.
+
+
+---
+
+# 배선 현황 (2026-08-19)
+
+## 코드는 다 됐다 ✅
+
+| | |
+|---|---|
+| `supabase/migrations/20260823000001_push_channel.sql` | `push_subscriptions.channel` (`web` \| `ios`) |
+| `supabase/functions/send-push/apns.ts` | APNs 발송 (.p8 토큰 인증, JWT 50분 캐시) |
+| `supabase/functions/send-push/index.ts` | 채널별로 갈라 보냄 · 죽은 토큰 정리 |
+| `src/lib/nativePush.ts` | 권한 요청 · 기기 토큰 등록/해제 · 알림 탭 이동 |
+| `src/hooks/usePushNotifications.ts` | 앱이면 APNs 길로 분기 (웹은 그대로) |
+| `ios/App/App/App.entitlements` | `aps-environment` (프로젝트에 연결 완료, 빌드 확인) |
+
+## 켜는 순서 — 이 순서를 지켜야 한다
+
+1. **마이그레이션 실행** (`20260823000001_push_channel.sql`)
+2. **Supabase Secrets 에 APNs 값 4개** 입력 (위 참고)
+3. `supabase functions deploy send-push`
+
+> 2·3번을 먼저 해도 웹 푸시는 안 깨진다 — 함수가 칼럼을 하나씩 고르지 않고 `*` 로 받아
+> `channel` 이 없으면 'web' 으로 보게 해뒀다. 그래도 순서대로 하는 게 낫다.
+
+## 아직 확인 못 한 것
+
+- **실제 알림 수신** — 시뮬레이터는 APNs 토큰을 받지 못한다. **실기기 + 서명**이 필요하다.
+  (앱 실행 시 `PushNotifications addListener` 가 불리는 것까지는 시뮬레이터에서 확인했다)
+- `aps-environment` 는 지금 `development` 다. TestFlight·스토어로 아카이브하면
+  Xcode 가 `production` 으로 바꿔 서명한다. 그때 **APNs 호스트도 운영으로 가야 한다**
+  → Secrets 에서 `APNS_SANDBOX` 를 지우면 된다(없으면 운영). 개발 빌드로 시험할 땐 `true`.

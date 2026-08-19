@@ -979,6 +979,7 @@ export type Database = {
       push_subscriptions: {
         Row: {
           created_at: string
+          channel: string
           endpoint: string
           id: string
           subscription: Json
@@ -986,6 +987,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          channel?: string
           endpoint: string
           id?: string
           subscription: Json
@@ -993,6 +995,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          channel?: string
           endpoint?: string
           id?: string
           subscription?: Json
