@@ -6,7 +6,7 @@ import { useFavoriteAreas } from '@/hooks/useFavoriteAreas';
 import { useBookCommunityVisibility } from '@/hooks/useBookCommunityVisibility';
 import { CoverShelf } from './CoverShelf';
 import { GENRES, UNKNOWN_GENRE, isGenre, type Genre } from '@/lib/genre';
-import { BookSpine } from './BookSpine';
+import { BookSpine, spineWidthFor } from './BookSpine';
 import { BookDetailWithActions } from './BookDetailWithActions';
 import { EditBookModal } from './library/EditBookModal';
 import { LikedBooksPopup } from './LikedBooksPopup';
@@ -159,7 +159,8 @@ export const Bookshelf = ({
 
   // Dynamic booksPerShelf based on container width
   const bookcaseRef = useRef<HTMLDivElement>(null);
-  const [booksPerShelf, setBooksPerShelf] = useState(4);
+  /** 한 칸(선반)의 안쪽 폭(px). 책등 두께가 제각각이라 권수가 아니라 폭으로 나눈다. */
+  const [shelfWidthPx, setShelfWidthPx] = useState(320);
   // 보기 모드 — 책등(spine) · 표지(cover) · 지도(map)
   type ShelfView = 'spine' | 'cover' | 'map';
   const [viewMode, setViewMode] = useState<ShelfView>(() => {
@@ -196,10 +197,9 @@ export const Bookshelf = ({
     // contentWidth = content-box width of the outer scroll container (inside px-6 padding)
     // On wide screens clamp to 520px so the shelf doesn't stretch beyond a readable width
     // 칸 뒷판 px-3(24px) 좌우 패딩 → 예산에서 뺀다.
-    const effectiveWidth = Math.min(contentWidth, 520) - 24;
-    // 책등 max-w 52px + gap 6px = 슬롯당 58px
-    const n = Math.max(2, Math.floor((effectiveWidth + 6) / 58));
-    setBooksPerShelf(n);
+    // ⚠️ 이 값은 이제 '한 칸에 몇 권'이 아니라 **한 칸의 폭(px)** 이다.
+    //    책등 두께가 제목 길이에 따라 달라져서(28~37px) 권수로 세면 칸이 남거나 넘친다.
+    setShelfWidthPx(Math.min(contentWidth, 520) - 24);
   }, []);
 
   useEffect(() => {
@@ -530,12 +530,23 @@ export const Bookshelf = ({
   const shelfGroups = useMemo((): ShelfGroup[] => {
     const groups: ShelfGroup[] = [];
 
+    /**
+     * 책을 칸에 채운다. **권수가 아니라 폭으로 나눈다** —
+     * 책등 두께가 제목 길이에 따라 28~37px 로 달라져서, 권수로 자르면 어떤 칸은 남고
+     * 어떤 칸은 넘친다(실제로 칸 절반이 비어 보였다).
+     */
+    const GAP = 6;
     const addSection = (books: ShelfBook[], firstLabel?: string) => {
+      let used = 0;
       books.forEach((book, i) => {
-        if (i % booksPerShelf === 0) {
-          groups.push({ label: i === 0 ? firstLabel : undefined, books: [] });
+        const w = spineWidthFor(book.title || '');
+        const isFirst = i === 0;
+        if (isFirst || used + w + GAP > shelfWidthPx) {
+          groups.push({ label: isFirst ? firstLabel : undefined, books: [] });
+          used = 0;
         }
         groups[groups.length - 1].books.push(book);
+        used += w + GAP;
       });
     };
 
@@ -556,7 +567,7 @@ export const Bookshelf = ({
     }
 
     return groups;
-  }, [dealBooks, dedupedMixedBooks, activeFilter, statusFilter, booksPerShelf, searchQuery, narrowingFilterOn]);
+  }, [dealBooks, dedupedMixedBooks, activeFilter, statusFilter, shelfWidthPx, searchQuery, narrowingFilterOn]);
 
   const totalRealBooks = dealBooks.length + dedupedMixedBooks.length;
   // 배너 자체는 없앴지만(설명문이 첫 화면에 먼저 보이는 게 거슬렸다) 이 조건은

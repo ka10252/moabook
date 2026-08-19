@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { differenceInCalendarDays } from 'date-fns';
 import { Book } from '@/types/book';
 import { cleanBookTitle } from '@/lib/bookTitle';
+import { spineColorFor } from '@/lib/coverColor';
 
 interface BookSpineProps {
   book: Book;
@@ -35,14 +36,6 @@ const splitForVertical = (title: string) =>
 const isUnavailable = (book: Book, isLent: boolean, isBorrowed: boolean) =>
   book.status === 'rented' && !isLent && !isBorrowed;
 
-const spineColors = [
-  'bg-book-1',
-  'bg-book-2',
-  'bg-book-3',
-  'bg-book-4',
-  'bg-book-5',
-  'bg-book-6',
-];
 
 /**
  * 반납일 라벨.
@@ -88,66 +81,76 @@ const heightFromTitle = (title: string) => {
 };
 
 /**
- * 세로 한 열에 담기게 제목을 맞춘다.
- *  · 짧은 책: 해시 변주 높이 그대로(서가에 높낮이 다양성).
- *  · 제목이 길어 그 높이에 안 들어가면, 필요한 만큼(최대 100%) 책등을 키워 전부 보여준다.
- *  · 가장 긴 책등(100%)으로도 넘치면 …로 자른다.
- * 상수는 책등 픽셀 높이(선반 h-184 - pt-6 = 약 160px 콘텐츠) 기준 근사치 — 필요 시 여기만 조정.
- */
-/**
- * ⚠️ 아래 숫자는 모두 **브라우저에서 실제로 잰 값**이다. 눈대중으로 바꾸면 제목이 다시 잘린다.
- *    재는 방법: `npm run audit:spine` — 제목 span 의 clientHeight(보이는 영역)와
- *    scrollHeight(실제 글자 길이)를 비교해 잘린 책을 찍어준다.
+ * 제목 길이 하나가 글자 크기 · 책등 두께 · 책등 높이를 모두 정한다.
  *
- * 예전 계산이 틀렸던 두 가지:
+ *   제목이 길수록 → 글자가 작아지고 → 책등이 얇아지고 → 길어진다
+ *
+ * 글자를 줄이면 세로로 더 많이 들어가고, 글자 폭이 줄어드니 책등도 얇아진다.
+ * 두께가 제각각이라 서가에 리듬이 생기는 건 덤이다(예전엔 전부 같은 폭이었다).
+ *
+ * ⚠️ 아래 숫자는 **브라우저에서 실제로 잰 값**이다. 눈대중으로 바꾸면 제목이 다시 잘린다.
+ *    확인: `npm run audit:spine` — 글자 영역(clientHeight)과 실제 글자 길이(scrollHeight)를
+ *    비교해 잘린 책을 찍어준다.
+ *
+ * 지난번 계산이 틀렸던 두 가지(다시 밟지 말 것):
  *   1. 100% 책등의 글자 영역을 160×0.92=147 로 어림했다 → 실제는 **145px**
- *   2. **공백을 반각(0.55칸)으로 셌다** → 세로쓰기에서 공백은 0.30칸밖에 안 된다.
- *      그래서 "미국주식 처음공부"처럼 공백 있는 제목이 한두 글자만 애매하게 잘렸다.
- *
- * 14px 기준 실측 advance: 한글 14.28 · 공백 4.2 · 라틴 7.3~8 · 숫자 8.26 · 문장부호 4.47
+ *   2. **공백을 반각(0.55칸)으로 셌다** → 세로쓰기에서 공백은 0.30칸뿐이다.
  */
-const SPAN_MAX_PX = 145;        // heightPct=100 일 때 글자가 들어가는 세로 길이 (측정값)
-const FONT_PX = 14;             // 책등 제목 글자 크기
-const SAFETY_PX = 3;            // 반올림으로 1~2px 모자라 잘리는 것 방지
-const USABLE_PX = SPAN_MAX_PX - SAFETY_PX;
+const SPAN_MAX_PX = 145;      // heightPct=100 일 때 글자가 들어가는 세로 길이 (측정값)
+const LINE_RESERVE = 20;      // 위아래 장식 선이 차지하는 몫 — 글자가 선에 닿지 않게
+const SAFETY_PX = 3;
 
-/**
- * 글자 하나가 세로로 차지하는 길이(px).
- * 세로쓰기에서 라틴·숫자·문장부호는 눕혀져 반각 남짓만 쓰고, 한글·한자는 전각을 쓴다.
- * 라틴은 글자마다 폭이 달라(J·W 는 넓다) 실측 평균보다 조금 넉넉하게 잡았다.
- */
-const advancePx = (ch: string) => {
-  if (ch === ' ') return FONT_PX * 0.30;
+/** 글자 하나가 세로로 차지하는 길이. 글자 크기에 비례한다. */
+const advanceAt = (ch: string, font: number) => {
+  if (ch === ' ') return font * 0.30;
   const code = ch.charCodeAt(0);
-  if (code >= 128) return FONT_PX * 1.02;            // 전각 = font-size + letter-spacing(0.02em)
-  if (ch >= '0' && ch <= '9') return FONT_PX * 0.59;
-  if (/[a-zA-Z]/.test(ch)) return FONT_PX * 0.56;
-  return FONT_PX * 0.32;                             // 문장부호
+  if (code >= 128) return font * 1.02;              // 전각 = font-size + letter-spacing(0.02em)
+  if (ch >= '0' && ch <= '9') return font * 0.59;
+  if (/[a-zA-Z]/.test(ch)) return font * 0.56;
+  return font * 0.32;                                // 문장부호
 };
 
-const titlePx = (t: string) => [...t].reduce((sum, ch) => sum + advancePx(ch), 0);
+/** 글자 크기와 무관한 '길이 단위'. 1 = 한글 한 글자. */
+const unitsOf = (t: string) => [...t].reduce((s, ch) => s + advanceAt(ch, 1), 0);
 
-const truncateToPx = (t: string, budget: number) => {
+/** 제목 길이 → 글자 크기. 6자 이하 15px, 16자 이상 10.5px, 사이는 선형. */
+const fontFor = (u: number) =>
+  u <= 6 ? 15 : u >= 16 ? 10.5 : Math.round((15 - (u - 6) * 0.45) * 10) / 10;
+
+/** 글자 크기 → 책등 두께. 글자 폭 + 좌우 여백. */
+const widthFor = (font: number) => Math.round(font * 1.9 + 8);
+
+export interface SpineMetrics {
+  font: number;
+  width: number;
+  heightPct: number;
+  shown: string;
+}
+
+/** 이 제목의 책등이 차지할 두께(px). 서가가 한 칸에 몇 권을 넣을지 계산할 때 쓴다. */
+export const spineWidthFor = (title: string) => widthFor(fontFor(unitsOf(cleanBookTitle(title || ''))));
+
+const fitTitle = (title: string): SpineMetrics => {
+  const t = title || '';
+  const u = unitsOf(t);
+  const font = fontFor(u);
+  const width = widthFor(font);
+  const usable = SPAN_MAX_PX - LINE_RESERVE - SAFETY_PX;
+  const textPx = u * advanceAt('가', font);
+
+  if (textPx <= usable) {
+    const need = Math.ceil(((textPx + LINE_RESERVE) / SPAN_MAX_PX) * 100) + 1;
+    return { font, width, heightPct: Math.min(100, Math.max(heightFromTitle(t), need)), shown: t };
+  }
+
+  // 가장 긴 책등으로도 안 담기는 제목 — '…' 자리를 남기고 자른다
   let acc = 0, out = '';
   for (const ch of t) {
-    const w = advancePx(ch);
-    if (acc + w > budget) break;
+    const w = advanceAt(ch, font);
+    if (acc + w > usable - font) break;
     acc += w; out += ch;
   }
-  return out.trimEnd() + '…';
-};
-
-const fitTitle = (title: string): { heightPct: number; shown: string } => {
-  const t = title || '';
-  const px = titlePx(t);
-  if (px <= USABLE_PX) {
-    // 필요 높이 — 짧으면 해시 변주가, 길면 필요 높이가 이긴다.
-    // +1 은 책등 높이(%)→픽셀 반올림에서 1px 모자라는 것을 막는 여유.
-    const need = Math.ceil((px / USABLE_PX) * 100) + 1;
-    return { heightPct: Math.min(100, Math.max(heightFromTitle(t), need)), shown: t };
-  }
-  // 가장 긴 책등으로도 안 담기는 제목 — '…' 자리를 남기고 자른다.
-  return { heightPct: 100, shown: truncateToPx(t, USABLE_PX - FONT_PX) };
+  return { font, width, heightPct: 100, shown: out.trimEnd() + '…' };
 };
 
 export const BookSpine = ({
@@ -162,11 +165,16 @@ export const BookSpine = ({
   duplicateCount,
 }: BookSpineProps) => {
   const [isHovered, setIsHovered] = useState(false);
-  const colorClass = spineColors[(book.spineColor - 1) % spineColors.length];
+  // 책등 색은 **표지에서 뽑은 색상(H)** 으로 만든다. 채도·명도는 우리가 정한 사다리에서 —
+  // 표지색을 통째로 쓰면 탁한 표지가 탁한 책등이 되고, 밝은 표지에서는 제목이 사라진다.
+  const color = useMemo(
+    () => spineColorFor(book.title || book.id, book.coverHue),
+    [book.title, book.id, book.coverHue],
+  );
   // 표시용 제목 — (특별판)·[양장본] 등 판형 수식어 제거. 원본은 tooltip에 유지.
   const displayTitle = useMemo(() => cleanBookTitle(book.title), [book.title]);
   // 세로 한 열에 맞춘 표시 제목 + 그에 맞는 책등 높이(긴 제목은 가장 긴 책등 + …).
-  const { heightPct, shown: shownTitle } = useMemo(() => fitTitle(displayTitle), [displayTitle]);
+  const { heightPct, width, font, shown: shownTitle } = useMemo(() => fitTitle(displayTitle), [displayTitle]);
 
   const hasBookmark = (isLent && !!borrowerNickname) || (isBorrowed && !!lenderNickname);
   const chipName = isLent ? borrowerNickname : lenderNickname;
@@ -178,7 +186,8 @@ export const BookSpine = ({
 
   return (
     <motion.div
-      className={`cursor-pointer flex-1 min-w-[26px] max-w-[52px] ${colorClass} flex items-center justify-center relative`}
+      /* 두께는 제목 길이가 정한다 (fitTitle) — 예전엔 flex-1 로 다 같은 폭이었다 */
+      className="cursor-pointer shrink-0 flex items-center justify-center relative overflow-hidden" 
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       whileHover={{ y: unavailable ? -2 : -6, transition: { duration: 0.2 } }}
@@ -188,9 +197,12 @@ export const BookSpine = ({
       title={unavailable ? `${book.title} — 대여중` : undefined}
       style={{
         height: `${heightPct}%`,
+        width: `${width}px`,
+        background: color.bg,
         // 책은 바닥에 붙어 서 있다 — 위쪽만 둥글다
         borderRadius: '2px 2px 0 0',
-        boxShadow: 'inset -3px 0 5px rgba(0,0,0,.2), inset 2px 0 2px rgba(255,255,255,.16)',
+        // 파스텔 책등에는 짙은 그림자가 때를 탄 것처럼 보인다 — 옅게, 하이라이트는 세게.
+        boxShadow: 'inset -3px 0 5px rgba(0,0,0,.14), inset 2px 0 2px rgba(255,255,255,.22)',
         outline: isLent ? '1px dashed #A89E88' : undefined,
         outlineOffset: isLent ? -2 : undefined,
         // 남이 빌려간 책 = 지금 빌릴 수 없음. 비활성으로 낮춰 보여준다(제목은 계속 읽힌다).
@@ -205,9 +217,35 @@ export const BookSpine = ({
       {isLent && (
         <div
           className="absolute inset-0 z-[2] pointer-events-none"
-          style={{ background: 'rgba(244, 241, 234, 0.6)' }}
+          // 파스텔 책등은 원래 밝아서, 예전 값(0.6)으로 덮으면 책이 통째로 사라진다.
+          // '비어 있음'은 알리되 어떤 책이 나갔는지는 읽혀야 한다.
+          style={{ background: 'rgba(244, 241, 234, 0.42)' }}
         />
       )}
+
+      {/* 종이 결 — 색만 바꾸면 '예쁜 납작한 사각형'이 된다. 아주 옅은 세로 결로 재질을 준다. */}
+      <span
+        aria-hidden="true"
+        className="absolute inset-0 z-[1] pointer-events-none"
+        style={{
+          opacity: 0.5,
+          background: 'repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 1px, transparent 1px 3px)',
+        }}
+      />
+
+      {/* 위아래 장식 선 — 실제 양장본의 박(箔) 띠. 배경 명도에 따라 밝게/어둡게 뒤집힌다. */}
+      {[true, false].map((top) => (
+        <span
+          key={top ? 't' : 'b'}
+          aria-hidden="true"
+          className="absolute z-[2] pointer-events-none"
+          style={{
+            left: '14%', right: '14%', height: 2.5, borderRadius: 2,
+            background: color.line,
+            ...(top ? { top: 9 } : { bottom: 9 }),
+          }}
+        />
+      ))}
 
       {/* ── 책등 제목 — 세로쓰기 한 줄 ─────────────────────────
           제목은 세로 한 열로만 흐른다. 길면 fitTitle이 미리 …로 잘라 넣으므로
@@ -215,19 +253,20 @@ export const BookSpine = ({
           전체 제목은 탭하면 상세에서 보인다(title 속성/tooltip 유지). */}
       <span
         title={book.title}
-        className="relative z-[3] overflow-hidden text-spine-text"
+        className="relative z-[3] overflow-hidden"
         style={{
           fontFamily: "'Noto Sans KR', sans-serif",
           // 크기·굵기는 fitTitle 의 계산 전제다. 바꾸면 위 상수도 다시 재야 한다.
-          fontSize: `${FONT_PX}px`,
+          fontSize: `${font}px`,
           fontWeight: 400,
+          color: color.fg,
           writingMode: 'vertical-lr',
           whiteSpace: 'nowrap',   // 한 열 고정(2열로 흐르지 않게)
           maxHeight: '92%',
-          maxWidth: '1.3em',
+          maxWidth: '1.35em',
           letterSpacing: '0.02em',
           lineHeight: 1.15,
-          opacity: isLent ? 0.5 : 1,
+          opacity: isLent ? 0.62 : 1,
         }}
       >
         {titleParts.map((part, i) =>

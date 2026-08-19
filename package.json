@@ -27,7 +27,8 @@
     "genre:backfill": "node scripts/backfill-genre.mjs",
     "returndate:backfill": "node scripts/backfill-return-date.mjs",
     "audit:spine": "node scripts/audit-spine.mjs",
-    "audit:scroll": "node scripts/audit-scroll.mjs"
+    "audit:scroll": "node scripts/audit-scroll.mjs",
+    "hue:backfill": "node scripts/backfill-cover-hue.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",

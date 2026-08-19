@@ -32,6 +32,8 @@ export interface Book {
   } | null;
   /** 장르 — src/lib/genre.ts 의 GENRES 값. 비어 있으면 '기타'로 본다 */
   genre?: string | null;
+  /** 표지에서 뽑은 색상 0~359. 책등 색의 색상이 여기서 온다. null=추출 실패 → 기본 팔레트 */
+  coverHue?: number | null;
   /** 관리자가 숨긴 시각. 값이 있으면 남에게 안 보이고 주인에게만 보인다 */
   hiddenAt?: string | null;
   spineColor: number;
@@ -76,6 +78,7 @@ export const transformDbBook = (row: any): Book => ({
     : undefined,
   community: row.community ? { name: row.community.name } : null,
   genre: row.genre ?? null,
+  coverHue: row.cover_hue ?? null,
   hiddenAt: row.hidden_at ?? null,
   spineColor: row.spine_color ?? spineFromTitle(row.title),
 });

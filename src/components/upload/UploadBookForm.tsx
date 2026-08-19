@@ -14,6 +14,7 @@ import { CommunitySelector } from './CommunitySelector';
 import { CoverUploader } from './CoverUploader';
 import { BookSearchResult, useBookSearch } from '@/hooks/useBookSearch';
 import { GENRES, UNKNOWN_GENRE, classifyGenre, type Genre } from '@/lib/genre';
+import { extractCoverHue } from '@/lib/coverColor';
 import { track } from '@/lib/analytics';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -194,6 +195,9 @@ export const UploadBookForm = ({ onUploaded }: UploadBookFormProps) => {
         allow_give: formData.allowGive,
         price: formData.allowSell ? parseFloat(formData.price) : null,
         genre: formData.genre,
+        // 책등 색의 근거. 지금 한 번 재서 넣어둔다 — 서가가 뜰 때마다 표지 20장을
+        // 다시 내려받아 재면 느리다. 실패하면 null 이고 앱이 기본 팔레트로 떨어뜨린다.
+        cover_hue: coverUrl ? await extractCoverHue(coverUrl) : null,
         is_public: formData.isPublic,
         // 대표 커뮤니티(책 카드의 이름 배지용). 실제 노출 판정은
         // book_community_visibility 가 한다 — 여러 곳에 올릴 수 있어서다.
