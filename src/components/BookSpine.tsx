@@ -113,12 +113,18 @@ const advanceAt = (ch: string, font: number) => {
 /** 글자 크기와 무관한 '길이 단위'. 1 = 한글 한 글자. */
 const unitsOf = (t: string) => [...t].reduce((s, ch) => s + advanceAt(ch, 1), 0);
 
-/** 제목 길이 → 글자 크기. 6자 이하 15px, 16자 이상 10.5px, 사이는 선형. */
+/**
+ * 제목 길이 → 글자 크기. 6자 이하 16px, 16자 이상 12px, 사이는 선형.
+ *
+ * 예전엔 15→10.5px 였는데 22권 중 6권이 최소 크기에 걸려 **너무 얇은 책이 많아 보였다**
+ * (한 칸에 8.4권). 지금은 한 칸에 7.2권이고, 두껍게 해도 잘리는 제목은 거의 안 늘었다 —
+ * 글자가 커지면 세로로 덜 들어가지만 책등도 같이 길어져 상쇄되기 때문이다.
+ */
 const fontFor = (u: number) =>
-  u <= 6 ? 15 : u >= 16 ? 10.5 : Math.round((15 - (u - 6) * 0.45) * 10) / 10;
+  u <= 6 ? 16 : u >= 16 ? 12 : Math.round((16 - (u - 6) * 0.4) * 10) / 10;
 
 /** 글자 크기 → 책등 두께. 글자 폭 + 좌우 여백. */
-const widthFor = (font: number) => Math.round(font * 1.9 + 8);
+const widthFor = (font: number) => Math.round(font * 1.9 + 12);
 
 export interface SpineMetrics {
   font: number;
@@ -258,8 +264,10 @@ export const BookSpine = ({
           fontFamily: "'Noto Sans KR', sans-serif",
           // 크기·굵기는 fitTitle 의 계산 전제다. 바꾸면 위 상수도 다시 재야 한다.
           fontSize: `${font}px`,
-          fontWeight: 400,
+          // 얇은 획은 밝은 바탕에 먼저 먹힌다. 굵기와 옅은 그림자로 흰 글씨를 버티게 한다.
+          fontWeight: 600,
           color: color.fg,
+          textShadow: '0 1px 2px rgba(0,0,0,.18)',
           writingMode: 'vertical-lr',
           whiteSpace: 'nowrap',   // 한 열 고정(2열로 흐르지 않게)
           maxHeight: '92%',
