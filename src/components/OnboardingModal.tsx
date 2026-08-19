@@ -147,12 +147,15 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
       target: '[data-onboarding="filter"]',
       render: () => (
         <>
-          <div className="flex items-center gap-2">
-            <span className="w-9 h-9 rounded-full bg-primary/12 flex items-center justify-center shrink-0">
+          {/* 아이콘을 제목 옆이 아니라 **위**에 둔다.
+              옆에 두면 아이콘·간격(약 44px)만큼 제목 자리가 줄어 한 줄에 못 들어간다.
+              `whitespace-nowrap` 으로 억지로 한 줄을 유지했더니 글자가 카드 밖으로 삐져나가
+              **좌우 스크롤**이 생겼다 — 넘치게 두느니 자리를 만들어 준다. */}
+          <div className="w-full">
+            <span className="w-9 h-9 rounded-full bg-primary/12 flex items-center justify-center mb-2">
               <SlidersHorizontal className="w-[18px] h-[18px] text-primary" />
             </span>
-            {/* 한 줄에 들어가야 한다 — 두 줄로 넘어가면 아래 그림이 밀려 카드가 길어진다 */}
-            <h2 className="font-display text-[20px] leading-tight text-foreground whitespace-nowrap">
+            <h2 className="font-display text-[19px] leading-tight text-foreground">
               원하는 책을 빠르게 찾아보세요
             </h2>
           </div>
@@ -265,16 +268,31 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
   const GAP = HALO + 14;
   const spaceBelow = rect ? vh - (rect.top + rect.height) - GAP : 0;
   const spaceAbove = rect ? rect.top - GAP : 0;
-  const fitsBelow = !!rect && cardH > 0 && spaceBelow >= cardH + 12;
-  const fitsAbove = !!rect && cardH > 0 && spaceAbove >= cardH + 12;
-  /** 대상 옆에 붙일지 여부. 아니면 중앙 모달로 뜬다. */
-  const anchored = fitsBelow || fitsAbove;
-  const placeBelow = fitsBelow;
+
+  /**
+   * 말풍선이 **조준한 대상을 덮지 않게** 자리를 정한다.
+   *
+   * 예전엔 "위아래 어디에도 통째로 들어가면 붙이고, 아니면 화면 중앙"이었다.
+   * 그런데 중앙에 뜬 카드가 정작 가리키는 버튼을 덮어버렸다 —
+   * 스포트라이트를 켜놓고 그 위를 가리는 셈이라 설명이 무의미해진다.
+   * (보기 방식 설명 카드가 588px 인데 토글 위아래로는 350px 남짓밖에 없었다)
+   *
+   * 이제는 자리가 모자라도 **넓은 쪽에 붙이고 카드 높이를 그 자리에 맞춰 자른다.**
+   * 카드는 안쪽만 스크롤되고 진행 버튼은 고정이라, 낮아져도 넘기는 데 문제가 없다.
+   * 그 자리조차 너무 좁으면(=글 몇 줄도 못 넣으면) 그때만 중앙에 띄운다.
+   */
+  const MIN_ANCHOR_PX = 190;
+  const preferBelow = spaceBelow >= spaceAbove;
+  const anchorSpace = preferBelow ? spaceBelow : spaceAbove;
+  const anchored = !!rect && anchorSpace >= MIN_ANCHOR_PX;
+  const placeBelow = preferBelow;
+  /** 붙였을 때 카드가 가질 수 있는 최대 높이 — 이걸 넘기면 대상을 덮는다 */
+  const anchoredMaxH = anchored ? anchorSpace - 12 : undefined;
   const cardTop = rect
     ? clamp(
-        placeBelow ? rect.top + rect.height + GAP : rect.top - GAP - cardH,
+        placeBelow ? rect.top + rect.height + GAP : rect.top - GAP - Math.min(cardH, anchoredMaxH ?? cardH),
         12,
-        Math.max(12, vh - cardH - 12)
+        Math.max(12, vh - Math.min(cardH, anchoredMaxH ?? cardH) - 12)
       )
     : 0;
 
@@ -337,7 +355,7 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
                예전엔 카드에 overflow-y-auto 를 걸어, 내용이 긴 단계(실제 화면 사진 3장이 들어간
                '보는 방식')에서는 작은 화면(iPhone SE 667px)에서 '다음' 버튼까지 아래로 밀려
                스크롤해야 찾을 수 있었다. 진행 버튼은 언제나 보여야 한다. */
-            className={`${anchored ? 'absolute' : 'relative pointer-events-auto'} w-[min(340px,calc(100vw-32px))] max-h-[calc(100vh-24px)] flex flex-col ${coralCard ? 'bg-primary' : 'bg-card'} rounded-2xl shadow-hip-lg p-5`}
+            className={`${anchored ? 'absolute' : 'relative pointer-events-auto'} w-[min(340px,calc(100vw-32px))] flex flex-col ${coralCard ? 'bg-primary' : 'bg-card'} rounded-2xl shadow-hip-lg p-5`}
             style={
               anchored && rect
                 ? {
@@ -347,12 +365,14 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
                       Math.max(16, window.innerWidth - 356)
                     ),
                     top: cardTop,
+                    // 대상을 덮지 않도록 남은 자리까지만 쓴다. 넘치는 내용은 안쪽에서 스크롤된다.
+                    maxHeight: anchoredMaxH,
                   }
-                : undefined
+                : { maxHeight: 'calc(100vh - 24px)' }
             }
           >
             <div
-              className={`flex-1 min-h-0 overflow-y-auto overscroll-contain flex flex-col gap-3 ${anchored ? 'items-start text-left' : 'items-center text-center'}`}
+              className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain flex flex-col gap-3 ${anchored ? 'items-start text-left' : 'items-center text-center'}`}
             >
               {current.render()}
             </div>
