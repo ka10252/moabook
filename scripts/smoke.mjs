@@ -116,7 +116,10 @@ async function run() {
     screen = '로그인';
     await page.locator('input[type="email"]').first().fill(EMAIL);
     await page.locator('input[type="password"]').first().fill(PW);
-    await page.getByRole('button', { name: /로그인/ }).first().click();
+    // ⚠️ 이름으로 찾으면 '구글로 로그인' 버튼이 먼저 잡힌다 — 그러면 OAuth 로 새 나가서
+    //    로그인이 실패하고 **그 뒤 검사가 전부 연쇄로 무너진다**(실제로 그랬다).
+    //    이메일 폼의 제출 버튼을 직접 누른다.
+    await page.locator('form button[type="submit"]').first().click();
     await page.waitForTimeout(4500);
     if (page.url().includes('/auth')) note('로그인', '실패', '로그인 후에도 /auth에 머무름');
 
@@ -169,7 +172,8 @@ async function run() {
     await page.keyboard.press('Escape').catch(() => {});
 
     await go('위시리스트(로그인)', '/?tab=wishlist');
-    await click('위시 추가 폼', 'button:has-text("책 추가")');
+    // 책 추가는 아이콘만 있는 플로팅 버튼이 됐다 — 글자로는 못 찾는다
+    await click('위시 추가 폼', 'button[aria-label="책 추가"]');
     await page.keyboard.press('Escape').catch(() => {});
     await go('커뮤니티(로그인)', '/?tab=community', 3000);
     // 커뮤니티 상세 → 그 안에서 책장까지(F15). 팝업 안 화면 전환이라 열기만 해선 안 잡힌다.
