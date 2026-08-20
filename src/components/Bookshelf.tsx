@@ -750,7 +750,7 @@ export const Bookshelf = ({
           {user && (
             <button
               onClick={() => { if (requireAuth()) setShowTransactionDashboard(true); }}
-              className="tap-44 w-10 h-10 rounded-full bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors flex items-center justify-center shrink-0"
+              className="tap-44 w-9 h-9 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center shrink-0"
               title="거래 현황"
             >
               <History className="w-[18px] h-[18px]" />
@@ -783,26 +783,28 @@ export const Bookshelf = ({
         {/* 컨트롤 한 줄 — 장르 · 검색 · 보기방식 · 정밀필터.
             상태(전체·대여·나눔·판매)는 필터 시트 안으로 옮겼다. 네 칸이 늘 자리를 차지하는데
             대부분 '전체'로 두고 쓰기 때문이다. 대신 자주 바뀌는 장르를 밖으로 꺼냈다. */}
-        <div className="flex items-center gap-2">
+        {/* 알약·원형 테두리를 걷어내고 검색창과 같은 밑줄 언어로 통일했다.
+            밑줄이 한 선으로 이어지도록 items-end 로 아래를 맞춘다. */}
+        <div className="flex items-end gap-2">
           {/* 장르 — 밖으로 꺼낸 드롭다운. 책이 있는 장르만 나온다. */}
           <div className="relative flex-1 min-w-0">
             <button
               type="button"
               onClick={() => setGenreBarOpen(v => !v)}
               aria-expanded={genreBarOpen}
-              className={`w-full min-h-9 flex items-center justify-between gap-1.5 px-3 py-1.5 text-[13px] rounded-full border transition-colors ${
+              className={`w-full h-9 flex items-end justify-between gap-2 px-0.5 pb-1.5 text-[14px] bg-transparent border-0 border-b-[1.5px] transition-colors ${
                 selectedGenres.length > 0
-                  ? 'border-primary text-primary bg-primary/10 font-medium'
-                  : 'border-border text-muted-foreground hover:text-foreground bg-card'
+                  ? 'border-primary text-primary font-semibold'
+                  : 'border-foreground text-foreground font-medium'
               }`}
             >
               <span className="flex items-center gap-1.5 min-w-0">
-                <Tag className="w-3.5 h-3.5 shrink-0" />
+                <Tag className="w-4 h-4 shrink-0" strokeWidth={1.75} />
                 <span className="truncate">
                   {selectedGenres.length === 0 ? '장르' : selectedGenres.join(', ')}
                 </span>
               </span>
-              <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${genreBarOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 shrink-0 text-muted-foreground transition-transform duration-200 ${genreBarOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {genreBarOpen && (
@@ -857,13 +859,11 @@ export const Bookshelf = ({
             onClick={() => setSearchOpen(v => !v)}
             aria-label="검색"
             aria-expanded={searchOpen}
-            className={`tap-44 w-9 h-9 shrink-0 rounded-full border flex items-center justify-center transition-colors ${
-              searchOpen || searchQuery
-                ? 'border-primary text-primary bg-primary/10'
-                : 'border-border text-muted-foreground hover:text-foreground'
+            className={`tap-44 w-9 h-9 shrink-0 flex items-center justify-center pb-1.5 transition-colors ${
+              searchOpen || searchQuery ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <Search className="w-4 h-4" />
+            <Search className="w-[18px] h-[18px]" strokeWidth={1.75} />
           </button>
 
           {/* 책등 · 표지 · 지도 — 세 모드가 다 보이는 세그먼트 토글(현재 모드가 채워져 보임) */}
@@ -871,7 +871,7 @@ export const Bookshelf = ({
             role="group"
             aria-label="보기 방식"
             data-onboarding="view-toggle"
-            className="flex items-center shrink-0 rounded-full border border-border p-0.5"
+            className="flex items-end shrink-0 gap-0.5"
           >
             {([
               { key: 'spine', Icon: Library, label: '책등으로 보기' },
@@ -884,11 +884,13 @@ export const Bookshelf = ({
                 aria-pressed={viewMode === key}
                 aria-label={label}
                 title={label}
-                className={`tap-44 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                  viewMode === key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                className={`tap-44 w-7 h-9 flex items-end justify-center pb-1.5 border-b-[1.5px] transition-colors ${
+                  viewMode === key
+                    ? 'text-primary border-primary'
+                    : 'text-faint hover:text-foreground border-transparent'
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
               </button>
             ))}
           </div>
@@ -897,16 +899,14 @@ export const Bookshelf = ({
           <button
             onClick={() => setShowFilterSheet(true)}
             data-onboarding="filter"
-            className={`tap-44 relative w-9 h-9 shrink-0 rounded-full border flex items-center justify-center transition-colors ${
-              activeFilterCount > 0
-                ? 'border-primary text-primary bg-primary/10'
-                : 'border-border text-muted-foreground hover:text-foreground'
+            className={`tap-44 relative w-9 h-9 shrink-0 flex items-center justify-center pb-1.5 transition-colors ${
+              activeFilterCount > 0 ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
             }`}
             aria-label="상세 필터"
           >
-            <SlidersHorizontal className="w-4 h-4" />
+            <SlidersHorizontal className="w-[18px] h-[18px]" strokeWidth={1.75} />
             {activeFilterCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[13px] font-bold flex items-center justify-center">
+              <span className="absolute -top-0.5 -right-1 w-[15px] h-[15px] rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
                 {activeFilterCount}
               </span>
             )}
