@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { AuthPage } from "@/pages/AuthPage";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import { useOverlayScrollLock } from '@/hooks/useOverlayScrollLock';
 
 // 일반 유저는 평생 열지 않는 화면들 — 첫 로딩에 함께 내려보내지 않는다.
 // 특히 AdminPortal은 관리자 전용 컴포넌트 8개를 끌고 온다.
@@ -38,6 +39,9 @@ const RouteFallback = () => (
 
 // 라우트가 바뀌면 에러바운더리를 리셋(뒤로가기로 에러 화면에서 빠져나올 수 있게)
 const AppRoutes = () => {
+  // 팝업이 떠 있는 동안 뒤 화면이 밀리지 않게 문서를 묶는다
+  useOverlayScrollLock();
+
   const location = useLocation();
   const navigate = useNavigate();
 

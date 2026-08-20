@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback, Fragment } from 'react';
+import { createPortal } from 'react-dom';
 import { track } from '@/lib/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EditorialShelf } from './EditorialShelf';
@@ -806,6 +807,17 @@ export const Bookshelf = ({
               </span>
               <ChevronDown className={`w-4 h-4 shrink-0 text-muted-foreground transition-transform duration-200 ${genreBarOpen ? 'rotate-180' : ''}`} />
             </button>
+
+            {/* 바깥을 누르면 닫힌다. 백드롭이 없으면 열어둔 채로 뒤 화면이 그대로
+                눌리고 스크롤된다 — 목록만 떠 있고 책장은 살아 있는 상태가 된다.
+
+                body 로 포털을 쓰는 이유: 헤더에 backdrop-blur 가 걸려 있고, backdrop-filter 는
+                position:fixed 자식의 기준 상자를 자기 자신으로 만든다. 헤더 안에 두면
+                화면 전체가 아니라 헤더 크기만큼만 덮인다. */}
+            {genreBarOpen && createPortal(
+              <div className="fixed inset-0 z-20" onClick={() => setGenreBarOpen(false)} aria-hidden />,
+              document.body,
+            )}
 
             {/* 트리거는 짧지만 패널은 장르명 + 권수가 다 읽히는 폭까지 벌린다 */}
             {genreBarOpen && (

@@ -301,7 +301,8 @@ export const OnboardingModal = ({ onComplete }: OnboardingModalProps) => {
     : 0;
 
   return (
-    <div className="fixed inset-0 z-[100]">
+    // 뒤 화면을 스크롤해 대상을 보여줘야 하므로 스크롤 잠금에서 뺀다
+    <div className="fixed inset-0 z-[100]" data-no-scroll-lock>
       {/* 클릭 차단막 — 온보딩 중에는 앱을 조작할 수 없다 */}
       <div className="absolute inset-0" onClick={(e) => e.stopPropagation()} />
 
