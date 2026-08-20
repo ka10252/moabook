@@ -787,7 +787,7 @@ export const Bookshelf = ({
             밑줄이 한 선으로 이어지도록 items-end 로 아래를 맞춘다. */}
         <div className="flex items-end gap-2">
           {/* 장르 — 밖으로 꺼낸 드롭다운. 책이 있는 장르만 나온다. */}
-          <div className="relative flex-1 min-w-0">
+          <div className="relative shrink basis-[124px] min-w-[76px]">
             <button
               type="button"
               onClick={() => setGenreBarOpen(v => !v)}
@@ -807,8 +807,9 @@ export const Bookshelf = ({
               <ChevronDown className={`w-4 h-4 shrink-0 text-muted-foreground transition-transform duration-200 ${genreBarOpen ? 'rotate-180' : ''}`} />
             </button>
 
+            {/* 트리거는 짧지만 패널은 장르명 + 권수가 다 읽히는 폭까지 벌린다 */}
             {genreBarOpen && (
-              <div className="absolute left-0 right-0 top-full mt-1 z-30 rounded-xl border border-border bg-card shadow-hip overflow-hidden">
+              <div className="absolute left-0 top-full mt-1 z-30 w-max min-w-[200px] max-w-[calc(100vw-3rem)] rounded-xl border border-border bg-card shadow-hip overflow-hidden">
                 {/* 전체 선택/해제 — 장르가 늘수록 하나씩 끄는 게 번거롭다 */}
                 <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-muted/40">
                   <span className="text-[11px] font-bold uppercase tracking-widest text-faint">장르</span>
@@ -859,19 +860,35 @@ export const Bookshelf = ({
             onClick={() => setSearchOpen(v => !v)}
             aria-label="검색"
             aria-expanded={searchOpen}
-            className={`tap-44 w-9 h-9 shrink-0 flex items-center justify-center pb-1.5 transition-colors ${
+            className={`tap-44 w-8 h-9 shrink-0 flex items-end justify-center pb-1.5 border-b-[1.5px] border-transparent transition-colors ${
               searchOpen || searchQuery ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <Search className="w-[18px] h-[18px]" strokeWidth={1.75} />
           </button>
 
-          {/* 책등 · 표지 · 지도 — 세 모드가 다 보이는 세그먼트 토글(현재 모드가 채워져 보임) */}
+          {/* 정밀 필터 (지역·정렬) */}
+          <button
+            onClick={() => setShowFilterSheet(true)}
+            data-onboarding="filter"
+            className={`tap-44 relative w-8 h-9 shrink-0 flex items-end justify-center pb-1.5 border-b-[1.5px] border-transparent transition-colors ${
+              activeFilterCount > 0 ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+            }`}
+            aria-label="상세 필터"
+          >
+            <SlidersHorizontal className="w-[18px] h-[18px]" strokeWidth={1.75} />
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-0.5 -right-1 w-[15px] h-[15px] rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+          {/* 책등 · 표지 · 지도 — 우측 끝에 붙여 조작 그룹(장르·검색·필터)과 떨어뜨린다 */}
           <div
             role="group"
             aria-label="보기 방식"
             data-onboarding="view-toggle"
-            className="flex items-end shrink-0 gap-0.5"
+            className="flex items-end shrink-0 gap-0.5 ml-auto"
           >
             {([
               { key: 'spine', Icon: Library, label: '책등으로 보기' },
@@ -895,22 +912,6 @@ export const Bookshelf = ({
             ))}
           </div>
 
-          {/* 정밀 필터 (지역·정렬) */}
-          <button
-            onClick={() => setShowFilterSheet(true)}
-            data-onboarding="filter"
-            className={`tap-44 relative w-9 h-9 shrink-0 flex items-center justify-center pb-1.5 transition-colors ${
-              activeFilterCount > 0 ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-            }`}
-            aria-label="상세 필터"
-          >
-            <SlidersHorizontal className="w-[18px] h-[18px]" strokeWidth={1.75} />
-            {activeFilterCount > 0 && (
-              <span className="absolute -top-0.5 -right-1 w-[15px] h-[15px] rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
         </div>
       </header>
 
