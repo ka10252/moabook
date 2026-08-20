@@ -14,6 +14,7 @@ export interface WishlistItem {
   created_at: string;
   profile?: {
     nickname: string;
+    avatar_url?: string | null;
     /** F5 근처 우선 정렬용 — 요청자가 설정한 가까운 역·지역 */
     mrt_station?: string | null;
     district?: string | null;
@@ -37,7 +38,7 @@ export const useWishlist = () => {
         .from('wishlists')
         .select(`
           *,
-          profile:profiles!wishlists_user_id_fkey(nickname, mrt_station, district)
+          profile:profiles!wishlists_user_id_fkey(nickname, avatar_url, mrt_station, district)
         `)
         .eq('is_fulfilled', false)
         .order('created_at', { ascending: false });

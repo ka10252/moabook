@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { motion } from 'framer-motion';
 import { Trash2, Check, MessageCircle, Pencil, Loader2 } from 'lucide-react';
 import { WishlistItem } from '@/hooks/useWishlist';
@@ -98,10 +99,13 @@ export const WishlistCard = ({
         exit={{ opacity: 0, y: -6 }}
         className={`flex items-start gap-2 px-0.5 py-2 ${isDemo ? 'opacity-70' : ''}`}
       >
-        {/* 프로필 자리 — 사진이 없으므로 닉네임 첫 글자 */}
-        <span className="w-7 h-7 rounded-full bg-[hsl(var(--primary-soft))] text-primary flex items-center justify-center text-[12px] font-bold shrink-0 mt-0.5">
-          {nickname.charAt(0)}
-        </span>
+        {/* 프로필 사진 — 없으면 닉네임 첫 글자로 떨어진다 */}
+        <Avatar className="w-7 h-7 shrink-0 mt-0.5">
+          <AvatarImage src={item.profile?.avatar_url || undefined} alt={nickname} />
+          <AvatarFallback className="bg-[hsl(var(--primary-soft))] text-primary text-[12px] font-bold">
+            {nickname.charAt(0)}
+          </AvatarFallback>
+        </Avatar>
 
         {/* 말풍선 — 왼쪽 위만 각지게 해서 아바타에서 뻗어 나온 것처럼 보이게 한다 */}
         <div className="flex-1 min-w-0 bg-muted/50 border border-border rounded-[4px_14px_14px_14px] px-3 py-2.5">
