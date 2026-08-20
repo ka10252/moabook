@@ -110,7 +110,11 @@ export const WishlistCard = ({
         {/* 말풍선 — 왼쪽 위만 각지게 해서 아바타에서 뻗어 나온 것처럼 보이게 한다 */}
         <div className="flex-1 min-w-0 bg-muted/50 border border-border rounded-[4px_14px_14px_14px] px-3 py-2.5">
           <p className="text-[12px] text-muted-foreground mb-1.5">
-            <b className="text-foreground font-semibold">{nickname}</b>님이 찾아요
+            {/* 한 목록에 남의 요청과 섞이므로 내 것은 "내가"로 부른다.
+                내 닉네임에 "님"을 붙여 읽는 건 어색하고, 어느 게 내 것인지도 흐릿하다 */}
+            {isOwner
+              ? <><b className="text-foreground font-semibold">내가</b> 찾아요</>
+              : <><b className="text-foreground font-semibold">{nickname}</b>님이 찾아요</>}
             {isDemo && <span className="ml-1.5 text-[11px] font-bold text-faint bg-muted px-1.5 py-0.5 rounded-full">예시</span>}
           </p>
 

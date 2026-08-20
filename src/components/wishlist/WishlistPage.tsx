@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { Fragment, useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Search, Loader2 } from 'lucide-react';
 import { useWishlist, type WishlistItem } from '@/hooks/useWishlist';
@@ -116,7 +116,6 @@ export const WishlistPage = () => {
     setOfferModes((prev) => (prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]));
 
   // 상단 검색창은 없앴다(F4) — 위시리스트에서 할 일은 '원하는 책 올리기' 하나다.
-  const mine = items.filter((item) => item.user_id === user?.id);
 
   /**
    * F5 · '모든 위시리스트' 정렬.
@@ -136,10 +135,25 @@ export const WishlistPage = () => {
     [myBooks, user?.id],
   );
 
+  /**
+   * '모든 요청'에는 내 요청도 함께 담는다.
+   *
+   * 예전엔 남의 요청만 보여줬다. 그러면 내가 올린 것을 보려고 탭을 옮겨야 하는데,
+   * 정작 목록에서 하는 일(누가 뭘 찾는지 훑기)은 주인이 누구든 똑같다.
+   * 대신 **위로 고정하지 않는다** — 고정하면 정렬을 바꿔도 항상 같은 자리라
+   * 정렬이 안 먹는 것처럼 보인다. 관련순·최신순 기준을 그대로 함께 받는다.
+   */
   const others = useMemo(() => {
-    const list = items.filter((item) => item.user_id !== user?.id);
-    if (sort === 'newest') return list;
+    const list = filter === 'mine' ? items.filter((item) => item.user_id === user?.id) : items;
+    if (sort === 'newest') {
+      return [...list].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+    }
     const score = (it: WishlistItem) => {
+      // 내 요청은 내가 도와줄 대상이 아니므로 관련도 가산점에서 빠진다.
+      // 빼는 게 아니라 0점 — 최신순 기준으로 자연스럽게 섞인다.
+      if (it.user_id === user?.id) return 0;
       let s = 0;
       if (myBookTitles.has(norm(it.title))) s += 100;
       if (myStation && it.profile?.mrt_station === myStation) s += 20;
@@ -151,7 +165,7 @@ export const WishlistPage = () => {
       if (d !== 0) return d;
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
-  }, [items, user?.id, sort, myBookTitles, myStation, myDistrict]);
+  }, [items, user?.id, sort, filter, myBookTitles, myStation, myDistrict]);
 
   const canOffer = (it: WishlistItem) => myBookTitles.has(norm(it.title));
 
@@ -197,21 +211,17 @@ export const WishlistPage = () => {
     );
   }
 
-  // '모든 위시리스트'는 남의 요청만 보여준다. 내 요청은 '내 위시리스트'에 따로 있어서
-  // 양쪽에 다 띄우면 같은 카드가 두 번 보이고, 내가 도와줄 수 있는 요청이 밀린다.
-  const showMineSection = filter === 'mine';
-  const showOthersSection = filter === 'all';
-
+  // 목록은 하나다. 범위(모든/내 요청)는 정렬 줄에서 고르고, 그 결과가 곧 이 목록이다.
   // 실제 요청이 적을 때만 예시로 채운다. 요청이 쌓이면 사라진다.
   const demoItems =
-    showOthersSection && items.length < DEMO_THRESHOLD
+    filter === 'all' && items.length < DEMO_THRESHOLD
       ? DEMO_ITEMS.slice(0, DEMO_THRESHOLD - items.length)
       : [];
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <header className="px-5 pt-5 pb-3 bg-background/85 backdrop-blur-md sticky sticky-under-header z-30 space-y-3.5">
+      <header className="px-5 pt-5 pb-3 bg-background/85 backdrop-blur-md sticky sticky-under-header z-30">
         <div className="flex items-end justify-between gap-2">
           <div className="shrink-0">
             <p className="eyebrow">WISHLIST</p>
@@ -223,27 +233,6 @@ export const WishlistPage = () => {
           </div>
         </div>
 
-        {/* Filter chips — 한 줄, 활성은 코랄 */}
-        <div className="flex gap-1.5">
-          {([
-            ['all', '모든 위시리스트'],
-            ['mine', user ? `내 위시리스트 ${myItems.length}` : '내 위시리스트'],
-          ] as const).map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => setFilter(key)}
-              // 활성색을 코랄로 두면 바로 위 '책 추가'와 똑같아서 어느 쪽이
-              // 실행 버튼인지 헷갈린다. 탭은 선택 상태만 보이면 되므로 무채색으로 낮춘다.
-              className={`flex-1 text-[13px] py-3 rounded-[9px] transition-colors ${
-                filter === key
-                  ? 'bg-[hsl(var(--primary-soft))] text-foreground'
-                  : 'bg-muted text-muted-foreground'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
       </header>
 
       {/* Content */}
@@ -254,78 +243,91 @@ export const WishlistPage = () => {
           )}
         </AnimatePresence>
 
-        {mine.length === 0 && others.length === 0 && demoItems.length === 0 ? (
+        {items.length === 0 && demoItems.length === 0 ? (
           <EmptyState />
         ) : (
           <>
-            {showMineSection && mine.length > 0 && (
-              <section className="space-y-2">
-                <p className="text-[13px] font-semibold text-muted-foreground px-0.5 pt-2">내 요청</p>
-                {/* 말풍선 자체가 테두리를 가지므로 바깥 상자는 두지 않는다 — 이중 액자가 되면 지저분하다 */}
-                <div>
-                {mine.map((item) => (
-                  <WishlistCard
-                    key={item.id}
-                    item={item}
-                    isOwner
-                    onDelete={async () => {
-                      const { error } = await removeItem(item.id);
-                      if (error) { toast.error('삭제에 실패했어요. 다시 시도해주세요.'); throw error; }
-                    }}
-                    onMarkFulfilled={async () => {
-                      const { error } = await markFulfilled(item.id);
-                      if (error) { toast.error('처리에 실패했어요. 다시 시도해주세요.'); throw error; }
-                      toast.success('찾았어요! 목록에서 내렸어요');
-                    }}
-                    onEditNotes={async (notes) => {
-                      const { error } = await updateNotes(item.id, notes);
-                      if (error) toast.error('저장에 실패했어요. 다시 시도해주세요.');
-                    }}
-                  />
-                ))}
-                </div>
-              </section>
-            )}
-
-            {filter === 'mine' && mine.length === 0 && (
-              <div className="text-center py-12">
-                <Search className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-                <p className="text-sm text-muted-foreground">아직 추가한 책이 없습니다</p>
-                <button onClick={handleAddClick} className="mt-2 text-sm text-primary font-semibold">
-                  첫 번째 책 추가하기
-                </button>
-              </div>
-            )}
-
-            {showOthersSection && (others.length > 0 || demoItems.length > 0) && (
-              <section className="space-y-2">
-                <div className="flex items-center justify-between gap-2 px-0.5 pt-2">
-                  <p className="text-[13px] font-semibold text-muted-foreground">이웃의 요청</p>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {([['recommended', '관련순'], ['newest', '최신순']] as const).map(([key, label]) => (
+            <section className="space-y-2">
+              {/* 범위 전환은 정렬 줄 왼쪽에 얹는다. 거의 안 바꾸는 선택이라
+                  화면 폭을 채우는 탭 두 개를 쓸 이유가 없다. */}
+              <div className="flex items-center justify-between gap-2 px-0.5 pt-2">
+                <div className="flex items-center gap-1.5 shrink-0 text-[13px]">
+                  {([
+                    ['all', '모든 요청'],
+                    ['mine', user ? `내 요청 ${myItems.length}` : '내 요청'],
+                  ] as const).map(([key, label], i) => (
+                    <Fragment key={key}>
+                      {i > 0 && <span className="text-border">·</span>}
                       <button
-                        key={key}
-                        onClick={() => setSort(key)}
-                        className={`tap-44 text-[13px] px-2 py-1 rounded-full transition-colors ${
-                          sort === key
-                            ? 'bg-[hsl(var(--primary-soft))] text-foreground'
-                            : 'text-muted-foreground'
+                        onClick={() => setFilter(key)}
+                        className={`tap-44 transition-colors ${
+                          filter === key
+                            ? 'text-foreground font-bold'
+                            : 'text-faint hover:text-muted-foreground font-semibold'
                         }`}
                       >
                         {label}
                       </button>
-                    ))}
-                  </div>
+                    </Fragment>
+                  ))}
                 </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {([['recommended', '관련순'], ['newest', '최신순']] as const).map(([key, label]) => (
+                    <button
+                      key={key}
+                      onClick={() => setSort(key)}
+                      className={`tap-44 text-[13px] px-2 py-1 rounded-full transition-colors ${
+                        sort === key
+                          ? 'bg-[hsl(var(--primary-soft))] text-foreground'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {filter === 'mine' && others.length === 0 ? (
+                <div className="text-center py-12">
+                  <Search className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+                  <p className="text-sm text-muted-foreground">아직 추가한 책이 없습니다</p>
+                  <button onClick={handleAddClick} className="mt-2 text-sm text-primary font-semibold">
+                    첫 번째 책 추가하기
+                  </button>
+                </div>
+              ) : (
+                /* 말풍선 자체가 테두리를 가지므로 바깥 상자는 두지 않는다 — 이중 액자가 되면 지저분하다 */
                 <div>
                 {others.map((item) => (
-                  <WishlistCard
-                    key={item.id}
-                    item={item}
-                    isOwner={false}
-                    canOffer={canOffer(item)}
-                    onMessage={() => handleMessage(item)}
-                  />
+                  item.user_id === user?.id ? (
+                    <WishlistCard
+                      key={item.id}
+                      item={item}
+                      isOwner
+                      onDelete={async () => {
+                        const { error } = await removeItem(item.id);
+                        if (error) { toast.error('삭제에 실패했어요. 다시 시도해주세요.'); throw error; }
+                      }}
+                      onMarkFulfilled={async () => {
+                        const { error } = await markFulfilled(item.id);
+                        if (error) { toast.error('처리에 실패했어요. 다시 시도해주세요.'); throw error; }
+                        toast.success('찾았어요! 목록에서 내렸어요');
+                      }}
+                      onEditNotes={async (notes) => {
+                        const { error } = await updateNotes(item.id, notes);
+                        if (error) toast.error('저장에 실패했어요. 다시 시도해주세요.');
+                      }}
+                    />
+                  ) : (
+                    <WishlistCard
+                      key={item.id}
+                      item={item}
+                      isOwner={false}
+                      canOffer={canOffer(item)}
+                      onMessage={() => handleMessage(item)}
+                    />
+                  )
                 ))}
                 {/* 예시 카드에도 답장 버튼은 그대로 둔다 —
                     "이 책 나한테 있는데요"라고 말을 거는 게 위시리스트의 핵심 동작이라
@@ -340,8 +342,8 @@ export const WishlistPage = () => {
                   />
                 ))}
                 </div>
-              </section>
-            )}
+              )}
+            </section>
           </>
         )}
       </div>
