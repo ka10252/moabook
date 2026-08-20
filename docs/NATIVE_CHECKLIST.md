@@ -78,9 +78,9 @@ xcrun simctl openurl 2BA53F69-CBFB-4BAC-8B52-E6D784D31CC4 "moabook://?onboarding
 지금은 **Web Push(VAPID) + 서비스워커**다. 네이티브는 **APNs(iOS) / FCM(Android)** 로 채널이 다르다.
 지금 상태로 앱을 내면 **앱 사용자는 알림을 하나도 못 받는다.**
 
-- [ ] `push_subscriptions` 에 채널(`web` | `ios`) 칸 추가
-- [ ] `send-push` 엣지 함수가 종류에 따라 갈라 보내게
-- [ ] `@capacitor/push-notifications` 붙이고 토큰 등록 흐름
+- [x] `push_subscriptions` 에 채널(`web` | `ios`) 칸 추가 — 마이그레이션 20260823000001
+- [x] `send-push` 엣지 함수가 종류에 따라 갈라 보내게 — 채널로 갈라 web-push / APNs
+- [x] `@capacitor/push-notifications` 붙이고 토큰 등록 흐름 — src/lib/nativePush.ts
 - [ ] Apple Developer 에서 APNs 인증키 (**Firebase 불필요** — Android 를 안 낸다. docs/PUSH_IOS.md)
 
 ⚠️ **웹 푸시를 깨뜨리지 않아야 한다.** 지금 실사용자는 전부 웹(PWA)에 있다.
@@ -131,3 +131,22 @@ xcrun simctl openurl 2BA53F69-CBFB-4BAC-8B52-E6D784D31CC4 "moabook://?onboarding
 - **웹뷰 로그** 는 `xcrun simctl launch --console-pty <UDID> app.moabook` 에 `⚡️ [log] -` 로 나온다.
 - 시작 로그의 `JS Eval error A JavaScript exception occurred` 는 페이지가 뜨기 전
   Capacitor 가 넣는 초기 스크립트에서 나는 것으로, 이전 빌드에서도 계속 있었다. 동작에는 영향 없다.
+
+
+---
+
+## 2026-08-20 확인 (시뮬레이터 iPhone 17)
+
+빌드 성공 · 앱 실행 · 딥링크(`moabook://?tab=wishlist`) 라우팅 확인.
+웹에서 바꾼 것(밑줄형 헤더 · 얇은 탭바 · 위시리스트 말풍선/범위 전환)이 그대로 나온다.
+
+**손으로 확인해야 하는 것 — 시뮬레이터에서 자동으로 못 본다**
+- [ ] **팝업 뒤 스크롤 잠금** — 팝업을 열고 손가락으로 배경을 밀어본다.
+      `position: fixed` 로 묶는 방식을 쓴 이유가 WKWebView 가 body 의 `overflow: hidden`
+      을 무시하기 때문이다. 크로미움에서는 통과했지만 WKWebView 는 직접 봐야 한다.
+- [ ] 알림 팝업·장르 드롭다운을 손가락으로 스크롤 (마우스 휠과 동작이 다르다)
+- [ ] 지도 뷰 타일 로딩
+
+**남은 것 — Apple 계정 정보가 있어야 한다**
+- [ ] APNs 인증키(.p8) · Key ID · Team ID → Supabase Edge Function Secrets 에 직접 입력
+      (키 파일 내용은 채팅에 붙여넣지 않는다)
